@@ -161,7 +161,9 @@ layout/
 
 `<record-id>` mirrors `sim/`'s `<YYYYMMDD>-<HHMMSS>-<short-git-sha>` (UTC)
 convention (see `sim/README.md`) so the two evidence trails read the same
-way. Unlike `sim/`, this flow does not itself enforce a PDK-version pin the
+way — including the `dirty` flag's meaning: *the flow that produced this
+evidence differed from the named commit*, with the record's own report
+directory excluded from that check (a run always creates it). Unlike `sim/`, this flow does not itself enforce a PDK-version pin the
 way `sim/harness/pdk.py` does — `record.md` surfaces the resolved PDK version
 as a manual cross-check against `sim/pdk.json` instead.
 

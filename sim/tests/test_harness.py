@@ -15,6 +15,7 @@ sys.path.insert(0, str(SIM_DIR))
 
 from harness import corners  # noqa: E402
 from harness import pdk as pdk_mod  # noqa: E402
+from harness import report  # noqa: E402
 from harness import runner  # noqa: E402
 
 
@@ -35,6 +36,56 @@ class PvtPointTests(unittest.TestCase):
     def test_corner_id_integer_temp_has_no_trailing_dot(self):
         p = corners.PvtPoint(corner="tt", temp_c=27.0, supply_v=1.8)
         self.assertEqual(p.corner_id, "tt_27c_1.80v")
+
+
+class DirtyFlagTests(unittest.TestCase):
+    """The record's `dirty` flag has to mean "the code that produced this
+    evidence differed from the named commit". The run's own outputs are new
+    files by construction, so counting them would make every record dirty and
+    the flag worthless."""
+
+    RECORD_OUTPUTS = (
+        "sim/pdk-smoke/corners/20260101-000000-abc1234/",
+        "sim/pdk-smoke/records/20260101-000000-abc1234.md",
+        "sim/pdk-smoke/netlist-snapshots/20260101-000000-abc1234.spice",
+    )
+
+    def test_clean_tree_is_not_dirty(self):
+        self.assertFalse(report.is_dirty("", self.RECORD_OUTPUTS))
+
+    def test_this_runs_own_outputs_do_not_count_as_dirty(self):
+        status = (
+            "?? sim/pdk-smoke/corners/20260101-000000-abc1234/\n"
+            "?? sim/pdk-smoke/records/20260101-000000-abc1234.md\n"
+            "?? sim/pdk-smoke/netlist-snapshots/20260101-000000-abc1234.spice\n"
+        )
+        self.assertFalse(report.is_dirty(status, self.RECORD_OUTPUTS))
+
+    def test_modified_harness_source_counts_as_dirty(self):
+        status = " M sim/harness/runner.py\n"
+        self.assertTrue(report.is_dirty(status, self.RECORD_OUTPUTS))
+
+    def test_modified_testbench_counts_as_dirty(self):
+        # Same experiment directory as the record, but not a record output:
+        # editing the DUT absolutely changes what the evidence means.
+        status = " M sim/pdk-smoke/testbench/tb_pdk_smoke.sch\n"
+        self.assertTrue(report.is_dirty(status, self.RECORD_OUTPUTS))
+
+    def test_a_collapsed_parent_directory_counts_as_dirty(self):
+        # git's DEFAULT porcelain output collapses a wholly untracked tree to
+        # its parent ("?? sim/pdk-smoke/corners/"), which no per-record prefix
+        # can match. git_info therefore passes --untracked-files=all; this
+        # test pins the conservative behavior if that flag is ever dropped --
+        # falsely dirty, never falsely clean.
+        self.assertTrue(report.is_dirty("?? sim/pdk-smoke/corners/\n", self.RECORD_OUTPUTS))
+
+    def test_an_earlier_records_outputs_count_as_dirty(self):
+        status = "?? sim/pdk-smoke/records/20251231-235959-def5678.md\n"
+        self.assertTrue(report.is_dirty(status, self.RECORD_OUTPUTS))
+
+    def test_porcelain_paths_handles_renames_and_quoting(self):
+        status = 'R  sim/old.py -> sim/new.py\n?? "sim/spaced name.py"\n'
+        self.assertEqual(report.porcelain_paths(status), ["sim/new.py", "sim/spaced name.py"])
 
 
 class BuildMatrixTests(unittest.TestCase):

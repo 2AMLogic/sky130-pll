@@ -22,7 +22,41 @@ def sha256_file(path: Path) -> str:
     return h.hexdigest()
 
 
-def git_info(repo_root: Path) -> dict:
+def porcelain_paths(status_text: str) -> list:
+    """Repo-relative paths out of `git status --porcelain` (v1) output.
+
+    Two status chars, a space, then the path -- or `old -> new` for a rename,
+    whose *new* path is the one a caller wants, and quoted when the path
+    contains characters git chooses to escape.
+    """
+    paths = []
+    for line in status_text.splitlines():
+        if not line.strip():
+            continue
+        paths.append(line[3:].split(" -> ")[-1].strip().strip('"'))
+    return paths
+
+
+def is_dirty(status_text: str, ignore_prefixes: tuple = ()) -> bool:
+    """Was anything modified/untracked other than this run's own outputs?
+
+    `ignore_prefixes` are repo-relative path prefixes excluded from the
+    check -- specifically, the run's own output paths. Without this, every
+    record would be stamped "dirty" simply because the record, its netlist
+    snapshot, and its corner logs are new files the run itself just wrote,
+    which would make the flag useless: a reader could not tell "the code that
+    produced this evidence differed from the named commit" (which invalidates
+    reproducibility) from "the evidence is new" (which is always true).
+    """
+    return any(
+        not any(path.startswith(prefix) for prefix in ignore_prefixes)
+        for path in porcelain_paths(status_text)
+    )
+
+
+def git_info(repo_root: Path, ignore_prefixes: tuple = ()) -> dict:
+    """Resolve HEAD and whether the tree was dirty when the run started."""
+
     def run(*args: str) -> str:
         out = subprocess.run(
             ["git", "-C", str(repo_root), *args],
@@ -33,8 +67,12 @@ def git_info(repo_root: Path) -> dict:
         return out.stdout.strip()
 
     sha = run("rev-parse", "HEAD")
-    dirty = run("status", "--porcelain") != ""
-    return {"sha": sha, "dirty": dirty}
+    # --untracked-files=all is load-bearing: git's default collapses a wholly
+    # untracked tree to its parent directory ("?? sim/pdk-smoke/corners/"),
+    # which no per-record prefix can match, so every record would read dirty
+    # again.
+    status = run("status", "--porcelain", "--untracked-files=all")
+    return {"sha": sha, "dirty": is_dirty(status, ignore_prefixes)}
 
 
 def make_record_id(repo_root: Path) -> str:
@@ -57,7 +95,17 @@ def render(
     subset_reason: str | None,
     supersedes: str | None,
 ) -> str:
-    git = git_info(repo_root)
+    # Only this run's own new artifacts are excluded from the dirty check --
+    # an uncommitted edit to the testbench itself still marks the record
+    # dirty, because that genuinely affects what the evidence means.
+    git = git_info(
+        repo_root,
+        ignore_prefixes=(
+            f"sim/{slug}/corners/{record_id}/",
+            f"sim/{slug}/records/{record_id}.md",
+            f"sim/{slug}/netlist-snapshots/{record_id}.spice",
+        ),
+    )
     netlist_sha = sha256_file(netlist_snapshot)
 
     passed = [r for r in results if r.passed]

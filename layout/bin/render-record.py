@@ -6,10 +6,11 @@ Standard library only (matches sim/run_corners.py's convention of no extra
 runtime dependency beyond what the harness itself needs).
 
 Exits non-zero (after writing record.md, so the evidence trail still gets a
-record of the failure) if any of the five expected verdicts don't hold: DRC
-clean on the trivial cell, DRC violations reported on the deliberately
-illegal fixture, LVS match on the good reference, LVS mismatch on each of
-the two negative-control references. That mirrors the trivial-cell flow's
+record of the failure) if any of the expected verdicts don't hold: DRC clean
+on the trivial cell, DRC violations reported on the deliberately illegal
+fixture, those violations being exactly the rules the fixture declares it
+injects, LVS match on the good reference, and LVS mismatch on each of the
+two negative-control references. That mirrors the trivial-cell flow's
 actual job: it exists to prove the round trip works *and* that it can still
 report failure, so a silent verdict flip is exactly the regression this
 script is here to catch.
@@ -45,6 +46,34 @@ def _git(repo_root: Path, *args: str) -> str:
     ).stdout.strip()
 
 
+def porcelain_paths(status_text: str) -> list:
+    """Repo-relative paths out of `git status --porcelain` (v1) output.
+
+    Two status chars, a space, then the path -- or `old -> new` for a rename,
+    whose *new* path is the one a caller wants, and quoted when the path
+    contains characters git chooses to escape.
+    """
+    paths = []
+    for line in status_text.splitlines():
+        if not line.strip():
+            continue
+        paths.append(line[3:].split(" -> ")[-1].strip().strip('"'))
+    return paths
+
+
+def is_dirty(status_text: str, ignore_prefix: str) -> bool:
+    """Was the tree dirty when this run started?
+
+    `ignore_prefix` is this run's own (repo-relative) report directory. The
+    run always writes new files there, so counting them would stamp every
+    record "dirty" and destroy the flag's meaning: what a reader needs to
+    know is whether the *flow* differed from the named commit, not whether
+    the evidence is new. Mirrors sim/harness/report.py's is_dirty, which does
+    the same job for the simulation evidence trail.
+    """
+    return any(not path.startswith(ignore_prefix) for path in porcelain_paths(status_text))
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out-dir", required=True, type=Path)
@@ -66,7 +95,14 @@ def main() -> int:
 
     sha = _git(args.repo_root, "rev-parse", "HEAD")
     branch = _git(args.repo_root, "rev-parse", "--abbrev-ref", "HEAD")
-    dirty = _git(args.repo_root, "status", "--porcelain") != ""
+    report_rel = out_dir.resolve().relative_to(args.repo_root.resolve()).as_posix() + "/"
+    # --untracked-files=all is load-bearing: git's default collapses a wholly
+    # untracked tree to its parent directory ("?? layout/trivial-cell/
+    # reports/"), which no per-record prefix can match, so every record would
+    # read dirty again.
+    dirty = is_dirty(
+        _git(args.repo_root, "status", "--porcelain", "--untracked-files=all"), report_rel
+    )
 
     klt_version = subprocess.run(
         [args.klt, "--version"], check=True, capture_output=True, text=True

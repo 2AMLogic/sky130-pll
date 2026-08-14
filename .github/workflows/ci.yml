@@ -6,10 +6,11 @@ name: CI
 #   - `package.json` `check:ci` (JSON syntax of sim/pdk.json and every
 #     sim/**/testbench/tb.json manifest, shell/python syntax of the harness
 #     scripts, `sim/tests/` unit coverage for sim/harness's own
-#     PDK-resolution/corner-matrix/netlist-patch logic, and
-#     `layout/tests/` unit coverage for the trivial-cell LVS reference
-#     netlists) -> `checks` job below, every push/PR. Headless, no PDK
-#     needed.
+#     PDK-resolution/corner-matrix/netlist-patch/record-provenance logic,
+#     and `layout/tests/` unit coverage for the trivial-cell LVS reference
+#     netlists, the DRC negative-control fixture's injected violations, and
+#     the layout record's own provenance logic) -> `checks` job below, every
+#     push/PR. Headless, no PDK needed.
 #   - `sim/run_corners.py pdk-smoke` (the harness's own liveness test: proves
 #     the pinned sky130 PDK models load in ngspice, xschem netlists
 #     headlessly, and the PVT knobs actually reach the simulator) via

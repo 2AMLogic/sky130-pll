@@ -112,7 +112,12 @@ report.py`) with these mandatory fields:
   `netlist-snapshots/<record-id>.spice`.
 - **Environment provenance** — PDK variant + pinned open_pdks hash, model
   library file, ngspice/xschem versions, this repo's git commit and whether
-  the tree was dirty, host OS/arch.
+  the tree was dirty, host OS/arch. "Dirty" means *the code that produced
+  this evidence differed from the named commit*: the record's own outputs
+  (its corner logs, its netlist snapshot, the record file itself) are
+  excluded from that check, since a run always creates them and counting
+  them would mark every record dirty. An uncommitted edit to the harness or
+  to the testbench does still mark it dirty.
 - **Corner matrix run** — the explicit (process corner, temperature, supply)
   points actually executed, and whether it is a declared subset of the
   manifest's default grid.
