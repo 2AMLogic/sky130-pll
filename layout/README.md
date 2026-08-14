@@ -180,6 +180,17 @@ alone), it errors cleanly on a malformed shape description rather than
 silently emitting an empty cell, and `klt drc` distinguishes the
 violations case with its own exit code, so a shell driver can tell "deck
 found violations" from "the deck failed to run".
+
+One smaller gap was filed:
+[klayout-tools#950](https://github.com/2AMLogic/klayout-tools/issues/950) —
+`klt draw`'s request contract does not state whether unrecognized JSON keys
+are ignored. `drc-negative-control.json` carries `_purpose`/`_expected_rules`
+/`_rule` sidecar keys (JSON has no comments, and a negative-control fixture
+that cannot explain which rule each rectangle trips is one careless edit away
+from being silently legal). Today `klt draw` accepts and ignores them, but
+nothing promises it will keep doing so. If that issue resolves as "unknown
+keys are rejected", this fixture moves its notes to whichever escape hatch
+the resolution names.
 `2AMLogic/sky130-bandgap`'s own layout bootstrap had already
 found and filed the two gaps a resistor-array-based trivial cell would hit
 ([klayout-tools#369](https://github.com/2AMLogic/klayout-tools/issues/369),
