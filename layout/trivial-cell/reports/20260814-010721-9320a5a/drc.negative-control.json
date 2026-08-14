@@ -1,0 +1,116 @@
+{
+  "schema_version": 1,
+  "file": "/Users/rwalters/GitHub/sky130-pll/.loom/worktrees/issue-2/layout/trivial-cell/reports/20260814-010721-9320a5a/drc_negative_control.gds",
+  "deck": "sky130",
+  "dbu_um": 0.001,
+  "status": "violations",
+  "violation_count": 2,
+  "rule_counts": {
+    "li1.space.1": 1,
+    "poly.width.1": 1
+  },
+  "violations": [
+    {
+      "rule": "li1.space.1",
+      "description": "minimum li1 (local interconnect) spacing",
+      "check": "space",
+      "layer": "li1.drawing",
+      "cell": "drc_negative_control",
+      "source_cell": null,
+      "source_path": null,
+      "bbox": {
+        "left": 0,
+        "bottom": 1400,
+        "right": 2000,
+        "top": 1500
+      },
+      "polygon": [
+        [
+          0,
+          1400
+        ],
+        [
+          0,
+          1500
+        ],
+        [
+          2000,
+          1500
+        ],
+        [
+          2000,
+          1400
+        ]
+      ]
+    },
+    {
+      "rule": "poly.width.1",
+      "description": "minimum poly width",
+      "check": "width",
+      "layer": "poly.drawing",
+      "cell": "drc_negative_control",
+      "source_cell": null,
+      "source_path": null,
+      "bbox": {
+        "left": 0,
+        "bottom": 0,
+        "right": 2000,
+        "top": 100
+      },
+      "polygon": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          100
+        ],
+        [
+          2000,
+          100
+        ],
+        [
+          2000,
+          0
+        ]
+      ]
+    }
+  ],
+  "coverage": {
+    "deck_layers": [
+      "65/20",
+      "66/20",
+      "66/44",
+      "67/20",
+      "67/44",
+      "68/20"
+    ],
+    "layers_checked": [
+      "66/20",
+      "67/20"
+    ],
+    "layers_in_stream_without_rules": [],
+    "rules_skipped": [
+      "diff.enclosing.licon.1",
+      "diff.width.1",
+      "mcon.space.1",
+      "met1.enclosing.mcon.1",
+      "met1.space.1",
+      "met1.width.1",
+      "poly.enclosing.licon.1"
+    ]
+  },
+  "provenance": {
+    "klt_version": "0.2.0",
+    "klayout_version": "0.30.10",
+    "pdk": null,
+    "deck": {
+      "name": "sky130",
+      "content_hash": "sha256:3bf7dada5e1dc46d36411c6149a227599f41580edfeb78c00060b5756424f3d3"
+    },
+    "input": {
+      "content_hash": "sha256:54b90b83eeac2ad214e002ebc4e5a3a4fa4cf3fd5c250ddbaa8a2c28430de537"
+    }
+  }
+}

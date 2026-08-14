@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "gds_path": "/Users/rwalters/GitHub/sky130-pll/.loom/worktrees/issue-2/layout/trivial-cell/reports/20260814-010721-9320a5a/drc_negative_control.gds",
+  "cell_name": "drc_negative_control",
+  "dbu_um": 0.001,
+  "shape_count": 3,
+  "label_count": 0,
+  "layers": [
+    {
+      "layer": 66,
+      "datatype": 20,
+      "name": null,
+      "shapes": 1
+    },
+    {
+      "layer": 67,
+      "datatype": 20,
+      "name": null,
+      "shapes": 2
+    }
+  ],
+  "bbox_um": {
+    "x0": 0.0,
+    "y0": 0.0,
+    "x1": 2.0,
+    "y1": 1.9000000000000001
+  },
+  "warnings": [
+    "written verbatim by `klt draw`: no PDK awareness and no rule checking were applied; this cell is not guaranteed to be design-legal"
+  ]
+}
