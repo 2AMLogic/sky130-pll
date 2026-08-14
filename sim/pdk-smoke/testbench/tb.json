@@ -1,0 +1,11 @@
+{
+  "schema": "sky130-pll.harness.tb/1",
+  "claim": "harness self-test -- proves xschem netlisting + sim/harness PVT-point substitution (process corner, supply, temperature) + ngspice execution work end-to-end against the sky130 PDK (issue #2). This is a plumbing claim, not a PLL design claim: there is no PLL netlist yet, and the supply value below is an arbitrary smoke-test bias, not the ratified spec supply (pending #1).",
+  "schematic": "tb_pdk_smoke.sch",
+  "corner_pattern": "(\\.lib\\s+\\S*sky130\\.lib\\.spice\\s+)(\\w+)",
+  "supply_pattern": "(V1 GND net1 )([0-9.]+)",
+  "process_corners": ["tt", "ss", "ff"],
+  "temps_c": [-40, 27, 125],
+  "supply_nominal": 1.8,
+  "supply_tolerance": 0.1
+}

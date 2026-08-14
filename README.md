@@ -34,25 +34,32 @@ distinction matters for what the repo is *for*:
   one block, one PDK — building out the inventory of open-PDK analog/mixed-signal
   blocks the agent fleet can design end to end.
 
-## Status: scaffold. Pre-spec, pre-schematic, pre-layout, pre-silicon.
+## Status: scaffold + harness. Pre-spec, pre-schematic, pre-layout, pre-silicon.
 
-Being honest about where this actually is: this repository has just been
-created. It currently holds the map — a DRAFT target spec, the canary rules,
-and the issues that stand the work up. There is no schematic, no evidence, and
-no layout yet.
+Being honest about where this actually is: this repository holds the map — a
+DRAFT target spec, the canary rules, and (as of issue #2) a working sim
+harness and layout DRC/LVS flow proven on trivial, PLL-content-free DUTs.
+There is still no PLL schematic, no PLL verification evidence, and no PLL
+layout.
 
 - **Not done** — the target spec is **DRAFT and unratified** (see
   `spec/target-spec.md` and issue #1). No number in it is binding, and every
   value is explicitly a starting point carried over from gf180-pll or a
   published sky130 reference, not a settled sky130 result.
-- **Not done** — the sim harness (xschem + ngspice PVT corner runner) and the
-  `klt` layout/DRC/LVS flow are not yet stood up. They will be seeded from
-  gf180-pll (the PLL testbench structure and corner runner) and
+- **Done (plumbing only)** — the sim harness (`sim/run_corners.py`, an xschem
+  + ngspice PVT corner runner) and the `klt` layout DRC/LVS flow are stood up
+  and proven end to end: `sim/pdk-smoke` runs a trivial resistor-divider DUT
+  across a real process/temperature/supply sweep, and
+  `layout/bin/run-trivial-cell-flow.sh` DRC/LVS-cleans a trivial cell and
+  demonstrably catches an injected DRC/LVS defect (see `sim/README.md` and
+  `layout/README.md` for the checked-in evidence). Seeded from gf180-pll (the
+  PLL testbench/corner-runner structure) and
   [sky130-bandgap](https://github.com/2AMLogic/sky130-bandgap) (the sky130
   open-PDK plumbing: `volare` PDK install, `xschemrc`, `spiceinit`, and the
-  sky130 `klt` decks). See issue #2.
-- **Not started** — schematic entry, verification campaigns, and PLL-block
-  layout. `measurements/` stays empty until there is silicon.
+  sky130 `klt` decks) per issue #2. Neither harness has run against any PLL
+  content yet — that starts once #1 ratifies the spec and a schematic exists.
+- **Not started** — schematic entry, PLL verification campaigns, and
+  PLL-block layout. `measurements/` stays empty until there is silicon.
 
 The maturity ladder being climbed: spec-ratified → simulation-complete → layout
 DRC/LVS-clean → shuttle seat → measured silicon over temperature. This repo is
@@ -71,14 +78,14 @@ terms, or the contents of other 2AM Logic repositories belongs in this one.
 
 ```
 spec/          DRAFT target spec + numbered decision records (DR-NNN)
-design/        xschem schematics/symbols + the SPICE netlist exporter (to be stood up)
-sim/           testbenches, the PVT corner harness, and append-only evidence records (to be stood up)
-layout/        klt-driven DRC/LVS flow; PLL-block GDS/reports not yet drawn
+design/        xschem schematics/symbols + the SPICE netlist exporter (PLL content not yet stood up)
+sim/           PVT corner harness (stood up) + append-only evidence records; no PLL testbench yet
+layout/        klt-driven DRC/LVS flow (stood up, proven on a trivial cell); PLL-block GDS not yet drawn
 measurements/  silicon characterization (empty until there is silicon)
 ```
 
 Start with `spec/target-spec.md` for *what is being targeted and why nothing is
-settled yet*, and — once it lands — `sim/README.md` for *how results are
+settled yet*, and `sim/README.md` / `layout/README.md` for *how results are
 recorded and how to reproduce them*.
 
 ## How verification will work here
