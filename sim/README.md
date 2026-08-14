@@ -118,6 +118,14 @@ report.py`) with these mandatory fields:
   excluded from that check, since a run always creates them and counting
   them would mark every record dirty. An uncommitted edit to the harness or
   to the testbench does still mark it dirty.
+
+  The recorded commit is the branch commit the run happened at, and a rebase
+  or a squash-merge rewrites that hash — so a record written before its PR
+  merged names a commit that no longer exists on `main`. Regenerate the
+  record when that is cheap; otherwise read the recorded hash as "the tree
+  this ran against", and rely on the fields that survive history rewriting
+  for exact reproduction: the pinned PDK build, the tool versions, and the
+  netlist snapshot's SHA-256.
 - **Corner matrix run** — the explicit (process corner, temperature, supply)
   points actually executed, and whether it is a declared subset of the
   manifest's default grid.
