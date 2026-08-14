@@ -1,11 +1,16 @@
-# PLL target specification — DRAFT
+# PLL target specification
 
-- **Status**: **DRAFT — not ratified.** Pending engineering ratification (#1).
-  This file is the artifact #1 ratifies *against*; it does not ratify itself,
-  and **no row below is binding until #1 says so**. Every value here is
-  explicitly marked **DRAFT — to be ratified** and is a *starting point*, not a
-  settled sky130 result.
-- **Date**: 2026-08-10
+- **Status**: **RATIFIED (row 0) — 2026-08-13, via `DR-001` in #1.**
+  The **supply flavor is settled**: the 1.8 V core
+  (`nfet_01v8`/`pfet_01v8`). That row is binding, and design/sim/layout work
+  may now lock to it.
+  **No numeric row below is ratified.** Ratifying row 0 does not ratify the
+  values it gates — it makes their *stance* binding: each row's "what must be
+  settled on sky130" column is now a committed obligation (re-derive / confirm /
+  port-and-verify) rather than a draft intention. A row marked **re-derive**
+  must be closed by a sky130 campaign producing evidence; it may not be closed
+  by porting the gf180-pll number.
+- **Date**: 2026-08-10 (drafted); 2026-08-13 (row 0 ratified)
 - **Written by**: scaffold, repo creation
 - **Block class**: integer-N, ring-oscillator phase-locked loop.
 - **Port relationship**: this is the sky130 port of `2AMLogic/gf180-pll`. Its
@@ -65,7 +70,7 @@ Status is uniformly **DRAFT — to be ratified (#1)** until ratification.
 
 | # | Parameter | DRAFT target (starting point) | Source | sky130 open question to resolve at ratification |
 |---|---|---|---|---|
-| 0 | [Supply flavor](#supply-flavor) | 1.8 V core (`nfet_01v8`/`pfet_01v8`), **candidate** | sky130 core device menu; sky130-bandgap DR-001 pattern | 1.8 V core vs. medium-voltage; must be settled first — gates every row below |
+| 0 | [Supply flavor](#supply-flavor) | 1.8 V core (`nfet_01v8`/`pfet_01v8`) — **RATIFIED 2026-08-13 (DR-001, #1)** | sky130 core device menu; `DR-001` | **Settled.** I/O-class (`g5v0`-family) deferred, not rejected — revisit only on a demonstrated downstream interface constraint |
 | 1 | [Supply range](#supply-range) | 1.8 V ±10 % (1.62–1.98 V) *if* 1.8 V core | derived from row 0 candidate; cf. gf180-pll 3.3 V ±10 % | confirm the tolerance band and the domain split (ring / PFD-CP / digital) on sky130 |
 | 2 | [Output band](#output-band) | 10 – 200 MHz continuous, **carried from gf180-pll and NOT assumed to hold** | gf180-pll row 1 | a 130 nm ring on 1.8 V core may reach *higher* or trade range for Kvco — re-derive the band and stage count on sky130 |
 | 3 | [Reference input](#reference-input) | 1 – 25 MHz, CMOS square wave, rising-edge triggered, duty 30–70 % | gf180-pll row 2 | confirm input levels for the ratified supply flavor |
@@ -94,10 +99,29 @@ verification owed. **None of these are settled.**
 
 ## Supply flavor
 
-**DRAFT — to be ratified.** Working candidate: the 1.8 V core
-(`nfet_01v8`/`pfet_01v8`). This is the single most consequential open decision
-and gates every other row. Resolve it in `DR-001` as an input to #1, following
-the sky130-bandgap supply-flavor-scope pattern.
+**RATIFIED 2026-08-13** (`DR-001`, ruled in #1). The ring oscillator, PFD,
+charge pump, and dividers are built on the **1.8 V core**
+(`nfet_01v8`/`pfet_01v8`). Design, sim, and layout may lock to this.
+
+sky130 has no counterpart to gf180's 3.3 V *core* flavor
+(`nfet_03v3`/`pfet_03v3`), so porting the flavor was never an available
+option — see `DR-001` *Alternatives considered*. The medium-/high-voltage
+(`g5v0`-family / I/O-class) arrangement is **deferred, not rejected**: revisit
+only if a downstream integration surfaces a real interface constraint (e.g. a
+`CLK` that must drive an off-chip rail without a level shifter).
+
+**Two accepted costs this ratification hands to design** (from `DR-001`
+*Consequences* — accepted deliberately, not overlooked):
+
+- **Reduced Vctrl headroom.** A 1.8 V rail gives the charge pump and loop
+  filter roughly a third of gf180-pll's 3.3 V control-voltage window.
+  Current-source compliance, switch overdrive, and the usable linear-tuning
+  fraction are all tighter; sub-threshold behaviour of `nfet_01v8`/`pfet_01v8`
+  mirrors at reduced headroom is a specific risk to design against. The charge
+  pump and loop filter **owe a headroom analysis**, tracked at row 13.
+- **Tighter ripple tolerance.** The same absolute ripple consumes a larger
+  fraction of a 1.8 V Vctrl window, so gf180-pll's ripple limit must be
+  re-derived **smaller, not larger** (rows 9 and 13).
 
 ## Supply range
 

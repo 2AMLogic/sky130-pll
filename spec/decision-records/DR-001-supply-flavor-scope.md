@@ -1,12 +1,23 @@
 # DR-001: sky130 supply-flavor and port scope
 
-- **Status**: proposed
+- **Status**: **accepted** — ratified by the operator in #1 on 2026-08-13.
 - **Date**: 2026-08-13
 - **Author**: Builder agent (drafted per #3)
-- **Ratifies against / input to**: #1 (Ratify the target spec — T1-gate entry).
-  This record does **not** ratify anything itself; it stays `proposed` and is
-  an input for the operator to rule on when closing #1.
+- **Ratified in**: #1 (Ratify the target spec — T1-gate entry). The operator
+  ruled **for this record's recommendation without modification**: the 1.8 V
+  core (`nfet_01v8`/`pfet_01v8`) is the ratified device family for the ring,
+  PFD, charge pump, and dividers; the medium-/high-voltage (`g5v0`-family /
+  I/O-class) arrangement is **deferred, not rejected**, and may be revisited
+  only if a downstream integration surfaces a genuine interface constraint,
+  per "Why the medium-/high-voltage flavor is deferred" below.
 - **Supersedes**: none
+
+> **Ratification note.** The two costs this record names under *Consequences* —
+> the reduced Vctrl headroom on a 1.8 V rail, and the correspondingly tighter
+> supply-ripple tolerance — were weighed and accepted as real design costs, not
+> waved through. They are now owed work, not open questions: the charge pump and
+> loop filter owe a headroom analysis, and rows 9/13 own the ripple budget. No
+> numeric value in `spec/target-spec.md` is ratified by this record.
 
 This record follows the same drafting mechanism `2AMLogic/sky130-bandgap`
 used for its own supply-flavor scope decision (agents draft and argue the
