@@ -1,0 +1,36 @@
+{
+  "family": "sky130",
+  "variant": "sky130A",
+  "open_pdks_commit": "c6d73a35f524070e85faff4a6a9eef49553ebc2b",
+  "install_command": "volare enable --pdk sky130 c6d73a35f524070e85faff4a6a9eef49553ebc2b",
+  "default_pdk_root": "~/.volare",
+  "ngspice_lib": "libs.tech/combined/sky130.lib.spice",
+  "xschem_pdk_rc": "libs.tech/xschem/xschemrc",
+  "process_corners": ["tt", "ss", "ff", "sf", "fs", "ll", "hh"],
+  "provenance": {
+    "adapted_from": "2AMLogic/sky130-bandgap sim/pdk.json",
+    "source_commit": "7709135dce352b7044979103d90a02e2b3129a09",
+    "note": "Same open_pdks pin and variant sky130-bandgap uses, so PVT/model provenance stays consistent across the 2AM Logic sky130 canaries (per this repo's CLAUDE.md)."
+  },
+  "notes": [
+    "This file is the reproducibility pin for every record under sim/.",
+    "open_pdks_commit is the volare version hash for the sky130 PDK family;",
+    "sim/harness/pdk.py reads $PDK_ROOT/$PDK back through its symlink and",
+    "refuses to run against a different version unless --allow-pdk-mismatch",
+    "is passed (in which case the record carries the mismatch).",
+    "process_corners are the basic N/P device sections that actually exist in",
+    "the PDK ngspice library (verified against the .lib sections of",
+    "libs.tech/combined/sky130.lib.spice in this sandbox: tt, sf, ff, ss, fs,",
+    "ll, hh, hl, lh, plus the *_ll/*_hl/*_lh/*_hh compound sections and the",
+    "*_mm mismatch-switch sections). tt/ss/ff/sf/fs are the standard MOS/BJT",
+    "corners; ll/hh are the resistor/capacitor-only skew corners (they ride",
+    "on the nominal tt MOS/BJT corner and instead vary the passive parameter",
+    "set) -- carried over from sky130-bandgap's own empirical note on this",
+    "same PDK file. hl/lh and the *_mm sections also exist and remain",
+    "available to a future manifest that needs them, but are not added to",
+    "this pinned list until one actually uses them.",
+    "This repo's supply flavor (1.8 V core vs. a medium-voltage arrangement)",
+    "is an open question pending #1 -- nothing in this file encodes a",
+    "supply value; that lives in each experiment's own testbench manifest."
+  ]
+}

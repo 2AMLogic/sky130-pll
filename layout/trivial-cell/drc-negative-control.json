@@ -1,0 +1,25 @@
+{
+  "_purpose": "Known-bad fixture for the DRC flow's negative control (issue #2). Fed to `klt draw`, which writes geometry verbatim with no PDK awareness and no rule checking, precisely so a DRC flow can prove it reports failure as well as success. This cell is deliberately NOT design-legal and is never instantiated by any real layout.",
+  "_expected_rules": {
+    "poly.width.1": "the 0.10 um-tall poly (66/20) rectangle is below sky130's 0.15 um minimum poly width -- a WIDTH-class violation",
+    "li1.space.1": "the two li1 (67/20) rectangles are separated by a 0.10 um gap, below sky130's 0.17 um minimum li1 spacing -- a SPACING-class violation"
+  },
+  "_why_two_rule_classes": "A width violation and a spacing violation exercise two different KLayout check primitives, so a deck/engine regression that silently disables one of them still gets caught by the other. layout/tests/test_drc_negative_control.py asserts these dimensions stay illegal, PDK-free, so an edit that accidentally makes the fixture legal fails in CI rather than silently turning the negative control into a no-op.",
+  "shapes": [
+    {
+      "_rule": "poly.width.1",
+      "layer": [66, 20],
+      "rect_um": [0.0, 0.0, 2.0, 0.1]
+    },
+    {
+      "_rule": "li1.space.1 (lower plate)",
+      "layer": [67, 20],
+      "rect_um": [0.0, 1.0, 2.0, 1.4]
+    },
+    {
+      "_rule": "li1.space.1 (upper plate, 0.10 um away)",
+      "layer": [67, 20],
+      "rect_um": [0.0, 1.5, 2.0, 1.9]
+    }
+  ]
+}
