@@ -31,6 +31,18 @@ import subprocess
 import sys
 from pathlib import Path
 
+# scripts/git_status.py lives at the repo root (shared with
+# sim/harness/report.py -- sim/ and layout/ are otherwise independent trees
+# per CLAUDE.md's harness-bootstrap convention). This file is loaded both as
+# a script (run directly) and by path via importlib (layout/tests), so the
+# repo root has to be put on sys.path explicitly rather than relying on
+# script-directory sys.path[0] insertion.
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
+
+from scripts.git_status import is_dirty, porcelain_paths  # noqa: E402
+
 
 def _load(path: Path) -> dict:
     with path.open() as f:
@@ -44,34 +56,6 @@ def _git(repo_root: Path, *args: str) -> str:
         capture_output=True,
         text=True,
     ).stdout.strip()
-
-
-def porcelain_paths(status_text: str) -> list:
-    """Repo-relative paths out of `git status --porcelain` (v1) output.
-
-    Two status chars, a space, then the path -- or `old -> new` for a rename,
-    whose *new* path is the one a caller wants, and quoted when the path
-    contains characters git chooses to escape.
-    """
-    paths = []
-    for line in status_text.splitlines():
-        if not line.strip():
-            continue
-        paths.append(line[3:].split(" -> ")[-1].strip().strip('"'))
-    return paths
-
-
-def is_dirty(status_text: str, ignore_prefix: str) -> bool:
-    """Was the tree dirty when this run started?
-
-    `ignore_prefix` is this run's own (repo-relative) report directory. The
-    run always writes new files there, so counting them would stamp every
-    record "dirty" and destroy the flag's meaning: what a reader needs to
-    know is whether the *flow* differed from the named commit, not whether
-    the evidence is new. Mirrors sim/harness/report.py's is_dirty, which does
-    the same job for the simulation evidence trail.
-    """
-    return any(not path.startswith(ignore_prefix) for path in porcelain_paths(status_text))
 
 
 def main() -> int:

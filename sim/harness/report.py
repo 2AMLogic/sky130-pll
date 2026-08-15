@@ -9,49 +9,28 @@ from __future__ import annotations
 import hashlib
 import platform
 import subprocess
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
 from .corners import PvtPoint
 from .pdk import ResolvedPdk
 
+# scripts/git_status.py lives at the repo root (shared with
+# layout/bin/render-record.py -- sim/ and layout/ are otherwise independent
+# trees per CLAUDE.md's harness-bootstrap convention), so it isn't reachable
+# via the package-relative imports above.
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
+
+from scripts.git_status import is_dirty, porcelain_paths  # noqa: E402
+
 
 def sha256_file(path: Path) -> str:
     h = hashlib.sha256()
     h.update(path.read_bytes())
     return h.hexdigest()
-
-
-def porcelain_paths(status_text: str) -> list:
-    """Repo-relative paths out of `git status --porcelain` (v1) output.
-
-    Two status chars, a space, then the path -- or `old -> new` for a rename,
-    whose *new* path is the one a caller wants, and quoted when the path
-    contains characters git chooses to escape.
-    """
-    paths = []
-    for line in status_text.splitlines():
-        if not line.strip():
-            continue
-        paths.append(line[3:].split(" -> ")[-1].strip().strip('"'))
-    return paths
-
-
-def is_dirty(status_text: str, ignore_prefixes: tuple = ()) -> bool:
-    """Was anything modified/untracked other than this run's own outputs?
-
-    `ignore_prefixes` are repo-relative path prefixes excluded from the
-    check -- specifically, the run's own output paths. Without this, every
-    record would be stamped "dirty" simply because the record, its netlist
-    snapshot, and its corner logs are new files the run itself just wrote,
-    which would make the flag useless: a reader could not tell "the code that
-    produced this evidence differed from the named commit" (which invalidates
-    reproducibility) from "the evidence is new" (which is always true).
-    """
-    return any(
-        not any(path.startswith(prefix) for prefix in ignore_prefixes)
-        for path in porcelain_paths(status_text)
-    )
 
 
 def git_info(repo_root: Path, ignore_prefixes: tuple = ()) -> dict:
