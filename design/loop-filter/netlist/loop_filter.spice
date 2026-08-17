@@ -1,0 +1,12 @@
+** sch_path: /Users/rwalters/GitHub/sky130-pll/.loom/worktrees/issue-26/design/loop-filter/loop_filter.sch
+**.subckt loop_filter CP GND VCTRL
+*.ipin CP
+*.iopin GND
+*.opin VCTRL
+XR1 Z1 CP GND sky130_fd_pr__res_xhigh_po W=1 L=10.3 mult=1 m=1
+XC1 Z1 GND sky130_fd_pr__cap_mim_m3_1 W=163 L=163 MF=1 m=1
+XC2 CP GND sky130_fd_pr__cap_mim_m3_1 W=35 L=35 MF=1 m=1
+XR3 VCTRL CP GND sky130_fd_pr__res_xhigh_po W=1 L=5 mult=1 m=1
+XC3 VCTRL GND sky130_fd_pr__cap_mim_m3_1 W=42 L=42 MF=1 m=1
+**.ends
+.end
