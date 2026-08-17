@@ -35,7 +35,12 @@ design/
 - **`<block>`** — a short slug for the sub-block. First instance:
   `vco` (issue #24, the ring-oscillator VCO core). Sibling blocks (PFD/charge
   pump, loop filter, feedback divider) get their own `<block>/` directory
-  when their sub-issue lands.
+  when their sub-issue lands. `top` (issue #28) is the one exception to
+  "sub-block": it is the integration schematic that hierarchically
+  instantiates all four sibling blocks into the closed PLL loop, following
+  the same internal file shape (`top.sch`/`top.sym`/`DESIGN.md`/
+  `netlist/top.spice`) for consistency, even though it isn't itself a
+  sub-block.
 - **`<block>.sch` / `<block>.sym`** — hand-authored (or, once available,
   xschem-generated) schematic and symbol pair. The symbol's pin order must
   match the schematic's own `ipin`/`opin`/`iopin` declaration order, so

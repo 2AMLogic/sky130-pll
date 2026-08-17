@@ -34,13 +34,13 @@ distinction matters for what the repo is *for*:
   one block, one PDK — building out the inventory of open-PDK analog/mixed-signal
   blocks the agent fleet can design end to end.
 
-## Status: scaffold + harness. Pre-spec, pre-schematic, pre-layout, pre-silicon.
+## Status: schematic entry landed (unverified). Pre-spec-ratification, pre-simulation, pre-layout, pre-silicon.
 
 Being honest about where this actually is: this repository holds the map — a
-DRAFT target spec, the canary rules, and (as of issue #2) a working sim
-harness and layout DRC/LVS flow proven on trivial, PLL-content-free DUTs.
-There is still no PLL schematic, no PLL verification evidence, and no PLL
-layout.
+DRAFT target spec, the canary rules, a working sim harness and layout DRC/LVS
+flow proven on trivial, PLL-content-free DUTs (issue #2), and, as of issue
+#28, a full PLL schematic + netlist. There is still no PLL verification
+evidence and no PLL layout.
 
 - **Not done** — the target spec is **DRAFT and unratified** (see
   `spec/target-spec.md` and issue #1). No number in it is binding, and every
@@ -57,12 +57,26 @@ layout.
   [sky130-bandgap](https://github.com/2AMLogic/sky130-bandgap) (the sky130
   open-PDK plumbing: `volare` PDK install, `xschemrc`, `spiceinit`, and the
   sky130 `klt` decks) per issue #2. Neither harness has run against any PLL
-  content yet — that starts once #1 ratifies the spec and a schematic exists.
-- **Not started** — schematic entry, PLL verification campaigns, and
-  PLL-block layout. `measurements/` has a per-spec-row rollup
-  report/aggregator (issue #22) that reads `sim/`/`layout/` evidence, but no
-  PLL evidence exists yet for it to report — real silicon characterization
-  still waits on silicon.
+  content yet — that starts once a testbench exists (#23) and the DRAFT spec
+  rows each block targets are ratified.
+- **Done (schematic entry, unverified) — issues #24/#25/#26/#27/#28.** All
+  four PLL blocks (ring-oscillator VCO, tri-state PFD + charge pump, passive
+  loop filter, programmable integer-N feedback divider) are authored as
+  forward-designed xschem schematics against sky130's 1.8 V core devices
+  (`DR-001`) and wired into a single top-level closed-loop schematic
+  (`design/top/top.sch`), each with a connectivity-only SPICE netlist
+  snapshot checked into `design/`. Every design value in these schematics
+  (device sizing, `Icp`, `Kvco`, filter component values, divider bit width)
+  is a documented design-time target or estimate, **not** a simulated or
+  verified result — see each block's own `design/<block>/DESIGN.md` and
+  `design/top/DESIGN.md` (which also documents one known, unresolved
+  coordination gap: the loop filter's `Icp` design point predates, and does
+  not yet match, the charge pump's landed value).
+- **Not started** — PLL verification campaigns (closed-loop testbench, #23,
+  and the PVT campaign that follows) and PLL-block layout. `measurements/`
+  has a per-spec-row rollup report/aggregator (issue #22) that reads
+  `sim/`/`layout/` evidence, but no PLL evidence exists yet for it to report
+  — real silicon characterization still waits on silicon.
 
 The maturity ladder being climbed: spec-ratified → simulation-complete → layout
 DRC/LVS-clean → shuttle seat → measured silicon over temperature. This repo is
@@ -81,7 +95,7 @@ terms, or the contents of other 2AM Logic repositories belongs in this one.
 
 ```
 spec/          DRAFT target spec + numbered decision records (DR-NNN)
-design/        xschem schematics/symbols + the SPICE netlist exporter (PLL content not yet stood up)
+design/        xschem schematics/symbols + SPICE netlist snapshots (4 blocks + top-level integration, unverified)
 sim/           PVT corner harness (stood up) + append-only evidence records; no PLL testbench yet
 layout/        klt-driven DRC/LVS flow (stood up, proven on a trivial cell); PLL-block GDS not yet drawn
 measurements/  per-spec-row report aggregator (rolls up sim/+layout/ evidence) + silicon characterization (the latter empty until there is silicon)
