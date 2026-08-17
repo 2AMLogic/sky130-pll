@@ -10,6 +10,7 @@ import tempfile
 from pathlib import Path
 
 from . import corners as corners_mod
+from . import montecarlo as mc_mod
 from . import pdk as pdk_mod
 from . import report as report_mod
 from . import runner as runner_mod
@@ -212,6 +213,132 @@ def cmd_run(args: argparse.Namespace) -> int:
     return 0 if not failed else 1
 
 
+def cmd_run_mc(args: argparse.Namespace) -> int:
+    """Monte Carlo run mode -- see sim/harness/README.md's Monte Carlo
+    section and sim/harness/montecarlo.py's module docstring for the
+    sampling mechanism. Mirrors cmd_run's shape (env resolution, netlist
+    once, per-point run, evidence record) with a trial matrix instead of a
+    PVT point matrix.
+    """
+    manifest_path = _find_manifest(args.experiment)
+    manifest = json.loads(manifest_path.read_text())
+    slug = manifest_path.parent.parent.name
+    testbench_dir = manifest_path.parent
+
+    try:
+        pdk = pdk_mod.resolve(REPO_ROOT)
+    except pdk_mod.PdkNotFoundError as e:
+        print(f"run_corners.py: {e}", file=sys.stderr)
+        return 1
+    if pdk.commit_mismatch and not args.allow_pdk_mismatch:
+        print(
+            f"run_corners.py: resolved PDK commit {pdk.resolved_commit} != "
+            f"pinned {pdk.pinned_commit} -- pass --allow-pdk-mismatch to run "
+            "anyway (the record will carry the mismatch)",
+            file=sys.stderr,
+        )
+        return 1
+
+    is_subset = any(
+        v is not None
+        for v in (
+            args.mc_corner,
+            args.mc_trials,
+            args.mc_seed_base,
+            args.mc_temp,
+            args.mc_supply,
+            args.mc_mismatch,
+            args.mc_process,
+        )
+    )
+    if is_subset and not args.subset_reason and args.write:
+        print(
+            "run_corners.py: an --mc-* override needs --subset-reason to be "
+            "recorded as evidence (sim/README.md's subset-justification rule)",
+            file=sys.stderr,
+        )
+        return 1
+
+    try:
+        trials = mc_mod.build_trials(
+            manifest,
+            pdk.process_corners,
+            corner_override=args.mc_corner,
+            trials_override=args.mc_trials,
+            seed_base_override=args.mc_seed_base,
+            temp_override=args.mc_temp,
+            supply_override=args.mc_supply,
+            mismatch_override=args.mc_mismatch,
+            process_override=args.mc_process,
+        )
+    except mc_mod.McConfigError as e:
+        print(f"run_corners.py: {e}", file=sys.stderr)
+        return 1
+
+    schematic = testbench_dir / manifest["schematic"]
+    xschemrc = REPO_ROOT / "sim" / "xschemrc"
+    spiceinit = REPO_ROOT / "sim" / "spiceinit"
+
+    record_id = report_mod.make_record_id(REPO_ROOT)
+    exp_dir = manifest_path.parent.parent
+    snapshots_dir = exp_dir / "netlist-snapshots"
+    records_dir = exp_dir / "records"
+
+    with _corners_dir(args.write, exp_dir, record_id) as corners_dir:
+        print(f"run_corners.py: netlisting {schematic} ...")
+        try:
+            netlist_text = runner_mod.netlist_schematic(
+                pdk, xschemrc, schematic, corners_dir, REPO_ROOT
+            )
+        except runner_mod.NetlistError as e:
+            print(f"run_corners.py: {e}", file=sys.stderr)
+            return 1
+
+        results = []
+        for i, trial in enumerate(trials, 1):
+            print(f"run_corners.py: [{i}/{len(trials)}] {trial.corner_id} ...")
+            try:
+                result = runner_mod.run_mc_trial(pdk, spiceinit, manifest, netlist_text, trial, corners_dir)
+            except runner_mod.NetlistError as e:
+                print(f"run_corners.py: {trial.corner_id}: {e}", file=sys.stderr)
+                return 1
+            results.append(result)
+            print(f"  {'PASS' if result.passed else 'FAIL'}: {result.reason}")
+
+        failed = [r for r in results if not r.passed]
+
+        if args.write:
+            snapshots_dir.mkdir(parents=True, exist_ok=True)
+            records_dir.mkdir(parents=True, exist_ok=True)
+            snapshot_path = snapshots_dir / f"{record_id}.spice"
+            snapshot_path.write_text(netlist_text)
+
+            subset_reason = args.subset_reason if is_subset else None
+            mc_cfg = manifest.get("monte_carlo", {})
+            claim = mc_cfg.get("claim", manifest.get("claim", "(no claim stated in manifest)"))
+            record_md = report_mod.render_mc(
+                record_id=record_id,
+                slug=slug,
+                claim=claim,
+                pdk=pdk,
+                tool_versions=pdk_mod.tool_versions(),
+                repo_root=REPO_ROOT,
+                netlist_snapshot=snapshot_path,
+                trials=trials,
+                results=results,
+                subset_reason=subset_reason,
+                supersedes=args.supersedes,
+            )
+            record_path = records_dir / f"{record_id}.md"
+            record_path.write_text(record_md)
+            print(f"run_corners.py: wrote {record_path}")
+        else:
+            print("run_corners.py: --no-write -- no evidence record written")
+
+    print(f"run_corners.py: {len(results) - len(failed)}/{len(results)} trials passed")
+    return 0 if not failed else 1
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--check-env", action="store_true", help="check PDK/ngspice/xschem availability and exit")
@@ -225,6 +352,28 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--subset-reason", help="required with any override, recorded in the evidence record")
     p.add_argument("--allow-pdk-mismatch", action="store_true", help="run even if the resolved PDK commit != sim/pdk.json's pin")
     p.add_argument("--supersedes", help="record-id this run's record supersedes")
+    p.add_argument(
+        "--mc",
+        action="store_true",
+        help="run this experiment's `monte_carlo` trial matrix instead of its PVT matrix (see sim/harness/README.md)",
+    )
+    p.add_argument("--mc-corner", help="Monte Carlo base process corner override, e.g. tt")
+    p.add_argument("--mc-trials", type=int, help="Monte Carlo trial-count override")
+    p.add_argument("--mc-seed-base", type=int, help="Monte Carlo first-trial RNG seed override (seed = base + trial - 1)")
+    p.add_argument("--mc-temp", type=float, help="Monte Carlo temperature override (deg C)")
+    p.add_argument("--mc-supply", type=float, help="Monte Carlo supply override (V)")
+    p.add_argument(
+        "--mc-mismatch",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help="Monte Carlo within-die mismatch sampling override (MC_MM_SWITCH); default from the manifest",
+    )
+    p.add_argument(
+        "--mc-process",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help="Monte Carlo die-to-die process sampling override (MC_PR_SWITCH); default from the manifest",
+    )
     return p
 
 
@@ -239,4 +388,6 @@ def main(argv: list[str] | None = None) -> int:
     if not args.experiment:
         build_parser().print_help()
         return 1
+    if args.mc:
+        return cmd_run_mc(args)
     return cmd_run(args)

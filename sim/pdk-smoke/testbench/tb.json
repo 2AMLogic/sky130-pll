@@ -7,5 +7,15 @@
   "process_corners": ["tt", "ss", "ff"],
   "temps_c": [-40, 27, 125],
   "supply_nominal": 1.8,
-  "supply_tolerance": 0.1
+  "supply_tolerance": 0.1,
+  "monte_carlo": {
+    "claim": "harness self-test -- proves sim/harness's Monte Carlo trial generation + sky130 MC_MM_SWITCH/MC_PR_SWITCH statistical-sampling patching + ngspice execution work end-to-end against the sky130 PDK (issue #20). This is a plumbing claim, not a PLL statistical-spec claim: there is no PLL netlist yet, and spec/target-spec.md's statistical-shaped rows (period jitter row 9, reference spur row 10, supply sensitivity row 13) remain DRAFT/unratified.",
+    "corner": "tt",
+    "temp_c": 27,
+    "supply_v": 1.8,
+    "mismatch": true,
+    "process": true,
+    "trials": 10,
+    "seed_base": 1
+  }
 }

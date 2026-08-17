@@ -2,9 +2,9 @@
 #
 # Harness acceptance test.
 #
-#   sim/selftest.sh                unit tests + smoke PVT run (no evidence written)
-#   sim/selftest.sh --record       also mint an evidence record under sim/pdk-smoke/
-#   sim/selftest.sh --quick        unit tests + a single typical/27C/nominal point
+#   sim/selftest.sh                unit tests + smoke PVT + smoke MC run (no evidence written)
+#   sim/selftest.sh --record       also mint evidence records under sim/pdk-smoke/
+#   sim/selftest.sh --quick        unit tests + a single typical/27C/nominal PVT point + 2 MC trials
 #   sim/selftest.sh --require-pdk  fail (instead of skipping) if the PDK is absent
 #
 # Exit codes: 0 pass (or skipped sim stage), 1 something failed.
@@ -14,7 +14,8 @@
 # harness-bootstrap rule. Deviation: this repo's target experiment is
 # `pdk-smoke` (sim/pdk.json's process corners), not gf180-pll's
 # `harness-selftest`; gf180-pll's `--corners typical` becomes `--corners tt`
-# here (sky130's own corner naming, see sim/pdk.json).
+# here (sky130's own corner naming, see sim/pdk.json). The Monte Carlo stage
+# (issue #20) has no gf180-pll analogue and is added fresh.
 
 set -uo pipefail
 
@@ -33,14 +34,14 @@ for arg in "$@"; do
   esac
 done
 
-echo "== 1/3 harness unit tests (no PDK required) =="
+echo "== 1/4 harness unit tests (no PDK required) =="
 if ! python3 -m unittest discover -s "${SIM_DIR}/tests" -t "${SIM_DIR}/tests"; then
   echo "FAIL: harness unit tests"
   exit 1
 fi
 
 echo
-echo "== 2/3 environment =="
+echo "== 2/4 environment =="
 if ! python3 "${SIM_DIR}/run_corners.py" --check-env; then
   if [ "${REQUIRE_PDK}" -eq 1 ]; then
     echo "FAIL: ngspice/xschem and/or the sky130 PDK are not available"
@@ -54,7 +55,7 @@ if ! python3 "${SIM_DIR}/run_corners.py" --check-env; then
 fi
 
 echo
-echo "== 3/3 end-to-end PVT smoke run =="
+echo "== 3/4 end-to-end PVT smoke run =="
 args=(pdk-smoke)
 [ "${QUICK}" -eq 1 ] && args+=(--corners tt --temps 27 --supply-tol 0)
 [ "${RECORD}" -eq 1 ] || args+=(--no-write)
@@ -66,6 +67,23 @@ fi
 
 if ! python3 "${SIM_DIR}/run_corners.py" "${args[@]}"; then
   echo "FAIL: PVT smoke run"
+  exit 1
+fi
+
+echo
+echo "== 4/4 end-to-end Monte Carlo smoke run =="
+mc_args=(pdk-smoke --mc)
+[ "${QUICK}" -eq 1 ] && mc_args+=(--mc-trials 2)
+[ "${RECORD}" -eq 1 ] || mc_args+=(--no-write)
+# --quick is deliberately a trial-count subset of the manifest's monte_carlo
+# config; sim/README.md demands a written reason before a subset run may be
+# recorded as evidence.
+if [ "${QUICK}" -eq 1 ] && [ "${RECORD}" -eq 1 ]; then
+  mc_args+=(--subset-reason "sim/selftest.sh --quick: 2-trial harness smoke test, not a design claim")
+fi
+
+if ! python3 "${SIM_DIR}/run_corners.py" "${mc_args[@]}"; then
+  echo "FAIL: Monte Carlo smoke run"
   exit 1
 fi
 
