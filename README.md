@@ -59,7 +59,10 @@ layout.
   sky130 `klt` decks) per issue #2. Neither harness has run against any PLL
   content yet — that starts once #1 ratifies the spec and a schematic exists.
 - **Not started** — schematic entry, PLL verification campaigns, and
-  PLL-block layout. `measurements/` stays empty until there is silicon.
+  PLL-block layout. `measurements/` has a per-spec-row rollup
+  report/aggregator (issue #22) that reads `sim/`/`layout/` evidence, but no
+  PLL evidence exists yet for it to report — real silicon characterization
+  still waits on silicon.
 
 The maturity ladder being climbed: spec-ratified → simulation-complete → layout
 DRC/LVS-clean → shuttle seat → measured silicon over temperature. This repo is
@@ -81,7 +84,7 @@ spec/          DRAFT target spec + numbered decision records (DR-NNN)
 design/        xschem schematics/symbols + the SPICE netlist exporter (PLL content not yet stood up)
 sim/           PVT corner harness (stood up) + append-only evidence records; no PLL testbench yet
 layout/        klt-driven DRC/LVS flow (stood up, proven on a trivial cell); PLL-block GDS not yet drawn
-measurements/  silicon characterization (empty until there is silicon)
+measurements/  per-spec-row report aggregator (rolls up sim/+layout/ evidence) + silicon characterization (the latter empty until there is silicon)
 ```
 
 Start with `spec/target-spec.md` for *what is being targeted and why nothing is
