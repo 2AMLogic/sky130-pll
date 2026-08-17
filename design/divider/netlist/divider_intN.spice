@@ -1,0 +1,44 @@
+** sch_path: /Users/rwalters/GitHub/sky130-pll/.loom/worktrees/issue-27/design/divider/divider_intN.sch
+**.subckt divider_intN VDD GND CLK RESETB NSEL0 NSEL1 NSEL2 NSEL3 NSEL4 NSEL5 FBCLK
+*.iopin VDD
+*.iopin GND
+*.ipin CLK
+*.ipin RESETB
+*.ipin NSEL0
+*.ipin NSEL1
+*.ipin NSEL2
+*.ipin NSEL3
+*.ipin NSEL4
+*.ipin NSEL5
+*.opin FBCLK
+CNT0 CLK D0 RESETB GND GND VDD VDD Q0 sky130_fd_sc_hd__dfrtp_2
+LDMUX0 NQ0 NSEL0 ZERO GND GND VDD VDD D0 sky130_fd_sc_hd__mux2_2
+QINV0 Q0 GND GND VDD VDD NQ0 sky130_fd_sc_hd__inv_2
+CNT1 CLK D1 RESETB GND GND VDD VDD Q1 sky130_fd_sc_hd__dfrtp_2
+LDMUX1 DDEC1 NSEL1 ZERO GND GND VDD VDD D1 sky130_fd_sc_hd__mux2_2
+DECXOR1 Q1 NQ0 GND GND VDD VDD DDEC1 sky130_fd_sc_hd__xor2_2
+QINV1 Q1 GND GND VDD VDD NQ1 sky130_fd_sc_hd__inv_2
+CNT2 CLK D2 RESETB GND GND VDD VDD Q2 sky130_fd_sc_hd__dfrtp_2
+LDMUX2 DDEC2 NSEL2 ZERO GND GND VDD VDD D2 sky130_fd_sc_hd__mux2_2
+DECXOR2 Q2 BOR2 GND GND VDD VDD DDEC2 sky130_fd_sc_hd__xor2_2
+BORAND2 NQ0 NQ1 GND GND VDD VDD BOR2 sky130_fd_sc_hd__and2_2
+QINV2 Q2 GND GND VDD VDD NQ2 sky130_fd_sc_hd__inv_2
+CNT3 CLK D3 RESETB GND GND VDD VDD Q3 sky130_fd_sc_hd__dfrtp_2
+LDMUX3 DDEC3 NSEL3 ZERO GND GND VDD VDD D3 sky130_fd_sc_hd__mux2_2
+DECXOR3 Q3 BOR3 GND GND VDD VDD DDEC3 sky130_fd_sc_hd__xor2_2
+BORAND3 BOR2 NQ2 GND GND VDD VDD BOR3 sky130_fd_sc_hd__and2_2
+QINV3 Q3 GND GND VDD VDD NQ3 sky130_fd_sc_hd__inv_2
+CNT4 CLK D4 RESETB GND GND VDD VDD Q4 sky130_fd_sc_hd__dfrtp_2
+LDMUX4 DDEC4 NSEL4 ZERO GND GND VDD VDD D4 sky130_fd_sc_hd__mux2_2
+DECXOR4 Q4 BOR4 GND GND VDD VDD DDEC4 sky130_fd_sc_hd__xor2_2
+BORAND4 BOR3 NQ3 GND GND VDD VDD BOR4 sky130_fd_sc_hd__and2_2
+QINV4 Q4 GND GND VDD VDD NQ4 sky130_fd_sc_hd__inv_2
+CNT5 CLK D5 RESETB GND GND VDD VDD Q5 sky130_fd_sc_hd__dfrtp_2
+LDMUX5 DDEC5 NSEL5 ZERO GND GND VDD VDD D5 sky130_fd_sc_hd__mux2_2
+DECXOR5 Q5 BOR5 GND GND VDD VDD DDEC5 sky130_fd_sc_hd__xor2_2
+BORAND5 BOR4 NQ4 GND GND VDD VDD BOR5 sky130_fd_sc_hd__and2_2
+QINV5 Q5 GND GND VDD VDD NQ5 sky130_fd_sc_hd__inv_2
+ZDET BOR5 NQ5 GND GND VDD VDD ZERO sky130_fd_sc_hd__and2_2
+FBFF CLK ZERO GND GND VDD VDD FBCLK sky130_fd_sc_hd__dfxtp_2
+**.ends
+.end
