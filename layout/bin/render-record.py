@@ -41,21 +41,12 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
-from scripts.git_status import is_dirty, porcelain_paths  # noqa: E402
+from scripts.git_status import is_dirty, porcelain_paths, run_git  # noqa: E402
 
 
 def _load(path: Path) -> dict:
     with path.open() as f:
         return json.load(f)
-
-
-def _git(repo_root: Path, *args: str) -> str:
-    return subprocess.run(
-        ["git", "-C", str(repo_root), *args],
-        check=True,
-        capture_output=True,
-        text=True,
-    ).stdout.strip()
 
 
 def main() -> int:
@@ -77,15 +68,15 @@ def main() -> int:
     lvs_bad_dev = _load(out_dir / "lvs.broken-device.json")
     lvs_bad_topo = _load(out_dir / "lvs.broken-topology.json")
 
-    sha = _git(args.repo_root, "rev-parse", "HEAD")
-    branch = _git(args.repo_root, "rev-parse", "--abbrev-ref", "HEAD")
+    sha = run_git(args.repo_root, "rev-parse", "HEAD")
+    branch = run_git(args.repo_root, "rev-parse", "--abbrev-ref", "HEAD")
     report_rel = out_dir.resolve().relative_to(args.repo_root.resolve()).as_posix() + "/"
     # --untracked-files=all is load-bearing: git's default collapses a wholly
     # untracked tree to its parent directory ("?? layout/trivial-cell/
     # reports/"), which no per-record prefix can match, so every record would
     # read dirty again.
     dirty = is_dirty(
-        _git(args.repo_root, "status", "--porcelain", "--untracked-files=all"), report_rel
+        run_git(args.repo_root, "status", "--porcelain", "--untracked-files=all"), report_rel
     )
 
     klt_version = subprocess.run(

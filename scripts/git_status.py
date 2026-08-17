@@ -1,9 +1,11 @@
-"""Shared `git status --porcelain` parsing for evidence-record renderers.
+"""Shared `git status --porcelain` parsing and invocation for evidence-record
+renderers.
 
 Used by both `sim/harness/report.py` (the simulation evidence trail) and
 `layout/bin/render-record.py` (the layout DRC/LVS evidence trail) to answer
 the same question for two independent record renderers: "was the tree dirty
-when this run started, ignoring the run's own new output files?"
+when this run started, ignoring the run's own new output files?" -- and to
+run the `git -C <repo_root> <args>` subprocess call that answers it.
 
 Lives at the repo root (not under `sim/` or `layout/`) because those two
 trees are otherwise independent per this repo's harness-bootstrap provenance
@@ -11,6 +13,23 @@ convention (see CLAUDE.md) -- this is the one piece of logic both need.
 """
 
 from __future__ import annotations
+
+import subprocess
+from pathlib import Path
+
+
+def run_git(repo_root: Path, *args: str) -> str:
+    """Run `git -C <repo_root> <args>` and return its stripped stdout.
+
+    Raises `subprocess.CalledProcessError` on a nonzero exit, matching both
+    call sites' prior standalone wrappers.
+    """
+    return subprocess.run(
+        ["git", "-C", str(repo_root), *args],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.strip()
 
 
 def porcelain_paths(status_text: str) -> list:

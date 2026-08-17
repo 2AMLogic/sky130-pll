@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import hashlib
 import platform
-import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -25,7 +24,7 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
-from scripts.git_status import is_dirty, porcelain_paths  # noqa: E402
+from scripts.git_status import is_dirty, porcelain_paths, run_git  # noqa: E402
 
 
 def sha256_file(path: Path) -> str:
@@ -37,21 +36,12 @@ def sha256_file(path: Path) -> str:
 def git_info(repo_root: Path, ignore_prefixes: tuple = ()) -> dict:
     """Resolve HEAD and whether the tree was dirty when the run started."""
 
-    def run(*args: str) -> str:
-        out = subprocess.run(
-            ["git", "-C", str(repo_root), *args],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        return out.stdout.strip()
-
-    sha = run("rev-parse", "HEAD")
+    sha = run_git(repo_root, "rev-parse", "HEAD")
     # --untracked-files=all is load-bearing: git's default collapses a wholly
     # untracked tree to its parent directory ("?? sim/pdk-smoke/corners/"),
     # which no per-record prefix can match, so every record would read dirty
     # again.
-    status = run("status", "--porcelain", "--untracked-files=all")
+    status = run_git(repo_root, "status", "--porcelain", "--untracked-files=all")
     return {"sha": sha, "dirty": is_dirty(status, ignore_prefixes)}
 
 
