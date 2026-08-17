@@ -51,6 +51,60 @@ def make_record_id(repo_root: Path) -> str:
     return f"{ts}-{sha}"
 
 
+def _render_header(
+    *,
+    lines_append,
+    record_id: str,
+    slug: str,
+    claim: str,
+    pdk: ResolvedPdk,
+    tool_versions: dict,
+    git: dict,
+    netlist_sha: str,
+) -> None:
+    """Append the `# Record` through `Host` lines shared by `render` (PVT)
+    and `render_mc` (Monte Carlo) -- same schema, see sim/README.md.
+    """
+    a = lines_append
+    a(f"# Record {record_id}")
+    a("")
+    a(f"- **Record ID**: {record_id}")
+    a(f"- **Claim**: {claim}")
+    a(
+        f"- **Netlist provenance**: schematic (`sim/{slug}/testbench/`), "
+        f"frozen at `sim/{slug}/netlist-snapshots/{record_id}.spice`, "
+        f"SHA-256 `{netlist_sha}`"
+    )
+    a("- **Environment provenance**:")
+    a(f"  - PDK: volare `{pdk.variant}`, open_pdks `{pdk.resolved_commit or 'unknown'}`"
+      + (f" (**MISMATCH** vs. pinned `{pdk.pinned_commit}`)" if pdk.commit_mismatch else ""))
+    a(f"  - Model library: `{pdk.ngspice_lib}`")
+    a(f"  - Simulator: {tool_versions.get('ngspice') or 'unknown'}; "
+      f"schematic capture: {tool_versions.get('xschem') or 'unknown'}")
+    a(f"  - Repo commit: `{git['sha']}`" + (" (dirty)" if git["dirty"] else ""))
+    a(f"  - Host: {platform.system()} {platform.machine()}")
+
+
+def _render_footer(
+    *,
+    lines_append,
+    slug: str,
+    record_id: str,
+    supersedes: str | None,
+) -> None:
+    """Append the `Links` / `Timestamp / author` / `Supersedes` lines shared
+    by `render` (PVT) and `render_mc` (Monte Carlo) -- same schema, see
+    sim/README.md.
+    """
+    a = lines_append
+    a("- **Links**:")
+    a(f"  - Testbench: `sim/{slug}/testbench/`")
+    a(f"  - Netlist snapshot: `sim/{slug}/netlist-snapshots/{record_id}.spice`")
+    a(f"  - Raw logs: `sim/{slug}/corners/{record_id}/`")
+    a(f"- **Timestamp / author**: {datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')}, agent-builder")
+    a(f"- **Supersedes**: {supersedes or '(none -- first record for this claim)'}")
+
+
 def render(
     *,
     record_id: str,
@@ -83,23 +137,16 @@ def render(
 
     lines: list[str] = []
     a = lines.append
-    a(f"# Record {record_id}")
-    a("")
-    a(f"- **Record ID**: {record_id}")
-    a(f"- **Claim**: {claim}")
-    a(
-        f"- **Netlist provenance**: schematic (`sim/{slug}/testbench/`), "
-        f"frozen at `sim/{slug}/netlist-snapshots/{record_id}.spice`, "
-        f"SHA-256 `{netlist_sha}`"
+    _render_header(
+        lines_append=a,
+        record_id=record_id,
+        slug=slug,
+        claim=claim,
+        pdk=pdk,
+        tool_versions=tool_versions,
+        git=git,
+        netlist_sha=netlist_sha,
     )
-    a("- **Environment provenance**:")
-    a(f"  - PDK: volare `{pdk.variant}`, open_pdks `{pdk.resolved_commit or 'unknown'}`"
-      + (f" (**MISMATCH** vs. pinned `{pdk.pinned_commit}`)" if pdk.commit_mismatch else ""))
-    a(f"  - Model library: `{pdk.ngspice_lib}`")
-    a(f"  - Simulator: {tool_versions.get('ngspice') or 'unknown'}; "
-      f"schematic capture: {tool_versions.get('xschem') or 'unknown'}")
-    a(f"  - Repo commit: `{git['sha']}`" + (" (dirty)" if git["dirty"] else ""))
-    a(f"  - Host: {platform.system()} {platform.machine()}")
     a("- **Corner matrix run**:")
     corners_used = sorted({p.corner for p in points})
     temps_used = sorted({p.temp_c for p in points})
@@ -131,12 +178,7 @@ def render(
     a("")
     overall = "PASS" if not failed else "FAIL"
     a(f"  - **Overall: {overall}** ({len(passed)}/{len(results)} points passed)")
-    a("- **Links**:")
-    a(f"  - Testbench: `sim/{slug}/testbench/`")
-    a(f"  - Netlist snapshot: `sim/{slug}/netlist-snapshots/{record_id}.spice`")
-    a(f"  - Raw logs: `sim/{slug}/corners/{record_id}/`")
-    a(f"- **Timestamp / author**: {datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')}, agent-builder")
-    a(f"- **Supersedes**: {supersedes or '(none -- first record for this claim)'}")
+    _render_footer(lines_append=a, slug=slug, record_id=record_id, supersedes=supersedes)
     a("")
     return "\n".join(lines)
 
@@ -184,23 +226,16 @@ def render_mc(
 
     lines: list[str] = []
     a = lines.append
-    a(f"# Record {record_id}")
-    a("")
-    a(f"- **Record ID**: {record_id}")
-    a(f"- **Claim**: {claim}")
-    a(
-        f"- **Netlist provenance**: schematic (`sim/{slug}/testbench/`), "
-        f"frozen at `sim/{slug}/netlist-snapshots/{record_id}.spice`, "
-        f"SHA-256 `{netlist_sha}`"
+    _render_header(
+        lines_append=a,
+        record_id=record_id,
+        slug=slug,
+        claim=claim,
+        pdk=pdk,
+        tool_versions=tool_versions,
+        git=git,
+        netlist_sha=netlist_sha,
     )
-    a("- **Environment provenance**:")
-    a(f"  - PDK: volare `{pdk.variant}`, open_pdks `{pdk.resolved_commit or 'unknown'}`"
-      + (f" (**MISMATCH** vs. pinned `{pdk.pinned_commit}`)" if pdk.commit_mismatch else ""))
-    a(f"  - Model library: `{pdk.ngspice_lib}`")
-    a(f"  - Simulator: {tool_versions.get('ngspice') or 'unknown'}; "
-      f"schematic capture: {tool_versions.get('xschem') or 'unknown'}")
-    a(f"  - Repo commit: `{git['sha']}`" + (" (dirty)" if git["dirty"] else ""))
-    a(f"  - Host: {platform.system()} {platform.machine()}")
     a("- **Statistical sampling point**:")
     a(f"  - Base process corner: {first.corner} (netlisted as `{first.lib_corner}`)")
     a(f"  - Temperature (deg C): {first.temp_c:g}")
@@ -243,11 +278,6 @@ def render_mc(
     a("")
     overall = "PASS" if not failed else "FAIL"
     a(f"  - **Overall: {overall}** ({len(passed)}/{len(results)} trials passed)")
-    a("- **Links**:")
-    a(f"  - Testbench: `sim/{slug}/testbench/`")
-    a(f"  - Netlist snapshot: `sim/{slug}/netlist-snapshots/{record_id}.spice`")
-    a(f"  - Raw logs: `sim/{slug}/corners/{record_id}/`")
-    a(f"- **Timestamp / author**: {datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')}, agent-builder")
-    a(f"- **Supersedes**: {supersedes or '(none -- first record for this claim)'}")
+    _render_footer(lines_append=a, slug=slug, record_id=record_id, supersedes=supersedes)
     a("")
     return "\n".join(lines)
