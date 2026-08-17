@@ -53,6 +53,7 @@ sim/
   | Slug | Claim under test | Issue |
   |---|---|---|
   | `pdk-smoke` | does xschem+ngspice+sky130 run this DUT to completion across a real process/temperature/supply sweep — the harness's own plumbing self-test, not a PLL design claim | #2 |
+  | `pdk-smoke` (`--mc`) | does the sky130 `MC_MM_SWITCH`/`MC_PR_SWITCH` statistical-sampling mechanism run this DUT to completion, seed by seed — the Monte Carlo harness's own plumbing self-test, not a PLL statistical-spec claim | #20 |
 
   New campaigns add rows here as they are created; the list is descriptive,
   not a closed set. The first PLL-specific campaign lands with whichever
@@ -63,8 +64,15 @@ sim/
   nothing under `records/` is ever edited in place. If the tree was dirty at
   run time, the record's **Environment provenance** field says so.
 
-- **`<corner-id>`** — `<corner>_<temp>c_<supply>v`, e.g. `ss_-40c_1.62v.log`,
-  `tt_27c_1.80v.log`. Supply is written to two decimals.
+- **`<corner-id>`** — the naming convention depends on what mode produced the
+  record, but both share the same `corners/<record-id>/` directory:
+  - **PVT points**: `<corner>_<temp>c_<supply>v`, e.g. `ss_-40c_1.62v.log`,
+    `tt_27c_1.80v.log`. Supply is written to two decimals.
+  - **Monte Carlo trials** (`--mc`, see `sim/harness/README.md`'s Monte Carlo
+    section): `mc<trial>_seed<seed>_<lib-corner>_<temp>c_<supply>v`, e.g.
+    `mc001_seed1_tt_mm_27c_1.80v.log`. `<lib-corner>` is the `.lib` section
+    actually netlisted against (the corner, with `_mm` appended when
+    mismatch sampling is enabled).
 
 - **`testbench/`** is not versioned per record — it holds the current
   testbench manifest/schematic used to generate records. A testbench change
@@ -96,6 +104,30 @@ single process corner) is allowed **only** with an in-record justification —
 its text becomes part of the record. "The sim was slow" is not a
 justification; "fast selftest pass proving the harness runs, not a design
 claim — see sim/pdk-smoke/records/<id>.md for the full grid" is.
+
+## Monte Carlo evidence
+
+`sim/run_corners.py <slug> --mc` (issue #20) runs a statistical-variation
+campaign instead of a PVT sweep: many trials at one fixed PVT point, each
+sampling sky130's own `MC_MM_SWITCH`/`MC_PR_SWITCH`-gated device variation
+with a distinct ngspice RNG seed — see `sim/harness/README.md`'s Monte Carlo
+section for the manifest schema and sampling mechanism. Records land in the
+same `records/<record-id>.md` / `netlist-snapshots/<record-id>.spice` /
+`corners/<record-id>/` tree a PVT record uses (same append-only/retention
+rules apply); `sim/harness/report.render_mc` renders a trial table (trial,
+seed, verdict, detail) and the campaign's sampling configuration (base
+corner, temperature, supply, which switches were on, trial count and seed
+range) in place of the PVT per-point matrix.
+
+**This capability is scoped to the harness/methodology, not a PLL claim.**
+`spec/target-spec.md`'s statistical-shaped rows (period jitter row 9,
+reference spur row 10, supply sensitivity row 13) are DRAFT/unratified, and
+there is no PLL netlist yet — an `--mc` record produced today (e.g.
+`pdk-smoke`'s) is a harness plumbing check ("does the sky130 statistical-
+sampling mechanism run this DUT to completion, seed by seed, with each seed
+producing a distinct draw?"), not a statistical-spec measurement. The first
+real PLL statistical-row record is a follow-up issue, once #14 (the PLL
+design) exists and a targeted row is ratified.
 
 ## Summary record format
 
