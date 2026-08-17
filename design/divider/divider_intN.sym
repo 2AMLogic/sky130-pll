@@ -1,0 +1,57 @@
+v {xschem version=3.4.7 file_version=1.2
+* divider_intN.sym -- block symbol for the sky130 PLL programmable integer-N
+* feedback divider (issue #27). Hand-authored to match xschem's own
+* "generate symbol from schematic" convention: pin order in this file (VDD,
+* GND, CLK, RESETB, NSEL0..NSEL5, FBCLK) matches the
+* iopin/ipin/.../opin declaration order in divider_intN.sch, so @pinlist
+* nets correctly when this symbol is instantiated over that schematic (used
+* by the future integration sub-issue tracked on #14 -- not instantiated
+* anywhere in this issue's own scope).
+}
+G {}
+K {type=subcircuit
+format="X@name @pinlist @symname"
+template="name=x1"
+}
+V {}
+S {}
+E {}
+L 4 -100 -160 100 -160 {}
+L 4 100 -160 100 160 {}
+L 4 100 160 -100 160 {}
+L 4 -100 160 -100 -160 {}
+L 4 0 -180 0 -160 {}
+L 4 0 160 0 180 {}
+L 4 -130 -140 -100 -140 {}
+L 4 -130 -100 -100 -100 {}
+L 4 -130 -60 -100 -60 {}
+L 4 -130 -20 -100 -20 {}
+L 4 -130 20 -100 20 {}
+L 4 -130 60 -100 60 {}
+L 4 -130 100 -100 100 {}
+L 4 -130 140 -100 140 {}
+L 4 100 0 130 0 {}
+B 5 -2.5 -182.5 2.5 -177.5 {name=VDD dir=inout}
+B 5 -2.5 177.5 2.5 182.5 {name=GND dir=inout}
+B 5 -132.5 -142.5 -127.5 -137.5 {name=CLK dir=in clock=1}
+B 5 -132.5 -102.5 -127.5 -97.5 {name=RESETB dir=in}
+B 5 -132.5 -62.5 -127.5 -57.5 {name=NSEL0 dir=in}
+B 5 -132.5 -22.5 -127.5 -17.5 {name=NSEL1 dir=in}
+B 5 -132.5 17.5 -127.5 22.5 {name=NSEL2 dir=in}
+B 5 -132.5 57.5 -127.5 62.5 {name=NSEL3 dir=in}
+B 5 -132.5 97.5 -127.5 102.5 {name=NSEL4 dir=in}
+B 5 -132.5 137.5 -127.5 142.5 {name=NSEL5 dir=in}
+B 5 127.5 -2.5 132.5 2.5 {name=FBCLK dir=out}
+T {@symname} -45 -10 0 0 0.25 0.25 {}
+T {@name} -95 -170 0 0 0.2 0.2 {}
+T {VDD} -12 -175 0 1 0.2 0.2 {}
+T {GND} -12 168 0 1 0.2 0.2 {}
+T {CLK} -125 -148 0 0 0.2 0.2 {}
+T {RESETB} -125 -108 0 0 0.2 0.2 {}
+T {NSEL0} -125 -68 0 0 0.2 0.2 {}
+T {NSEL1} -125 -28 0 0 0.2 0.2 {}
+T {NSEL2} -125 12 0 0 0.2 0.2 {}
+T {NSEL3} -125 52 0 0 0.2 0.2 {}
+T {NSEL4} -125 92 0 0 0.2 0.2 {}
+T {NSEL5} -125 132 0 0 0.2 0.2 {}
+T {FBCLK} 105 8 0 0 0.2 0.2 {}
