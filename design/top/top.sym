@@ -1,0 +1,56 @@
+v {xschem version=3.4.7 file_version=1.2
+* top.sym -- block symbol for the sky130 PLL top-level integration
+* schematic (issue #28). Hand-authored to match xschem's own "generate
+* symbol from schematic" convention: pin order in this file (VDD, GND,
+* REF, RESETB, NSEL0..NSEL5, CLK) matches the iopin/ipin/opin declaration
+* order in top.sch, so @pinlist nets correctly if this symbol is ever
+* instantiated by a still-higher-level schematic (e.g. a future closed-loop
+* testbench, #23) -- not instantiated anywhere in this issue's own scope.
+}
+G {}
+K {type=subcircuit
+format="X@name @pinlist @symname"
+template="name=x1"
+}
+V {}
+S {}
+E {}
+L 4 -100 -220 100 -220 {}
+L 4 100 -220 100 220 {}
+L 4 100 220 -100 220 {}
+L 4 -100 220 -100 -220 {}
+L 4 0 -240 0 -220 {}
+L 4 0 220 0 240 {}
+L 4 -130 -180 -100 -180 {}
+L 4 -130 -140 -100 -140 {}
+L 4 -130 -100 -100 -100 {}
+L 4 -130 -60 -100 -60 {}
+L 4 -130 -20 -100 -20 {}
+L 4 -130 20 -100 20 {}
+L 4 -130 60 -100 60 {}
+L 4 -130 100 -100 100 {}
+L 4 100 0 130 0 {}
+B 5 -2.5 -242.5 2.5 -237.5 {name=VDD dir=inout}
+B 5 -2.5 237.5 2.5 242.5 {name=GND dir=inout}
+B 5 -132.5 -182.5 -127.5 -177.5 {name=REF dir=in clock=1}
+B 5 -132.5 -142.5 -127.5 -137.5 {name=RESETB dir=in}
+B 5 -132.5 -102.5 -127.5 -97.5 {name=NSEL0 dir=in}
+B 5 -132.5 -62.5 -127.5 -57.5 {name=NSEL1 dir=in}
+B 5 -132.5 -22.5 -127.5 -17.5 {name=NSEL2 dir=in}
+B 5 -132.5 17.5 -127.5 22.5 {name=NSEL3 dir=in}
+B 5 -132.5 57.5 -127.5 62.5 {name=NSEL4 dir=in}
+B 5 -132.5 97.5 -127.5 102.5 {name=NSEL5 dir=in}
+B 5 127.5 -2.5 132.5 2.5 {name=CLK dir=out clock=1}
+T {@symname} -35 -10 0 0 0.3 0.3 {}
+T {@name} -95 -230 0 0 0.2 0.2 {}
+T {VDD} -12 -235 0 1 0.2 0.2 {}
+T {GND} -12 228 0 1 0.2 0.2 {}
+T {REF} -125 -190 0 0 0.2 0.2 {}
+T {RESETB} -125 -150 0 0 0.2 0.2 {}
+T {NSEL0} -125 -110 0 0 0.2 0.2 {}
+T {NSEL1} -125 -70 0 0 0.2 0.2 {}
+T {NSEL2} -125 -30 0 0 0.2 0.2 {}
+T {NSEL3} -125 10 0 0 0.2 0.2 {}
+T {NSEL4} -125 50 0 0 0.2 0.2 {}
+T {NSEL5} -125 90 0 0 0.2 0.2 {}
+T {CLK} 105 8 0 0 0.2 0.2 {}
