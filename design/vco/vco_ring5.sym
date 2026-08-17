@@ -1,0 +1,35 @@
+v {xschem version=3.4.7 file_version=1.2
+* vco_ring5.sym -- block symbol for the sky130 PLL ring-oscillator VCO core
+* (issue #24). Hand-authored to match xschem's own "generate symbol from
+* schematic" convention: pin order in this file (VDD, GND, VCTRL, CLK)
+* matches the ipin/opin/iopin declaration order in vco_ring5.sch, so
+* @pinlist nets correctly when this symbol is instantiated over that
+* schematic (used by the future integration sub-issue tracked on #14 --
+* not instantiated anywhere in this issue's own scope).
+}
+G {}
+K {type=subcircuit
+format="X@name @pinlist @symname"
+template="name=x1"
+}
+V {}
+S {}
+E {}
+L 4 -100 -60 100 -60 {}
+L 4 100 -60 100 60 {}
+L 4 100 60 -100 60 {}
+L 4 -100 60 -100 -60 {}
+L 4 0 -80 0 -60 {}
+L 4 0 60 0 80 {}
+L 4 -130 0 -100 0 {}
+L 4 100 0 130 0 {}
+B 5 -2.5 -82.5 2.5 -77.5 {name=VDD dir=inout}
+B 5 -2.5 77.5 2.5 82.5 {name=GND dir=inout}
+B 5 -132.5 -2.5 -127.5 2.5 {name=VCTRL dir=in}
+B 5 127.5 -2.5 132.5 2.5 {name=CLK dir=out}
+T {@symname} -35 -10 0 0 0.3 0.3 {}
+T {@name} -95 -70 0 0 0.2 0.2 {}
+T {VDD} -12 -75 0 1 0.2 0.2 {}
+T {GND} -12 68 0 1 0.2 0.2 {}
+T {VCTRL} -125 8 0 0 0.2 0.2 {}
+T {CLK} 105 8 0 0 0.2 0.2 {}
