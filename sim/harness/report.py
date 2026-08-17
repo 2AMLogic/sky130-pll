@@ -24,7 +24,7 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
-from scripts.git_status import is_dirty, porcelain_paths, run_git  # noqa: E402
+from scripts.git_status import is_dirty, run_git  # noqa: E402
 
 
 def sha256_file(path: Path) -> str:

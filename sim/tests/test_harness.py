@@ -13,11 +13,15 @@ from pathlib import Path
 SIM_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(SIM_DIR))
 
+REPO_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO_ROOT))
+
 from harness import cli  # noqa: E402
 from harness import corners  # noqa: E402
 from harness import pdk as pdk_mod  # noqa: E402
 from harness import report  # noqa: E402
 from harness import runner  # noqa: E402
+from scripts.git_status import porcelain_paths  # noqa: E402
 
 
 class SupplyPointsTests(unittest.TestCase):
@@ -86,7 +90,7 @@ class DirtyFlagTests(unittest.TestCase):
 
     def test_porcelain_paths_handles_renames_and_quoting(self):
         status = 'R  sim/old.py -> sim/new.py\n?? "sim/spaced name.py"\n'
-        self.assertEqual(report.porcelain_paths(status), ["sim/new.py", "sim/spaced name.py"])
+        self.assertEqual(porcelain_paths(status), ["sim/new.py", "sim/spaced name.py"])
 
 
 class BuildMatrixTests(unittest.TestCase):

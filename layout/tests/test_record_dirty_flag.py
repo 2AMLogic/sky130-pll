@@ -15,10 +15,16 @@ carry no information at all.
 from __future__ import annotations
 
 import importlib.util
+import sys
 import unittest
 from pathlib import Path
 
 RENDER_RECORD_PY = Path(__file__).resolve().parents[1] / "bin" / "render-record.py"
+REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from scripts.git_status import porcelain_paths  # noqa: E402
 
 _spec = importlib.util.spec_from_file_location("render_record", RENDER_RECORD_PY)
 render_record = importlib.util.module_from_spec(_spec)
@@ -68,7 +74,7 @@ class DirtyFlagTests(unittest.TestCase):
     def test_porcelain_paths_handles_renames_and_quoting(self):
         status = 'R  layout/a.py -> layout/b.py\n?? "layout/spaced name.py"\n'
         self.assertEqual(
-            render_record.porcelain_paths(status),
+            porcelain_paths(status),
             ["layout/b.py", "layout/spaced name.py"],
         )
 
