@@ -13,6 +13,7 @@ from pathlib import Path
 SIM_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(SIM_DIR))
 
+from harness import cli  # noqa: E402
 from harness import corners  # noqa: E402
 from harness import pdk as pdk_mod  # noqa: E402
 from harness import report  # noqa: E402
@@ -187,6 +188,53 @@ class PdkCommitParsingTests(unittest.TestCase):
             plain = Path(tmp) / "sky130A"
             plain.mkdir()
             self.assertIsNone(pdk_mod._commit_from_variant_dir(plain))
+
+
+class SubsetReasonGateOrderingTests(unittest.TestCase):
+    """The "an override needs --subset-reason" gate has to be checked *before*
+    the corner matrix / MC trial list is built. Otherwise a run that supplies
+    both an invalid override value and no `--subset-reason` reports the invalid
+    value instead of the missing reason -- the operator fixes the corner name,
+    re-runs, and only then learns a reason was required. Pinned here because
+    the ordering is invisible to any test that supplies only one of the two
+    errors at a time."""
+
+    class _StubPdk:
+        process_corners = ("tt",)
+        commit_mismatch = False
+        resolved_commit = "0" * 40
+        pinned_commit = "0" * 40
+
+    def _stderr_of(self, argv):
+        import contextlib
+        import io
+        from unittest import mock
+
+        args = cli.build_parser().parse_args(argv)
+        buf = io.StringIO()
+        with mock.patch.object(cli.pdk_mod, "resolve", return_value=self._StubPdk()):
+            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(buf):
+                rc = cli.cmd_run_mc(args) if args.mc else cli.cmd_run(args)
+        return rc, buf.getvalue()
+
+    def test_missing_subset_reason_outranks_an_invalid_corner(self):
+        rc, err = self._stderr_of(["pdk-smoke", "--corners", "bogus_corner"])
+        self.assertEqual(rc, 1)
+        self.assertIn("needs --subset-reason", err)
+        self.assertNotIn("bogus_corner", err)
+
+    def test_missing_subset_reason_outranks_an_invalid_mc_corner(self):
+        rc, err = self._stderr_of(["pdk-smoke", "--mc", "--mc-corner", "bogus_corner"])
+        self.assertEqual(rc, 1)
+        self.assertIn("needs --subset-reason", err)
+        self.assertNotIn("bogus_corner", err)
+
+    def test_invalid_corner_is_still_reported_once_a_reason_is_given(self):
+        rc, err = self._stderr_of(
+            ["pdk-smoke", "--corners", "bogus_corner", "--subset-reason", "pinning the gate order"]
+        )
+        self.assertEqual(rc, 1)
+        self.assertIn("bogus_corner", err)
 
 
 if __name__ == "__main__":
