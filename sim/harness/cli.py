@@ -112,6 +112,7 @@ def _run_experiment(
     args: argparse.Namespace,
     *,
     unit_noun: str,
+    detect_subset,
     override_error: str,
     build_units,
     run_unit,
@@ -125,12 +126,19 @@ def _run_experiment(
 
     - `unit_noun`: what to call one item of the matrix/trial list in the
       progress and summary lines (e.g. "points" / "trials").
+    - `detect_subset() -> bool`: whether the run's flags narrow the
+      manifest's default matrix, derived from `args` alone. Deliberately
+      separate from (and evaluated before) `build_units`, so the
+      subset-reason gate runs *before* the matrix is built: a run that
+      combines an invalid override with a missing `--subset-reason` must
+      report the missing reason, not the invalid value. It is a callable
+      rather than a precomputed bool so that any flag parsing it does still
+      happens after the PDK-resolve guard above, which reports first.
     - `override_error`: the message printed when a subset override is used
       without `--subset-reason` (the two modes word this differently).
-    - `build_units(manifest, pdk) -> (units, is_subset)`: builds the
-      point/trial list and reports whether it is a subset of the manifest's
-      default matrix. May raise `corners_mod.CornerError` /
-      `mc_mod.McConfigError`, which are reported and turned into exit 1.
+    - `build_units(manifest, pdk) -> units`: builds the point/trial list.
+      May raise `corners_mod.CornerError` / `mc_mod.McConfigError`, which are
+      reported and turned into exit 1.
     - `run_unit(pdk, spiceinit, manifest, netlist_text, unit, corners_dir)`:
       runs one point/trial (`runner_mod.run_point` / `run_mc_trial`).
     - `render_record(manifest, slug, record_id, pdk, netlist_snapshot, units,
@@ -157,14 +165,15 @@ def _run_experiment(
         )
         return 1
 
-    try:
-        units, is_subset = build_units(manifest, pdk)
-    except (corners_mod.CornerError, mc_mod.McConfigError) as e:
-        print(f"run_corners.py: {e}", file=sys.stderr)
-        return 1
-
+    is_subset = detect_subset()
     if is_subset and not args.subset_reason and args.write:
         print(override_error, file=sys.stderr)
+        return 1
+
+    try:
+        units = build_units(manifest, pdk)
+    except (corners_mod.CornerError, mc_mod.McConfigError) as e:
+        print(f"run_corners.py: {e}", file=sys.stderr)
         return 1
 
     schematic = testbench_dir / manifest["schematic"]
@@ -227,18 +236,21 @@ def _run_experiment(
 
 
 def cmd_run(args: argparse.Namespace) -> int:
+    def detect_subset():
+        return bool(
+            _parse_list(args.corners)
+            or _parse_list(args.temps, cast=float)
+            or args.supply_tol is not None
+        )
+
     def build_units(manifest, pdk):
-        corners_override = _parse_list(args.corners)
-        temps_override = _parse_list(args.temps, cast=float)
-        is_subset = bool(corners_override or temps_override or args.supply_tol is not None)
-        points = corners_mod.build_matrix(
+        return corners_mod.build_matrix(
             manifest,
             pdk.process_corners,
-            corners_override=corners_override,
-            temps_override=temps_override,
+            corners_override=_parse_list(args.corners),
+            temps_override=_parse_list(args.temps, cast=float),
             supply_tol_override=args.supply_tol,
         )
-        return points, is_subset
 
     def render_record(*, manifest, slug, record_id, pdk, netlist_snapshot, units, results, subset_reason):
         return report_mod.render(
@@ -258,6 +270,7 @@ def cmd_run(args: argparse.Namespace) -> int:
     return _run_experiment(
         args,
         unit_noun="points",
+        detect_subset=detect_subset,
         override_error=(
             "run_corners.py: a corner/temp/supply override needs --subset-reason "
             "to be recorded as evidence (sim/README.md's subset-justification rule)"
@@ -276,8 +289,8 @@ def cmd_run_mc(args: argparse.Namespace) -> int:
     trial matrix instead of a PVT point matrix.
     """
 
-    def build_units(manifest, pdk):
-        is_subset = any(
+    def detect_subset():
+        return any(
             v is not None
             for v in (
                 args.mc_corner,
@@ -289,7 +302,9 @@ def cmd_run_mc(args: argparse.Namespace) -> int:
                 args.mc_process,
             )
         )
-        trials = mc_mod.build_trials(
+
+    def build_units(manifest, pdk):
+        return mc_mod.build_trials(
             manifest,
             pdk.process_corners,
             corner_override=args.mc_corner,
@@ -300,7 +315,6 @@ def cmd_run_mc(args: argparse.Namespace) -> int:
             mismatch_override=args.mc_mismatch,
             process_override=args.mc_process,
         )
-        return trials, is_subset
 
     def render_record(*, manifest, slug, record_id, pdk, netlist_snapshot, units, results, subset_reason):
         mc_cfg = manifest.get("monte_carlo", {})
@@ -322,6 +336,7 @@ def cmd_run_mc(args: argparse.Namespace) -> int:
     return _run_experiment(
         args,
         unit_noun="trials",
+        detect_subset=detect_subset,
         override_error=(
             "run_corners.py: an --mc-* override needs --subset-reason to be "
             "recorded as evidence (sim/README.md's subset-justification rule)"
