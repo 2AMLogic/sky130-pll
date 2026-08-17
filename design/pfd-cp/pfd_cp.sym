@@ -1,0 +1,38 @@
+v {xschem version=3.4.7 file_version=1.2
+* pfd_cp.sym -- block symbol for the sky130 PLL tri-state PFD + charge pump
+* (issue #25). Hand-authored to match xschem's own "generate symbol from
+* schematic" convention: pin order in this file (VDD, GND, REF, DIV, CP)
+* matches the iopin/ipin/opin declaration order in pfd_cp.sch, so
+* @pinlist nets correctly when this symbol is instantiated over that
+* schematic (used by the future integration sub-issue tracked on #14 --
+* not instantiated anywhere in this issue's own scope).
+}
+G {}
+K {type=subcircuit
+format="X@name @pinlist @symname"
+template="name=x1"
+}
+V {}
+S {}
+E {}
+L 4 -100 -100 100 -100 {}
+L 4 100 -100 100 100 {}
+L 4 100 100 -100 100 {}
+L 4 -100 100 -100 -100 {}
+L 4 0 -120 0 -100 {}
+L 4 0 100 0 120 {}
+L 4 -130 -40 -100 -40 {}
+L 4 -130 40 -100 40 {}
+L 4 100 0 130 0 {}
+B 5 -2.5 -122.5 2.5 -117.5 {name=VDD dir=inout}
+B 5 -2.5 117.5 2.5 122.5 {name=GND dir=inout}
+B 5 -132.5 -42.5 -127.5 -37.5 {name=REF dir=in clock=1}
+B 5 -132.5 37.5 -127.5 42.5 {name=DIV dir=in clock=1}
+B 5 127.5 -2.5 132.5 2.5 {name=CP dir=out}
+T {@symname} -35 -10 0 0 0.25 0.25 {}
+T {@name} -95 -110 0 0 0.2 0.2 {}
+T {VDD} -12 -115 0 1 0.2 0.2 {}
+T {GND} -12 108 0 1 0.2 0.2 {}
+T {REF} -125 -50 0 0 0.2 0.2 {}
+T {DIV} -125 30 0 0 0.2 0.2 {}
+T {CP} 105 8 0 0 0.2 0.2 {}
