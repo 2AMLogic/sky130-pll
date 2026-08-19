@@ -1,0 +1,247 @@
+{
+  "schema_version": 1,
+  "file": "/home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-16/layout/pll/reports/20260819-065329-33d74dd/pll_top.gds",
+  "output_dir": "/home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-16/layout/pll/reports/20260819-065329-33d74dd/renders",
+  "width": 1600,
+  "height": 800,
+  "background": "#ffffff",
+  "overview": "/home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-16/layout/pll/reports/20260819-065329-33d74dd/renders/overview.png",
+  "layer_count": 26,
+  "rendered_count": 26,
+  "layers": [
+    {
+      "layer": 64,
+      "datatype": 5,
+      "name": null,
+      "shapes": 30,
+      "annotation": false,
+      "path": "/home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-16/layout/pll/reports/20260819-065329-33d74dd/renders/64_5.png",
+      "rendered": true
+    },
+    {
+      "layer": 64,
+      "datatype": 16,
+      "name": null,
+      "shapes": 30,
+      "annotation": false,
+      "path": "/home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-16/layout/pll/reports/20260819-065329-33d74dd/renders/64_16.png",
+      "rendered": true
+    },
+    {
+      "layer": 64,
+      "datatype": 20,
+      "name": null,
+      "shapes": 38,
+      "annotation": false,
+      "path": "/home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-16/layout/pll/reports/20260819-065329-33d74dd/renders/64_20.png",
+      "rendered": true
+    },
+    {
+      "layer": 64,
+      "datatype": 59,
+      "name": null,
+      "shapes": 30,
+      "annotation": false,
+      "path": "/home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-16/layout/pll/reports/20260819-065329-33d74dd/renders/64_59.png",
+      "rendered": true
+    },
+    {
+      "layer": 65,
+      "datatype": 20,
+      "name": null,
+      "shapes": 203,
+      "annotation": false,
+      "path": "/home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-16/layout/pll/reports/20260819-065329-33d74dd/renders/65_20.png",
+      "rendered": true
+    },
+    {
+      "layer": 66,
+      "datatype": 13,
+      "name": null,
+      "shapes": 3,
+      "annotation": false,
+      "path": "/home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-16/layout/pll/reports/20260819-065329-33d74dd/renders/66_13.png",
+      "rendered": true
+    },
+    {
+      "layer": 66,
+      "datatype": 20,
+      "name": null,
+      "shapes": 383,
+      "annotation": false,
+      "path": "/home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-16/layout/pll/reports/20260819-065329-33d74dd/renders/66_20.png",
+      "rendered": true
+    },
+    {
+      "layer": 66,
+      "datatype": 44,
+      "name": null,
+      "shapes": 1088,
+      "annotation": false,
+      "path": "/home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-16/layout/pll/reports/20260819-065329-33d74dd/renders/66_44.png",
+      "rendered": true
+    },
+    {
+      "layer": 67,
+      "datatype": 5,
+      "name": null,
+      "shapes": 207,
+      "annotation": false,
+      "path": "/home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-16/layout/pll/reports/20260819-065329-33d74dd/renders/67_5.png",
+      "rendered": true
+    },
+    {
+      "layer": 67,
+      "datatype": 16,
+      "name": null,
+      "shapes": 212,
+      "annotation": false,
+      "path": "/home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-16/layout/pll/reports/20260819-065329-33d74dd/renders/67_16.png",
+      "rendered": true
+    },
+    {
+      "layer": 67,
+      "datatype": 20,
+      "name": null,
+      "shapes": 565,
+      "annotation": false,
+      "path": "/home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-16/layout/pll/reports/20260819-065329-33d74dd/renders/67_20.png",
+      "rendered": true
+    },
+    {
+      "layer": 67,
+      "datatype": 44,
+      "name": null,
+      "shapes": 706,
+      "annotation": false,
+      "path": "/home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-16/layout/pll/reports/20260819-065329-33d74dd/renders/67_44.png",
+      "rendered": true
+    },
+    {
+      "layer": 68,
+      "datatype": 5,
+      "name": null,
+      "shapes": 58,
+      "annotation": false,
+      "path": "/home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-16/layout/pll/reports/20260819-065329-33d74dd/renders/68_5.png",
+      "rendered": true
+    },
+    {
+      "layer": 68,
+      "datatype": 16,
+      "name": null,
+      "shapes": 58,
+      "annotation": false,
+      "path": "/home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-16/layout/pll/reports/20260819-065329-33d74dd/renders/68_16.png",
+      "rendered": true
+    },
+    {
+      "layer": 68,
+      "datatype": 20,
+      "name": null,
+      "shapes": 130,
+      "annotation": false,
+      "path": "/home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-16/layout/pll/reports/20260819-065329-33d74dd/renders/68_20.png",
+      "rendered": true
+    },
+    {
+      "layer": 70,
+      "datatype": 20,
+      "name": null,
+      "shapes": 3,
+      "annotation": false,
+      "path": "/home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-16/layout/pll/reports/20260819-065329-33d74dd/renders/70_20.png",
+      "rendered": true
+    },
+    {
+      "layer": 78,
+      "datatype": 44,
+      "name": null,
+      "shapes": 35,
+      "annotation": false,
+      "path": "/home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-16/layout/pll/reports/20260819-065329-33d74dd/renders/78_44.png",
+      "rendered": true
+    },
+    {
+      "layer": 79,
+      "datatype": 20,
+      "name": null,
+      "shapes": 3,
+      "annotation": false,
+      "path": "/home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-16/layout/pll/reports/20260819-065329-33d74dd/renders/79_20.png",
+      "rendered": true
+    },
+    {
+      "layer": 81,
+      "datatype": 4,
+      "name": null,
+      "shapes": 29,
+      "annotation": false,
+      "path": "/home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-16/layout/pll/reports/20260819-065329-33d74dd/renders/81_4.png",
+      "rendered": true
+    },
+    {
+      "layer": 83,
+      "datatype": 44,
+      "name": null,
+      "shapes": 29,
+      "annotation": false,
+      "path": "/home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-16/layout/pll/reports/20260819-065329-33d74dd/renders/83_44.png",
+      "rendered": true
+    },
+    {
+      "layer": 89,
+      "datatype": 44,
+      "name": null,
+      "shapes": 3,
+      "annotation": false,
+      "path": "/home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-16/layout/pll/reports/20260819-065329-33d74dd/renders/89_44.png",
+      "rendered": true
+    },
+    {
+      "layer": 93,
+      "datatype": 44,
+      "name": null,
+      "shapes": 29,
+      "annotation": false,
+      "path": "/home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-16/layout/pll/reports/20260819-065329-33d74dd/renders/93_44.png",
+      "rendered": true
+    },
+    {
+      "layer": 94,
+      "datatype": 20,
+      "name": null,
+      "shapes": 32,
+      "annotation": false,
+      "path": "/home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-16/layout/pll/reports/20260819-065329-33d74dd/renders/94_20.png",
+      "rendered": true
+    },
+    {
+      "layer": 95,
+      "datatype": 20,
+      "name": null,
+      "shapes": 35,
+      "annotation": false,
+      "path": "/home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-16/layout/pll/reports/20260819-065329-33d74dd/renders/95_20.png",
+      "rendered": true
+    },
+    {
+      "layer": 122,
+      "datatype": 16,
+      "name": null,
+      "shapes": 30,
+      "annotation": false,
+      "path": "/home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-16/layout/pll/reports/20260819-065329-33d74dd/renders/122_16.png",
+      "rendered": true
+    },
+    {
+      "layer": 236,
+      "datatype": 0,
+      "name": null,
+      "shapes": 29,
+      "annotation": false,
+      "path": "/home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-16/layout/pll/reports/20260819-065329-33d74dd/renders/236_0.png",
+      "rendered": true
+    }
+  ]
+}
