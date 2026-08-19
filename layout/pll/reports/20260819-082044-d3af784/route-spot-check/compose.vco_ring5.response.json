@@ -1,0 +1,2578 @@
+{
+  "schema_version": 1,
+  "cell_name": "pll_vco_ring5",
+  "gds_path": "pll_vco_ring5.gds",
+  "pdk": {
+    "name": "sky130A",
+    "variant": "sky130A",
+    "version": "open_pdks c6d73a35f524070e85faff4a6a9eef49553ebc2b"
+  },
+  "bbox_um": {
+    "x0": 0.0,
+    "y0": -0.15,
+    "x1": 39.910000000000004,
+    "y1": 16.57
+  },
+  "blocks": [
+    {
+      "id": "vco_ring5_nfet_w2_l0p15",
+      "generator": "mos_array",
+      "offset_um": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "bbox_um": {
+        "x0": 0.0,
+        "y0": 0.0,
+        "x1": 3.77,
+        "y1": 5.24
+      },
+      "orientation": "none"
+    },
+    {
+      "id": "vco_ring5_nfet_w2_l0p5",
+      "generator": "mos_array",
+      "offset_um": {
+        "x": 7.77,
+        "y": 0.0
+      },
+      "bbox_um": {
+        "x0": 7.77,
+        "y0": 0.0,
+        "x1": 12.59,
+        "y1": 5.24
+      },
+      "orientation": "none"
+    },
+    {
+      "id": "vco_ring5_nfet_w8_l0p15",
+      "generator": "mos_array",
+      "offset_um": {
+        "x": 16.59,
+        "y": 0.0
+      },
+      "bbox_um": {
+        "x0": 16.59,
+        "y0": 0.0,
+        "x1": 17.58,
+        "y1": 8.42
+      },
+      "orientation": "none"
+    },
+    {
+      "id": "vco_ring5_pfet_w4_l0p15",
+      "generator": "mos_array",
+      "offset_um": {
+        "x": 21.58,
+        "y": 0.0
+      },
+      "bbox_um": {
+        "x0": 21.43,
+        "y0": -0.15,
+        "x1": 25.5,
+        "y1": 9.39
+      },
+      "orientation": "none"
+    },
+    {
+      "id": "vco_ring5_pfet_w4_l0p5",
+      "generator": "mos_array",
+      "offset_um": {
+        "x": 29.65,
+        "y": 0.0
+      },
+      "bbox_um": {
+        "x0": 29.5,
+        "y0": -0.15,
+        "x1": 34.62,
+        "y1": 9.39
+      },
+      "orientation": "none"
+    },
+    {
+      "id": "vco_ring5_pfet_w16_l0p15",
+      "generator": "mos_array",
+      "offset_um": {
+        "x": 38.77,
+        "y": 0.0
+      },
+      "bbox_um": {
+        "x0": 38.620000000000005,
+        "y0": -0.15,
+        "x1": 39.910000000000004,
+        "y1": 16.57
+      },
+      "orientation": "none"
+    }
+  ],
+  "nets": [
+    {
+      "net": "BUF1",
+      "pins": [
+        {
+          "block": "vco_ring5_nfet_w2_l0p15",
+          "port": "U5_D"
+        },
+        {
+          "block": "vco_ring5_nfet_w8_l0p15",
+          "port": "U0_G"
+        },
+        {
+          "block": "vco_ring5_pfet_w4_l0p15",
+          "port": "U5_D"
+        },
+        {
+          "block": "vco_ring5_pfet_w16_l0p15",
+          "port": "U0_G"
+        }
+      ],
+      "routed": false,
+      "route_length_um": 38.400000000000006,
+      "status": "partial",
+      "legs": [
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w8_l0p15",
+              "port": "U0_G"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p15",
+              "port": "U5_D"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "backbone's 0.3um-wide drawn path crosses 2.035um through its own pin's block 'vco_ring5_nfet_w8_l0p15' -- more than that pin's own 0.36um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p15",
+              "port": "U5_D"
+            },
+            {
+              "block": "vco_ring5_nfet_w8_l0p15",
+              "port": "U0_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "backbone's 0.3um-wide drawn path crosses 5.12um through unrelated block 'vco_ring5_nfet_w2_l0p5''s bbox (including its own edge, within half the route's width) -- the route is not point-to-point between only the two connected blocks"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p15",
+              "port": "U5_D"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p15",
+              "port": "U5_D"
+            }
+          ],
+          "routed": true,
+          "route_length_um": 38.400000000000006,
+          "reason": null
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_pfet_w4_l0p15",
+              "port": "U5_D"
+            },
+            {
+              "block": "vco_ring5_pfet_w16_l0p15",
+              "port": "U0_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "backbone's 0.3um-wide drawn path crosses 5.42um through unrelated block 'vco_ring5_pfet_w4_l0p5''s bbox (including its own edge, within half the route's width) -- the route is not point-to-point between only the two connected blocks"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w8_l0p15",
+              "port": "U0_G"
+            },
+            {
+              "block": "vco_ring5_pfet_w16_l0p15",
+              "port": "U0_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U0_G' on block 'vco_ring5_nfet_w8_l0p15' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p15",
+              "port": "U5_D"
+            },
+            {
+              "block": "vco_ring5_pfet_w16_l0p15",
+              "port": "U0_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "backbone's 0.3um-wide drawn path crosses 5.12um through unrelated block 'vco_ring5_nfet_w2_l0p5''s bbox (including its own edge, within half the route's width) -- the route is not point-to-point between only the two connected blocks"
+        }
+      ]
+    },
+    {
+      "net": "CLK",
+      "pins": [
+        {
+          "block": "vco_ring5_nfet_w8_l0p15",
+          "port": "U0_D"
+        },
+        {
+          "block": "vco_ring5_pfet_w16_l0p15",
+          "port": "U0_D"
+        }
+      ],
+      "routed": false,
+      "route_length_um": null,
+      "status": "unrouted",
+      "legs": [
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w8_l0p15",
+              "port": "U0_D"
+            },
+            {
+              "block": "vco_ring5_pfet_w16_l0p15",
+              "port": "U0_D"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "backbone's 0.3um-wide drawn path crosses 4.37um through unrelated block 'vco_ring5_pfet_w4_l0p15''s bbox (including its own edge, within half the route's width) -- the route is not point-to-point between only the two connected blocks"
+        }
+      ]
+    },
+    {
+      "net": "GND",
+      "pins": [
+        {
+          "block": "vco_ring5_nfet_w2_l0p15",
+          "port": "U5_S"
+        },
+        {
+          "block": "vco_ring5_nfet_w2_l0p5",
+          "port": "U0_S"
+        },
+        {
+          "block": "vco_ring5_nfet_w2_l0p5",
+          "port": "U1_S"
+        },
+        {
+          "block": "vco_ring5_nfet_w2_l0p5",
+          "port": "U2_S"
+        },
+        {
+          "block": "vco_ring5_nfet_w2_l0p5",
+          "port": "U3_S"
+        },
+        {
+          "block": "vco_ring5_nfet_w2_l0p5",
+          "port": "U4_S"
+        },
+        {
+          "block": "vco_ring5_nfet_w2_l0p5",
+          "port": "U5_S"
+        },
+        {
+          "block": "vco_ring5_nfet_w8_l0p15",
+          "port": "U0_S"
+        }
+      ],
+      "routed": false,
+      "route_length_um": 15.900000000000004,
+      "status": "partial",
+      "legs": [
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U0_S"
+            },
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U2_S"
+            }
+          ],
+          "routed": true,
+          "route_length_um": 1.7399999999999993,
+          "reason": null
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U1_S"
+            },
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U5_S"
+            }
+          ],
+          "routed": true,
+          "route_length_um": 1.7399999999999993,
+          "reason": null
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U0_S"
+            },
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U4_S"
+            }
+          ],
+          "routed": true,
+          "route_length_um": 1.740000000000002,
+          "reason": null
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U1_S"
+            },
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U3_S"
+            }
+          ],
+          "routed": true,
+          "route_length_um": 1.740000000000002,
+          "reason": null
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U0_S"
+            },
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U1_S"
+            }
+          ],
+          "routed": true,
+          "route_length_um": 3.4200000000000013,
+          "reason": null
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U3_S"
+            },
+            {
+              "block": "vco_ring5_nfet_w8_l0p15",
+              "port": "U0_S"
+            }
+          ],
+          "routed": true,
+          "route_length_um": 5.52,
+          "reason": null
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p15",
+              "port": "U5_S"
+            },
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U5_S"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "backbone's 0.3um-wide drawn path crosses 3.71um through its own pin's block 'vco_ring5_nfet_w2_l0p15' -- more than that pin's own 0.36um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p15",
+              "port": "U5_S"
+            },
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U1_S"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "backbone's 0.3um-wide drawn path crosses 3.71um through its own pin's block 'vco_ring5_nfet_w2_l0p15' -- more than that pin's own 0.36um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p15",
+              "port": "U5_S"
+            },
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U2_S"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "backbone's 0.3um-wide drawn path crosses 6.53um through its own pin's block 'vco_ring5_nfet_w2_l0p15' -- more than that pin's own 0.36um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p15",
+              "port": "U5_S"
+            },
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U3_S"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "backbone's 0.3um-wide drawn path crosses 3.71um through its own pin's block 'vco_ring5_nfet_w2_l0p15' -- more than that pin's own 0.36um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p15",
+              "port": "U5_S"
+            },
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U0_S"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "backbone's 0.3um-wide drawn path crosses 3.71um through its own pin's block 'vco_ring5_nfet_w2_l0p15' -- more than that pin's own 0.36um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p15",
+              "port": "U5_S"
+            },
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U4_S"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "backbone's 0.3um-wide drawn path crosses 3.71um through its own pin's block 'vco_ring5_nfet_w2_l0p15' -- more than that pin's own 0.36um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p15",
+              "port": "U5_S"
+            },
+            {
+              "block": "vco_ring5_nfet_w8_l0p15",
+              "port": "U0_S"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "backbone's 0.3um-wide drawn path crosses 3.71um through its own pin's block 'vco_ring5_nfet_w2_l0p15' -- more than that pin's own 0.36um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly"
+        }
+      ]
+    },
+    {
+      "net": "RING0",
+      "pins": [
+        {
+          "block": "vco_ring5_nfet_w2_l0p15",
+          "port": "U0_D"
+        },
+        {
+          "block": "vco_ring5_nfet_w2_l0p15",
+          "port": "U1_G"
+        },
+        {
+          "block": "vco_ring5_nfet_w2_l0p15",
+          "port": "U5_G"
+        },
+        {
+          "block": "vco_ring5_pfet_w4_l0p15",
+          "port": "U0_D"
+        },
+        {
+          "block": "vco_ring5_pfet_w4_l0p15",
+          "port": "U1_G"
+        },
+        {
+          "block": "vco_ring5_pfet_w4_l0p15",
+          "port": "U5_G"
+        }
+      ],
+      "routed": false,
+      "route_length_um": null,
+      "status": "unrouted",
+      "legs": [
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p15",
+              "port": "U1_G"
+            },
+            {
+              "block": "vco_ring5_nfet_w2_l0p15",
+              "port": "U5_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U1_G' on block 'vco_ring5_nfet_w2_l0p15' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_pfet_w4_l0p15",
+              "port": "U1_G"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p15",
+              "port": "U5_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U1_G' on block 'vco_ring5_pfet_w4_l0p15' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p15",
+              "port": "U0_D"
+            },
+            {
+              "block": "vco_ring5_nfet_w2_l0p15",
+              "port": "U1_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U1_G' on block 'vco_ring5_nfet_w2_l0p15' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p15",
+              "port": "U0_D"
+            },
+            {
+              "block": "vco_ring5_nfet_w2_l0p15",
+              "port": "U5_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U5_G' on block 'vco_ring5_nfet_w2_l0p15' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_pfet_w4_l0p15",
+              "port": "U0_D"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p15",
+              "port": "U1_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U1_G' on block 'vco_ring5_pfet_w4_l0p15' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_pfet_w4_l0p15",
+              "port": "U0_D"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p15",
+              "port": "U5_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U5_G' on block 'vco_ring5_pfet_w4_l0p15' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p15",
+              "port": "U0_D"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p15",
+              "port": "U0_D"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "backbone's 0.3um-wide drawn path crosses 5.12um through unrelated block 'vco_ring5_nfet_w2_l0p5''s bbox (including its own edge, within half the route's width) -- the route is not point-to-point between only the two connected blocks"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p15",
+              "port": "U1_G"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p15",
+              "port": "U5_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U1_G' on block 'vco_ring5_nfet_w2_l0p15' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p15",
+              "port": "U1_G"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p15",
+              "port": "U0_D"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "backbone's 0.3um-wide drawn path crosses 5.065um through its own pin's block 'vco_ring5_nfet_w2_l0p15' -- more than that pin's own 0.36um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p15",
+              "port": "U1_G"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p15",
+              "port": "U1_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U1_G' on block 'vco_ring5_nfet_w2_l0p15' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p15",
+              "port": "U5_G"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p15",
+              "port": "U5_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U5_G' on block 'vco_ring5_nfet_w2_l0p15' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p15",
+              "port": "U5_G"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p15",
+              "port": "U0_D"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "backbone's 0.3um-wide drawn path crosses 6.455um through its own pin's block 'vco_ring5_nfet_w2_l0p15' -- more than that pin's own 0.36um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p15",
+              "port": "U5_G"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p15",
+              "port": "U1_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U5_G' on block 'vco_ring5_nfet_w2_l0p15' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p15",
+              "port": "U0_D"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p15",
+              "port": "U5_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "backbone's 0.3um-wide drawn path crosses 5.12um through unrelated block 'vco_ring5_nfet_w2_l0p5''s bbox (including its own edge, within half the route's width) -- the route is not point-to-point between only the two connected blocks"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p15",
+              "port": "U0_D"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p15",
+              "port": "U1_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "backbone's 0.3um-wide drawn path crosses 5.12um through unrelated block 'vco_ring5_nfet_w2_l0p5''s bbox (including its own edge, within half the route's width) -- the route is not point-to-point between only the two connected blocks"
+        }
+      ]
+    },
+    {
+      "net": "RING1",
+      "pins": [
+        {
+          "block": "vco_ring5_nfet_w2_l0p15",
+          "port": "U1_D"
+        },
+        {
+          "block": "vco_ring5_nfet_w2_l0p15",
+          "port": "U2_G"
+        },
+        {
+          "block": "vco_ring5_pfet_w4_l0p15",
+          "port": "U1_D"
+        },
+        {
+          "block": "vco_ring5_pfet_w4_l0p15",
+          "port": "U2_G"
+        }
+      ],
+      "routed": false,
+      "route_length_um": null,
+      "status": "unrouted",
+      "legs": [
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p15",
+              "port": "U1_D"
+            },
+            {
+              "block": "vco_ring5_nfet_w2_l0p15",
+              "port": "U2_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U2_G' on block 'vco_ring5_nfet_w2_l0p15' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_pfet_w4_l0p15",
+              "port": "U1_D"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p15",
+              "port": "U2_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U2_G' on block 'vco_ring5_pfet_w4_l0p15' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p15",
+              "port": "U1_D"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p15",
+              "port": "U2_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "backbone's 0.3um-wide drawn path crosses 5.12um through unrelated block 'vco_ring5_nfet_w2_l0p5''s bbox (including its own edge, within half the route's width) -- the route is not point-to-point between only the two connected blocks -- a bounded detour around it (2 alternate lanes placed clear of every block between the two pins) was tried first, and each one still crossed a placed block"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p15",
+              "port": "U2_G"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p15",
+              "port": "U2_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U2_G' on block 'vco_ring5_nfet_w2_l0p15' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p15",
+              "port": "U1_D"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p15",
+              "port": "U1_D"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "backbone's 0.3um-wide drawn path crosses 5.12um through unrelated block 'vco_ring5_nfet_w2_l0p5''s bbox (including its own edge, within half the route's width) -- the route is not point-to-point between only the two connected blocks"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p15",
+              "port": "U2_G"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p15",
+              "port": "U1_D"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "backbone's 0.3um-wide drawn path crosses 1.29um through unrelated block 'vco_ring5_nfet_w8_l0p15''s bbox (including its own edge, within half the route's width) -- the route is not point-to-point between only the two connected blocks"
+        }
+      ]
+    },
+    {
+      "net": "RING2",
+      "pins": [
+        {
+          "block": "vco_ring5_nfet_w2_l0p15",
+          "port": "U2_D"
+        },
+        {
+          "block": "vco_ring5_nfet_w2_l0p15",
+          "port": "U3_G"
+        },
+        {
+          "block": "vco_ring5_pfet_w4_l0p15",
+          "port": "U2_D"
+        },
+        {
+          "block": "vco_ring5_pfet_w4_l0p15",
+          "port": "U3_G"
+        }
+      ],
+      "routed": false,
+      "route_length_um": 33.56,
+      "status": "partial",
+      "legs": [
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p15",
+              "port": "U2_D"
+            },
+            {
+              "block": "vco_ring5_nfet_w2_l0p15",
+              "port": "U3_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U3_G' on block 'vco_ring5_nfet_w2_l0p15' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_pfet_w4_l0p15",
+              "port": "U2_D"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p15",
+              "port": "U3_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U3_G' on block 'vco_ring5_pfet_w4_l0p15' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p15",
+              "port": "U3_G"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p15",
+              "port": "U2_D"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "backbone's 0.3um-wide drawn path crosses 3.675um through its own pin's block 'vco_ring5_nfet_w2_l0p15' -- more than that pin's own 0.36um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p15",
+              "port": "U2_D"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p15",
+              "port": "U2_D"
+            }
+          ],
+          "routed": true,
+          "route_length_um": 33.56,
+          "reason": null
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p15",
+              "port": "U3_G"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p15",
+              "port": "U3_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U3_G' on block 'vco_ring5_nfet_w2_l0p15' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p15",
+              "port": "U2_D"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p15",
+              "port": "U3_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "backbone's 0.3um-wide drawn path crosses 5.12um through unrelated block 'vco_ring5_nfet_w2_l0p5''s bbox (including its own edge, within half the route's width) -- the route is not point-to-point between only the two connected blocks"
+        }
+      ]
+    },
+    {
+      "net": "RING3",
+      "pins": [
+        {
+          "block": "vco_ring5_nfet_w2_l0p15",
+          "port": "U3_D"
+        },
+        {
+          "block": "vco_ring5_nfet_w2_l0p15",
+          "port": "U4_G"
+        },
+        {
+          "block": "vco_ring5_pfet_w4_l0p15",
+          "port": "U3_D"
+        },
+        {
+          "block": "vco_ring5_pfet_w4_l0p15",
+          "port": "U4_G"
+        }
+      ],
+      "routed": false,
+      "route_length_um": null,
+      "status": "unrouted",
+      "legs": [
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p15",
+              "port": "U3_D"
+            },
+            {
+              "block": "vco_ring5_nfet_w2_l0p15",
+              "port": "U4_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U4_G' on block 'vco_ring5_nfet_w2_l0p15' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_pfet_w4_l0p15",
+              "port": "U3_D"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p15",
+              "port": "U4_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U4_G' on block 'vco_ring5_pfet_w4_l0p15' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p15",
+              "port": "U3_D"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p15",
+              "port": "U4_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "backbone's 0.3um-wide drawn path crosses 5.12um through unrelated block 'vco_ring5_nfet_w2_l0p5''s bbox (including its own edge, within half the route's width) -- the route is not point-to-point between only the two connected blocks -- a bounded detour around it (2 alternate lanes placed clear of every block between the two pins) was tried first, and each one still crossed a placed block"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p15",
+              "port": "U4_G"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p15",
+              "port": "U4_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U4_G' on block 'vco_ring5_nfet_w2_l0p15' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p15",
+              "port": "U3_D"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p15",
+              "port": "U3_D"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "backbone's 0.3um-wide drawn path crosses 5.12um through unrelated block 'vco_ring5_nfet_w2_l0p5''s bbox (including its own edge, within half the route's width) -- the route is not point-to-point between only the two connected blocks"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p15",
+              "port": "U4_G"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p15",
+              "port": "U3_D"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "backbone's 0.3um-wide drawn path crosses 1.29um through unrelated block 'vco_ring5_nfet_w8_l0p15''s bbox (including its own edge, within half the route's width) -- the route is not point-to-point between only the two connected blocks"
+        }
+      ]
+    },
+    {
+      "net": "RING4",
+      "pins": [
+        {
+          "block": "vco_ring5_nfet_w2_l0p15",
+          "port": "U0_G"
+        },
+        {
+          "block": "vco_ring5_nfet_w2_l0p15",
+          "port": "U4_D"
+        },
+        {
+          "block": "vco_ring5_pfet_w4_l0p15",
+          "port": "U0_G"
+        },
+        {
+          "block": "vco_ring5_pfet_w4_l0p15",
+          "port": "U4_D"
+        }
+      ],
+      "routed": false,
+      "route_length_um": null,
+      "status": "unrouted",
+      "legs": [
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p15",
+              "port": "U0_G"
+            },
+            {
+              "block": "vco_ring5_nfet_w2_l0p15",
+              "port": "U4_D"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U0_G' on block 'vco_ring5_nfet_w2_l0p15' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_pfet_w4_l0p15",
+              "port": "U0_G"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p15",
+              "port": "U4_D"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U0_G' on block 'vco_ring5_pfet_w4_l0p15' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p15",
+              "port": "U4_D"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p15",
+              "port": "U4_D"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "backbone's 0.3um-wide drawn path crosses 5.12um through unrelated block 'vco_ring5_nfet_w2_l0p5''s bbox (including its own edge, within half the route's width) -- the route is not point-to-point between only the two connected blocks"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p15",
+              "port": "U4_D"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p15",
+              "port": "U0_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "backbone's 0.3um-wide drawn path crosses 5.12um through unrelated block 'vco_ring5_nfet_w2_l0p5''s bbox (including its own edge, within half the route's width) -- the route is not point-to-point between only the two connected blocks"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p15",
+              "port": "U0_G"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p15",
+              "port": "U4_D"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "backbone's 0.3um-wide drawn path crosses 5.12um through unrelated block 'vco_ring5_nfet_w2_l0p5''s bbox (including its own edge, within half the route's width) -- the route is not point-to-point between only the two connected blocks"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p15",
+              "port": "U0_G"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p15",
+              "port": "U0_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U0_G' on block 'vco_ring5_nfet_w2_l0p15' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        }
+      ]
+    },
+    {
+      "net": "SN0",
+      "pins": [
+        {
+          "block": "vco_ring5_nfet_w2_l0p15",
+          "port": "U0_S"
+        },
+        {
+          "block": "vco_ring5_nfet_w2_l0p5",
+          "port": "U0_D"
+        }
+      ],
+      "routed": false,
+      "route_length_um": null,
+      "status": "unrouted",
+      "legs": [
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p15",
+              "port": "U0_S"
+            },
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U0_D"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "backbone's 0.3um-wide drawn path crosses 2.32um through its own pin's block 'vco_ring5_nfet_w2_l0p15' -- more than that pin's own 1.75um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly"
+        }
+      ]
+    },
+    {
+      "net": "SN1",
+      "pins": [
+        {
+          "block": "vco_ring5_nfet_w2_l0p15",
+          "port": "U1_S"
+        },
+        {
+          "block": "vco_ring5_nfet_w2_l0p5",
+          "port": "U1_D"
+        }
+      ],
+      "routed": false,
+      "route_length_um": null,
+      "status": "unrouted",
+      "legs": [
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p15",
+              "port": "U1_S"
+            },
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U1_D"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "backbone's 0.3um-wide drawn path crosses 2.32um through its own pin's block 'vco_ring5_nfet_w2_l0p15' -- more than that pin's own 1.75um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly"
+        }
+      ]
+    },
+    {
+      "net": "SN2",
+      "pins": [
+        {
+          "block": "vco_ring5_nfet_w2_l0p15",
+          "port": "U2_S"
+        },
+        {
+          "block": "vco_ring5_nfet_w2_l0p5",
+          "port": "U2_D"
+        }
+      ],
+      "routed": false,
+      "route_length_um": null,
+      "status": "unrouted",
+      "legs": [
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p15",
+              "port": "U2_S"
+            },
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U2_D"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "backbone's 0.3um-wide drawn path crosses 3.71um through its own pin's block 'vco_ring5_nfet_w2_l0p15' -- more than that pin's own 0.36um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly"
+        }
+      ]
+    },
+    {
+      "net": "SN3",
+      "pins": [
+        {
+          "block": "vco_ring5_nfet_w2_l0p15",
+          "port": "U3_S"
+        },
+        {
+          "block": "vco_ring5_nfet_w2_l0p5",
+          "port": "U3_D"
+        }
+      ],
+      "routed": false,
+      "route_length_um": null,
+      "status": "unrouted",
+      "legs": [
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p15",
+              "port": "U3_S"
+            },
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U3_D"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "backbone's 0.3um-wide drawn path crosses 4.76um through its own pin's block 'vco_ring5_nfet_w2_l0p5' -- more than that pin's own 0.36um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly"
+        }
+      ]
+    },
+    {
+      "net": "SN4",
+      "pins": [
+        {
+          "block": "vco_ring5_nfet_w2_l0p15",
+          "port": "U4_S"
+        },
+        {
+          "block": "vco_ring5_nfet_w2_l0p5",
+          "port": "U4_D"
+        }
+      ],
+      "routed": false,
+      "route_length_um": null,
+      "status": "unrouted",
+      "legs": [
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p15",
+              "port": "U4_S"
+            },
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U4_D"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "backbone's 0.3um-wide drawn path crosses 4.76um through its own pin's block 'vco_ring5_nfet_w2_l0p5' -- more than that pin's own 0.36um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly"
+        }
+      ]
+    },
+    {
+      "net": "SP0",
+      "pins": [
+        {
+          "block": "vco_ring5_pfet_w4_l0p15",
+          "port": "U0_S"
+        },
+        {
+          "block": "vco_ring5_pfet_w4_l0p5",
+          "port": "U0_D"
+        }
+      ],
+      "routed": false,
+      "route_length_um": null,
+      "status": "unrouted",
+      "legs": [
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_pfet_w4_l0p15",
+              "port": "U0_S"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U0_D"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "backbone's 0.3um-wide drawn path crosses 2.47um through its own pin's block 'vco_ring5_pfet_w4_l0p15' -- more than that pin's own 1.9um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly"
+        }
+      ]
+    },
+    {
+      "net": "SP1",
+      "pins": [
+        {
+          "block": "vco_ring5_pfet_w4_l0p15",
+          "port": "U1_S"
+        },
+        {
+          "block": "vco_ring5_pfet_w4_l0p5",
+          "port": "U1_D"
+        }
+      ],
+      "routed": false,
+      "route_length_um": null,
+      "status": "unrouted",
+      "legs": [
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_pfet_w4_l0p15",
+              "port": "U1_S"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U1_D"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "backbone's 0.3um-wide drawn path crosses 2.47um through its own pin's block 'vco_ring5_pfet_w4_l0p15' -- more than that pin's own 1.9um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly"
+        }
+      ]
+    },
+    {
+      "net": "SP2",
+      "pins": [
+        {
+          "block": "vco_ring5_pfet_w4_l0p15",
+          "port": "U2_S"
+        },
+        {
+          "block": "vco_ring5_pfet_w4_l0p5",
+          "port": "U2_D"
+        }
+      ],
+      "routed": false,
+      "route_length_um": null,
+      "status": "unrouted",
+      "legs": [
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_pfet_w4_l0p15",
+              "port": "U2_S"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U2_D"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "backbone's 0.3um-wide drawn path crosses 3.86um through its own pin's block 'vco_ring5_pfet_w4_l0p15' -- more than that pin's own 0.51um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly"
+        }
+      ]
+    },
+    {
+      "net": "SP3",
+      "pins": [
+        {
+          "block": "vco_ring5_pfet_w4_l0p15",
+          "port": "U3_S"
+        },
+        {
+          "block": "vco_ring5_pfet_w4_l0p5",
+          "port": "U3_D"
+        }
+      ],
+      "routed": false,
+      "route_length_um": null,
+      "status": "unrouted",
+      "legs": [
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_pfet_w4_l0p15",
+              "port": "U3_S"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U3_D"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "backbone's 0.3um-wide drawn path crosses 4.91um through its own pin's block 'vco_ring5_pfet_w4_l0p5' -- more than that pin's own 0.51um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly"
+        }
+      ]
+    },
+    {
+      "net": "SP4",
+      "pins": [
+        {
+          "block": "vco_ring5_pfet_w4_l0p15",
+          "port": "U4_S"
+        },
+        {
+          "block": "vco_ring5_pfet_w4_l0p5",
+          "port": "U4_D"
+        }
+      ],
+      "routed": false,
+      "route_length_um": null,
+      "status": "unrouted",
+      "legs": [
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_pfet_w4_l0p15",
+              "port": "U4_S"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U4_D"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "backbone's 0.3um-wide drawn path crosses 4.91um through its own pin's block 'vco_ring5_pfet_w4_l0p5' -- more than that pin's own 0.51um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly"
+        }
+      ]
+    },
+    {
+      "net": "VBP",
+      "pins": [
+        {
+          "block": "vco_ring5_nfet_w2_l0p5",
+          "port": "U5_D"
+        },
+        {
+          "block": "vco_ring5_pfet_w4_l0p5",
+          "port": "U0_G"
+        },
+        {
+          "block": "vco_ring5_pfet_w4_l0p5",
+          "port": "U1_G"
+        },
+        {
+          "block": "vco_ring5_pfet_w4_l0p5",
+          "port": "U2_G"
+        },
+        {
+          "block": "vco_ring5_pfet_w4_l0p5",
+          "port": "U3_G"
+        },
+        {
+          "block": "vco_ring5_pfet_w4_l0p5",
+          "port": "U4_G"
+        },
+        {
+          "block": "vco_ring5_pfet_w4_l0p5",
+          "port": "U5_D"
+        },
+        {
+          "block": "vco_ring5_pfet_w4_l0p5",
+          "port": "U5_G"
+        }
+      ],
+      "routed": false,
+      "route_length_um": null,
+      "status": "unrouted",
+      "legs": [
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U0_G"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U4_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U0_G' on block 'vco_ring5_pfet_w4_l0p5' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U1_G"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U3_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U1_G' on block 'vco_ring5_pfet_w4_l0p5' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U0_G"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U2_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U0_G' on block 'vco_ring5_pfet_w4_l0p5' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U1_G"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U5_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U1_G' on block 'vco_ring5_pfet_w4_l0p5' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U5_D"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U5_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U5_G' on block 'vco_ring5_pfet_w4_l0p5' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U2_G"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U5_D"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U2_G' on block 'vco_ring5_pfet_w4_l0p5' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U2_G"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U4_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U2_G' on block 'vco_ring5_pfet_w4_l0p5' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U3_G"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U5_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U3_G' on block 'vco_ring5_pfet_w4_l0p5' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U1_G"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U5_D"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U1_G' on block 'vco_ring5_pfet_w4_l0p5' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U0_G"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U5_D"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U0_G' on block 'vco_ring5_pfet_w4_l0p5' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U0_G"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U1_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U0_G' on block 'vco_ring5_pfet_w4_l0p5' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U2_G"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U5_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U2_G' on block 'vco_ring5_pfet_w4_l0p5' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U3_G"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U4_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U3_G' on block 'vco_ring5_pfet_w4_l0p5' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U3_G"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U5_D"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U3_G' on block 'vco_ring5_pfet_w4_l0p5' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U4_G"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U5_D"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U4_G' on block 'vco_ring5_pfet_w4_l0p5' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U0_G"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U3_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U0_G' on block 'vco_ring5_pfet_w4_l0p5' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U1_G"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U4_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U1_G' on block 'vco_ring5_pfet_w4_l0p5' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U0_G"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U5_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U0_G' on block 'vco_ring5_pfet_w4_l0p5' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U1_G"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U2_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U1_G' on block 'vco_ring5_pfet_w4_l0p5' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U2_G"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U3_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U2_G' on block 'vco_ring5_pfet_w4_l0p5' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U4_G"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U5_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U4_G' on block 'vco_ring5_pfet_w4_l0p5' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U5_D"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U2_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "backbone's 0.3um-wide drawn path crosses 1.29um through unrelated block 'vco_ring5_nfet_w8_l0p15''s bbox (including its own edge, within half the route's width) -- the route is not point-to-point between only the two connected blocks -- a bounded detour around it (2 alternate lanes placed clear of every block between the two pins) was tried first, and each one still crossed a placed block"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U5_D"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U0_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "backbone's 0.3um-wide drawn path crosses 1.29um through unrelated block 'vco_ring5_nfet_w8_l0p15''s bbox (including its own edge, within half the route's width) -- the route is not point-to-point between only the two connected blocks -- a bounded detour around it (2 alternate lanes placed clear of every block between the two pins) was tried first, and each one still crossed a placed block"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U5_D"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U5_D"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "crosses already-routed net 'BUF1'"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U5_D"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U4_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "backbone's 0.3um-wide drawn path crosses 1.29um through unrelated block 'vco_ring5_nfet_w8_l0p15''s bbox (including its own edge, within half the route's width) -- the route is not point-to-point between only the two connected blocks -- a bounded detour around it (2 alternate lanes placed clear of every block between the two pins) was tried first, and each one still crossed a placed block"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U5_D"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U5_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "backbone's 0.3um-wide drawn path crosses 1.29um through unrelated block 'vco_ring5_nfet_w8_l0p15''s bbox (including its own edge, within half the route's width) -- the route is not point-to-point between only the two connected blocks"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U5_D"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U1_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "backbone's 0.3um-wide drawn path crosses 1.29um through unrelated block 'vco_ring5_nfet_w8_l0p15''s bbox (including its own edge, within half the route's width) -- the route is not point-to-point between only the two connected blocks"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U5_D"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U3_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "backbone's 0.3um-wide drawn path crosses 1.29um through unrelated block 'vco_ring5_nfet_w8_l0p15''s bbox (including its own edge, within half the route's width) -- the route is not point-to-point between only the two connected blocks"
+        }
+      ]
+    },
+    {
+      "net": "VCTRL",
+      "pins": [
+        {
+          "block": "vco_ring5_nfet_w2_l0p5",
+          "port": "U0_G"
+        },
+        {
+          "block": "vco_ring5_nfet_w2_l0p5",
+          "port": "U1_G"
+        },
+        {
+          "block": "vco_ring5_nfet_w2_l0p5",
+          "port": "U2_G"
+        },
+        {
+          "block": "vco_ring5_nfet_w2_l0p5",
+          "port": "U3_G"
+        },
+        {
+          "block": "vco_ring5_nfet_w2_l0p5",
+          "port": "U4_G"
+        },
+        {
+          "block": "vco_ring5_nfet_w2_l0p5",
+          "port": "U5_G"
+        }
+      ],
+      "routed": false,
+      "route_length_um": null,
+      "status": "unrouted",
+      "legs": [
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U0_G"
+            },
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U2_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U0_G' on block 'vco_ring5_nfet_w2_l0p5' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U0_G"
+            },
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U4_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U0_G' on block 'vco_ring5_nfet_w2_l0p5' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U1_G"
+            },
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U3_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U1_G' on block 'vco_ring5_nfet_w2_l0p5' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U1_G"
+            },
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U5_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U1_G' on block 'vco_ring5_nfet_w2_l0p5' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U0_G"
+            },
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U1_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U0_G' on block 'vco_ring5_nfet_w2_l0p5' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U2_G"
+            },
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U5_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U2_G' on block 'vco_ring5_nfet_w2_l0p5' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U3_G"
+            },
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U4_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U3_G' on block 'vco_ring5_nfet_w2_l0p5' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U2_G"
+            },
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U4_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U2_G' on block 'vco_ring5_nfet_w2_l0p5' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U3_G"
+            },
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U5_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U3_G' on block 'vco_ring5_nfet_w2_l0p5' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U0_G"
+            },
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U3_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U0_G' on block 'vco_ring5_nfet_w2_l0p5' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U0_G"
+            },
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U5_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U0_G' on block 'vco_ring5_nfet_w2_l0p5' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U1_G"
+            },
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U2_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U1_G' on block 'vco_ring5_nfet_w2_l0p5' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U1_G"
+            },
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U4_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U1_G' on block 'vco_ring5_nfet_w2_l0p5' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U2_G"
+            },
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U3_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U2_G' on block 'vco_ring5_nfet_w2_l0p5' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U4_G"
+            },
+            {
+              "block": "vco_ring5_nfet_w2_l0p5",
+              "port": "U5_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "pin 'U4_G' on block 'vco_ring5_nfet_w2_l0p5' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it"
+        }
+      ]
+    },
+    {
+      "net": "VDD",
+      "pins": [
+        {
+          "block": "vco_ring5_pfet_w4_l0p15",
+          "port": "U5_S"
+        },
+        {
+          "block": "vco_ring5_pfet_w4_l0p5",
+          "port": "U0_S"
+        },
+        {
+          "block": "vco_ring5_pfet_w4_l0p5",
+          "port": "U1_S"
+        },
+        {
+          "block": "vco_ring5_pfet_w4_l0p5",
+          "port": "U2_S"
+        },
+        {
+          "block": "vco_ring5_pfet_w4_l0p5",
+          "port": "U3_S"
+        },
+        {
+          "block": "vco_ring5_pfet_w4_l0p5",
+          "port": "U4_S"
+        },
+        {
+          "block": "vco_ring5_pfet_w4_l0p5",
+          "port": "U5_S"
+        },
+        {
+          "block": "vco_ring5_pfet_w16_l0p15",
+          "port": "U0_S"
+        }
+      ],
+      "routed": false,
+      "route_length_um": 19.200000000000003,
+      "status": "partial",
+      "legs": [
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U0_S"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U2_S"
+            }
+          ],
+          "routed": true,
+          "route_length_um": 1.7399999999999984,
+          "reason": null
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U0_S"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U4_S"
+            }
+          ],
+          "routed": true,
+          "route_length_um": 1.7399999999999984,
+          "reason": null
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U1_S"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U3_S"
+            }
+          ],
+          "routed": true,
+          "route_length_um": 1.7399999999999984,
+          "reason": null
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U1_S"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U5_S"
+            }
+          ],
+          "routed": true,
+          "route_length_um": 1.7399999999999984,
+          "reason": null
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U0_S"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U1_S"
+            }
+          ],
+          "routed": true,
+          "route_length_um": 5.420000000000002,
+          "reason": null
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U3_S"
+            },
+            {
+              "block": "vco_ring5_pfet_w16_l0p15",
+              "port": "U0_S"
+            }
+          ],
+          "routed": true,
+          "route_length_um": 6.820000000000007,
+          "reason": null
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_pfet_w4_l0p15",
+              "port": "U5_S"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U5_S"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "backbone's 0.3um-wide drawn path crosses 3.86um through its own pin's block 'vco_ring5_pfet_w4_l0p15' -- more than that pin's own 0.51um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_pfet_w4_l0p15",
+              "port": "U5_S"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U1_S"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "backbone's 0.3um-wide drawn path crosses 3.86um through its own pin's block 'vco_ring5_pfet_w4_l0p15' -- more than that pin's own 0.51um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_pfet_w4_l0p15",
+              "port": "U5_S"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U3_S"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "backbone's 0.3um-wide drawn path crosses 3.86um through its own pin's block 'vco_ring5_pfet_w4_l0p15' -- more than that pin's own 0.51um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_pfet_w4_l0p15",
+              "port": "U5_S"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U2_S"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "backbone's 0.3um-wide drawn path crosses 8.68um through its own pin's block 'vco_ring5_pfet_w4_l0p15' -- more than that pin's own 0.51um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_pfet_w4_l0p15",
+              "port": "U5_S"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U0_S"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "backbone's 0.3um-wide drawn path crosses 3.86um through its own pin's block 'vco_ring5_pfet_w4_l0p15' -- more than that pin's own 0.51um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_pfet_w4_l0p15",
+              "port": "U5_S"
+            },
+            {
+              "block": "vco_ring5_pfet_w4_l0p5",
+              "port": "U4_S"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "backbone's 0.3um-wide drawn path crosses 3.86um through its own pin's block 'vco_ring5_pfet_w4_l0p15' -- more than that pin's own 0.51um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly"
+        },
+        {
+          "pins": [
+            {
+              "block": "vco_ring5_pfet_w4_l0p15",
+              "port": "U5_S"
+            },
+            {
+              "block": "vco_ring5_pfet_w16_l0p15",
+              "port": "U0_S"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "backbone's 0.3um-wide drawn path crosses 3.86um through its own pin's block 'vco_ring5_pfet_w4_l0p15' -- more than that pin's own 0.51um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly"
+        }
+      ]
+    }
+  ],
+  "pins": [],
+  "unrouted_nets": [
+    "BUF1",
+    "CLK",
+    "GND",
+    "RING0",
+    "RING1",
+    "RING2",
+    "RING3",
+    "RING4",
+    "SN0",
+    "SN1",
+    "SN2",
+    "SN3",
+    "SN4",
+    "SP0",
+    "SP1",
+    "SP2",
+    "SP3",
+    "SP4",
+    "VBP",
+    "VCTRL",
+    "VDD"
+  ],
+  "drc_hints": {
+    "min_spacing_um": null,
+    "matched_groups": [
+      {
+        "matched_group_id": "mos_array:2x3:common_centroid",
+        "blocks": [
+          "vco_ring5_nfet_w2_l0p15",
+          "vco_ring5_nfet_w2_l0p5",
+          "vco_ring5_pfet_w4_l0p15",
+          "vco_ring5_pfet_w4_l0p5"
+        ],
+        "placement_symmetric": null
+      },
+      {
+        "matched_group_id": "mos_array:1x1:array",
+        "blocks": [
+          "vco_ring5_nfet_w8_l0p15",
+          "vco_ring5_pfet_w16_l0p15"
+        ],
+        "placement_symmetric": null
+      }
+    ],
+    "notes": [
+      "net 'BUF1' could not be routed: 2 of 4 pins could not be connected into one net ('vco_ring5_nfet_w8_l0p15.U0_G', 'vco_ring5_pfet_w16_l0p15.U0_G') -- every candidate leg reaching them was rejected (per-leg detail in nets[].legs[]); nearest rejection ('vco_ring5_nfet_w8_l0p15.U0_G' -> 'vco_ring5_pfet_w4_l0p15.U5_D'): backbone's 0.3um-wide drawn path crosses 2.035um through its own pin's block 'vco_ring5_nfet_w8_l0p15' -- more than that pin's own 0.36um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly",
+      "net 'CLK' could not be routed: backbone's 0.3um-wide drawn path crosses 4.37um through unrelated block 'vco_ring5_pfet_w4_l0p15''s bbox (including its own edge, within half the route's width) -- the route is not point-to-point between only the two connected blocks",
+      "net 'GND' could not be routed: 1 of 8 pins could not be connected into one net ('vco_ring5_nfet_w2_l0p15.U5_S') -- every candidate leg reaching them was rejected (per-leg detail in nets[].legs[]); nearest rejection ('vco_ring5_nfet_w2_l0p15.U5_S' -> 'vco_ring5_nfet_w2_l0p5.U5_S'): backbone's 0.3um-wide drawn path crosses 3.71um through its own pin's block 'vco_ring5_nfet_w2_l0p15' -- more than that pin's own 0.36um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly",
+      "net 'RING0' could not be routed: 5 of 6 pins could not be connected into one net ('vco_ring5_nfet_w2_l0p15.U1_G', 'vco_ring5_nfet_w2_l0p15.U5_G', 'vco_ring5_pfet_w4_l0p15.U0_D', 'vco_ring5_pfet_w4_l0p15.U1_G', 'vco_ring5_pfet_w4_l0p15.U5_G') -- every candidate leg reaching them was rejected (per-leg detail in nets[].legs[]); nearest rejection ('vco_ring5_nfet_w2_l0p15.U1_G' -> 'vco_ring5_nfet_w2_l0p15.U5_G'): pin 'U1_G' on block 'vco_ring5_nfet_w2_l0p15' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it",
+      "net 'RING1' could not be routed: 3 of 4 pins could not be connected into one net ('vco_ring5_nfet_w2_l0p15.U2_G', 'vco_ring5_pfet_w4_l0p15.U1_D', 'vco_ring5_pfet_w4_l0p15.U2_G') -- every candidate leg reaching them was rejected (per-leg detail in nets[].legs[]); nearest rejection ('vco_ring5_nfet_w2_l0p15.U1_D' -> 'vco_ring5_nfet_w2_l0p15.U2_G'): pin 'U2_G' on block 'vco_ring5_nfet_w2_l0p15' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it",
+      "net 'RING2' could not be routed: 2 of 4 pins could not be connected into one net ('vco_ring5_nfet_w2_l0p15.U3_G', 'vco_ring5_pfet_w4_l0p15.U3_G') -- every candidate leg reaching them was rejected (per-leg detail in nets[].legs[]); nearest rejection ('vco_ring5_nfet_w2_l0p15.U2_D' -> 'vco_ring5_nfet_w2_l0p15.U3_G'): pin 'U3_G' on block 'vco_ring5_nfet_w2_l0p15' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it",
+      "net 'RING3' could not be routed: 3 of 4 pins could not be connected into one net ('vco_ring5_nfet_w2_l0p15.U4_G', 'vco_ring5_pfet_w4_l0p15.U3_D', 'vco_ring5_pfet_w4_l0p15.U4_G') -- every candidate leg reaching them was rejected (per-leg detail in nets[].legs[]); nearest rejection ('vco_ring5_nfet_w2_l0p15.U3_D' -> 'vco_ring5_nfet_w2_l0p15.U4_G'): pin 'U4_G' on block 'vco_ring5_nfet_w2_l0p15' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it",
+      "net 'RING4' could not be routed: 3 of 4 pins could not be connected into one net ('vco_ring5_nfet_w2_l0p15.U4_D', 'vco_ring5_pfet_w4_l0p15.U0_G', 'vco_ring5_pfet_w4_l0p15.U4_D') -- every candidate leg reaching them was rejected (per-leg detail in nets[].legs[]); nearest rejection ('vco_ring5_nfet_w2_l0p15.U0_G' -> 'vco_ring5_nfet_w2_l0p15.U4_D'): pin 'U0_G' on block 'vco_ring5_nfet_w2_l0p15' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it",
+      "net 'SN0' could not be routed: backbone's 0.3um-wide drawn path crosses 2.32um through its own pin's block 'vco_ring5_nfet_w2_l0p15' -- more than that pin's own 1.75um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly",
+      "net 'SN1' could not be routed: backbone's 0.3um-wide drawn path crosses 2.32um through its own pin's block 'vco_ring5_nfet_w2_l0p15' -- more than that pin's own 1.75um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly",
+      "net 'SN2' could not be routed: backbone's 0.3um-wide drawn path crosses 3.71um through its own pin's block 'vco_ring5_nfet_w2_l0p15' -- more than that pin's own 0.36um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly",
+      "net 'SN3' could not be routed: backbone's 0.3um-wide drawn path crosses 4.76um through its own pin's block 'vco_ring5_nfet_w2_l0p5' -- more than that pin's own 0.36um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly",
+      "net 'SN4' could not be routed: backbone's 0.3um-wide drawn path crosses 4.76um through its own pin's block 'vco_ring5_nfet_w2_l0p5' -- more than that pin's own 0.36um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly",
+      "net 'SP0' could not be routed: backbone's 0.3um-wide drawn path crosses 2.47um through its own pin's block 'vco_ring5_pfet_w4_l0p15' -- more than that pin's own 1.9um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly",
+      "net 'SP1' could not be routed: backbone's 0.3um-wide drawn path crosses 2.47um through its own pin's block 'vco_ring5_pfet_w4_l0p15' -- more than that pin's own 1.9um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly",
+      "net 'SP2' could not be routed: backbone's 0.3um-wide drawn path crosses 3.86um through its own pin's block 'vco_ring5_pfet_w4_l0p15' -- more than that pin's own 0.51um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly",
+      "net 'SP3' could not be routed: backbone's 0.3um-wide drawn path crosses 4.91um through its own pin's block 'vco_ring5_pfet_w4_l0p5' -- more than that pin's own 0.51um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly",
+      "net 'SP4' could not be routed: backbone's 0.3um-wide drawn path crosses 4.91um through its own pin's block 'vco_ring5_pfet_w4_l0p5' -- more than that pin's own 0.51um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly",
+      "net 'VBP' could not be routed: 7 of 8 pins could not be connected into one net ('vco_ring5_pfet_w4_l0p5.U0_G', 'vco_ring5_pfet_w4_l0p5.U1_G', 'vco_ring5_pfet_w4_l0p5.U2_G', 'vco_ring5_pfet_w4_l0p5.U3_G', 'vco_ring5_pfet_w4_l0p5.U4_G', 'vco_ring5_pfet_w4_l0p5.U5_D', 'vco_ring5_pfet_w4_l0p5.U5_G') -- every candidate leg reaching them was rejected (per-leg detail in nets[].legs[]); nearest rejection ('vco_ring5_pfet_w4_l0p5.U0_G' -> 'vco_ring5_pfet_w4_l0p5.U4_G'): pin 'U0_G' on block 'vco_ring5_pfet_w4_l0p5' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it",
+      "net 'VCTRL' could not be routed: 5 of 6 pins could not be connected into one net ('vco_ring5_nfet_w2_l0p5.U1_G', 'vco_ring5_nfet_w2_l0p5.U2_G', 'vco_ring5_nfet_w2_l0p5.U3_G', 'vco_ring5_nfet_w2_l0p5.U4_G', 'vco_ring5_nfet_w2_l0p5.U5_G') -- every candidate leg reaching them was rejected (per-leg detail in nets[].legs[]); nearest rejection ('vco_ring5_nfet_w2_l0p5.U0_G' -> 'vco_ring5_nfet_w2_l0p5.U2_G'): pin 'U0_G' on block 'vco_ring5_nfet_w2_l0p5' is drawn on layer (66, 20), which routing.layer_role's (68, 20) cannot reach: this pin is a bare-poly gate -- gen_compose draws no poly contact, so the backbone would end as an uncontacted metal stub over the gate rather than connecting to it. Re-run this block's generator with params.gate_contact=true so the gate reports a contacted metal landing pad (issue #492), or name the gate with pins[] instead of routing to it",
+      "net 'VDD' could not be routed: 1 of 8 pins could not be connected into one net ('vco_ring5_pfet_w4_l0p15.U5_S') -- every candidate leg reaching them was rejected (per-leg detail in nets[].legs[]); nearest rejection ('vco_ring5_pfet_w4_l0p15.U5_S' -> 'vco_ring5_pfet_w4_l0p5.U5_S'): backbone's 0.3um-wide drawn path crosses 3.86um through its own pin's block 'vco_ring5_pfet_w4_l0p15' -- more than that pin's own 0.51um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly"
+    ]
+  },
+  "warnings": []
+}
