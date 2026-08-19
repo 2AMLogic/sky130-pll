@@ -39,7 +39,9 @@ issues once there is a PLL netlist.
   "process_corners": ["tt", "ss", "ff"],
   "temps_c": [-40, 27, 125],
   "supply_nominal": 1.8,
-  "supply_tolerance": 0.1
+  "supply_tolerance": 0.1,
+  "methodology_note": "one clause on what this experiment's DUT is (and is not), spliced into the record's per-point criterion line",
+  "analysis": "the ngspice analysis this DUT's schematic runs, e.g. \"DC operating point (`.op`)\" or \"transient (`.tran 50p 200n`)\""
 }
 ```
 
@@ -66,6 +68,13 @@ issues once there is a PLL netlist.
   `--supply-tol`) narrows this for a fast pass, and requires
   `--subset-reason` to be recorded when writing evidence — see
   `sim/README.md`'s subset-justification rule.
+- **`methodology_note`** / **`analysis`** — free text, spliced verbatim into
+  the record's "Methodology / criteria / limitations" line
+  (`report.render`/`render_mc`) so that line describes *this* manifest's DUT
+  and analysis type rather than a hardcoded sentence. A Monte Carlo campaign
+  may override either under its own `monte_carlo` block (falling back to the
+  top-level value if absent). Optional — a manifest that omits either falls
+  back to a `(no ... stated in manifest)` placeholder rather than failing.
 
 ## Running
 

@@ -54,10 +54,10 @@ sim/
   |---|---|---|
   | `pdk-smoke` | does xschem+ngspice+sky130 run this DUT to completion across a real process/temperature/supply sweep — the harness's own plumbing self-test, not a PLL design claim | #2 |
   | `pdk-smoke` (`--mc`) | does the sky130 `MC_MM_SWITCH`/`MC_PR_SWITCH` statistical-sampling mechanism run this DUT to completion, seed by seed — the Monte Carlo harness's own plumbing self-test, not a PLL statistical-spec claim | #20 |
+  | `pll` | does the four-block closed-loop PLL netlist (`design/top/top.sch` — VCO + PFD/charge pump + loop filter + divider) netlist and simulate to completion across a real process/temperature/supply sweep — the first PLL-specific campaign, still a plumbing claim (no `spec/target-spec.md` row is ratified yet, and the transient window is far short of the loop's cold-start lock time), not a lock-time, frequency, or jitter claim | #23 |
 
   New campaigns add rows here as they are created; the list is descriptive,
-  not a closed set. The first PLL-specific campaign lands with whichever
-  issue first needs `design/`'s schematic to exist.
+  not a closed set.
 
 - **`<record-id>`** — `<YYYYMMDD>-<HHMMSS>-<short-git-sha>` (UTC), this
   repo's `HEAD` when the run started. Re-runs mint a new `<record-id>`;

@@ -1,0 +1,55 @@
+
+Note: Compatibility modes selected: hs a
+
+warning, can't find model 'resetb' from line
+    cnt0 clk d0 resetb gnd gnd vdd vdd q0 sky130_fd_sc_hd__dfrtp_2
+warning, can't find model 'zero' from line
+    ldmux0 nq0 nsel0 zero gnd gnd vdd vdd d0 sky130_fd_sc_hd__mux2_2
+warning, can't find model 'sky130_fd_sc_hd__inv_2' from line
+    qinv0 q0 gnd gnd vdd vdd nq0 sky130_fd_sc_hd__inv_2
+warning, can't find model 'resetb' from line
+    cnt1 clk d1 resetb gnd gnd vdd vdd q1 sky130_fd_sc_hd__dfrtp_2
+warning, can't find model 'zero' from line
+    ldmux1 ddec1 nsel1 zero gnd gnd vdd vdd d1 sky130_fd_sc_hd__mux2_2
+warning, can't find model 'sky130_fd_sc_hd__xor2_2' from line
+    decxor1 q1 nq0 gnd gnd vdd vdd ddec1 sky130_fd_sc_hd__xor2_2
+warning, can't find model 'sky130_fd_sc_hd__inv_2' from line
+    qinv1 q1 gnd gnd vdd vdd nq1 sky130_fd_sc_hd__inv_2
+warning, can't find model 'resetb' from line
+    cnt2 clk d2 resetb gnd gnd vdd vdd q2 sky130_fd_sc_hd__dfrtp_2
+warning, can't find model 'zero' from line
+    ldmux2 ddec2 nsel2 zero gnd gnd vdd vdd d2 sky130_fd_sc_hd__mux2_2
+warning, can't find model 'sky130_fd_sc_hd__xor2_2' from line
+    decxor2 q2 bor2 gnd gnd vdd vdd ddec2 sky130_fd_sc_hd__xor2_2
+warning, can't find model 'sky130_fd_sc_hd__inv_2' from line
+    qinv2 q2 gnd gnd vdd vdd nq2 sky130_fd_sc_hd__inv_2
+warning, can't find model 'resetb' from line
+    cnt3 clk d3 resetb gnd gnd vdd vdd q3 sky130_fd_sc_hd__dfrtp_2
+warning, can't find model 'zero' from line
+    ldmux3 ddec3 nsel3 zero gnd gnd vdd vdd d3 sky130_fd_sc_hd__mux2_2
+warning, can't find model 'sky130_fd_sc_hd__xor2_2' from line
+    decxor3 q3 bor3 gnd gnd vdd vdd ddec3 sky130_fd_sc_hd__xor2_2
+warning, can't find model 'sky130_fd_sc_hd__inv_2' from line
+    qinv3 q3 gnd gnd vdd vdd nq3 sky130_fd_sc_hd__inv_2
+warning, can't find model 'resetb' from line
+    cnt4 clk d4 resetb gnd gnd vdd vdd q4 sky130_fd_sc_hd__dfrtp_2
+warning, can't find model 'zero' from line
+    ldmux4 ddec4 nsel4 zero gnd gnd vdd vdd d4 sky130_fd_sc_hd__mux2_2
+warning, can't find model 'sky130_fd_sc_hd__xor2_2' from line
+    decxor4 q4 bor4 gnd gnd vdd vdd ddec4 sky130_fd_sc_hd__xor2_2
+warning, can't find model 'sky130_fd_sc_hd__inv_2' from line
+    qinv4 q4 gnd gnd vdd vdd nq4 sky130_fd_sc_hd__inv_2
+warning, can't find model 'resetb' from line
+    cnt5 clk d5 resetb gnd gnd vdd vdd q5 sky130_fd_sc_hd__dfrtp_2
+warning, can't find model 'zero' from line
+    ldmux5 ddec5 nsel5 zero gnd gnd vdd vdd d5 sky130_fd_sc_hd__mux2_2
+warning, can't find model 'sky130_fd_sc_hd__xor2_2' from line
+    decxor5 q5 bor5 gnd gnd vdd vdd ddec5 sky130_fd_sc_hd__xor2_2
+warning, can't find model 'sky130_fd_sc_hd__inv_2' from line
+    qinv5 q5 gnd gnd vdd vdd nq5 sky130_fd_sc_hd__inv_2
+warning, can't find model 'gnd' from line
+    zdet bor5 nq5 gnd gnd vdd vdd zero sky130_fd_sc_hd__and2_2
+ERROR: mal formed B source instance: borand2 nq0 nq1 0 0 vdd vdd bor2 sky130_fd_sc_hd__and2_2
+    in line no. 272 of file ss_125c_1.98v.spice
+
+ERROR: fatal error in ngspice, exit(1)
