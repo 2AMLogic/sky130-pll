@@ -6,7 +6,10 @@ choices behind `divider_intN.sch`/`divider_intN.sym`, not a verified result.
 **No `sim/` testbench exists for this block yet** (that is #23 plus whatever
 sub-issue runs the sky130 PVT campaign once the rows this design targets are
 ratified) — every number below is a design target or an informal
-connectivity check, never a claim against `spec/target-spec.md`.
+connectivity check, never a claim against `spec/target-spec.md`. Issue #44
+fixed a SPICE instance-naming defect (below) that had made this block's
+netlist unsimulatable by ngspice; that fix has been verified with an ad hoc
+ngspice run (also below), which is still not a `sim/` evidence record.
 
 ## Forward design, not reverse-engineered
 
@@ -240,3 +243,46 @@ its own merits, per `CLAUDE.md`.
   divider_intN` — i.e. the symbol's pin order matches the schematic's pin
   declaration order and hierarchical instantiation nets correctly, ready for
   the future integration sub-issue.
+
+## Issue #44: standard-cell instance names collided with SPICE's implicit
+## device-type-by-prefix rule, breaking simulation
+
+All 29 standard-cell instances above were originally named with plain
+descriptive names (`CNT0`-`CNT5`, `LDMUX0`-`LDMUX5`, `QINV0`-`QINV5`,
+`DECXOR1`-`DECXOR5`, `BORAND2`-`BORAND5`, `ZDET`, `FBFF`) rather than an
+`X`-prefixed instance name. SPICE infers device type from an instance
+name's first letter when no `X` prefix marks it as a subcircuit call: `C`
+is the capacitor prefix (`CNT*`), `L` is inductor (`LDMUX*`), `Q` is BJT
+(`QINV*`), `D` is diode (`DECXOR*`), `B` is a behavioral source
+(`BORAND*`), `Z` is MESFET (`ZDET`), and `F` is a CCCS (`FBFF`) — so
+ngspice misparsed every one of them as a native device instead of a
+`sky130_fd_sc_hd__*` subcircuit call. `xschem`'s netlister does not enforce
+this SPICE convention, so the "Verification performed for this issue"
+section above (netlisting-only, no ngspice run) could not have caught it;
+this was first exposed while building #23's closed-loop testbench, which
+hit `ERROR: mal formed B source instance` and a string of `warning, can't
+find model` lines pointing at these instances.
+
+**Fix**: every one of the 29 instances above renamed with an `X` prefix in
+`divider_intN.sch` (`CNT0`->`XCNT0`, `LDMUX0`->`XLDMUX0`, etc.) — a pure
+instance-name rename, no connectivity, pin-order, or device change — and
+`netlist/divider_intN.spice` regenerated via the same `xschem -n -q -x`
+command above (still exits 0, still no netlister errors/warnings). A diff
+of the regenerated netlist against its pre-fix version shows only the
+instance-name column changing on the 29 renamed lines (identical node
+lists, identical `sky130_fd_sc_hd__*` subcircuit names and pin order) plus
+the `sch_path` comment line (reflects the absolute path of whichever
+machine/worktree last ran the netlister, not a content change).
+`grep -oE '^[A-Za-z0-9_]+' netlist/divider_intN.spice` now shows all 29
+instance lines starting with `X`.
+
+**ngspice verification (ad hoc, not a `sim/` evidence record)**: wrapped
+the regenerated `netlist/divider_intN.spice` in a scratch top-level
+testbench (power/clock/reset/`NSEL` stimuli, the PDK's
+`sky130_fd_sc_hd.spice` stdcell deck, and the `tt`-corner analog model
+library) and ran `ngspice -b` with a `.tran 50p 200n`. The transient ran to
+completion with exit 0; grepping the run log for `mal formed`, `can't find
+model`, and `unknown parameter` found none. This is a plumbing
+confirmation the block is now simulatable, not a functional or PVT
+performance claim — that remains #23/the future PVT campaign's job, and
+sits in `sim/`, not here.

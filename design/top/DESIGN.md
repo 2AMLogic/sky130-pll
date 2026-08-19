@@ -4,10 +4,16 @@ Top-level closed-loop schematic for the sky130 PLL, the integration step of
 the `#14` decomposition. This document records the wiring rationale behind
 `top.sch`/`top.sym` — how the four already-standalone blocks (#24 VCO, #25
 PFD + charge pump, #26 loop filter, #27 divider) are connected into the
-standard integer-N charge-pump PLL closed loop. **No `sim/` evidence exists
-for this schematic** (that is #23 plus the PVT campaign gated on the spec
-rows each block still targets) — this issue's own scope is connectivity, not
-verified closed-loop behavior.
+standard integer-N charge-pump PLL closed loop. **No `sim/` evidence record
+exists for this schematic** (that is #23 plus the PVT campaign gated on the
+spec rows each block still targets) — this issue's own scope is connectivity,
+not verified closed-loop behavior. Issue #44 fixed a SPICE instance-naming
+defect inside the divider block that had been blocking any ngspice run of
+this netlist (see "Verification performed for this issue" below) and
+confirmed, with an ad hoc (not committed) ngspice transient run, that the
+regenerated `top.spice` now elaborates and simulates to completion — still
+not a `sim/` evidence record or a performance claim, just confirmation the
+netlist is simulatable.
 
 ## Forward design, not reverse-engineered
 
@@ -246,3 +252,48 @@ merits, per `CLAUDE.md`.
   top-level `ipin`/`opin` port structure in this checker pattern, common to
   all sibling blocks checked this way, not a defect specific to this new
   symbol.)
+
+## Issue #44: divider standard-cell instance names broke ngspice, fixed
+
+The first time anyone actually pointed ngspice at this netlist (while
+building #23's `sim/pll/testbench/tb_pll.sch`), the run failed immediately:
+29 `sky130_fd_sc_hd__*` standard-cell instances inside
+`design/divider/divider_intN.sch` were named with plain descriptive names
+(`CNT0`, `LDMUX0`, `QINV0`, `DECXOR1`, `BORAND2`, `ZDET`, `FBFF`, ...) that
+collide with SPICE's implicit element-type-by-first-letter convention (`C`
+is a capacitor prefix, `L` an inductor, `Q` a BJT, `D` a diode, `B` a
+behavioral source, `Z` a MESFET, `F` a CCCS), instead of the `X` prefix
+SPICE requires for a subcircuit call — `mal formed B source instance`,
+`warning, can't find model`, and `unknown parameter` errors, all traced to
+this issue.
+
+`xschem`'s netlister does not enforce SPICE's device-type-by-prefix rule, so
+this defect was invisible to every netlisting-only check this document and
+`design/divider/DESIGN.md` previously recorded — this document's own
+"Verification performed" section above only ever ran `xschem -n -q -x`, not
+ngspice, against `top.spice`, so it could not have caught this.
+
+**Fixed by #44**: all 29 instances in `design/divider/divider_intN.sch`
+renamed with an `X` prefix (pure instance-name rename, no connectivity,
+pin-order, or device change); `design/divider/netlist/divider_intN.spice`
+and this directory's `netlist/top.spice` regenerated from the updated
+schematic via the same `xschem -n -q -x` command above (still exits 0). A
+diff of the regenerated `top.spice` against its pre-fix version shows only
+the instance-name column changing for the 29 renamed lines (identical
+nodes, identical `sky130_fd_sc_hd__*` subcircuit calls, identical pin
+order) plus the expected `sch_path`/`sym_path` comment lines (these always
+reflect the absolute path of whichever machine/worktree last ran the
+netlister — not a content change).
+
+**ngspice verification (ad hoc, not a `sim/` evidence record)**: copied
+`sim/pll/testbench/tb_pll.sch` (from the in-flight #23 PR) into a scratch
+directory, netlisted it against this fixed `design/top/top.sch` with the
+same `xschem -n -q -x --rcfile sim/xschemrc` invocation, added the
+`sky130_fd_sc_hd` PDK spice deck (`libs.ref/sky130_fd_sc_hd/spice/sky130_fd_sc_hd.spice`)
+alongside the existing `sky130.lib.spice tt` corner include, and ran
+`ngspice -b` with a `.control run .endc` block. The transient (`.tran 50p
+200n`) ran to completion (`ngspice` exit 0); grepping the run log for `mal
+formed`, `can't find model`, and `unknown parameter` found none. This
+confirms the closed-loop netlist is simulatable end to end post-fix — it is
+not a lock-time, frequency, or jitter claim, and it does not replace the
+`sim/pll/` evidence record #23 is responsible for minting.
