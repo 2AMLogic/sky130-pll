@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+import json
 import sys
 import unittest
 from pathlib import Path
@@ -170,6 +171,108 @@ class PatchNetlistTests(unittest.TestCase):
         point = corners.PvtPoint(corner="tt", temp_c=27.0, supply_v=1.8)
         with self.assertRaises(runner.NetlistError):
             runner.patch_netlist("no corner line here\n.end\n", self.MANIFEST, point)
+
+
+class PllManifestPatchNetlistTests(unittest.TestCase):
+    """Exercises the sim/pll experiment's own corner_pattern/supply_pattern
+    (issue #23) against a representative post-xschem-netlist snippet --
+    loaded from the real committed manifest, not a hand-copied stand-in, so
+    a future edit to the manifest's regex fields is checked against an
+    actual patched-netlist expectation. Also pins the `V1 VDD GND` node
+    order (VDD listed first, the SPICE positive terminal), which matters
+    here in a way it didn't for sim/pdk-smoke's own throwaway resistor
+    divider: getting this backwards silently biases every sky130_fd_pr__
+    {n,p}fet_01v8 device in the closed loop at -VDD instead of +VDD."""
+
+    MANIFEST = json.loads((SIM_DIR / "pll" / "testbench" / "tb.json").read_text())
+    NETLIST = (
+        "**.subckt tb_pll\n"
+        "XXTOP VDD GND REF RESETB GND GND GND VDD VDD GND CLK top\n"
+        "V1 VDD GND 1.8\n"
+        "V2 REF GND pulse(0 1.8 0 1n 1n 48n 100n)\n"
+        "V3 RESETB GND pwl(0 0 5n 0 6n 1.8)\n"
+        "**** begin user architecture code\n\n"
+        ".lib /some/path/sky130.lib.spice tt\n"
+        ".tran 50p 200n\n\n"
+        "**** end user architecture code\n"
+        "**.ends\n"
+        ".GLOBAL GND\n"
+        ".end\n"
+    )
+
+    def test_patches_corner_and_supply_preserving_vdd_polarity(self):
+        point = corners.PvtPoint(corner="ss", temp_c=-40.0, supply_v=1.62)
+        patched = runner.patch_netlist(self.NETLIST, self.MANIFEST, point)
+        self.assertIn(".lib /some/path/sky130.lib.spice ss", patched)
+        self.assertIn("V1 VDD GND 1.62", patched)
+        self.assertIn(".temp -40\n.end", patched)
+
+    def test_manifest_process_corners_are_pdk_valid(self):
+        pdk_json = json.loads((REPO_ROOT / "sim" / "pdk.json").read_text())
+        valid = set(pdk_json["process_corners"])
+        self.assertTrue(set(self.MANIFEST["process_corners"]).issubset(valid))
+
+
+class RenderMethodologyTests(unittest.TestCase):
+    """Regression coverage for report.render()/render_mc()'s
+    `methodology_note`/`analysis` parameters (issue #23). Before this, the
+    "not a PLL performance measurement -- there is no PLL netlist yet" and
+    "Analysis: DC operating point (`.op`)" lines were hardcoded verbatim
+    inside report.py itself -- accurate for sim/pdk-smoke's own claim, but
+    silently wrong the moment a second experiment (sim/pll, which *is* a PLL
+    netlist and runs `.tran`, not `.op`) started using the same renderer.
+    Pins that both lines are now sourced from the caller instead."""
+
+    class _StubPdk:
+        variant = "sky130A"
+        resolved_commit = "0" * 40
+        pinned_commit = "0" * 40
+        commit_mismatch = False
+        ngspice_lib = Path("/fake/sky130.lib.spice")
+
+    def _render(self, **overrides):
+        from unittest import mock
+
+        point = corners.PvtPoint(corner="tt", temp_c=27.0, supply_v=1.8)
+        result = runner.PointResult(
+            point=point,
+            passed=True,
+            reason="ok",
+            log_path=Path("/fake/tt_27c_1.80v.log"),
+            spice_path=Path("/fake/tt_27c_1.80v.spice"),
+        )
+        kwargs = dict(
+            record_id="20260101-000000-abc1234",
+            slug="pll",
+            claim="a claim",
+            pdk=self._StubPdk(),
+            tool_versions={"ngspice": "ngspice-47", "xschem": "XSCHEM V3.4.7"},
+            repo_root=REPO_ROOT,
+            netlist_snapshot=Path("/fake/netlist.spice"),
+            points=[point],
+            results=[result],
+            subset_reason=None,
+            supersedes=None,
+            methodology_note="a PLL-specific methodology note.",
+            analysis="transient (`.tran 50p 200n`)",
+        )
+        kwargs.update(overrides)
+        with mock.patch.object(report, "git_info", return_value={"sha": "abc1234", "dirty": False}):
+            with mock.patch.object(report, "sha256_file", return_value="deadbeef"):
+                return report.render(**kwargs)
+
+    def test_methodology_note_is_sourced_from_the_caller(self):
+        text = self._render()
+        self.assertIn("a PLL-specific methodology note.", text)
+
+    def test_analysis_is_sourced_from_the_caller(self):
+        text = self._render()
+        self.assertIn("Analysis: transient (`.tran 50p 200n`).", text)
+
+    def test_no_hardcoded_pdk_smoke_prose_leaks_into_an_unrelated_slug(self):
+        text = self._render()
+        self.assertNotIn("there is no PLL netlist yet", text)
+        self.assertNotIn("DC operating point", text)
 
 
 class PdkCommitParsingTests(unittest.TestCase):

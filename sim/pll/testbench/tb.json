@@ -1,0 +1,13 @@
+{
+  "schema": "sky130-pll.harness.tb/1",
+  "claim": "first PLL-specific harness campaign -- proves xschem netlisting + sim/harness PVT-point substitution (process corner, supply, temperature) + ngspice execution run the four-block closed-loop PLL netlist (design/top/top.sch -- VCO + PFD/charge pump + loop filter + divider, issue #28) end-to-end against the sky130 PDK (issue #23). This is a plumbing claim, not a PLL performance claim: no spec/target-spec.md row is ratified yet (pending #1), and the .tran window (200 ns, two reference periods) is far short of a cold-start lock transient. As of this manifest's first recorded run, every point FAILS during ngspice execution (not during netlisting) because of a pre-existing bug in design/divider/divider_intN.sch -- several sky130_fd_sc_hd standard-cell instances are named with a SPICE-reserved element-type prefix (BORAND*, LDMUX*, QINV*, FBFF) instead of the required 'X' subcircuit prefix, so ngspice misparses them as native devices -- tracked as issue #44, discovered while building this testbench. The netlist-patch-run-record loop itself is exercised correctly (this is the point of the plumbing claim); the DUT does not yet simulate to completion pending #44's fix.",
+  "schematic": "tb_pll.sch",
+  "corner_pattern": "(\\.lib\\s+\\S*sky130\\.lib\\.spice\\s+)(\\w+)",
+  "supply_pattern": "(V1 VDD GND )([0-9.]+)",
+  "process_corners": ["tt", "ss", "ff"],
+  "temps_c": [-40, 27, 125],
+  "supply_nominal": 1.8,
+  "supply_tolerance": 0.1,
+  "methodology_note": "this testbench's DUT is design/top/top.sch, the real four-block closed-loop PLL (not a throwaway circuit) -- straps NSEL[5:0]=011000 (N=25) and drives REF with a 10 MHz clock and RESETB with a power-on reset pwl, per sim/pll/testbench/tb_pll.sch's own header comment. Every point currently FAILS at ngspice execution due to issue #44 (a pre-existing SPICE instance-naming defect in design/divider/divider_intN.sch, unrelated to this testbench or the harness) -- see that issue for the root cause and fix.",
+  "analysis": "transient (`.tran 50p 200n`)"
+}

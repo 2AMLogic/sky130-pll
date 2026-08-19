@@ -265,6 +265,10 @@ def cmd_run(args: argparse.Namespace) -> int:
             results=results,
             subset_reason=subset_reason,
             supersedes=args.supersedes,
+            methodology_note=manifest.get(
+                "methodology_note", "(no methodology_note stated in manifest)"
+            ),
+            analysis=manifest.get("analysis", "(no analysis stated in manifest)"),
         )
 
     return _run_experiment(
@@ -319,6 +323,13 @@ def cmd_run_mc(args: argparse.Namespace) -> int:
     def render_record(*, manifest, slug, record_id, pdk, netlist_snapshot, units, results, subset_reason):
         mc_cfg = manifest.get("monte_carlo", {})
         claim = mc_cfg.get("claim", manifest.get("claim", "(no claim stated in manifest)"))
+        methodology_note = mc_cfg.get(
+            "methodology_note",
+            manifest.get("methodology_note", "(no methodology_note stated in manifest)"),
+        )
+        analysis = mc_cfg.get(
+            "analysis", manifest.get("analysis", "(no analysis stated in manifest)")
+        )
         return report_mod.render_mc(
             record_id=record_id,
             slug=slug,
@@ -331,6 +342,8 @@ def cmd_run_mc(args: argparse.Namespace) -> int:
             results=results,
             subset_reason=subset_reason,
             supersedes=args.supersedes,
+            methodology_note=methodology_note,
+            analysis=analysis,
         )
 
     return _run_experiment(

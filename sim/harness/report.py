@@ -118,6 +118,8 @@ def render(
     results,  # list[PointResult]
     subset_reason: str | None,
     supersedes: str | None,
+    methodology_note: str,
+    analysis: str,
 ) -> str:
     # Only this run's own new artifacts are excluded from the dirty check --
     # an uncommitted edit to the testbench itself still marks the record
@@ -162,11 +164,9 @@ def render(
         "  - Per-point criterion: ngspice exits 0, prints its analysis-"
         "completion marker, and emits no `Error:` line. This is a **harness "
         "plumbing check** (does xschem+ngspice+sky130 run this DUT to "
-        "completion at this PVT point?), not a PLL performance measurement -- "
-        "there is no PLL netlist yet (issue #2 is unblocked of spec "
-        "ratification per CLAUDE.md)."
+        f"completion at this PVT point?), not a design measurement -- {methodology_note}"
     )
-    a("  - Analysis: DC operating point (`.op`).")
+    a(f"  - Analysis: {analysis}.")
     a("- **Result**:")
     a("")
     a("  | Corner | Temp (C) | Supply (V) | Verdict | Detail |")
@@ -196,6 +196,8 @@ def render_mc(
     results,  # list[McTrialResult]
     subset_reason: str | None,
     supersedes: str | None,
+    methodology_note: str,
+    analysis: str,
 ) -> str:
     """Render a Monte Carlo evidence record. Same append-only schema and
     directory conventions as `render` (PVT) -- see sim/README.md -- adapted
@@ -260,13 +262,10 @@ def render_mc(
         "  - Per-trial criterion: ngspice exits 0, prints its analysis-"
         "completion marker, and emits no `Error:` line. This is a **harness "
         "plumbing check** (does the sky130 statistical-sampling mechanism "
-        "run this DUT to completion, seed by seed?), not a statistical-spec "
-        "measurement -- spec/target-spec.md's statistical-shaped rows (period "
-        "jitter, reference spur, supply sensitivity) are DRAFT/unratified and "
-        "there is no PLL netlist yet (issue #20 stands up this capability "
-        "ahead of both)."
+        f"run this DUT to completion, seed by seed?), not a statistical-spec "
+        f"measurement -- {methodology_note}"
     )
-    a("  - Analysis: DC operating point (`.op`).")
+    a(f"  - Analysis: {analysis}.")
     a("- **Result**:")
     a("")
     a("  | Trial | Seed | Verdict | Detail |")
