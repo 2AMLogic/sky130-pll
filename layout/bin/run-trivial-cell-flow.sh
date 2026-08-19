@@ -23,13 +23,16 @@
 # LVS mismatch. The fixture is drawn by `klt draw` from
 # layout/trivial-cell/drc-negative-control.json.
 #
-# Deviation 2: this repo's installed `klt`
-# (0.2.0, plain PyPI pin -- see layout/requirements.txt) predates the
-# dummy-device-suppression fix sky130-bandgap's later git-commit pin picked
-# up (2AMLogic/klayout-tools#490/#491), so `klt extract` here reports all 8
+# Deviation 2 (historical): while this repo pinned `klayout-tools==0.2.0`
+# from PyPI, that release predated the dummy-device-suppression fix
+# (2AMLogic/klayout-tools#490/#491), so `klt extract` reported all 8
 # physically-drawn `mos_array` units (4 "real" + 4 dummy-column) rather than
-# 4 -- layout/trivial-cell/reference*.spice are written to match that
-# (8 M-cards), not sky130-bandgap's current 4-card reference.
+# 4, and layout/trivial-cell/reference*.spice were written to match (8
+# M-cards). Issue #46 moved layout/requirements.txt to a git-commit pin that
+# carries that fix, so `klt extract` now reports device_count=4,
+# dummy_devices_dropped=4, matching sky130-bandgap's own reference shape --
+# see layout/trivial-cell/reference.spice's own header and
+# layout/klt-pin-decision.md for the full history.
 set -euo pipefail
 
 LAYOUT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

@@ -7,13 +7,14 @@
 #
 # Provenance: adapted from 2AMLogic/sky130-bandgap layout/bin/setup-venv.sh
 # (source commit b24b40485ff2a1a53a7eeb2cd6c4beadd1ef33c6) per this repo's
-# CLAUDE.md harness-bootstrap rule. Deviation: this repo's requirements.txt
-# pins a plain PyPI version (klayout-tools==0.2.0), not a git commit -- see
-# that file's own header -- so this script's install step is a normal
-# `pip install -r`, without sky130-bandgap's `--force-reinstall` workaround
-# (that workaround exists because pinning by git commit can leave pip
-# thinking an already-installed same-version build is up to date; a PyPI
-# version pin does not have that failure mode).
+# CLAUDE.md harness-bootstrap rule, including its `--force-reinstall` install
+# step. That flag is load-bearing whenever requirements.txt pins `klt` by git
+# commit (it has since issue #46, see that file's header): upstream has not
+# bumped the package version, so two different commits both report
+# `klt 0.2.0` and pip would consider an already-installed build up to date --
+# silently leaving the old `klt` in place after a pin bump. It was dropped
+# while this repo pinned a plain PyPI version, which does not have that
+# failure mode; it is back for the same reason bandgap has it.
 set -euo pipefail
 
 LAYOUT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -28,7 +29,7 @@ fi
 echo "setup-venv.sh: creating $VENV"
 python3 -m venv "$VENV"
 "$VENV/bin/pip" install --quiet --upgrade pip
-"$VENV/bin/pip" install --quiet -r "$LAYOUT_DIR/requirements.txt"
+"$VENV/bin/pip" install --quiet --force-reinstall -r "$LAYOUT_DIR/requirements.txt"
 
 echo "setup-venv.sh: installed"
 "$VENV/bin/klt" --version

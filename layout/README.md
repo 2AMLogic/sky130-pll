@@ -70,16 +70,22 @@ record's `record.md` **first** — it is the actual pass/fail evidence this
 issue delivers, not this README (see `trivial-cell/reports/LATEST` for its
 id).
 
-## Why `klt`, and why a plain PyPI version pin
+## Why `klt`, and why the pin is a git commit
 
-`layout/requirements.txt` pins `klayout-tools==0.2.0` from PyPI. Earlier
-sibling repos (`sky130-bandgap`) had to pin an exact git commit because at
-the time PyPI's release (v0.1.0) shipped only five verbs
-(`layers`/`stats`/`cells`/`drc`/`pdk`) — `gen`, `extract`, and `lvs` (all
-required by this flow) were `main`-only. That gap is closed: PyPI's `0.2.0`
-release ships all three, verified directly in this repo's own
-`layout/bin/run-trivial-cell-flow.sh` run. See `requirements.txt`'s own
-header for the fuller history and how to bump the pin.
+`layout/requirements.txt` pins `klt` by **exact git commit**. It pinned the
+PyPI release (`klayout-tools==0.2.0`) from issue #2 through issue #16, and
+moved back to a commit pin in issue #46.
+
+**Read [`klt-pin-decision.md`](klt-pin-decision.md) for that decision** — what
+the version pin bought, what it cost, what was measured on each side, and the
+bump discipline that follows from it. In short: PyPI has published nothing
+since `0.2.0`, five of the eight `klt` gaps the PLL layout hit are fixed only
+on the tool's `main`, and two of those five are what made the layout
+unroutable. `requirements.txt`'s own header lists exactly what the current pin
+picks up.
+
+A pin bump is never just a version edit here: it re-runs **both** flows below
+and checks the refreshed records in as the non-regression proof.
 
 ## The flow
 
@@ -108,12 +114,14 @@ generator's default `params` pass `klt drc --deck sky130` clean — exactly
 the "trivial known-good cell" this issue's acceptance criteria call for.
 
 **The reference netlist** (`trivial-cell/reference.spice`) is hand-written to
-match `mos_array`'s pinned-default topology at this repo's pinned `klt`
-version: **8** independent unit NMOS devices (4 "real" + 4 dummy-column,
-all physically drawn and none suppressed at this `klt` version — see
-`reference.spice`'s own header for why this differs from sky130-bandgap's
-current 4-device reference), each with its own isolated source/drain/gate
-net, bodies tied to one shared `vsubs` pin. `klt lvs`/`NetlistComparer`
+match `mos_array`'s pinned-default topology at this repo's pinned `klt` build:
+**4** independent unit NMOS devices — the "real" ones. The generator also draws
+4 dummy-column units, which the curated deck's `dummy` marker layer lets
+`klt extract` suppress (`dummy_devices_dropped: 4`); it reported all 8 while
+this repo pinned `klayout-tools==0.2.0`, which predates that fix. See
+`reference.spice`'s own header for why 4 is the topologically correct
+reference. Each unit has its own isolated source/drain/gate net, bodies tied to
+one shared `vsubs` pin. `klt lvs`/`NetlistComparer`
 compares topology, not net *names* (see
 [`docs/cli/lvs.md`](https://github.com/2AMLogic/klayout-tools/blob/main/docs/cli/lvs.md)
 in the `klayout-tools` repo), so the reference's arbitrary net names do not
@@ -146,7 +154,8 @@ accident on a compare that ignores the other axis. Both must (and do) report
 ```
 layout/
   README.md                  # this file
-  requirements.txt           # pinned `klt` install (PyPI version)
+  klt-pin-decision.md        # why the `klt` pin is a git commit (issue #46)
+  requirements.txt           # pinned `klt` install (git commit; see above)
   bin/
     setup-venv.sh             # create/refresh layout/.venv from requirements.txt
     run-trivial-cell-flow.sh  # the repeatable driver: gen -> drc -> extract -> lvs -> report
@@ -190,7 +199,8 @@ as a manual cross-check against `sim/pdk.json` instead.
 
 Standing this flow up in this sandbox surfaced no new `klt` gap: `gen`,
 `drc`, `draw`, `extract`, and `lvs` all ran cleanly against sky130 on the
-first try with the pinned PyPI `0.2.0` release, and the trivial-cell
+first try (originally on the PyPI `0.2.0` release, and again unchanged at the
+git-commit pin issue #46 moved to), and the trivial-cell
 five-way verdict (DRC clean, DRC negative control `violations`, LVS match,
 two LVS negative controls both `mismatch`) reproduced on repeat runs. The
 DRC negative control needed no workaround either — `klt draw` is documented
@@ -219,10 +229,13 @@ the reason this flow (like bandgap's) uses `mos_array` rather than
 now closed as of the `0.2.0` release this repo pins) — nothing new to file.
 
 That was the trivial cell's own experience. **Drawing the actual PLL layout
-(#16) found considerably more** — eight gaps, three newly filed and five
-already tracked upstream and already fixed on the tool's `main`, reaching
-this repo only through the PyPI pin. They are tabulated, with the workaround
-each one forced, in [`pll/README.md`](pll/README.md#friction-klt-gaps-found-drawing-this).
+(#16) found considerably more** — eight gaps, of which five were already fixed
+on the tool's `main` and reached this repo only through the PyPI pin. Issue
+#46's pin bump cleared those five (see
+[`klt-pin-decision.md`](klt-pin-decision.md)); what remains open, plus the
+one new gap the bumped router surfaced, is tabulated with the workaround each
+one forces in
+[`pll/README.md`](pll/README.md#friction-klt-gaps-found-drawing-this).
 File any further gap the same way, at `2AMLogic/klayout-tools` per the root
 `CLAUDE.md` — tool-gap description only, no spec values or design content
 from this repo.
