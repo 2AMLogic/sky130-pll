@@ -1,10 +1,22 @@
-# layout/ — the klayout-tools (`klt`) DRC/LVS flow
+# layout/ — the klayout-tools (`klt`) layout flows
 
-Issue #2's layout deliverable: a headless, repeatable DRC/LVS flow driven by
-[`klayout-tools`](https://github.com/2AMLogic/klayout-tools) (`klt`),
-**proven on a trivial known-good cell**. There is no PLL layout yet — that
-starts with a later issue, once a PLL schematic exists (`design/` is still
-empty). This directory's whole scope for #2 is the trivial-cell proof below.
+Two flows live here, both headless and repeatable, both driven by
+[`klayout-tools`](https://github.com/2AMLogic/klayout-tools) (`klt`):
+
+| Directory | What it is | Issue |
+| --- | --- | --- |
+| [`pll/`](pll/) | **The PLL layout.** A device-level layout of the closed-loop PLL schematic, drawn from `design/top/netlist/top.spice` — start at `pll/README.md`, then the current record's `record.md` (`pll/reports/LATEST`) | #16 |
+| `trivial-cell/` | The DRC/LVS flow's own gating proof on a trivial known-good cell, plus its negative controls | #2 |
+
+The PLL layout is a **device-level floorplan**: every device the schematic
+declares is physically drawn at its own W/L, and the extracted device set is
+checked back against the schematic — but it is **not routed, not DRC-clean,
+and not LVS-compared**. `pll/README.md`'s "What it is not" section states the
+gaps in full; DRC-clean closure is #17, LVS-clean closure is #18.
+
+The trivial-cell proof below is unchanged and still the flow's own regression
+gate: it is what establishes that a DRC/LVS "pass" from this directory can
+also come back "fail".
 
 Two rules from the root `CLAUDE.md` shape this directory:
 
@@ -46,6 +58,9 @@ layout/.venv/bin/klt pdk find --pdk sky130A
 
 # 3. run the trivial-cell DRC/LVS proof (~5s)
 layout/bin/run-trivial-cell-flow.sh
+
+# 4. draw the PLL layout from the schematic netlist (~30s)
+layout/bin/run-pll-layout-flow.sh
 ```
 
 The last command writes a fresh, timestamped record under
@@ -135,9 +150,13 @@ layout/
   bin/
     setup-venv.sh             # create/refresh layout/.venv from requirements.txt
     run-trivial-cell-flow.sh  # the repeatable driver: gen -> drc -> extract -> lvs -> report
-    render-record.py          # renders + verdict-checks a record's record.md
+    render-record.py          # renders + verdict-checks a trivial-cell record's record.md
+    pll_layout.py             # schematic -> layout plan -> `klt gen`/`draw`/`gen-compose`
+    run-pll-layout-flow.sh    # the PLL layout driver: plan -> draw -> compose -> drc/extract -> report
+    render-pll-record.py      # renders + verdict-checks a PLL record's record.md
   tests/                      # PDK-free unit coverage
   .venv/                      # gitignored -- `klt` install, created by setup-venv.sh
+  pll/                        # the PLL layout + its records (see pll/README.md)
   trivial-cell/
     reference.spice                    # known-good LVS reference netlist
     reference.broken-device.spice      # LVS negative control 1: device.property corruption
@@ -199,22 +218,32 @@ the reason this flow (like bandgap's) uses `mos_array` rather than
 ([klayout-tools#342](https://github.com/2AMLogic/klayout-tools/issues/342),
 now closed as of the `0.2.0` release this repo pins) — nothing new to file.
 
-If a *new* gap turns up in follow-on layout issues (once a PLL schematic
-exists to draw), file it at `2AMLogic/klayout-tools` per the root
+That was the trivial cell's own experience. **Drawing the actual PLL layout
+(#16) found considerably more** — eight gaps, three newly filed and five
+already tracked upstream and already fixed on the tool's `main`, reaching
+this repo only through the PyPI pin. They are tabulated, with the workaround
+each one forced, in [`pll/README.md`](pll/README.md#friction-klt-gaps-found-drawing-this).
+File any further gap the same way, at `2AMLogic/klayout-tools` per the root
 `CLAUDE.md` — tool-gap description only, no spec values or design content
 from this repo.
 
-## Known klt-deck limitations relevant to later, PLL-specific layout issues
+## Known klt-deck limitations relevant to PLL-specific layout issues
 
 Not gaps to file (documented, deliberate scope limits of the curated
-`sky130` deck, carried over from sky130-bandgap's own note) but worth
-flagging now for whichever later issue takes on PLL-block layout, since this
-issue's own scope stops at the trivial-cell proof:
+`sky130` deck, carried over from sky130-bandgap's own note) but load-bearing
+for the PLL layout in `pll/` and for the DRC/LVS closure issues (#17/#18)
+that follow it:
 
 - **No NMOS substrate-tap extraction.** The curated deck ties every NMOS
   body to a single global `vsubs` net rather than a real drawn tap
-  (`docs/cli/extract.md` → "Coverage"). A future PLL-block LVS reference
-  netlist should tie NMOS bodies to a single net for the same reason.
+  (`docs/cli/extract.md` → "Coverage"). A PLL-block LVS reference netlist
+  should tie NMOS bodies to a single net for the same reason. Confirmed in
+  the PLL layout's own extraction: every drawn MOS device's body terminal
+  comes back on one `vsubs` net.
 - **No voltage-flavor distinction on MOS devices.** `klt extract`'s `nfet`/
-  `pfet` classes are flavor-agnostic — relevant once #1 ratifies this repo's
-  supply flavor and a real device mix exists to extract.
+  `pfet` classes are flavor-agnostic, so extraction cannot itself confirm
+  the ratified 1.8 V core flavor (DR-001). The PLL flow closes that gap on
+  the schematic side instead: `layout/bin/pll_layout.py` refuses any device
+  model it has no primitive for, and both the record and
+  `layout/tests/test_pll_layout_plan.py` assert every MOS model in the
+  schematic is an `_01v8` core device.
