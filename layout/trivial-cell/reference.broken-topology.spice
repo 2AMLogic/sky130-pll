@@ -6,15 +6,12 @@
 * status "mismatch". See layout/README.md for the run and its recorded
 * result.
 *
-* 8 M-cards (all physically-drawn units, real + dummy), matching
-* reference.spice's own device-count note -- see that file's header for why.
+* 4 M-cards (the real units; the 4 dummy-column units are suppressed by the
+* extraction deck), matching reference.spice's own device-count note -- see
+* that file's header for why.
 .SUBCKT trivial_mos_array vsubs
 M1 d1 g1 s1 vsubs nfet L=0.28U W=0.42U
 M2 d1 g2 s2 vsubs nfet L=0.28U W=0.42U
 M3 d3 g3 s3 vsubs nfet L=0.28U W=0.42U
 M4 d4 g4 s4 vsubs nfet L=0.28U W=0.42U
-M5 d5 g5 s5 vsubs nfet L=0.28U W=0.42U
-M6 d6 g6 s6 vsubs nfet L=0.28U W=0.42U
-M7 d7 g7 s7 vsubs nfet L=0.28U W=0.42U
-M8 d8 g8 s8 vsubs nfet L=0.28U W=0.42U
 .ENDS trivial_mos_array

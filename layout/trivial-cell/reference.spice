@@ -2,32 +2,38 @@
 * known-good cell this flow is proven against (issue #2).
 *
 * Topology only, matching `klt gen mos_array`'s pinned-default output at this
-* repo's pinned `klt` version (0.2.0, see layout/requirements.txt): rows=2,
-* cols=2, dummy=1, flavor=nfet -- 2x2 "real" devices plus one dummy column
-* on each side of each row = 8 physically drawn unit NMOS transistors, no
-* well/body layer drawn. Verified directly against this repo's own
-* `klt extract` output (layout/bin/run-trivial-cell-flow.sh's extract.json):
-* device_count=8, dummy_devices_dropped=0 -- unlike
-* 2AMLogic/sky130-bandgap's *current* reference.spice (4 M-cards), this
-* repo's pinned `klt` predates the dummy-device-suppression fix
-* (2AMLogic/klayout-tools#490/#491) that lets a curated deck drop the 4
-* dummy-column units from the comparison, so all 8 drawn units -- real and
-* dummy alike -- are stated here to match what this version of `klt extract`
-* actually reports.
+* repo's pinned `klt` build (see layout/requirements.txt): rows=2, cols=2,
+* dummy=1, flavor=nfet -- 2x2 "real" devices plus one dummy column on each
+* side of each row = 8 physically drawn unit NMOS transistors, no well/body
+* layer drawn -- of which the 4 *real* ones are stated here. Verified
+* directly against this repo's own `klt extract` output
+* (layout/bin/run-trivial-cell-flow.sh's extract.json): device_count=4,
+* dummy_devices_dropped=4.
 *
-* Each of the 8 units has its own isolated source/drain/gate net (this
+* Each of the 4 units has its own isolated source/drain/gate net (this
 * generator draws no GDS pin-label text, so there is nothing to name these
 * nets after), bodies tied to the single shared `vsubs` pin. `klt lvs`/
 * `NetlistComparer` compares topology, not net names, so the arbitrary
 * `d*/g*/s*` names here do not need to match the extracted netlist's own
 * (also arbitrary, `$N`-style) net names.
+*
+* Was 8 M-cards -- one per physically drawn unit, dummies included -- while
+* this repo pinned `klayout-tools==0.2.0` from PyPI. That release predates the
+* dummy-device-suppression fix (2AMLogic/klayout-tools#490/#495 and
+* #491/#494: sky130's curated deck declares a `dummy` marker layer and
+* `mos_array` draws it over its own `dummy_cells` footprint), so `klt extract`
+* reported all 8 drawn units and the reference had to state all 8 to match.
+* Issue #46's pin bump picks that fix up. A dummy unit has no schematic
+* counterpart by construction -- it exists only for layout-matching symmetry,
+* per the `mos_array` generator's own docs -- so 4 M-cards is the
+* topologically correct reference now that the layout side can express the
+* distinction. This is not a relaxation to chase a smaller mismatch count:
+* the 8-card version was itself compensating for a `klt` recognition gap that
+* has since closed, and 4 cards is the shape the sibling
+* 2AMLogic/sky130-bandgap flow settled on when it took the same fix.
 .SUBCKT trivial_mos_array vsubs
 M1 d1 g1 s1 vsubs nfet L=0.28U W=0.42U
 M2 d2 g2 s2 vsubs nfet L=0.28U W=0.42U
 M3 d3 g3 s3 vsubs nfet L=0.28U W=0.42U
 M4 d4 g4 s4 vsubs nfet L=0.28U W=0.42U
-M5 d5 g5 s5 vsubs nfet L=0.28U W=0.42U
-M6 d6 g6 s6 vsubs nfet L=0.28U W=0.42U
-M7 d7 g7 s7 vsubs nfet L=0.28U W=0.42U
-M8 d8 g8 s8 vsubs nfet L=0.28U W=0.42U
 .ENDS trivial_mos_array

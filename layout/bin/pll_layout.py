@@ -80,9 +80,18 @@ CAP_LAYERS = {"met3": (70, 20), "capm": (89, 44)}
 #: should report back for a drawn passive (the record's cross-check), never to
 #: size anything. Sourced from `klayout_tools.decks.sky130.EXTRACTION_DECK`:
 #: `resistors[...].sheet_rho_ohm_sq` for `res_xhigh_po`, and
-#: `capacitors[0].area_cap_f_um2` for the MiM stack.
+#: `capacitors[0].area_cap_f_um2` / `.perim_cap_f_um` for the MiM stack.
 SHEET_RHO_OHM_SQ = {"xhigh": 2000.0, "high": 319.8, "generic": 48.2}
 MIM_AREA_CAP_F_UM2 = 2.0e-15
+#: Perimeter/fringe term of the same MiM stack, in F per um of top-plate
+#: perimeter. `klt extract` reports a MiM capacitor as
+#: `W*L*area_cap_f_um2 + 2*(W+L)*perim_cap_f_um`; the area term alone
+#: undercounts a small unit capacitor by up to ~15%, which is why the deck
+#: carries both (klayout-tools#512/#517, reaching this repo with issue #46's
+#: pin bump -- the `0.2.0` release predates it and reported the area term
+#: only). The record predicts the same two-term value so its
+#: schematic-vs-extracted capacitor comparison stays exact.
+MIM_PERIM_CAP_F_UM = 1.9e-16
 
 #: Minimum li1 (local-interconnect) spacing the curated sky130 DRC deck
 #: enforces (`li1.space.1`), in um. `klt gen`'s MOS unit devices abut their

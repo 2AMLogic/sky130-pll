@@ -3,9 +3,11 @@
 
 These do not invoke `klt`/ngspice at all -- they check the three hand-written
 LVS reference netlists are internally consistent with what
-layout/README.md and each file's own header claim: 8 M-cards, a balanced
-.SUBCKT/.ENDS pair, and exactly the documented single-line corruption
-between the good reference and each negative control.
+layout/README.md and each file's own header claim: 4 M-cards (one per *real*
+unit device; the generator's 4 dummy-column units are suppressed by the
+extraction deck at this repo's `klt` pin -- see reference.spice's header), a
+balanced .SUBCKT/.ENDS pair, and exactly the documented single-line
+corruption between the good reference and each negative control.
 
     python3 -m unittest discover -s layout/tests -v
 """
@@ -34,15 +36,15 @@ class ReferenceNetlistTests(unittest.TestCase):
         for path in (GOOD, BROKEN_DEVICE, BROKEN_TOPOLOGY):
             self.assertTrue(path.is_file(), f"missing {path}")
 
-    def test_good_reference_has_eight_devices(self):
-        self.assertEqual(len(device_lines(GOOD)), 8)
+    def test_good_reference_has_four_devices(self):
+        self.assertEqual(len(device_lines(GOOD)), 4)
 
     def test_all_references_are_balanced_subckt_ends(self):
         for path in (GOOD, BROKEN_DEVICE, BROKEN_TOPOLOGY):
             text = path.read_text()
             self.assertEqual(text.count(".SUBCKT"), 1, path)
             self.assertEqual(text.count(".ENDS"), 1, path)
-            self.assertEqual(len(device_lines(path)), 8, path)
+            self.assertEqual(len(device_lines(path)), 4, path)
 
     def test_broken_device_differs_from_good_by_one_parameter_only(self):
         good = device_lines(GOOD)

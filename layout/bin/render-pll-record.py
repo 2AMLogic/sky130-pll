@@ -57,6 +57,7 @@ if str(_REPO_ROOT) not in sys.path:
 from pll_layout import (  # noqa: E402
     LI1_MIN_SPACE_UM,
     MIM_AREA_CAP_F_UM2,
+    MIM_PERIM_CAP_F_UM,
     SHEET_RHO_OHM_SQ,
     read_cards,
 )
@@ -112,9 +113,75 @@ def planned_sets(block: dict[str, Any]) -> dict[str, Counter]:
             ohms = params["length_um"] / params["width_um"] * SHEET_RHO_OHM_SQ[params["flavor"]]
             res[(f"res_{params['flavor']}_po", round(ohms, 6))] += group["count"]
         elif group["kind"] == "mim_cap":
-            farads = params["w_um"] * params["l_um"] * MIM_AREA_CAP_F_UM2
+            # Two-term MiM model, matching the curated deck's own: plate area
+            # plus a perimeter/fringe term. The area term alone undercounts a
+            # small plate by up to ~15%, which is what `klt extract` reported
+            # before the pin bumped in issue #46.
+            width, length = params["w_um"], params["l_um"]
+            farads = width * length * MIM_AREA_CAP_F_UM2 + 2 * (
+                width + length
+            ) * MIM_PERIM_CAP_F_UM
             cap[("sky130_fd_pr__model__cap_mim", farads)] += group["count"]
     return {"mos": mos, "res": res, "cap": cap}
+
+
+#: How a `gen-compose` leg's own `reason` string is bucketed for the record's
+#: routing spot-check table. Each entry is (substring, label); the first
+#: matching substring wins, so order matters. The strings are the router's own
+#: (`legs[].reason` in a compose response), not this script's paraphrase.
+ROUTE_REASON_BUCKETS = (
+    (
+        "crosses already-routed net",
+        "would cross an already-drawn route (the router's own route-vs-route "
+        "collision check, klayout-tools#1057)",
+    ),
+    (
+        "bare-poly gate",
+        "terminates on a bare-poly gate with no contacted landing pad "
+        "(`params.gate_contact`, klayout-tools#492 -- this flow does not opt in)",
+    ),
+    (
+        "through unrelated block",
+        "backbone would plough through an unrelated block's bbox (no routing "
+        "channel between abutted groups)",
+    ),
+    (
+        "through its own pin's block",
+        "backbone would plough through its own pin's block (no routing channel "
+        "inside a matched array)",
+    ),
+)
+
+
+def _reason_bucket(reason: str | None) -> str:
+    for needle, label in ROUTE_REASON_BUCKETS:
+        if needle in (reason or ""):
+            return label
+    return "other"
+
+
+def route_stats(spot_dir: Path) -> dict[str, Any]:
+    """Aggregate what the routed spot-check's own compose responses report.
+
+    Everything here is read back out of `klt gen-compose`'s responses -- net
+    `status` (`"routed"`/`"partial"`/`"unrouted"`), per-leg `routed`, and the
+    router's own `reason` string for a leg it declined to draw. Nothing is
+    inferred from the drawn stream, which the flow deletes; the extraction
+    cross-check below the narrative is what speaks for the geometry.
+    """
+    status: Counter = Counter()
+    reasons: Counter = Counter()
+    legs = drawn = 0
+    for path in sorted(spot_dir.glob("compose.*.response.json")):
+        for net in _load(path).get("nets", []) or []:
+            status[net.get("status") or ("routed" if net.get("routed") else "unrouted")] += 1
+            for leg in net.get("legs") or []:
+                legs += 1
+                if leg.get("routed"):
+                    drawn += 1
+                else:
+                    reasons[_reason_bucket(leg.get("reason"))] += 1
+    return {"status": status, "legs": legs, "drawn_legs": drawn, "reasons": reasons}
 
 
 def _cap_sets_match(planned: Counter, extracted: Counter) -> bool:
@@ -321,6 +388,7 @@ def main() -> int:
             "drc": _load(out_dir / "route-spot-check" / "drc.json"),
             "extract": _load(out_dir / "route-spot-check" / "extract.json"),
             "merged_nodes": merged,
+            "routing": route_stats(out_dir / "route-spot-check"),
         }
 
     lines: list[str] = []
@@ -420,43 +488,71 @@ def main() -> int:
         a("")
         merged = spot["merged_nodes"]
         merged_nets = sum(node.count("|") + 1 for node in merged)
+        routing = spot["routing"]
+        status = routing["status"]
+        partial = status.get("partial", 0)
         a(
-            "The same build was re-run with `klt gen-compose`'s "
-            f"point-to-point router enabled (`route-spot-check/`). It routed "
-            f"{routed} of {declared} declared nets; the rest are >2-pin bundle "
-            "nets (out of scope for the router's current phase) or "
-            "point-to-point pairs whose backbone would cross an unrelated "
-            "block."
+            "The same build was re-run with `klt gen-compose`'s router enabled "
+            f"(`route-spot-check/`). Of {declared} declared nets it drew "
+            f"{routed} in full and {partial} in part, leaving "
+            f"{status.get('unrouted', 0)} with no geometry at all -- "
+            f"{routing['drawn_legs']} of {routing['legs']} two-pin legs drawn. "
+            "The router declined the rest, with its own reason per leg:"
         )
         a("")
-        a(
-            f"**Every one of those {routed} routes is a drawn short.** The "
-            "routed run's own extracted netlist collapses them onto "
-            f"{len(merged)} electrical node(s) carrying {merged_nets} distinct "
-            "net names between them:"
-        )
+        a("| Why a leg was not drawn | Legs |")
+        a("| --- | --- |")
+        for label, count in routing["reasons"].most_common():
+            a(f"| {label} | {count} |")
         a("")
-        for node in merged:
-            a(f"- `{node}`")
+        if merged:
+            node_word = "node" if len(merged) == 1 else "nodes"
+            a(
+                f"**The drawn geometry still shorts {len(merged)} {node_word}.** "
+                "The routed run's own extracted netlist collapses "
+                f"{merged_nets} distinct declared net names onto "
+                f"{len(merged)} electrical {node_word}:"
+            )
+            a("")
+            for node in merged:
+                a(f"- `{node}`")
+            a("")
+            a(
+                "That is why the shipped stream is still the unrouted one: a "
+                "layout that shorts nets the schematic keeps apart is worse "
+                "than one with no wires, and nothing downstream (#17's DRC "
+                "closure, #18's LVS closure) can be argued from it. The "
+                "residual short survives the router's own route-vs-route check "
+                "(which this `klt` pin does have, and which fires on the legs "
+                "counted in the table above); it is a coverage gap in that "
+                "check, reproduced on `klt`'s own default generator output and "
+                "filed upstream as "
+                "[klayout-tools#1197](https://github.com/2AMLogic/klayout-tools/issues/1197)."
+            )
+        else:
+            a(
+                "**No drawn short:** the routed run's extracted netlist carries "
+                "no multi-label node, so nothing the router drew merged two "
+                "declared nets. The shipped stream is still the unrouted one "
+                "because most nets remain undrawn (see the table above), not "
+                "because the drawn ones are wrong."
+            )
         a("")
         a(
-            f"Its DRC also reports {spot['drc'].get('violation_count')} "
+            f"Its DRC reports {spot['drc'].get('violation_count')} "
             f"violations ({spot['drc'].get('rule_counts')}) against "
             f"{drc.get('violation_count')} for the unrouted build, and its "
             f"extraction finds {spot['extract'].get('net_count')} nets against "
-            f"{extract_top.get('net_count')} -- "
-            f"{extract_top.get('net_count') - spot['extract'].get('net_count')} "
-            f"fewer for {routed} routes drawn, where {routed} correct "
-            "point-to-point routes could account for at most "
-            f"{routed}. Shipping known "
-            "shorts to buy a handful of wires is a bad trade, so the shipped "
-            "stream is the unrouted one and the behaviour is filed upstream "
-            "(see `layout/pll/README.md`)."
+            f"{extract_top.get('net_count')} for the unrouted build. Most of "
+            "that difference is the routing doing its job -- each drawn leg "
+            "merges two device pads that the unrouted stream counts as two "
+            "separate nets -- which is why the multi-label node count above, "
+            "not the net-count delta, is what identifies a short."
         )
         a("")
         a("Per-block routing outcome from the spot-check:")
         a("")
-        a("| Block | Declared nets | Routed | Unrouted |")
+        a("| Block | Declared nets | Fully routed | Not fully routed |")
         a("| --- | --- | --- | --- |")
         for entry in spot_blocks:
             a(

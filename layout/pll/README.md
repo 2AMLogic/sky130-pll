@@ -49,9 +49,10 @@ would otherwise have to discover for themselves:
   topology *is* recorded — machine-derived — in each record's `plan.json`
   (every group member carries its schematic device name and its port-to-net
   mapping), and the record reports how many nets that is per block. But the
-  GDS carries no wires. The one router available (`klt gen-compose`'s
-  point-to-point router) draws shorts on this design; see "Friction" below
-  and each record's routing spot-check for the evidence.
+  GDS carries no wires. The one router available (`klt gen-compose`'s) still
+  draws a short on this design, and leaves most nets undrawn for want of
+  routing channels and contacted gate pins; see "Friction" below and each
+  record's routing spot-check for the per-leg evidence.
 - **Not DRC-clean.** Every violation is one instance of a single documented
   `klt gen` limitation (see "Friction"), one per minimum-gate-length device.
   The record asserts exactly that, so a *new* violation class appearing is a
@@ -83,26 +84,48 @@ Filed here:
 | `connectivity[]` cannot be declared without also requesting metal — there is no "record the intended topology, draw nothing" mode | [klayout-tools#1188](https://github.com/2AMLogic/klayout-tools/issues/1188) | The unrouted request omits `connectivity[]`; the declared topology is written to the flow's own `plan.json` instead |
 | `gen-compose` cannot consume a cell it did not generate — its own response is not a valid block input (no `generator`, no `ports[]`), so hierarchical composition and PDK library cells need a hand-forged `generator_report` | [klayout-tools#1189](https://github.com/2AMLogic/klayout-tools/issues/1189) | Synthesizes the inline block report for the top level and for library cells |
 
-Already tracked upstream — cross-confirmed on
-[klayout-tools#953](https://github.com/2AMLogic/klayout-tools/issues/953)
-rather than re-filed, since every one of them is **already fixed on the
-tool's `main`** and reaches this repo only because `layout/requirements.txt`
-pins the PyPI release (`klayout-tools==0.2.0`), which is far behind it:
+Filed after the `klt` pin bump (#46), by the router the bump made usable:
 
-| Gap | Tracked as | How this flow copes |
+| Gap | Filed | How this flow copes |
 | --- | --- | --- |
-| `gen-compose`'s router never checks a route against another route, so routes drawn inside one block short each other — extraction reads every routed net back as one merged node | [#1057](https://github.com/2AMLogic/klayout-tools/issues/1057) | Ships the unrouted stream; keeps the routed build as a spot-check under `route-spot-check/` so the claim is evidenced, not asserted |
-| The router is two-pin only, so every shared rail or fanout net is unroutable | [#1073](https://github.com/2AMLogic/klayout-tools/issues/1073) | 53 of the 60 declared nets are bundles; all are recorded in `plan.json` rather than drawn |
-| A `klt draw` response is not accepted as a `gen-compose` block | [#1059](https://github.com/2AMLogic/klayout-tools/issues/1059) | Same hand-forged inline report as for library cells |
-| No MiM-capacitor generator, although the curated extraction deck recognises the device | [#1117](https://github.com/2AMLogic/klayout-tools/issues/1117) | Draws the plates with `klt draw` on the two layers the deck keys off; the record cross-checks each extracted capacitance against the schematic's own W x L |
-| No block orientation in `gen-compose`'s placement, so standard-cell rows cannot be mirrored | [#1166](https://github.com/2AMLogic/klayout-tools/issues/1166) | Places the divider's cells in one unmirrored row, so no power rail ever abuts its opposite |
+| `gen-compose`'s route-vs-route collision check misses two same-block self-nets: both compose `routed: true` with no warning, and extraction reads them back as one node | [klayout-tools#1197](https://github.com/2AMLogic/klayout-tools/issues/1197) | Ships the unrouted stream; the routed build stays as a spot-check under `route-spot-check/`, whose extraction names the merged node, so the claim is evidenced rather than asserted |
 
-**The pin is the binding constraint here, not the tool.** Five of the eight
-gaps above are already fixed upstream. Whether this repo should move
-`layout/requirements.txt` off the PyPI release — and what that costs in
-reproducibility, which is why it moved *to* a version pin in the first place
-(see `layout/requirements.txt`'s own header) — is its own decision, tracked
-in #46; it is deliberately not made inside this issue.
+Five further gaps this layout originally hit were **already fixed on the tool's
+`main`** and reached this repo only through the PyPI pin
+(`klayout-tools==0.2.0`). Issue #46 moved `layout/requirements.txt` to a
+git-commit pin that carries all five, each verified working on this design
+before the entry was dropped from this table — see
+[`../klt-pin-decision.md`](../klt-pin-decision.md) for the decision and the
+measurements, and `../requirements.txt`'s header for what the current pin
+picks up ([#1057](https://github.com/2AMLogic/klayout-tools/issues/1057)
+route-vs-route checking,
+[#1073](https://github.com/2AMLogic/klayout-tools/issues/1073) bundle-net
+routing, [#1059](https://github.com/2AMLogic/klayout-tools/issues/1059) `klt
+draw` composition, [#1117](https://github.com/2AMLogic/klayout-tools/issues/1117)
+the `cap_array` MiM generator,
+[#1166](https://github.com/2AMLogic/klayout-tools/issues/1166) block
+orientation).
+[klayout-tools#953](https://github.com/2AMLogic/klayout-tools/issues/953), the
+PyPI release-cadence gap those five arrived through, stays cross-confirmed
+there rather than re-filed.
+
+**The pin was the binding constraint, and it moved — but the layout is still
+unrouted.** Two of the five (#1057, #1073) are what made routing impossible at
+all; with them the router now draws 51 legs on this design instead of 7
+certified shorts. What still blocks a routed stream is #1197 above plus two
+things that are this design's own to fix, not the tool's: the shelf-packed
+floorplan leaves no routing channels, and this flow does not opt into
+`mos_array`'s `params.gate_contact`
+([#492](https://github.com/2AMLogic/klayout-tools/issues/492)), so every net
+terminating on a gate is unroutable by construction. Both belong to #17/#18.
+The current record's routing spot-check tabulates the router's own reason for
+every leg it declined.
+
+Two capabilities the bump makes available are deliberately **not yet adopted**,
+because adopting either changes drawn geometry and needs its own evidence:
+`klt gen cap_array` (#1117) in place of this flow's `klt draw` MiM plates, and
+block `orientation` (#1166), which the divider's single row does not need
+today.
 
 ## Directory layout
 
