@@ -74,7 +74,17 @@ format="tcleval( @value )"
 value="
 ** sky130 PDK model include (tt corner) -- patched per-point by sim/harness
 .lib $::SKYWATER_MODELS/sky130.lib.spice tt
+** sky130_fd_sc_hd standard-cell subcircuit deck. Needed for design/divider's
+** sky130_fd_sc_hd standard-cell instances -- the primitive-device .lib above
+** does not define these subckt bodies. See DESIGN.md notes in
+** design/divider and design/top on this same include, added ad hoc there;
+** first landed in the committed testbench by issue #52.
+.include $::SKYWATER_STDCELLS/sky130_fd_sc_hd.spice
 .tran 50p 200n
+** Some ngspice builds treat a bare .tran card as inert in batch (-b) mode
+** without an accompanying .plot/.print/.fourier/.control (no simulations
+** run); this .print costs nothing and makes the analysis run portably.
+.print tran v(CLK)
 "
 spice_ignore=false}
 C {devices/title.sym} -200 500 0 0 {name=l4 author="2AM Logic (issue #23, sky130 PLL closed-loop testbench)"}

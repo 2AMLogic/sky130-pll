@@ -92,9 +92,119 @@ python3 sim/run_corners.py pdk-smoke \
 Per-point pass/fail is a **plumbing** criterion, not a design measurement:
 ngspice must exit 0, print its analysis-completion marker, and emit no
 `Error:` line for that PVT point's patched netlist. A campaign that measures
-an actual circuit quantity (once a PLL schematic exists) extends `runner.py`
-/ `report.py` with its own reduction — this harness's job is to guarantee the
-netlist-patch-run-record loop itself is trustworthy underneath that.
+an actual circuit quantity extends the manifest with a `measure` block (see
+below), which layers a stricter *measurement* criterion on top of the same
+plumbing check.
+
+## Measurement campaigns (`measure` manifest block)
+
+Issue #52 closed the gap this package's own module docstring used to flag:
+"sky130-pll does not yet [carry PLL-specific measurement modules] — issue #2
+stands up the harness plumbing only". `sim/harness/measure.py` is that
+measurement layer. A manifest that declares a top-level `measure` block hands
+the *analysis itself* to the harness — the testbench schematic carries no
+`.tran` card of its own (see `sim/pll-lock/testbench/tb_pll_lock.sch` and
+`sim/vco/testbench/tb_vco.sch` for the pattern) — so the transient window,
+waveform capture, and reduction are all manifest knobs rather than schematic
+edits:
+
+```json
+{
+  "measure": {
+    "node": "CLK",
+    "tran_step": "200p",
+    "tran_stop": "3u",
+    "timeout_s": 1800,
+    "threshold_frac": 0.5,
+    "hysteresis_frac": 0.15,
+    "settle_from": "0",
+    "min_edges": 4,
+    "ic": ["v(xxxvco.ring0)=0"],
+    "uic": false,
+    "lock": {
+      "target_hz": 250000000,
+      "tolerance_frac": 0.05,
+      "window_cycles": 20,
+      "min_hold_cycles": 20
+    },
+    "require_lock": false,
+    "sweep": {"source": "V2", "quantity": "VCTRL", "values": [0.6, 0.8, 1.0]},
+    "require_oscillation": false,
+    "min_oscillating_points": 2,
+    "extra_nodes": []
+  }
+}
+```
+
+- **`node`** — the node measured for frequency/duty/lock (`v(<node>)`, e.g.
+  `CLK` for a top-level pin, or a hierarchical path like `xxxtop.vctrl` for an
+  internal node — see the caveat below on hierarchical vector names).
+- **`tran_step`/`tran_stop`** — the injected `tran` card's arguments, as SPICE
+  time literals (`200p`, `3u`, `40u`, ...). This is the knob that makes a
+  lock-capable window a manifest edit instead of a schematic edit.
+- **`timeout_s`** — per-point ngspice wall-clock budget (default 3600). A
+  closed-loop cold-start transient is far more expensive to simulate than a
+  short plumbing window; a point that blows this budget is recorded as a
+  timed-out FAIL, not a crashed harness run.
+- **`threshold_frac`/`hysteresis_frac`** — the crossing threshold and
+  hysteresis band, both **fractions of that PVT point's own supply** (so the
+  same manifest reads correctly at 1.62 V and 1.98 V, not just the nominal
+  rail).
+- **`settle_from`** — discard rising edges before this SPICE time literal
+  when computing frequency/duty (startup transient exclusion for an unswept
+  oscillation measurement).
+- **`min_edges`** — how many post-settle rising edges must be observed for a
+  point to count as "oscillating" at all.
+- **`ic`/`uic`** — `.ic` cards and the `tran ... uic` flag, for a DUT (like a
+  free-running ring oscillator) whose noiseless DC operating point is an
+  unstable equilibrium a simulator can otherwise sit on indefinitely.
+- **`lock`** — when present, the point is judged by the sliding-window lock
+  criterion (see `sim/harness/measure.py`'s module docstring for the exact
+  definition) instead of plain oscillation. `require_lock` (default `false`)
+  controls whether a point that never locks FAILs the point or is recorded as
+  data ("no lock within this window, at this corner" is itself a finding a
+  v1 canary campaign may want to *record*, not paper over — see
+  `sim/pll-lock/testbench/tb.json`).
+- **`sweep`** — when present, one ngspice invocation per PVT point runs
+  `len(values)` transients, altering `source`'s DC value between each (e.g.
+  a VCO's `VCTRL` bias) and dumping one waveform per swept value. Used by
+  `sim/vco`'s frequency-vs-VCTRL characterization. `require_oscillation`
+  (only meaningful when `sweep` is absent) and `min_oscillating_points`
+  (meaningful when `sweep` is present) control whether a dead point/dead
+  swept value fails the whole point outright or is recorded as
+  characterization data — a campaign that deliberately sweeps past the edge
+  of a tuning range wants the latter.
+- **`extra_nodes`** — additional `v(...)` vectors saved and dumped alongside
+  `node`, for diagnostic visibility. **Caveat**: a node's ngspice vector name
+  after hierarchical flattening does not always match the schematic label
+  syntax that works fine for `save`/`display` post-run introspection — an
+  internal node one level down a hierarchy (e.g. the loop filter's `VCTRL`,
+  which is internal to `design/top/top.sch`'s `top` subckt, itself
+  instantiated as `XXXTOP`) may need to be discovered empirically (netlist by
+  hand, `save all` + `tran` + `run` + `display` in a scratch `.control`
+  block, per this section) rather than assumed from the schematic's own net
+  label. Getting it wrong surfaces as `Error: no such vector <name>` and
+  aborts that point's `wrdata` — a hard failure, not a silent one, but it
+  costs a wasted run to discover. `sim/pll-lock`'s manifest does not declare
+  `extra_nodes` for this reason: `CLK` (a genuine top-level pin) is the only
+  node it needs for frequency/duty/lock, and the VCTRL diagnostic was not
+  worth chasing for issue #52's scope.
+
+Every measurement record renders a stricter criterion than the plain
+plumbing table: "ngspice ran to completion" is necessary but not
+sufficient — see `report._render_measurement_criteria` for the exact
+wording a record carries, and `sim/pll-lock/records/` /
+`sim/vco/records/` for real examples.
+
+### What `measure` deliberately does not cover
+
+Loop bandwidth and phase margin are **not** extracted by this reducer —
+they are open-loop quantities, and pulling them out of a closed-loop
+transient needs either a broken-loop AC testbench or a step-response fit
+whose accuracy is dominated by the fit's own assumptions, neither of which
+this transient reducer attempts. See `sim/harness/measure.py`'s module
+docstring for the full scoping rationale (issue #52 explicitly allows
+deferring this to a dedicated AC/linearized-model testbench).
 
 ## Monte Carlo (`--mc`)
 

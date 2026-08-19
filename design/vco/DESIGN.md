@@ -2,12 +2,23 @@
 
 Ring-oscillator VCO core for the sky130 PLL, block 1 of 4 of the #14
 decomposition. Standalone block: this document records the design choices
-behind `vco_ring5.sch`/`vco_ring5.sym`, not a verified result. **No
-`sim/` testbench exists for this block yet** (that is #23 plus whatever
-sub-issue runs the sky130 tuning-range campaign once #1 ratifies the spec
-rows this design targets) — every number below is a design target or an
-informal sanity-check observation, never a claim against
-`spec/target-spec.md`.
+behind `vco_ring5.sch`/`vco_ring5.sym`, not a verified result — every number
+below is a design target or an informal sanity-check observation, never a
+claim against `spec/target-spec.md`.
+
+**Update (issue #52): a real `sim/` testbench now exists.**
+`sim/vco/testbench/tb_vco.sch` + `sim/vco/testbench/tb.json` characterize
+this block's frequency-vs-`VCTRL` curve for real, via `sim/harness/measure.py`
+— see `sim/vco/records/20260819-131741-fe0e6df.md` for the first committed
+record (one corner, tt/27 °C/1.80 V nominal; the full PVT grid this
+manifest declares is deferred to a follow-up issue given the ~5-10
+minute-per-swept-point simulation cost observed in this environment). That
+record's numbers track the informal table below closely (e.g. 145.1 MHz at
+`VCTRL` = 0.8 V vs. this table's ~145 MHz), which is exactly the
+cross-check a from-scratch measured record is supposed to provide. The
+informal table itself stays below, unedited, per `CLAUDE.md`'s
+append-only-evidence convention — it is now superseded in *authority* (a
+real committed record beats an ad hoc sanity check) but not deleted.
 
 ## Forward design, not reverse-engineered
 
