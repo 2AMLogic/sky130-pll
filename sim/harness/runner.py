@@ -98,7 +98,12 @@ def _env_with_pdk(pdk: ResolvedPdk) -> dict:
     return env
 
 
-def patch_netlist(netlist_text: str, manifest: dict, point: PvtPoint) -> str:
+def _substitute_corner_and_supply(netlist_text: str, manifest: dict, corner_label: str, supply_v: float) -> str:
+    """Apply the manifest's `corner_pattern`/`supply_pattern` substitutions.
+
+    Shared by `patch_netlist` (PVT) and `patch_netlist_mc` (Monte Carlo),
+    which differ only in which corner label and supply value they select.
+    """
     corner_re = re.compile(manifest["corner_pattern"])
     supply_re = re.compile(manifest["supply_pattern"])
 
@@ -107,8 +112,13 @@ def patch_netlist(netlist_text: str, manifest: dict, point: PvtPoint) -> str:
     if not supply_re.search(netlist_text):
         raise NetlistError(f"supply_pattern {manifest['supply_pattern']!r} matched nothing")
 
-    text = corner_re.sub(lambda m: f"{m.group(1)}{point.corner}", netlist_text)
-    text = supply_re.sub(lambda m: f"{m.group(1)}{point.supply_v:g}", text)
+    text = corner_re.sub(lambda m: f"{m.group(1)}{corner_label}", netlist_text)
+    text = supply_re.sub(lambda m: f"{m.group(1)}{supply_v:g}", text)
+    return text
+
+
+def patch_netlist(netlist_text: str, manifest: dict, point: PvtPoint) -> str:
+    text = _substitute_corner_and_supply(netlist_text, manifest, point.corner, point.supply_v)
 
     if not _END_CARD_RE.search(text):
         raise NetlistError("patched netlist has no standalone .end card to anchor .temp before")
@@ -131,16 +141,7 @@ def patch_netlist_mc(netlist_text: str, manifest: dict, trial: McTrial) -> str:
     module docstring for how this was verified against this repo's sky130
     install.
     """
-    corner_re = re.compile(manifest["corner_pattern"])
-    supply_re = re.compile(manifest["supply_pattern"])
-
-    if not corner_re.search(netlist_text):
-        raise NetlistError(f"corner_pattern {manifest['corner_pattern']!r} matched nothing")
-    if not supply_re.search(netlist_text):
-        raise NetlistError(f"supply_pattern {manifest['supply_pattern']!r} matched nothing")
-
-    text = corner_re.sub(lambda m: f"{m.group(1)}{trial.lib_corner}", netlist_text)
-    text = supply_re.sub(lambda m: f"{m.group(1)}{trial.supply_v:g}", text)
+    text = _substitute_corner_and_supply(netlist_text, manifest, trial.lib_corner, trial.supply_v)
 
     if not _END_CARD_RE.search(text):
         raise NetlistError("patched netlist has no standalone .end card to anchor MC cards before")
