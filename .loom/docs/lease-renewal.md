@@ -64,6 +64,13 @@ by positive evidence, not inference from a missing broadcast.
   comment whose marker line matches them exactly), and idempotently PATCH
   it. Exit 0 on success, 2 when no matching lease comment exists (a normal,
   silent no-op — not every sweep is daemon-dispatched), 1 on a `gh` failure.
+  Its two `gh api` calls strip a **foreign** `GH_CONFIG_DIR` (Issue #56) —
+  one that does not resolve to this workspace's own `<workspace>/.loom/
+  gh-config` dir, e.g. one leaked in from an unrelated repo's process tree —
+  before invoking `gh`; a `GH_CONFIG_DIR` that legitimately names this
+  workspace passes through untouched, and `GH_TOKEN`/`GITHUB_TOKEN` are
+  never stripped (an operator-exported personal token scoped to this repo is
+  indistinguishable, by value alone, from a leaked one).
 - **`stop <PID>`** — best-effort kill of a loop PID. Not required for
   correctness; the loop already self-terminates.
 
@@ -107,6 +114,36 @@ sweep runs. For any sweep with no daemon-dispatched claim on this run
 (manual invocation, GH Actions cron, `--no-daemon`, Mode C), Step 1a's
 self-claim signal is never true, so this line never executes and there is no
 lease to renew anyway.
+
+## Sustained failure is surfaced, not just swallowed (Issue #56)
+
+A **single, transient** `renew-once` failure is still swallowed silently —
+this contract is unchanged and remains deliberate (a `gh` hiccup on one cycle
+of a 5-minute loop must never kill the loop or the sweep). What changed:
+`start`'s detached loop now counts **consecutive** non-zero, non-own-yield
+`renew-once` exits (`rc` values other than `0`, `2`, and `4`), and once that
+streak crosses `SWEEP_LEASE_RENEW_FAIL_WARN_THRESHOLD` (default `3`), it
+appends a `WARN` line — with the captured `renew-once` output, not
+`/dev/null` — to a per-issue log:
+
+```
+.loom/logs/sweep-lease-renew-<issue>.log     # default; SWEEP_LEASE_RENEW_LOG_FILE overrides
+```
+
+A success (`rc=0`) or a legitimate no-op (`rc=2`, no lease comment to renew)
+resets the streak. The loop's own stdout/stderr remain redirected to
+`/dev/null` exactly as before — nobody is watching a background loop's
+terminal — the WARN goes to this file instead, specifically so
+`sweep-lease-fence.sh`'s EXPIRED verdict (Phase 3, `check`) can read it: an
+EXPIRED abort now tails (or names, if empty/absent) this same file in its
+`ABORT: EXPIRED` message, so a human/agent hitting a false-looking EXPIRED
+can immediately tell "the renewal loop was actually failing" (the log has
+recent WARN entries) apart from "a peer genuinely superseded this lease"
+(the log is empty/absent right up to expiry) without reconstructing it by
+hand. This was exactly the missing signal in the incident that motivated
+Issue #56 — a leaked `GH_CONFIG_DIR` broke every renewal attempt for ~2.2h
+with zero visible trace until the fencing check reported EXPIRED, right
+before the one irreversible action (push/PR-open) it gates.
 
 ## What this does not do (Phase 1 scope)
 
