@@ -1,0 +1,1821 @@
+{
+  "schema_version": 1,
+  "file": "/home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-16/layout/pll/reports/20260819-065329-33d74dd/pll_pfd_cp.gds",
+  "deck": "sky130",
+  "top": "pll_pfd_cp",
+  "dbu_um": 0.001,
+  "netlist_path": "/home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-16/layout/pll/reports/20260819-065329-33d74dd/pll_pfd_cp.extract.spice",
+  "netlist_sha256": "3a8c8d96dabb298830de37ea15ec12c4bfbfde2c2cddd20ba0a4079a21d59fff",
+  "status": "extracted",
+  "device_count": 60,
+  "net_count": 186,
+  "pin_count": 1,
+  "device_counts": {
+    "nfet": 30,
+    "pfet": 29,
+    "res_xhigh_po": 1
+  },
+  "dummy_devices_dropped": 0,
+  "ignored_layers": [],
+  "device_classes": [
+    "nfet",
+    "pfet",
+    "pnp",
+    "sky130_fd_pr__model__cap_mim",
+    "sky130_fd_pr__model__cap_mim_m4",
+    "resistor"
+  ],
+  "devices": [
+    {
+      "name": "$1",
+      "class": "nfet",
+      "nets": {
+        "s": "$31",
+        "g": "$1",
+        "d": "$35",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 1.0
+      }
+    },
+    {
+      "name": "$10",
+      "class": "nfet",
+      "nets": {
+        "s": "$81",
+        "g": "$10",
+        "d": "$82",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 1.0,
+        "w_um": 1.0
+      }
+    },
+    {
+      "name": "$11",
+      "class": "nfet",
+      "nets": {
+        "s": "$83",
+        "g": "$11",
+        "d": "$84",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 1.0,
+        "w_um": 1.0
+      }
+    },
+    {
+      "name": "$12",
+      "class": "nfet",
+      "nets": {
+        "s": "$85",
+        "g": "$12",
+        "d": "$86",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 1.0,
+        "w_um": 2.0
+      }
+    },
+    {
+      "name": "$13",
+      "class": "nfet",
+      "nets": {
+        "s": "$87",
+        "g": "$13",
+        "d": "$88",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 1.0,
+        "w_um": 2.0
+      }
+    },
+    {
+      "name": "$14",
+      "class": "nfet",
+      "nets": {
+        "s": "$30",
+        "g": "$33",
+        "d": "$34",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 1.0
+      }
+    },
+    {
+      "name": "$15",
+      "class": "nfet",
+      "nets": {
+        "s": "$36",
+        "g": "$39",
+        "d": "$41",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 1.0
+      }
+    },
+    {
+      "name": "$16",
+      "class": "nfet",
+      "nets": {
+        "s": "$42",
+        "g": "$44",
+        "d": "$47",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 1.0
+      }
+    },
+    {
+      "name": "$17",
+      "class": "nfet",
+      "nets": {
+        "s": "$49",
+        "g": "$51",
+        "d": "$52",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 1.0
+      }
+    },
+    {
+      "name": "$18",
+      "class": "nfet",
+      "nets": {
+        "s": "$55",
+        "g": "$57",
+        "d": "$58",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 1.0
+      }
+    },
+    {
+      "name": "$19",
+      "class": "nfet",
+      "nets": {
+        "s": "$61",
+        "g": "$62",
+        "d": "$64",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 1.0
+      }
+    },
+    {
+      "name": "$2",
+      "class": "nfet",
+      "nets": {
+        "s": "$37",
+        "g": "$2",
+        "d": "$40",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 1.0
+      }
+    },
+    {
+      "name": "$20",
+      "class": "nfet",
+      "nets": {
+        "s": "$66",
+        "g": "$68",
+        "d": "$69",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.3,
+        "w_um": 1.0
+      }
+    },
+    {
+      "name": "$21",
+      "class": "nfet",
+      "nets": {
+        "s": "$71",
+        "g": "$73",
+        "d": "$75",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.3,
+        "w_um": 1.0
+      }
+    },
+    {
+      "name": "$22",
+      "class": "nfet",
+      "nets": {
+        "s": "$77",
+        "g": "$78",
+        "d": "$79",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.3,
+        "w_um": 1.0
+      }
+    },
+    {
+      "name": "$23",
+      "class": "nfet",
+      "nets": {
+        "s": "$124",
+        "g": "$32",
+        "d": "$125",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 1.0
+      }
+    },
+    {
+      "name": "$24",
+      "class": "nfet",
+      "nets": {
+        "s": "$126",
+        "g": "$38",
+        "d": "$127",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 1.0
+      }
+    },
+    {
+      "name": "$25",
+      "class": "nfet",
+      "nets": {
+        "s": "$128",
+        "g": "$45",
+        "d": "$129",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 1.0
+      }
+    },
+    {
+      "name": "$26",
+      "class": "nfet",
+      "nets": {
+        "s": "$130",
+        "g": "$50",
+        "d": "$131",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 1.0
+      }
+    },
+    {
+      "name": "$27",
+      "class": "nfet",
+      "nets": {
+        "s": "$132",
+        "g": "$56",
+        "d": "$133",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 1.0
+      }
+    },
+    {
+      "name": "$28",
+      "class": "nfet",
+      "nets": {
+        "s": "$134",
+        "g": "$63",
+        "d": "$135",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 1.0
+      }
+    },
+    {
+      "name": "$29",
+      "class": "nfet",
+      "nets": {
+        "s": "$136",
+        "g": "$14",
+        "d": "$137",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 10.0
+      }
+    },
+    {
+      "name": "$3",
+      "class": "nfet",
+      "nets": {
+        "s": "$43",
+        "g": "$3",
+        "d": "$46",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 1.0
+      }
+    },
+    {
+      "name": "$30",
+      "class": "nfet",
+      "nets": {
+        "s": "$138",
+        "g": "$15",
+        "d": "$139",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 1.0,
+        "w_um": 10.0
+      }
+    },
+    {
+      "name": "$31",
+      "class": "pfet",
+      "nets": {
+        "s": "$89",
+        "g": "$16",
+        "d": "$91",
+        "b": "$181"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 2.0
+      }
+    },
+    {
+      "name": "$32",
+      "class": "pfet",
+      "nets": {
+        "s": "$92",
+        "g": "$17",
+        "d": "$94",
+        "b": "$181"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 2.0
+      }
+    },
+    {
+      "name": "$33",
+      "class": "pfet",
+      "nets": {
+        "s": "$95",
+        "g": "$18",
+        "d": "$97",
+        "b": "$181"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 2.0
+      }
+    },
+    {
+      "name": "$34",
+      "class": "pfet",
+      "nets": {
+        "s": "$98",
+        "g": "$19",
+        "d": "$100",
+        "b": "$181"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 2.0
+      }
+    },
+    {
+      "name": "$35",
+      "class": "pfet",
+      "nets": {
+        "s": "$101",
+        "g": "$20",
+        "d": "$103",
+        "b": "$181"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 2.0
+      }
+    },
+    {
+      "name": "$36",
+      "class": "pfet",
+      "nets": {
+        "s": "$104",
+        "g": "$21",
+        "d": "$106",
+        "b": "$181"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 2.0
+      }
+    },
+    {
+      "name": "$37",
+      "class": "pfet",
+      "nets": {
+        "s": "$107",
+        "g": "$22",
+        "d": "$109",
+        "b": "$182"
+      },
+      "params": {
+        "l_um": 0.3,
+        "w_um": 2.0
+      }
+    },
+    {
+      "name": "$38",
+      "class": "pfet",
+      "nets": {
+        "s": "$110",
+        "g": "$23",
+        "d": "$112",
+        "b": "$182"
+      },
+      "params": {
+        "l_um": 0.3,
+        "w_um": 2.0
+      }
+    },
+    {
+      "name": "$39",
+      "class": "pfet",
+      "nets": {
+        "s": "$113",
+        "g": "$24",
+        "d": "$115",
+        "b": "$182"
+      },
+      "params": {
+        "l_um": 0.3,
+        "w_um": 2.0
+      }
+    },
+    {
+      "name": "$4",
+      "class": "nfet",
+      "nets": {
+        "s": "$48",
+        "g": "$4",
+        "d": "$53",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 1.0
+      }
+    },
+    {
+      "name": "$40",
+      "class": "pfet",
+      "nets": {
+        "s": "$116",
+        "g": "$25",
+        "d": "$117",
+        "b": "$122"
+      },
+      "params": {
+        "l_um": 1.0,
+        "w_um": 2.0
+      }
+    },
+    {
+      "name": "$41",
+      "class": "pfet",
+      "nets": {
+        "s": "$118",
+        "g": "$26",
+        "d": "$119",
+        "b": "$122"
+      },
+      "params": {
+        "l_um": 1.0,
+        "w_um": 2.0
+      }
+    },
+    {
+      "name": "$42",
+      "class": "pfet",
+      "nets": {
+        "s": "$120",
+        "g": "$27",
+        "d": "$121",
+        "b": "$183"
+      },
+      "params": {
+        "l_um": 1.0,
+        "w_um": 4.0
+      }
+    },
+    {
+      "name": "$43",
+      "class": "pfet",
+      "nets": {
+        "s": "$140",
+        "g": "$90",
+        "d": "$143",
+        "b": "$181"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 2.0
+      }
+    },
+    {
+      "name": "$44",
+      "class": "pfet",
+      "nets": {
+        "s": "$145",
+        "g": "$93",
+        "d": "$148",
+        "b": "$181"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 2.0
+      }
+    },
+    {
+      "name": "$45",
+      "class": "pfet",
+      "nets": {
+        "s": "$151",
+        "g": "$96",
+        "d": "$154",
+        "b": "$181"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 2.0
+      }
+    },
+    {
+      "name": "$46",
+      "class": "pfet",
+      "nets": {
+        "s": "$155",
+        "g": "$99",
+        "d": "$159",
+        "b": "$181"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 2.0
+      }
+    },
+    {
+      "name": "$47",
+      "class": "pfet",
+      "nets": {
+        "s": "$160",
+        "g": "$102",
+        "d": "$164",
+        "b": "$181"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 2.0
+      }
+    },
+    {
+      "name": "$48",
+      "class": "pfet",
+      "nets": {
+        "s": "$165",
+        "g": "$105",
+        "d": "$168",
+        "b": "$181"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 2.0
+      }
+    },
+    {
+      "name": "$49",
+      "class": "pfet",
+      "nets": {
+        "s": "$170",
+        "g": "$108",
+        "d": "$171",
+        "b": "$182"
+      },
+      "params": {
+        "l_um": 0.3,
+        "w_um": 2.0
+      }
+    },
+    {
+      "name": "$5",
+      "class": "nfet",
+      "nets": {
+        "s": "$54",
+        "g": "$5",
+        "d": "$59",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 1.0
+      }
+    },
+    {
+      "name": "$50",
+      "class": "pfet",
+      "nets": {
+        "s": "$172",
+        "g": "$111",
+        "d": "$173",
+        "b": "$182"
+      },
+      "params": {
+        "l_um": 0.3,
+        "w_um": 2.0
+      }
+    },
+    {
+      "name": "$51",
+      "class": "pfet",
+      "nets": {
+        "s": "$174",
+        "g": "$114",
+        "d": "$175",
+        "b": "$182"
+      },
+      "params": {
+        "l_um": 0.3,
+        "w_um": 2.0
+      }
+    },
+    {
+      "name": "$52",
+      "class": "pfet",
+      "nets": {
+        "s": "$141",
+        "g": "$142",
+        "d": "$144",
+        "b": "$181"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 2.0
+      }
+    },
+    {
+      "name": "$53",
+      "class": "pfet",
+      "nets": {
+        "s": "$146",
+        "g": "$147",
+        "d": "$149",
+        "b": "$181"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 2.0
+      }
+    },
+    {
+      "name": "$54",
+      "class": "pfet",
+      "nets": {
+        "s": "$150",
+        "g": "$152",
+        "d": "$153",
+        "b": "$181"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 2.0
+      }
+    },
+    {
+      "name": "$55",
+      "class": "pfet",
+      "nets": {
+        "s": "$156",
+        "g": "$157",
+        "d": "$158",
+        "b": "$181"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 2.0
+      }
+    },
+    {
+      "name": "$56",
+      "class": "pfet",
+      "nets": {
+        "s": "$161",
+        "g": "$162",
+        "d": "$163",
+        "b": "$181"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 2.0
+      }
+    },
+    {
+      "name": "$57",
+      "class": "pfet",
+      "nets": {
+        "s": "$166",
+        "g": "$167",
+        "d": "$169",
+        "b": "$181"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 2.0
+      }
+    },
+    {
+      "name": "$58",
+      "class": "pfet",
+      "nets": {
+        "s": "$176",
+        "g": "$28",
+        "d": "$177",
+        "b": "$184"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 20.0
+      }
+    },
+    {
+      "name": "$59",
+      "class": "pfet",
+      "nets": {
+        "s": "$178",
+        "g": "$29",
+        "d": "$179",
+        "b": "$185"
+      },
+      "params": {
+        "l_um": 1.0,
+        "w_um": 20.0
+      }
+    },
+    {
+      "name": "$6",
+      "class": "nfet",
+      "nets": {
+        "s": "$60",
+        "g": "$6",
+        "d": "$65",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 1.0
+      }
+    },
+    {
+      "name": "$60",
+      "class": "res_xhigh_po",
+      "nets": {
+        "a": "$123",
+        "b": "$180",
+        "w": "vsubs"
+      },
+      "params": {
+        "r_ohm": 600000.0,
+        "l_um": 300.0,
+        "w_um": 1.0,
+        "area_um2": 300.0
+      }
+    },
+    {
+      "name": "$7",
+      "class": "nfet",
+      "nets": {
+        "s": "$67",
+        "g": "$7",
+        "d": "$70",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.3,
+        "w_um": 1.0
+      }
+    },
+    {
+      "name": "$8",
+      "class": "nfet",
+      "nets": {
+        "s": "$72",
+        "g": "$8",
+        "d": "$74",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.3,
+        "w_um": 1.0
+      }
+    },
+    {
+      "name": "$9",
+      "class": "nfet",
+      "nets": {
+        "s": "$76",
+        "g": "$9",
+        "d": "$80",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.3,
+        "w_um": 1.0
+      }
+    }
+  ],
+  "nets": [
+    {
+      "name": "$1",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$10",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$100",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$101",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$102",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$103",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$104",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$105",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$106",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$107",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$108",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$109",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$11",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$110",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$111",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$112",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$113",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$114",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$115",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$116",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$117",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$118",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$119",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$12",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$120",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$121",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$122",
+      "pin": false,
+      "device_count": 2
+    },
+    {
+      "name": "$123",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$124",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$125",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$126",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$127",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$128",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$129",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$13",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$130",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$131",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$132",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$133",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$134",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$135",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$136",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$137",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$138",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$139",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$14",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$140",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$141",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$142",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$143",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$144",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$145",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$146",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$147",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$148",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$149",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$15",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$150",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$151",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$152",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$153",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$154",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$155",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$156",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$157",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$158",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$159",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$16",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$160",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$161",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$162",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$163",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$164",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$165",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$166",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$167",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$168",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$169",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$17",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$170",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$171",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$172",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$173",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$174",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$175",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$176",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$177",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$178",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$179",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$18",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$180",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$181",
+      "pin": false,
+      "device_count": 18
+    },
+    {
+      "name": "$182",
+      "pin": false,
+      "device_count": 6
+    },
+    {
+      "name": "$183",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$184",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$185",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$19",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$2",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$20",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$21",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$22",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$23",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$24",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$25",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$26",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$27",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$28",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$29",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$3",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$30",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$31",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$32",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$33",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$34",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$35",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$36",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$37",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$38",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$39",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$4",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$40",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$41",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$42",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$43",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$44",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$45",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$46",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$47",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$48",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$49",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$5",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$50",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$51",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$52",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$53",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$54",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$55",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$56",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$57",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$58",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$59",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$6",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$60",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$61",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$62",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$63",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$64",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$65",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$66",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$67",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$68",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$69",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$7",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$70",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$71",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$72",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$73",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$74",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$75",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$76",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$77",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$78",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$79",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$8",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$80",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$81",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$82",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$83",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$84",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$85",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$86",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$87",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$88",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$89",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$9",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$90",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$91",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$92",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$93",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$94",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$95",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$96",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$97",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$98",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$99",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "vsubs",
+      "pin": true,
+      "device_count": 31
+    }
+  ],
+  "warnings": [],
+  "black_box_regions": [],
+  "unmodelled_poly": [],
+  "merged_net_labels": [],
+  "pdk": null,
+  "provenance": {
+    "klt_version": "0.2.0",
+    "klayout_version": "0.30.10",
+    "pdk": null,
+    "deck": {
+      "name": "sky130",
+      "content_hash": "sha256:3bf7dada5e1dc46d36411c6149a227599f41580edfeb78c00060b5756424f3d3"
+    },
+    "input": {
+      "content_hash": "sha256:456d966011ab650d8e19f3f2737d655041582ecc0364d44b91c3e32fd697c38c"
+    }
+  },
+  "parasitics": null
+}

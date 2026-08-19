@@ -1,0 +1,823 @@
+{
+  "schema_version": 1,
+  "file": "/home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-16/layout/pll/reports/20260819-064347-344c3d0/pll_vco_ring5.gds",
+  "deck": "sky130",
+  "top": "pll_vco_ring5",
+  "dbu_um": 0.001,
+  "netlist_path": "/home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-16/layout/pll/reports/20260819-064347-344c3d0/pll_vco_ring5.extract.spice",
+  "netlist_sha256": "97238442da093b3d8fe9653200a7d96da994a5da6d55892542598fc34647ff6f",
+  "status": "extracted",
+  "device_count": 26,
+  "net_count": 82,
+  "pin_count": 1,
+  "device_counts": {
+    "nfet": 13,
+    "pfet": 13
+  },
+  "dummy_devices_dropped": 0,
+  "ignored_layers": [],
+  "device_classes": [
+    "nfet",
+    "pfet",
+    "pnp",
+    "sky130_fd_pr__model__cap_mim",
+    "sky130_fd_pr__model__cap_mim_m4",
+    "resistor"
+  ],
+  "devices": [
+    {
+      "name": "$1",
+      "class": "nfet",
+      "nets": {
+        "s": "$15",
+        "g": "$1",
+        "d": "$18",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 2.0
+      }
+    },
+    {
+      "name": "$10",
+      "class": "nfet",
+      "nets": {
+        "s": "$31",
+        "g": "$32",
+        "d": "$34",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.5,
+        "w_um": 2.0
+      }
+    },
+    {
+      "name": "$11",
+      "class": "nfet",
+      "nets": {
+        "s": "$36",
+        "g": "$37",
+        "d": "$38",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.5,
+        "w_um": 2.0
+      }
+    },
+    {
+      "name": "$12",
+      "class": "nfet",
+      "nets": {
+        "s": "$40",
+        "g": "$42",
+        "d": "$44",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.5,
+        "w_um": 2.0
+      }
+    },
+    {
+      "name": "$13",
+      "class": "nfet",
+      "nets": {
+        "s": "$45",
+        "g": "$7",
+        "d": "$46",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 8.0
+      }
+    },
+    {
+      "name": "$14",
+      "class": "pfet",
+      "nets": {
+        "s": "$47",
+        "g": "$8",
+        "d": "$49",
+        "b": "$79"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 4.0
+      }
+    },
+    {
+      "name": "$15",
+      "class": "pfet",
+      "nets": {
+        "s": "$50",
+        "g": "$9",
+        "d": "$52",
+        "b": "$79"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 4.0
+      }
+    },
+    {
+      "name": "$16",
+      "class": "pfet",
+      "nets": {
+        "s": "$53",
+        "g": "$10",
+        "d": "$55",
+        "b": "$79"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 4.0
+      }
+    },
+    {
+      "name": "$17",
+      "class": "pfet",
+      "nets": {
+        "s": "$56",
+        "g": "$11",
+        "d": "$58",
+        "b": "$80"
+      },
+      "params": {
+        "l_um": 0.5,
+        "w_um": 4.0
+      }
+    },
+    {
+      "name": "$18",
+      "class": "pfet",
+      "nets": {
+        "s": "$59",
+        "g": "$12",
+        "d": "$61",
+        "b": "$80"
+      },
+      "params": {
+        "l_um": 0.5,
+        "w_um": 4.0
+      }
+    },
+    {
+      "name": "$19",
+      "class": "pfet",
+      "nets": {
+        "s": "$62",
+        "g": "$13",
+        "d": "$64",
+        "b": "$80"
+      },
+      "params": {
+        "l_um": 0.5,
+        "w_um": 4.0
+      }
+    },
+    {
+      "name": "$2",
+      "class": "nfet",
+      "nets": {
+        "s": "$21",
+        "g": "$2",
+        "d": "$23",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 2.0
+      }
+    },
+    {
+      "name": "$20",
+      "class": "pfet",
+      "nets": {
+        "s": "$65",
+        "g": "$48",
+        "d": "$66",
+        "b": "$79"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 4.0
+      }
+    },
+    {
+      "name": "$21",
+      "class": "pfet",
+      "nets": {
+        "s": "$67",
+        "g": "$51",
+        "d": "$68",
+        "b": "$79"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 4.0
+      }
+    },
+    {
+      "name": "$22",
+      "class": "pfet",
+      "nets": {
+        "s": "$69",
+        "g": "$54",
+        "d": "$70",
+        "b": "$79"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 4.0
+      }
+    },
+    {
+      "name": "$23",
+      "class": "pfet",
+      "nets": {
+        "s": "$71",
+        "g": "$57",
+        "d": "$72",
+        "b": "$80"
+      },
+      "params": {
+        "l_um": 0.5,
+        "w_um": 4.0
+      }
+    },
+    {
+      "name": "$24",
+      "class": "pfet",
+      "nets": {
+        "s": "$73",
+        "g": "$60",
+        "d": "$74",
+        "b": "$80"
+      },
+      "params": {
+        "l_um": 0.5,
+        "w_um": 4.0
+      }
+    },
+    {
+      "name": "$25",
+      "class": "pfet",
+      "nets": {
+        "s": "$75",
+        "g": "$63",
+        "d": "$76",
+        "b": "$80"
+      },
+      "params": {
+        "l_um": 0.5,
+        "w_um": 4.0
+      }
+    },
+    {
+      "name": "$26",
+      "class": "pfet",
+      "nets": {
+        "s": "$77",
+        "g": "$14",
+        "d": "$78",
+        "b": "$81"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 16.0
+      }
+    },
+    {
+      "name": "$3",
+      "class": "nfet",
+      "nets": {
+        "s": "$26",
+        "g": "$3",
+        "d": "$29",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 2.0
+      }
+    },
+    {
+      "name": "$4",
+      "class": "nfet",
+      "nets": {
+        "s": "$30",
+        "g": "$4",
+        "d": "$33",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.5,
+        "w_um": 2.0
+      }
+    },
+    {
+      "name": "$5",
+      "class": "nfet",
+      "nets": {
+        "s": "$35",
+        "g": "$5",
+        "d": "$39",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.5,
+        "w_um": 2.0
+      }
+    },
+    {
+      "name": "$6",
+      "class": "nfet",
+      "nets": {
+        "s": "$41",
+        "g": "$6",
+        "d": "$43",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.5,
+        "w_um": 2.0
+      }
+    },
+    {
+      "name": "$7",
+      "class": "nfet",
+      "nets": {
+        "s": "$16",
+        "g": "$17",
+        "d": "$19",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 2.0
+      }
+    },
+    {
+      "name": "$8",
+      "class": "nfet",
+      "nets": {
+        "s": "$20",
+        "g": "$22",
+        "d": "$24",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 2.0
+      }
+    },
+    {
+      "name": "$9",
+      "class": "nfet",
+      "nets": {
+        "s": "$25",
+        "g": "$27",
+        "d": "$28",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 2.0
+      }
+    }
+  ],
+  "nets": [
+    {
+      "name": "$1",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$10",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$11",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$12",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$13",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$14",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$15",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$16",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$17",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$18",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$19",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$2",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$20",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$21",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$22",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$23",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$24",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$25",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$26",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$27",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$28",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$29",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$3",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$30",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$31",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$32",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$33",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$34",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$35",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$36",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$37",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$38",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$39",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$4",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$40",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$41",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$42",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$43",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$44",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$45",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$46",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$47",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$48",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$49",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$5",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$50",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$51",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$52",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$53",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$54",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$55",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$56",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$57",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$58",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$59",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$6",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$60",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$61",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$62",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$63",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$64",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$65",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$66",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$67",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$68",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$69",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$7",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$70",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$71",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$72",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$73",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$74",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$75",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$76",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$77",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$78",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$79",
+      "pin": false,
+      "device_count": 6
+    },
+    {
+      "name": "$8",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$80",
+      "pin": false,
+      "device_count": 6
+    },
+    {
+      "name": "$81",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "$9",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "vsubs",
+      "pin": true,
+      "device_count": 13
+    }
+  ],
+  "warnings": [],
+  "black_box_regions": [],
+  "unmodelled_poly": [],
+  "merged_net_labels": [],
+  "pdk": null,
+  "provenance": {
+    "klt_version": "0.2.0",
+    "klayout_version": "0.30.10",
+    "pdk": null,
+    "deck": {
+      "name": "sky130",
+      "content_hash": "sha256:3bf7dada5e1dc46d36411c6149a227599f41580edfeb78c00060b5756424f3d3"
+    },
+    "input": {
+      "content_hash": "sha256:7f047e264a3f916b8d6f943ef868c9b046205b369e9bf78770f4363a2c53d288"
+    }
+  },
+  "parasitics": null
+}

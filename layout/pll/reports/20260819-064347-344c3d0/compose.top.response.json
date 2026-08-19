@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "cell_name": "pll_top",
+  "gds_path": "pll_top.gds",
+  "pdk": {
+    "name": "sky130A",
+    "variant": "sky130A",
+    "version": "open_pdks c6d73a35f524070e85faff4a6a9eef49553ebc2b"
+  },
+  "bbox_um": {
+    "x0": -0.19,
+    "y0": -0.15,
+    "x1": 569.13,
+    "y1": 232.76000000000002
+  },
+  "blocks": [
+    {
+      "id": "pll_pfd_cp",
+      "generator": "gen-compose",
+      "offset_um": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "bbox_um": {
+        "x0": 0.0,
+        "y0": -0.15,
+        "x1": 300.84000000000003,
+        "y1": 25.72
+      }
+    },
+    {
+      "id": "pll_loop_filter",
+      "generator": "gen-compose",
+      "offset_um": {
+        "x": 320.84,
+        "y": 0.0
+      },
+      "bbox_um": {
+        "x0": 320.84,
+        "y0": 0.0,
+        "x1": 509.21999999999997,
+        "y1": 209.8
+      }
+    },
+    {
+      "id": "pll_vco_ring5",
+      "generator": "gen-compose",
+      "offset_um": {
+        "x": 529.22,
+        "y": 0.0
+      },
+      "bbox_um": {
+        "x0": 529.22,
+        "y0": -0.15,
+        "x1": 569.13,
+        "y1": 16.57
+      }
+    },
+    {
+      "id": "pll_divider_intN",
+      "generator": "gen-compose",
+      "offset_um": {
+        "x": 0.0,
+        "y": 229.8
+      },
+      "bbox_um": {
+        "x0": -0.19,
+        "y0": 229.56,
+        "x1": 142.79,
+        "y1": 232.76000000000002
+      }
+    }
+  ],
+  "nets": [],
+  "pins": [],
+  "unrouted_nets": [],
+  "drc_hints": {
+    "min_spacing_um": null,
+    "matched_groups": [],
+    "notes": []
+  },
+  "warnings": []
+}
