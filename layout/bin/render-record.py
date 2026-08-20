@@ -26,8 +26,6 @@ run-trivial-cell-flow.sh's own header.
 from __future__ import annotations
 
 import argparse
-import json
-import subprocess
 import sys
 from pathlib import Path
 
@@ -41,12 +39,17 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
-from scripts.git_status import is_dirty, run_git  # noqa: E402
+# Re-exported (not just used below): layout/tests/test_record_dirty_flag.py
+# loads this module by path and calls `render_record.is_dirty(...)` directly.
+from scripts.git_status import is_dirty, run_git  # noqa: E402,F401
 
+_BIN_DIR = Path(__file__).resolve().parent
+if str(_BIN_DIR) not in sys.path:
+    sys.path.insert(0, str(_BIN_DIR))
 
-def _load(path: Path) -> dict:
-    with path.open() as f:
-        return json.load(f)
+from render_common import git_provenance, klt_info, load_json  # noqa: E402
+
+_load = load_json  # local alias, kept short for the calls below
 
 
 def main() -> int:
@@ -68,27 +71,8 @@ def main() -> int:
     lvs_bad_dev = _load(out_dir / "lvs.broken-device.json")
     lvs_bad_topo = _load(out_dir / "lvs.broken-topology.json")
 
-    sha = run_git(args.repo_root, "rev-parse", "HEAD")
-    branch = run_git(args.repo_root, "rev-parse", "--abbrev-ref", "HEAD")
-    report_rel = out_dir.resolve().relative_to(args.repo_root.resolve()).as_posix() + "/"
-    # --untracked-files=all is load-bearing: git's default collapses a wholly
-    # untracked tree to its parent directory ("?? layout/trivial-cell/
-    # reports/"), which no per-record prefix can match, so every record would
-    # read dirty again.
-    dirty = is_dirty(
-        run_git(args.repo_root, "status", "--porcelain", "--untracked-files=all"), report_rel
-    )
-
-    klt_version = subprocess.run(
-        [args.klt, "--version"], check=True, capture_output=True, text=True
-    ).stdout.strip()
-    pdk_info_raw = subprocess.run(
-        [args.klt, "pdk", "find", "--pdk", args.pdk_variant, "--format", "json"],
-        check=True,
-        capture_output=True,
-        text=True,
-    ).stdout
-    pdk_info = json.loads(pdk_info_raw)
+    sha, branch, dirty = git_provenance(args.repo_root, out_dir)
+    klt_version, pdk_info = klt_info(args.klt, args.pdk_variant)
 
     # The fixture declares which rules it is engineered to trip; the record
     # asserts the deck fired exactly those, so a fixture that silently stops

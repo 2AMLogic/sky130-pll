@@ -37,10 +37,8 @@ check.
 from __future__ import annotations
 
 import argparse
-import json
 import math
 import re
-import subprocess
 import sys
 from collections import Counter
 from pathlib import Path
@@ -61,16 +59,13 @@ from pll_layout import (  # noqa: E402
     SHEET_RHO_OHM_SQ,
     read_cards,
 )
-from scripts.git_status import is_dirty, run_git  # noqa: E402
+from render_common import git_provenance, klt_info, load_json  # noqa: E402
 
 MOS_CARD_RE = re.compile(r"^M\S+\s+(?:\S+\s+){4}(\S+)\s+L=([\d.eE+-]+)U\s+W=([\d.eE+-]+)U")
 RES_CARD_RE = re.compile(r"^R\S+\s+(?:\S+\s+){3}([\d.eE+-]+)\s+(\S+)")
 CAP_CARD_RE = re.compile(r"^C\S+\s+(?:\S+\s+){2}([\d.eE+-]+)\s+(\S+)")
 
-
-def _load(path: Path) -> Any:
-    with path.open() as handle:
-        return json.load(handle)
+_load = load_json  # local alias, kept short for the calls below
 
 
 def _close(a: float, b: float) -> bool:
@@ -353,25 +348,8 @@ def main() -> int:
 
     all_pass = all(ok for _, ok, _ in checks)
 
-    klt_version = subprocess.run(
-        [args.klt, "--version"], check=True, capture_output=True, text=True
-    ).stdout.strip()
-    pdk_info = json.loads(
-        subprocess.run(
-            [args.klt, "pdk", "find", "--pdk", args.pdk_variant, "--format", "json"],
-            check=True,
-            capture_output=True,
-            text=True,
-        ).stdout
-    )
-
-    sha = run_git(args.repo_root, "rev-parse", "HEAD")
-    branch = run_git(args.repo_root, "rev-parse", "--abbrev-ref", "HEAD")
-    report_rel = out_dir.resolve().relative_to(args.repo_root.resolve()).as_posix() + "/"
-    dirty = is_dirty(
-        run_git(args.repo_root, "status", "--porcelain", "--untracked-files=all"),
-        report_rel,
-    )
+    klt_version, pdk_info = klt_info(args.klt, args.pdk_variant)
+    sha, branch, dirty = git_provenance(args.repo_root, out_dir)
 
     spot = None
     spot_path = out_dir / "route-spot-check" / "build.json"
