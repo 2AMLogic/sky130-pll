@@ -66,7 +66,19 @@ jobs:
 
   pdk-smoke:
     name: PDK-gated harness smoke test (nightly / workflow_dispatch / 'run-pdk-smoke' label)
-    runs-on: ubuntu-latest
+    # Route to the shared self-hosted fleet runner (2am#29) for same-repo
+    # events, falling back to ubuntu-latest for fork PRs — untrusted fork code
+    # must never execute on a self-hosted runner. Mirrors the `checks` job's
+    # expression above; this job is PR-triggered too (via the 'run-pdk-smoke'
+    # label), so the same fork-PR guard applies.
+    #
+    # This is not a speed change: GitHub-hosted minutes are billed for PRIVATE
+    # repos, and this org's Actions billing is currently blocked ("The job was
+    # not started because recent account payments have failed…", see #51). Every
+    # run in this repo has failed at startup since 2026-08-20 while public
+    # sibling repos — billed differently — stayed green. Self-hosted minutes are
+    # not billed, so this restores CI here independently of the billing fix.
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","heavy"]') || 'ubuntu-latest' }}
     if: >-
       github.event_name == 'schedule' ||
       github.event_name == 'workflow_dispatch' ||
