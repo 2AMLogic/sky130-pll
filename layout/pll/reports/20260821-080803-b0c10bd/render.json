@@ -1,0 +1,255 @@
+{
+  "schema_version": 1,
+  "file": "/Users/rwalters/GitHub/sky130-pll/.loom/worktrees/issue-18/layout/pll/reports/20260821-080803-b0c10bd/pll_top.gds",
+  "output_dir": "/Users/rwalters/GitHub/sky130-pll/.loom/worktrees/issue-18/layout/pll/reports/20260821-080803-b0c10bd/renders",
+  "width": 1600,
+  "height": 800,
+  "background": "#ffffff",
+  "overview": "/Users/rwalters/GitHub/sky130-pll/.loom/worktrees/issue-18/layout/pll/reports/20260821-080803-b0c10bd/renders/overview.png",
+  "layer_count": 26,
+  "rendered_count": 26,
+  "requested_layers": null,
+  "requested_bbox": null,
+  "actual_extent": {
+    "left": -14.57103375,
+    "bottom": -33.25184625,
+    "right": 583.21496625,
+    "top": 265.64115374999994
+  },
+  "layers": [
+    {
+      "layer": 64,
+      "datatype": 5,
+      "name": null,
+      "shapes": 30,
+      "annotation": false,
+      "path": "/Users/rwalters/GitHub/sky130-pll/.loom/worktrees/issue-18/layout/pll/reports/20260821-080803-b0c10bd/renders/64_5.png",
+      "rendered": true
+    },
+    {
+      "layer": 64,
+      "datatype": 16,
+      "name": null,
+      "shapes": 30,
+      "annotation": false,
+      "path": "/Users/rwalters/GitHub/sky130-pll/.loom/worktrees/issue-18/layout/pll/reports/20260821-080803-b0c10bd/renders/64_16.png",
+      "rendered": true
+    },
+    {
+      "layer": 64,
+      "datatype": 20,
+      "name": null,
+      "shapes": 38,
+      "annotation": false,
+      "path": "/Users/rwalters/GitHub/sky130-pll/.loom/worktrees/issue-18/layout/pll/reports/20260821-080803-b0c10bd/renders/64_20.png",
+      "rendered": true
+    },
+    {
+      "layer": 64,
+      "datatype": 59,
+      "name": null,
+      "shapes": 30,
+      "annotation": false,
+      "path": "/Users/rwalters/GitHub/sky130-pll/.loom/worktrees/issue-18/layout/pll/reports/20260821-080803-b0c10bd/renders/64_59.png",
+      "rendered": true
+    },
+    {
+      "layer": 65,
+      "datatype": 20,
+      "name": null,
+      "shapes": 203,
+      "annotation": false,
+      "path": "/Users/rwalters/GitHub/sky130-pll/.loom/worktrees/issue-18/layout/pll/reports/20260821-080803-b0c10bd/renders/65_20.png",
+      "rendered": true
+    },
+    {
+      "layer": 66,
+      "datatype": 13,
+      "name": null,
+      "shapes": 3,
+      "annotation": false,
+      "path": "/Users/rwalters/GitHub/sky130-pll/.loom/worktrees/issue-18/layout/pll/reports/20260821-080803-b0c10bd/renders/66_13.png",
+      "rendered": true
+    },
+    {
+      "layer": 66,
+      "datatype": 20,
+      "name": null,
+      "shapes": 383,
+      "annotation": false,
+      "path": "/Users/rwalters/GitHub/sky130-pll/.loom/worktrees/issue-18/layout/pll/reports/20260821-080803-b0c10bd/renders/66_20.png",
+      "rendered": true
+    },
+    {
+      "layer": 66,
+      "datatype": 44,
+      "name": null,
+      "shapes": 1173,
+      "annotation": false,
+      "path": "/Users/rwalters/GitHub/sky130-pll/.loom/worktrees/issue-18/layout/pll/reports/20260821-080803-b0c10bd/renders/66_44.png",
+      "rendered": true
+    },
+    {
+      "layer": 67,
+      "datatype": 5,
+      "name": null,
+      "shapes": 207,
+      "annotation": false,
+      "path": "/Users/rwalters/GitHub/sky130-pll/.loom/worktrees/issue-18/layout/pll/reports/20260821-080803-b0c10bd/renders/67_5.png",
+      "rendered": true
+    },
+    {
+      "layer": 67,
+      "datatype": 16,
+      "name": null,
+      "shapes": 212,
+      "annotation": false,
+      "path": "/Users/rwalters/GitHub/sky130-pll/.loom/worktrees/issue-18/layout/pll/reports/20260821-080803-b0c10bd/renders/67_16.png",
+      "rendered": true
+    },
+    {
+      "layer": 67,
+      "datatype": 20,
+      "name": null,
+      "shapes": 650,
+      "annotation": false,
+      "path": "/Users/rwalters/GitHub/sky130-pll/.loom/worktrees/issue-18/layout/pll/reports/20260821-080803-b0c10bd/renders/67_20.png",
+      "rendered": true
+    },
+    {
+      "layer": 67,
+      "datatype": 44,
+      "name": null,
+      "shapes": 706,
+      "annotation": false,
+      "path": "/Users/rwalters/GitHub/sky130-pll/.loom/worktrees/issue-18/layout/pll/reports/20260821-080803-b0c10bd/renders/67_44.png",
+      "rendered": true
+    },
+    {
+      "layer": 68,
+      "datatype": 5,
+      "name": null,
+      "shapes": 58,
+      "annotation": false,
+      "path": "/Users/rwalters/GitHub/sky130-pll/.loom/worktrees/issue-18/layout/pll/reports/20260821-080803-b0c10bd/renders/68_5.png",
+      "rendered": true
+    },
+    {
+      "layer": 68,
+      "datatype": 16,
+      "name": null,
+      "shapes": 58,
+      "annotation": false,
+      "path": "/Users/rwalters/GitHub/sky130-pll/.loom/worktrees/issue-18/layout/pll/reports/20260821-080803-b0c10bd/renders/68_16.png",
+      "rendered": true
+    },
+    {
+      "layer": 68,
+      "datatype": 20,
+      "name": null,
+      "shapes": 130,
+      "annotation": false,
+      "path": "/Users/rwalters/GitHub/sky130-pll/.loom/worktrees/issue-18/layout/pll/reports/20260821-080803-b0c10bd/renders/68_20.png",
+      "rendered": true
+    },
+    {
+      "layer": 70,
+      "datatype": 20,
+      "name": null,
+      "shapes": 3,
+      "annotation": false,
+      "path": "/Users/rwalters/GitHub/sky130-pll/.loom/worktrees/issue-18/layout/pll/reports/20260821-080803-b0c10bd/renders/70_20.png",
+      "rendered": true
+    },
+    {
+      "layer": 78,
+      "datatype": 44,
+      "name": null,
+      "shapes": 35,
+      "annotation": false,
+      "path": "/Users/rwalters/GitHub/sky130-pll/.loom/worktrees/issue-18/layout/pll/reports/20260821-080803-b0c10bd/renders/78_44.png",
+      "rendered": true
+    },
+    {
+      "layer": 79,
+      "datatype": 20,
+      "name": null,
+      "shapes": 3,
+      "annotation": false,
+      "path": "/Users/rwalters/GitHub/sky130-pll/.loom/worktrees/issue-18/layout/pll/reports/20260821-080803-b0c10bd/renders/79_20.png",
+      "rendered": true
+    },
+    {
+      "layer": 81,
+      "datatype": 4,
+      "name": null,
+      "shapes": 29,
+      "annotation": false,
+      "path": "/Users/rwalters/GitHub/sky130-pll/.loom/worktrees/issue-18/layout/pll/reports/20260821-080803-b0c10bd/renders/81_4.png",
+      "rendered": true
+    },
+    {
+      "layer": 83,
+      "datatype": 44,
+      "name": null,
+      "shapes": 29,
+      "annotation": false,
+      "path": "/Users/rwalters/GitHub/sky130-pll/.loom/worktrees/issue-18/layout/pll/reports/20260821-080803-b0c10bd/renders/83_44.png",
+      "rendered": true
+    },
+    {
+      "layer": 89,
+      "datatype": 44,
+      "name": null,
+      "shapes": 3,
+      "annotation": false,
+      "path": "/Users/rwalters/GitHub/sky130-pll/.loom/worktrees/issue-18/layout/pll/reports/20260821-080803-b0c10bd/renders/89_44.png",
+      "rendered": true
+    },
+    {
+      "layer": 93,
+      "datatype": 44,
+      "name": null,
+      "shapes": 29,
+      "annotation": false,
+      "path": "/Users/rwalters/GitHub/sky130-pll/.loom/worktrees/issue-18/layout/pll/reports/20260821-080803-b0c10bd/renders/93_44.png",
+      "rendered": true
+    },
+    {
+      "layer": 94,
+      "datatype": 20,
+      "name": null,
+      "shapes": 32,
+      "annotation": false,
+      "path": "/Users/rwalters/GitHub/sky130-pll/.loom/worktrees/issue-18/layout/pll/reports/20260821-080803-b0c10bd/renders/94_20.png",
+      "rendered": true
+    },
+    {
+      "layer": 95,
+      "datatype": 20,
+      "name": null,
+      "shapes": 35,
+      "annotation": false,
+      "path": "/Users/rwalters/GitHub/sky130-pll/.loom/worktrees/issue-18/layout/pll/reports/20260821-080803-b0c10bd/renders/95_20.png",
+      "rendered": true
+    },
+    {
+      "layer": 122,
+      "datatype": 16,
+      "name": null,
+      "shapes": 30,
+      "annotation": false,
+      "path": "/Users/rwalters/GitHub/sky130-pll/.loom/worktrees/issue-18/layout/pll/reports/20260821-080803-b0c10bd/renders/122_16.png",
+      "rendered": true
+    },
+    {
+      "layer": 236,
+      "datatype": 0,
+      "name": null,
+      "shapes": 29,
+      "annotation": false,
+      "path": "/Users/rwalters/GitHub/sky130-pll/.loom/worktrees/issue-18/layout/pll/reports/20260821-080803-b0c10bd/renders/236_0.png",
+      "rendered": true
+    }
+  ]
+}
