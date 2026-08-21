@@ -21,7 +21,10 @@
 #   * route-spot-check/, the same build with `klt gen-compose`'s
 #     point-to-point router enabled -- evidence for why the shipped stream is
 #     unrouted (the router introduces shorts). Its GDS streams are deleted
-#     after the DRC/extract run; the JSON envelopes are the evidence.
+#     after the DRC/extract/LVS run; the JSON envelopes are the evidence.
+#     `klt lvs` is run only against this routed build (issue #18) -- the
+#     shipped build has no routing at all, so comparing it would only ever
+#     report a foregone mismatch with no information in it.
 set -euo pipefail
 
 LAYOUT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -98,11 +101,36 @@ SPOT_DIR="$OUT_DIR/route-spot-check"
 mkdir -p "$SPOT_DIR"
 python3 "$LAYOUT_DIR/bin/pll_layout.py" \
   --netlist "$NETLIST" --out-dir "$SPOT_DIR" \
-  --klt "$KLT" --pdk "$PDK_VARIANT"
+  --klt "$KLT" --pdk "$PDK_VARIANT" --emit-lvs-reference
 "$KLT" drc "$SPOT_DIR/$TOP_CELL.gds" --deck "$DECK" --format json \
   > "$SPOT_DIR/drc.json" || true
 "$KLT" extract "$SPOT_DIR/$TOP_CELL.gds" --deck "$DECK" --top "$TOP_CELL" \
   -o "$SPOT_DIR/$TOP_CELL.spice" --format json > "$SPOT_DIR/extract.json"
+
+# --- 5b. LVS: the spot-check's routed layout against the authored schematic -
+# The shipped (unrouted) stream is not compared -- with no inter-device
+# routing at all its mismatch would carry no information beyond "nothing is
+# wired," already documented by the coverage checks above. The routed
+# spot-check is a genuine (if heavily partial -- issue #18) topology to
+# compare: `klt lvs`'s SPICE reader needs the schematic's "top" as a real
+# `.subckt`/`.ends` pair, hence reference.spice (`--emit-lvs-reference`
+# above) rather than `$NETLIST` itself, and `options.flatten_*` puts both
+# sides on the same footing -- the schematic's subcircuit-call hierarchy
+# names its blocks `pfd_cp`/`loop_filter`/... while this flow's own composed
+# cells are `pll_pfd_cp`/`pll_loop_filter`/...  (see layout/pll/README.md),
+# a naming difference `klt lvs` does not resolve across un-flattened circuit
+# boundaries.
+cat > "$SPOT_DIR/lvs.request.json" <<EOF
+{
+  "schema": "klt.lvs.request/1",
+  "engine": "klayout",
+  "layout": { "file": "$TOP_CELL.gds", "deck": "$DECK", "top": "$TOP_CELL" },
+  "reference": { "netlist": "reference.spice", "top": "top", "form": "subckt-call" },
+  "options": { "flatten_reference": true, "flatten_layout": true }
+}
+EOF
+"$KLT" lvs "$SPOT_DIR/lvs.request.json" --format json > "$SPOT_DIR/lvs.json" || true
+
 find "$SPOT_DIR" -name '*.gds' -delete
 # The spot-check's per-group generator envelopes and its plan are
 # byte-identical to the shipped build's (same plan, same `klt gen` calls --

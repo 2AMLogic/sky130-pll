@@ -50,16 +50,20 @@ would otherwise have to discover for themselves:
   (every group member carries its schematic device name and its port-to-net
   mapping), and the record reports how many nets that is per block. But the
   GDS carries no wires. The one router available (`klt gen-compose`'s) still
-  draws a short on this design, and leaves most nets undrawn for want of
-  routing channels and contacted gate pins; see "Friction" below and each
-  record's routing spot-check for the per-leg evidence.
+  draws a short on this design, and leaves most nets undrawn — chiefly
+  because it cannot route a pin buried inside a matched device array (see
+  "Friction" below and each record's routing spot-check for the per-leg
+  evidence).
 - **Not DRC-clean.** Every violation is one instance of a single documented
   `klt gen` limitation (see "Friction"), one per minimum-gate-length device.
   The record asserts exactly that, so a *new* violation class appearing is a
   FAIL — but "clean" is issue #17's job, not this one's.
-- **Not LVS-compared.** With no routing there is no topology in the stream to
-  compare, so no LVS run is attempted rather than reporting a foregone
-  mismatch. LVS closure is issue #18.
+- **Not LVS-clean.** The shipped stream carries no routing, so no `klt lvs`
+  run is attempted against it (a foregone mismatch is not evidence). Since
+  issue #18, `klt lvs` *is* run against the routed routing-spot-check build
+  and its result — a large, honest mismatch, not a "clean" claim — is
+  recorded in full; see each record's own LVS (spot-check) section. Full LVS
+  closure is still issue #18, blocked on the routing gaps below.
 - **Not a floorplan anyone optimized.** Groups are shelf-packed and blocks
   are placed in a row; area utilization is poor and no matching, symmetry, or
   noise-isolation intent beyond `klt gen`'s own matched-array topology is
@@ -112,14 +116,26 @@ there rather than re-filed.
 **The pin was the binding constraint, and it moved — but the layout is still
 unrouted.** Two of the five (#1057, #1073) are what made routing impossible at
 all; with them the router now draws 51 legs on this design instead of 7
-certified shorts. What still blocks a routed stream is #1197 above plus two
-things that are this design's own to fix, not the tool's: the shelf-packed
-floorplan leaves no routing channels, and this flow does not opt into
-`mos_array`'s `params.gate_contact`
-([#492](https://github.com/2AMLogic/klayout-tools/issues/492)), so every net
-terminating on a gate is unroutable by construction. Both belong to #17/#18.
-The current record's routing spot-check tabulates the router's own reason for
-every leg it declined.
+certified shorts. Issue #18 wired `mos_array`'s `params.gate_contact`
+([#492](https://github.com/2AMLogic/klayout-tools/issues/492)) for every
+matched device group, closing one of the two "this design's own" gaps named
+here previously (bare-poly gate pins are now contacted landing pads,
+reachable by the router) — 51 legs became 74. What still blocks a routed
+stream is bigger than the other named gap (routing channels between abutted
+groups, a floorplan-spacing fix that issue #18 measured as barely
+load-bearing on its own): the dominant remaining failure is the
+point-to-point router's inability to route a pin buried inside a matched
+device array's own interior (265 of 901 legs, the largest single reason —
+routing that would need an actual channel *inside* the array, which is a
+floorplan redesign, not a spacing tweak) — plus #1197 above. **Routing further
+makes #1197 worse, not better**: going from 51 to 74 drawn legs took the
+routed spot-check from one shorted node (`DN|GND`) to three
+(`BUF1|RING0`, `DIVD|DN|DNN|GND`, `SETU|UP|VDD`) — direct evidence that
+#1197 needs its upstream fix before pushing this design's routing further is
+safe to attempt at all, not just before it is complete. The current record's
+routing spot-check tabulates the router's own reason for every leg it
+declined, and its LVS (spot-check) section runs `klt lvs` against that build
+and records the resulting mismatch in full.
 
 Two capabilities the bump makes available are deliberately **not yet adopted**,
 because adopting either changes drawn geometry and needs its own evidence:
@@ -148,6 +164,8 @@ layout/pll/
       renders/overview.png   # `klt render` all-layer overview
       report.md              # `klt report --format github-summary` rendering
       route-spot-check/      # the same build with the router enabled (GDS deleted)
+        reference.spice      # schematic netlist, top level's .subckt/.ends uncommented for `klt lvs`
+        lvs.request.json, lvs.json   # `klt lvs` request/result against the routed build (issue #18)
 ```
 
 `<record-id>` and the `dirty` flag follow the same convention as
