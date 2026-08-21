@@ -36,27 +36,21 @@ PDK_VARIANT=sky130A
 DECK=sky130
 TOP_CELL=pll_top
 
-if [[ ! -x "$KLT" ]]; then
-  echo "run-pll-layout-flow.sh: $KLT not found -- run layout/bin/setup-venv.sh first" >&2
-  exit 1
-fi
+# shellcheck source=layout/bin/flow_common.sh
+source "$LAYOUT_DIR/bin/flow_common.sh"
+SCRIPT_NAME="$(basename "${BASH_SOURCE[0]}")"
+
+flow_require_klt "$SCRIPT_NAME"
 
 if [[ ! -f "$NETLIST" ]]; then
-  echo "run-pll-layout-flow.sh: no schematic netlist at $NETLIST" >&2
+  echo "$SCRIPT_NAME: no schematic netlist at $NETLIST" >&2
   exit 1
 fi
 
-if ! "$KLT" pdk find --pdk "$PDK_VARIANT" >/dev/null; then
-  echo "run-pll-layout-flow.sh: no resolvable $PDK_VARIANT PDK -- see sim/pdk.json for the pin" >&2
-  exit 1
-fi
+flow_require_pdk "$SCRIPT_NAME"
 
-TS_UTC="$(date -u +%Y%m%d-%H%M%S)"
-SHORT_SHA="$(git -C "$REPO_ROOT" rev-parse --short HEAD)"
-RECORD_ID="${TS_UTC}-${SHORT_SHA}"
-OUT_DIR="$PLL_DIR/reports/$RECORD_ID"
-mkdir -p "$OUT_DIR"
-echo "run-pll-layout-flow.sh: record $RECORD_ID -> $OUT_DIR"
+flow_new_record_id
+flow_setup_out_dir "$SCRIPT_NAME" "$PLL_DIR"
 
 # --- 1. Draw + compose the schematic's device set (shipped, unrouted) ------
 python3 "$LAYOUT_DIR/bin/pll_layout.py" \
@@ -150,6 +144,6 @@ python3 "$LAYOUT_DIR/bin/render-pll-record.py" \
   --klt "$KLT" --pdk-variant "$PDK_VARIANT" --netlist "$NETLIST" \
   > "$OUT_DIR/record.md"
 
-echo "$RECORD_ID" > "$PLL_DIR/reports/LATEST"
+flow_write_latest "$PLL_DIR"
 
-echo "run-pll-layout-flow.sh: done. See $OUT_DIR/record.md"
+echo "$SCRIPT_NAME: done. See $OUT_DIR/record.md"
