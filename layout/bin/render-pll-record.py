@@ -198,7 +198,7 @@ def _cap_sets_match(planned: Counter, extracted: Counter) -> bool:
     return not remaining
 
 
-def main() -> int:
+def _parse_args() -> argparse.Namespace:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out-dir", required=True, type=Path)
     ap.add_argument("--record-id", required=True)
@@ -206,19 +206,20 @@ def main() -> int:
     ap.add_argument("--klt", required=True)
     ap.add_argument("--pdk-variant", required=True)
     ap.add_argument("--netlist", required=True, type=Path)
-    args = ap.parse_args()
+    return ap.parse_args()
 
-    out_dir: Path = args.out_dir
-    plan = _load(out_dir / "plan.json")
-    build = _load(out_dir / "build.json")
-    drc = _load(out_dir / "drc.json")
-    extract_top = _load(out_dir / "extract.json")
-    cells_top = _load(out_dir / "cells.top.json")
-    cards = read_cards(args.netlist.read_text())
 
-    checks: list[tuple[str, bool, str]] = []
+# --- compute: derive `checks` (and the device-set rows the record's own
+# device-set table needs) from the loaded `klt` JSON evidence. Each
+# `_check_*` helper below owns exactly one of the six assertions `main()`'s
+# docstring-adjacent module doc lists (coverage, supply flavor, per-block
+# device set, standard-cell instantiation, top hierarchy, DRC); `_build_checks`
+# is a flat, branch-free sequence over them. -----------------------------
 
-    # --- coverage ----------------------------------------------------------
+
+def _check_coverage(
+    plan: dict[str, Any], cards: dict[str, list[dict[str, Any]]]
+) -> tuple[str, bool, str]:
     coverage_ok = True
     coverage_rows: list[tuple[str, int, int]] = []
     for block in plan["blocks"]:
@@ -226,15 +227,14 @@ def main() -> int:
         schematic = len(cards[block["name"]])
         coverage_rows.append((block["name"], schematic, drawn))
         coverage_ok = coverage_ok and drawn == schematic
-    checks.append(
-        (
-            "Every device card in the schematic netlist drew a layout primitive",
-            coverage_ok,
-            ", ".join(f"{name}: {s} -> {d}" for name, s, d in coverage_rows),
-        )
+    return (
+        "Every device card in the schematic netlist drew a layout primitive",
+        coverage_ok,
+        ", ".join(f"{name}: {s} -> {d}" for name, s, d in coverage_rows),
     )
 
-    # --- supply flavor -----------------------------------------------------
+
+def _check_supply_flavor(cards: dict[str, list[dict[str, Any]]]) -> tuple[str, bool, str]:
     mos_models = {
         card["model"]
         for block_cards in cards.values()
@@ -242,16 +242,18 @@ def main() -> int:
         if "fet" in card["model"]
     }
     flavor_ok = bool(mos_models) and all(model.endswith("_01v8") for model in mos_models)
-    checks.append(
-        (
-            "Every MOS device is a sky130 1.8 V core device (DR-001) -- no "
-            "3.3 V-class device is drawn",
-            flavor_ok,
-            ", ".join(sorted(mos_models)),
-        )
+    return (
+        "Every MOS device is a sky130 1.8 V core device (DR-001) -- no "
+        "3.3 V-class device is drawn",
+        flavor_ok,
+        ", ".join(sorted(mos_models)),
     )
 
-    # --- per-block device set ---------------------------------------------
+
+def _check_device_sets(
+    out_dir: Path, plan: dict[str, Any]
+) -> tuple[list[tuple[str, bool, str]], list[dict[str, Any]]]:
+    checks: list[tuple[str, bool, str]] = []
     device_rows: list[dict[str, Any]] = []
     for block in plan["blocks"]:
         name = block["name"]
@@ -281,15 +283,16 @@ def main() -> int:
                 f"C {sum(planned['cap'].values())}",
             )
         )
+    return checks, device_rows
 
-    # --- standard-cell block ----------------------------------------------
+
+def _check_stdcell(out_dir: Path, plan: dict[str, Any]) -> list[tuple[str, bool, str]]:
     stdcell_blocks = [
         block
         for block in plan["blocks"]
         if any(group["kind"] == "stdcell" for group in block["groups"])
     ]
-    stdcell_detail = "(no standard-cell block in this design)"
-    stdcell_ok = True
+    checks: list[tuple[str, bool, str]] = []
     for block in stdcell_blocks:
         cells_block = _load(out_dir / f"cells.{block['name']}.json")
         top = next(entry for entry in cells_block["cells"] if entry["is_top"])
@@ -299,7 +302,6 @@ def main() -> int:
             if group["kind"] == "stdcell"
         }
         actual = set(top["children"])
-        stdcell_ok = stdcell_ok and expected == actual and top["instances"] == len(expected)
         stdcell_detail = (
             f"{block['cell_name']}: {top['instances']} instances, "
             f"{len(actual)} distinct library cells placed"
@@ -313,23 +315,24 @@ def main() -> int:
                 stdcell_detail,
             )
         )
+    return checks
 
-    # --- top hierarchy -----------------------------------------------------
+
+def _check_top_hierarchy(cells_top: dict[str, Any], plan: dict[str, Any]) -> tuple[str, bool, str]:
     top_cell = next(entry for entry in cells_top["cells"] if entry["is_top"])
     expected_children = {
         f"{block['cell_name']}__{block['cell_name']}" for block in plan["blocks"]
     }
     top_ok = set(top_cell["children"]) == expected_children
-    checks.append(
-        (
-            f"`{plan['top_cell_name']}` instantiates all "
-            f"{len(expected_children)} block cells",
-            top_ok,
-            ", ".join(sorted(top_cell["children"])),
-        )
+    return (
+        f"`{plan['top_cell_name']}` instantiates all "
+        f"{len(expected_children)} block cells",
+        top_ok,
+        ", ".join(sorted(top_cell["children"])),
     )
 
-    # --- DRC ---------------------------------------------------------------
+
+def _check_drc(plan: dict[str, Any], drc: dict[str, Any]) -> tuple[str, bool, str]:
     min_length_devices = sum(
         group["count"]
         for block in plan["blocks"]
@@ -340,51 +343,71 @@ def main() -> int:
     drc_ok = set(rule_counts) == {"li1.space.1"} and rule_counts.get(
         "li1.space.1"
     ) == min_length_devices
-    checks.append(
-        (
-            "DRC fires exactly one rule class -- the documented `klt gen` "
-            "minimum-gate-length limitation -- once per minimum-length device "
-            f"({min_length_devices} of them), and nothing else",
-            drc_ok,
-            f"status={drc.get('status')}, rule_counts={rule_counts}",
-        )
+    return (
+        "DRC fires exactly one rule class -- the documented `klt gen` "
+        "minimum-gate-length limitation -- once per minimum-length device "
+        f"({min_length_devices} of them), and nothing else",
+        drc_ok,
+        f"status={drc.get('status')}, rule_counts={rule_counts}",
     )
 
-    all_pass = all(ok for _, ok, _ in checks)
 
-    klt_version, pdk_info = klt_info(args.klt, args.pdk_variant)
-    sha, branch, dirty = git_provenance(args.repo_root, out_dir)
+def _build_checks(
+    out_dir: Path,
+    plan: dict[str, Any],
+    cards: dict[str, list[dict[str, Any]]],
+    cells_top: dict[str, Any],
+    drc: dict[str, Any],
+) -> tuple[list[tuple[str, bool, str]], list[dict[str, Any]]]:
+    """The record's `checks` list and per-block device-set rows.
 
-    spot = None
+    Same six assertions, same order, as the pre-split `main()` built inline;
+    only the "how" moved, one `_check_*` helper per assertion.
+    """
+    checks: list[tuple[str, bool, str]] = [
+        _check_coverage(plan, cards),
+        _check_supply_flavor(cards),
+    ]
+    device_checks, device_rows = _check_device_sets(out_dir, plan)
+    checks.extend(device_checks)
+    checks.extend(_check_stdcell(out_dir, plan))
+    checks.append(_check_top_hierarchy(cells_top, plan))
+    checks.append(_check_drc(plan, drc))
+    return checks, device_rows
+
+
+def _load_spot_check(out_dir: Path) -> dict[str, Any] | None:
+    """The routing spot-check's evidence, or `None` if the flow skipped it."""
     spot_path = out_dir / "route-spot-check" / "build.json"
-    if spot_path.is_file():
-        # A node the extractor labels with more than one declared net name is
-        # a *drawn short*: two nets the schematic keeps apart ended up on one
-        # electrical node. Counted straight out of the routed run's own
-        # extracted netlist, so the claim is the extractor's, not this
-        # script's.
-        routed_spice = (out_dir / "route-spot-check" / "pll_top.spice").read_text()
-        merged = sorted({m for m in re.findall(r"[A-Za-z_0-9]+(?:\|[A-Za-z_0-9]+)+", routed_spice)})
-        lvs_path = out_dir / "route-spot-check" / "lvs.json"
-        spot = {
-            "build": _load(spot_path),
-            "drc": _load(out_dir / "route-spot-check" / "drc.json"),
-            "extract": _load(out_dir / "route-spot-check" / "extract.json"),
-            "merged_nodes": merged,
-            "routing": route_stats(out_dir / "route-spot-check"),
-            "lvs": _load(lvs_path) if lvs_path.is_file() else None,
-        }
+    if not spot_path.is_file():
+        return None
+    # A node the extractor labels with more than one declared net name is
+    # a *drawn short*: two nets the schematic keeps apart ended up on one
+    # electrical node. Counted straight out of the routed run's own
+    # extracted netlist, so the claim is the extractor's, not this
+    # script's.
+    routed_spice = (out_dir / "route-spot-check" / "pll_top.spice").read_text()
+    merged = sorted({m for m in re.findall(r"[A-Za-z_0-9]+(?:\|[A-Za-z_0-9]+)+", routed_spice)})
+    lvs_path = out_dir / "route-spot-check" / "lvs.json"
+    return {
+        "build": _load(spot_path),
+        "drc": _load(out_dir / "route-spot-check" / "drc.json"),
+        "extract": _load(out_dir / "route-spot-check" / "extract.json"),
+        "merged_nodes": merged,
+        "routing": route_stats(out_dir / "route-spot-check"),
+        "lvs": _load(lvs_path) if lvs_path.is_file() else None,
+    }
 
-    lines: list[str] = []
-    a = lines.append
+
+# --- render: each `_render_*` helper appends one `## `-headed markdown
+# section (or, for the header, the record's title + intro) to the shared
+# `lines` list via `a = lines.append` -- the same convention `render-record.py`
+# uses. `main()` calls them in the record's own section order. -------------
+
+
+def _render_header(a: Any, args: argparse.Namespace, netlist_display: str) -> None:
     a(f"# PLL layout record: {args.record_id}")
     a("")
-    try:
-        netlist_display = args.netlist.resolve().relative_to(
-            args.repo_root.resolve()
-        ).as_posix()
-    except ValueError:  # pragma: no cover - netlist outside the repo
-        netlist_display = args.netlist.as_posix()
     a(
         "Device-level layout of the closed-loop PLL schematic "
         f"(`{netlist_display}`), drawn by `layout/bin/run-pll-layout-flow.sh` "
@@ -392,11 +415,17 @@ def main() -> int:
         "is the raw `klt` evidence it summarises."
     )
     a("")
+
+
+def _render_verdict(a: Any, checks: list[tuple[str, bool, str]], all_pass: bool) -> None:
     a("## Overall verdict: " + ("PASS" if all_pass else "FAIL"))
     a("")
     for desc, ok, detail in checks:
         a(f"- [{'x' if ok else ' '}] {desc} -- {detail}")
     a("")
+
+
+def _render_layout_is(a: Any, plan: dict[str, Any], build: dict[str, Any], out_dir: Path) -> None:
     a("## What this layout is")
     a("")
     a(
@@ -436,6 +465,9 @@ def main() -> int:
         f"{len(build['blocks'])} | {top_size[0]} x {top_size[1]} |"
     )
     a("")
+
+
+def _render_layout_is_not(a: Any, build: dict[str, Any], drc: dict[str, Any]) -> None:
     a("## What this layout is not")
     a("")
     a(
@@ -466,160 +498,177 @@ def main() -> int:
         "(PEX is issue #21)."
     )
     a("")
-    if spot:
-        spot_blocks = spot["build"]["blocks"]
-        routed = sum(entry["routed_nets"] for entry in spot_blocks)
-        declared = sum(entry["declared_nets"] for entry in spot_blocks)
-        a("## Routing spot-check (why the shipped layout is unrouted)")
-        a("")
-        merged = spot["merged_nodes"]
-        merged_nets = sum(node.count("|") + 1 for node in merged)
-        routing = spot["routing"]
-        status = routing["status"]
-        partial = status.get("partial", 0)
+
+
+def _render_routing_spotcheck(
+    a: Any,
+    spot: dict[str, Any],
+    build: dict[str, Any],
+    drc: dict[str, Any],
+    extract_top: dict[str, Any],
+) -> None:
+    """The "why the shipped layout is unrouted" section.
+
+    Only called when `spot` is not `None` (the caller's `if spot:` guard) --
+    the largest single markdown section, so it gets its own helper per the
+    issue's proposed approach.
+    """
+    spot_blocks = spot["build"]["blocks"]
+    routed = sum(entry["routed_nets"] for entry in spot_blocks)
+    declared = sum(entry["declared_nets"] for entry in spot_blocks)
+    a("## Routing spot-check (why the shipped layout is unrouted)")
+    a("")
+    merged = spot["merged_nodes"]
+    merged_nets = sum(node.count("|") + 1 for node in merged)
+    routing = spot["routing"]
+    status = routing["status"]
+    partial = status.get("partial", 0)
+    a(
+        "The same build was re-run with `klt gen-compose`'s router enabled "
+        f"(`route-spot-check/`). Of {declared} declared nets it drew "
+        f"{routed} in full and {partial} in part, leaving "
+        f"{status.get('unrouted', 0)} with no geometry at all -- "
+        f"{routing['drawn_legs']} of {routing['legs']} two-pin legs drawn. "
+        "The router declined the rest, with its own reason per leg:"
+    )
+    a("")
+    a("| Why a leg was not drawn | Legs |")
+    a("| --- | --- |")
+    for label, count in routing["reasons"].most_common():
+        a(f"| {label} | {count} |")
+    a("")
+    if merged:
+        node_word = "node" if len(merged) == 1 else "nodes"
         a(
-            "The same build was re-run with `klt gen-compose`'s router enabled "
-            f"(`route-spot-check/`). Of {declared} declared nets it drew "
-            f"{routed} in full and {partial} in part, leaving "
-            f"{status.get('unrouted', 0)} with no geometry at all -- "
-            f"{routing['drawn_legs']} of {routing['legs']} two-pin legs drawn. "
-            "The router declined the rest, with its own reason per leg:"
+            f"**The drawn geometry still shorts {len(merged)} {node_word}.** "
+            "The routed run's own extracted netlist collapses "
+            f"{merged_nets} distinct declared net names onto "
+            f"{len(merged)} electrical {node_word}:"
         )
         a("")
-        a("| Why a leg was not drawn | Legs |")
-        a("| --- | --- |")
-        for label, count in routing["reasons"].most_common():
-            a(f"| {label} | {count} |")
-        a("")
-        if merged:
-            node_word = "node" if len(merged) == 1 else "nodes"
-            a(
-                f"**The drawn geometry still shorts {len(merged)} {node_word}.** "
-                "The routed run's own extracted netlist collapses "
-                f"{merged_nets} distinct declared net names onto "
-                f"{len(merged)} electrical {node_word}:"
-            )
-            a("")
-            for node in merged:
-                a(f"- `{node}`")
-            a("")
-            a(
-                "That is why the shipped stream is still the unrouted one: a "
-                "layout that shorts nets the schematic keeps apart is worse "
-                "than one with no wires, and nothing downstream (#17's DRC "
-                "closure, #18's LVS closure) can be argued from it. The "
-                "residual short survives the router's own route-vs-route check "
-                "(which this `klt` pin does have, and which fires on the legs "
-                "counted in the table above); it is a coverage gap in that "
-                "check, reproduced on `klt`'s own default generator output and "
-                "filed upstream as "
-                "[klayout-tools#1197](https://github.com/2AMLogic/klayout-tools/issues/1197)."
-            )
-        else:
-            a(
-                "**No drawn short:** the routed run's extracted netlist carries "
-                "no multi-label node, so nothing the router drew merged two "
-                "declared nets. The shipped stream is still the unrouted one "
-                "because most nets remain undrawn (see the table above), not "
-                "because the drawn ones are wrong."
-            )
+        for node in merged:
+            a(f"- `{node}`")
         a("")
         a(
-            f"Its DRC reports {spot['drc'].get('violation_count')} "
-            f"violations ({spot['drc'].get('rule_counts')}) against "
-            f"{drc.get('violation_count')} for the unrouted build, and its "
-            f"extraction finds {spot['extract'].get('net_count')} nets against "
-            f"{extract_top.get('net_count')} for the unrouted build. Most of "
-            "that difference is the routing doing its job -- each drawn leg "
-            "merges two device pads that the unrouted stream counts as two "
-            "separate nets -- which is why the multi-label node count above, "
-            "not the net-count delta, is what identifies a short."
+            "That is why the shipped stream is still the unrouted one: a "
+            "layout that shorts nets the schematic keeps apart is worse "
+            "than one with no wires, and nothing downstream (#17's DRC "
+            "closure, #18's LVS closure) can be argued from it. The "
+            "residual short survives the router's own route-vs-route check "
+            "(which this `klt` pin does have, and which fires on the legs "
+            "counted in the table above); it is a coverage gap in that "
+            "check, reproduced on `klt`'s own default generator output and "
+            "filed upstream as "
+            "[klayout-tools#1197](https://github.com/2AMLogic/klayout-tools/issues/1197)."
         )
-        a("")
-        a("Per-block routing outcome from the spot-check:")
-        a("")
-        a("| Block | Declared nets | Fully routed | Not fully routed |")
-        a("| --- | --- | --- | --- |")
-        for entry in spot_blocks:
-            a(
-                f"| `{entry['name']}` | {entry['declared_nets']} | "
-                f"{entry['routed_nets']} | {entry['unrouted_nets']} |"
-            )
+    else:
+        a(
+            "**No drawn short:** the routed run's extracted netlist carries "
+            "no multi-label node, so nothing the router drew merged two "
+            "declared nets. The shipped stream is still the unrouted one "
+            "because most nets remain undrawn (see the table above), not "
+            "because the drawn ones are wrong."
+        )
+    a("")
+    a(
+        f"Its DRC reports {spot['drc'].get('violation_count')} "
+        f"violations ({spot['drc'].get('rule_counts')}) against "
+        f"{drc.get('violation_count')} for the unrouted build, and its "
+        f"extraction finds {spot['extract'].get('net_count')} nets against "
+        f"{extract_top.get('net_count')} for the unrouted build. Most of "
+        "that difference is the routing doing its job -- each drawn leg "
+        "merges two device pads that the unrouted stream counts as two "
+        "separate nets -- which is why the multi-label node count above, "
+        "not the net-count delta, is what identifies a short."
+    )
+    a("")
+    a("Per-block routing outcome from the spot-check:")
+    a("")
+    a("| Block | Declared nets | Fully routed | Not fully routed |")
+    a("| --- | --- | --- | --- |")
+    for entry in spot_blocks:
+        a(
+            f"| `{entry['name']}` | {entry['declared_nets']} | "
+            f"{entry['routed_nets']} | {entry['unrouted_nets']} |"
+        )
+    a("")
+    a(
+        "(The spot-check's own GDS streams are deleted by the flow after "
+        "its DRC/extract run -- the JSON envelopes are the evidence, and "
+        "`run-pll-layout-flow.sh` regenerates the streams on demand.)"
+    )
+    a("")
+    lvs = spot["lvs"]
+    a("### LVS (spot-check)")
+    a("")
+    if lvs is None:
+        a(
+            "`klt lvs` was not run for this record (no "
+            "`route-spot-check/lvs.json`)."
+        )
+    elif "error" in lvs:
+        a(
+            "`klt lvs` itself errored rather than returning a comparison "
+            f"-- `{lvs['error'].get('message')}`."
+        )
+    else:
+        counts = lvs.get("counts", {})
+        nets = counts.get("nets", {})
+        devices = counts.get("devices", {})
+        a(
+            f"`klt lvs` compared the spot-check's routed "
+            f"`{build['top']['cell_name']}` against the authored schematic "
+            "(`reference.spice`, the same netlist `pll_layout.py` derives "
+            "the plan from, with its top "
+            "level's `.subckt`/`.ends` uncommented so `klt lvs`'s SPICE "
+            "reader recognises it -- both sides flattened first, since "
+            "this flow's composed block names (`pll_pfd_cp`, ...) differ "
+            "from the schematic's own subcircuit names (`pfd_cp`, ...) "
+            "and `klt lvs` does not resolve that across un-flattened "
+            "circuit boundaries)."
+        )
         a("")
         a(
-            "(The spot-check's own GDS streams are deleted by the flow after "
-            "its DRC/extract run -- the JSON envelopes are the evidence, and "
-            "`run-pll-layout-flow.sh` regenerates the streams on demand.)"
+            f"**Status: `{lvs.get('status')}`, "
+            f"{lvs.get('mismatch_count')} mismatches** -- "
+            f"nets {nets.get('matched', 0)}/{nets.get('reference', 0)} "
+            f"reference nets matched ({nets.get('layout', 0)} in the "
+            "layout), devices "
+            f"{devices.get('matched', 0)}/{devices.get('reference', 0)} "
+            f"reference devices matched ({devices.get('layout', 0)} in "
+            "the layout)."
         )
         a("")
-        lvs = spot["lvs"]
-        a("### LVS (spot-check)")
+        cat_counts = lvs.get("category_counts", {})
+        if cat_counts:
+            a("| Mismatch category | Count |")
+            a("| --- | --- |")
+            for category, count in sorted(
+                cat_counts.items(), key=lambda item: -item[1]
+            ):
+                a(f"| `{category}` | {count} |")
+            a("")
+        a(
+            "This is the expected shape of the result, not a surprise: "
+            f"only {routing['drawn_legs']} of {routing['legs']} two-pin "
+            "legs are drawn (see the table above), so almost every "
+            "reference net and device is structurally unreachable from "
+            "the layout side. `klt lvs` is run and its result recorded "
+            "in full precisely so that claim rests on the tool's own "
+            "comparison rather than on this record's own leg-reason "
+            "tally -- per this repo's CLAUDE.md, a miss is recorded as a "
+            "miss, never rounded up to \"clean.\" Full `klt lvs` closure "
+            "(issue #18) needs the router's structural gaps above "
+            "(chiefly the point-to-point router's inability to route a "
+            "pin buried inside a matched device array) closed first, and "
+            "klayout-tools#1197's residual same-block short fixed "
+            "upstream before routing further is safe to attempt at all "
+            "-- see `layout/pll/README.md`."
+        )
         a("")
-        if lvs is None:
-            a(
-                "`klt lvs` was not run for this record (no "
-                "`route-spot-check/lvs.json`)."
-            )
-        elif "error" in lvs:
-            a(
-                "`klt lvs` itself errored rather than returning a comparison "
-                f"-- `{lvs['error'].get('message')}`."
-            )
-        else:
-            counts = lvs.get("counts", {})
-            nets = counts.get("nets", {})
-            devices = counts.get("devices", {})
-            a(
-                f"`klt lvs` compared the spot-check's routed "
-                f"`{build['top']['cell_name']}` against the authored schematic "
-                "(`reference.spice`, the same netlist `pll_layout.py` derives "
-                "the plan from, with its top "
-                "level's `.subckt`/`.ends` uncommented so `klt lvs`'s SPICE "
-                "reader recognises it -- both sides flattened first, since "
-                "this flow's composed block names (`pll_pfd_cp`, ...) differ "
-                "from the schematic's own subcircuit names (`pfd_cp`, ...) "
-                "and `klt lvs` does not resolve that across un-flattened "
-                "circuit boundaries)."
-            )
-            a("")
-            a(
-                f"**Status: `{lvs.get('status')}`, "
-                f"{lvs.get('mismatch_count')} mismatches** -- "
-                f"nets {nets.get('matched', 0)}/{nets.get('reference', 0)} "
-                f"reference nets matched ({nets.get('layout', 0)} in the "
-                "layout), devices "
-                f"{devices.get('matched', 0)}/{devices.get('reference', 0)} "
-                f"reference devices matched ({devices.get('layout', 0)} in "
-                "the layout)."
-            )
-            a("")
-            cat_counts = lvs.get("category_counts", {})
-            if cat_counts:
-                a("| Mismatch category | Count |")
-                a("| --- | --- |")
-                for category, count in sorted(
-                    cat_counts.items(), key=lambda item: -item[1]
-                ):
-                    a(f"| `{category}` | {count} |")
-                a("")
-            a(
-                "This is the expected shape of the result, not a surprise: "
-                f"only {routing['drawn_legs']} of {routing['legs']} two-pin "
-                "legs are drawn (see the table above), so almost every "
-                "reference net and device is structurally unreachable from "
-                "the layout side. `klt lvs` is run and its result recorded "
-                "in full precisely so that claim rests on the tool's own "
-                "comparison rather than on this record's own leg-reason "
-                "tally -- per this repo's CLAUDE.md, a miss is recorded as a "
-                "miss, never rounded up to \"clean.\" Full `klt lvs` closure "
-                "(issue #18) needs the router's structural gaps above "
-                "(chiefly the point-to-point router's inability to route a "
-                "pin buried inside a matched device array) closed first, and "
-                "klayout-tools#1197's residual same-block short fixed "
-                "upstream before routing further is safe to attempt at all "
-                "-- see `layout/pll/README.md`."
-            )
-            a("")
+
+
+def _render_device_set(a: Any, device_rows: list[dict[str, Any]], out_dir: Path, plan: dict[str, Any]) -> None:
     a("## Device set: schematic vs. extracted")
     a("")
     a(
@@ -656,6 +705,9 @@ def main() -> int:
         "instance-level check above is the one that compares like with like."
     )
     a("")
+
+
+def _render_flow(a: Any) -> None:
     a("## Flow")
     a("")
     a("1. `pll_layout.py` parses the schematic netlist and derives the plan (`plan.json`).")
@@ -665,6 +717,19 @@ def main() -> int:
     a("5. `klt gen-compose` (explicit placement) per block, then once more for the top cell.")
     a("6. `klt drc` / `klt extract` / `klt cells` over the result -- the evidence in this directory.")
     a("")
+
+
+def _render_provenance(
+    a: Any,
+    args: argparse.Namespace,
+    netlist_display: str,
+    klt_version: str,
+    pdk_info: dict[str, Any],
+    drc: dict[str, Any],
+    sha: str,
+    branch: str,
+    dirty: bool,
+) -> None:
     a("## Provenance")
     a("")
     a(f"- Record ID: `{args.record_id}`")
@@ -679,6 +744,9 @@ def main() -> int:
     )
     a(f"- Repo state: `{sha}` on `{branch}`" + (" (dirty)" if dirty else ""))
     a("")
+
+
+def _render_links(a: Any, build: dict[str, Any]) -> None:
     a("## Links")
     a("")
     a("- [`plan.json`](plan.json) -- the schematic-derived layout plan (device set + full port/net map)")
@@ -689,6 +757,45 @@ def main() -> int:
     a("- [`renders/overview.png`](renders/overview.png), [`render.json`](render.json)")
     a("- [`report.md`](report.md) -- combined `klt report --format github-summary` rendering")
     a("")
+
+
+def main() -> int:
+    args = _parse_args()
+
+    out_dir: Path = args.out_dir
+    plan = _load(out_dir / "plan.json")
+    build = _load(out_dir / "build.json")
+    drc = _load(out_dir / "drc.json")
+    extract_top = _load(out_dir / "extract.json")
+    cells_top = _load(out_dir / "cells.top.json")
+    cards = read_cards(args.netlist.read_text())
+
+    checks, device_rows = _build_checks(out_dir, plan, cards, cells_top, drc)
+    all_pass = all(ok for _, ok, _ in checks)
+
+    klt_version, pdk_info = klt_info(args.klt, args.pdk_variant)
+    sha, branch, dirty = git_provenance(args.repo_root, out_dir)
+    spot = _load_spot_check(out_dir)
+
+    try:
+        netlist_display = args.netlist.resolve().relative_to(
+            args.repo_root.resolve()
+        ).as_posix()
+    except ValueError:  # pragma: no cover - netlist outside the repo
+        netlist_display = args.netlist.as_posix()
+
+    lines: list[str] = []
+    a = lines.append
+    _render_header(a, args, netlist_display)
+    _render_verdict(a, checks, all_pass)
+    _render_layout_is(a, plan, build, out_dir)
+    _render_layout_is_not(a, build, drc)
+    if spot:
+        _render_routing_spotcheck(a, spot, build, drc, extract_top)
+    _render_device_set(a, device_rows, out_dir, plan)
+    _render_flow(a)
+    _render_provenance(a, args, netlist_display, klt_version, pdk_info, drc, sha, branch, dirty)
+    _render_links(a, build)
 
     print("\n".join(lines))
     return 0 if all_pass else 1
