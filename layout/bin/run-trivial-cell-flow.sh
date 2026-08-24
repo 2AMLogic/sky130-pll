@@ -43,22 +43,15 @@ CELL=trivial_mos_array
 NC_CELL=drc_negative_control
 PDK_VARIANT=sky130A
 
-if [[ ! -x "$KLT" ]]; then
-  echo "run-trivial-cell-flow.sh: $KLT not found -- run layout/bin/setup-venv.sh first" >&2
-  exit 1
-fi
+# shellcheck source=layout/bin/flow_common.sh
+source "$LAYOUT_DIR/bin/flow_common.sh"
+SCRIPT_NAME="$(basename "${BASH_SOURCE[0]}")"
 
-if ! "$KLT" pdk find --pdk "$PDK_VARIANT" >/dev/null; then
-  echo "run-trivial-cell-flow.sh: no resolvable $PDK_VARIANT PDK -- see sim/pdk.json for the pin" >&2
-  exit 1
-fi
+flow_require_klt "$SCRIPT_NAME"
+flow_require_pdk "$SCRIPT_NAME"
 
-TS_UTC="$(date -u +%Y%m%d-%H%M%S)"
-SHORT_SHA="$(git -C "$REPO_ROOT" rev-parse --short HEAD)"
-RECORD_ID="${TS_UTC}-${SHORT_SHA}"
-OUT_DIR="$CELL_DIR/reports/$RECORD_ID"
-mkdir -p "$OUT_DIR"
-echo "run-trivial-cell-flow.sh: record $RECORD_ID -> $OUT_DIR"
+flow_new_record_id
+flow_setup_out_dir "$SCRIPT_NAME" "$CELL_DIR"
 
 # --- 1. Generate the trivial known-good cell -------------------------------
 "$KLT" gen mos_array --pdk "$PDK_VARIANT" --cell-name "$CELL" \
@@ -135,6 +128,6 @@ python3 "$LAYOUT_DIR/bin/render-record.py" \
 # Keep a "latest" pointer so the README's quick-start doesn't need a
 # hardcoded record id. This is a plain text file, not a symlink, so it
 # survives a shallow checkout / non-symlink-preserving copy unchanged.
-echo "$RECORD_ID" > "$CELL_DIR/reports/LATEST"
+flow_write_latest "$CELL_DIR"
 
-echo "run-trivial-cell-flow.sh: done. See $OUT_DIR/record.md"
+echo "$SCRIPT_NAME: done. See $OUT_DIR/record.md"
