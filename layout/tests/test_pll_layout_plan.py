@@ -103,6 +103,19 @@ class PlanCoverageTests(unittest.TestCase):
                 )
                 self.assertEqual(params["dummy"], 0, group["id"])
 
+    def test_mos_arrays_opt_into_gate_contact(self):
+        # issue #18: every mos_array group must request a contacted gate
+        # landing pad, or every net terminating on that group's gates is
+        # unroutable by construction (klayout-tools#492's capability, only
+        # useful once actually requested here).
+        for block in self.plan["blocks"]:
+            for group in block["groups"]:
+                if group["kind"] != "mos_array":
+                    continue
+                self.assertTrue(
+                    group["params"].get("gate_contact"), group["id"]
+                )
+
     def test_res_arrays_draw_no_dummy_elements(self):
         for block in self.plan["blocks"]:
             for group in block["groups"]:
@@ -227,6 +240,36 @@ class ConnectivityTests(unittest.TestCase):
             expected = {net for net, count in counts.items() if count >= 2}
             declared = {entry["net"] for entry in pll_layout.block_connectivity(block)}
             self.assertEqual(expected, declared, block["name"])
+
+
+class LvsReferenceTextTests(unittest.TestCase):
+    # issue #18: `klt lvs`'s SPICE reader needs a real `.subckt top ...` /
+    # `.ends` pair to recognise the top level as a comparable circuit --
+    # xschem emits that pair doubly-commented (`**.subckt` / `**.ends`).
+    def test_uncomments_the_doubly_commented_subckt_and_ends_only(self):
+        text = (
+            "** this is a genuine comment, not a subckt marker\n"
+            "**.subckt top vin vout\n"
+            "xpfd pfd_cp a b\n"
+            ".subckt pfd_cp a b\n"
+            "m1 a b c d nfet_01v8\n"
+            ".ends\n"
+            "**.ends\n"
+        )
+        out = pll_layout.lvs_reference_text(text)
+        lines = out.splitlines()
+        self.assertIn(".subckt top vin vout", lines)
+        # the already-plain subcircuit below `top` is left untouched
+        self.assertIn(".subckt pfd_cp a b", lines)
+        self.assertEqual(lines.count(".ends"), 2)  # pfd_cp's own, plus top's uncommented
+        self.assertIn("** this is a genuine comment, not a subckt marker", lines)
+        self.assertNotIn("**.subckt top vin vout", lines)
+        self.assertNotIn("**.ends", lines)
+
+    def test_real_netlist_top_level_becomes_a_real_subckt(self):
+        out = pll_layout.lvs_reference_text(NETLIST.read_text())
+        self.assertIn(".subckt top", out)
+        self.assertNotIn("**.subckt top", out)
 
 
 if __name__ == "__main__":

@@ -298,6 +298,7 @@ def plan_block(block_name: str, cards: list[dict[str, Any]]) -> dict[str, Any]:
                     # its device count is even; an odd count cannot be paired,
                     # so it falls back to plain row-major order.
                     "topology": "common_centroid" if count % 2 == 0 else "array",
+                    "gate_contact": True,
                 },
                 "count": count,
                 "members": [
@@ -410,6 +411,27 @@ def build_plan(netlist_text: str, top_subckt: str = "top") -> dict[str, Any]:
         "top_cell_name": "pll_top",
         "blocks": [plan_block(name, cards[name]) for name in block_order],
     }
+
+
+def lvs_reference_text(netlist_text: str) -> str:
+    """`netlist_text`, with the top level's `.subckt`/`.ends` uncommented.
+
+    xschem writes the *top-level* subcircuit's own header/footer doubly
+    commented (`**.subckt top ...` / `**.ends`, see `read_cards`'s docstring
+    for why) while its instance cards are emitted uncommented -- fine for
+    this module's own parser, which already strips the `**` prefix, but not
+    for `klt lvs`'s reference-netlist reader, which needs a real `.subckt
+    <top>` / `.ends` pair to recognise "top" as a comparable circuit at all
+    (issue #18). Nothing else about the netlist is touched -- every
+    subcircuit below `top` is already written in plain, uncommented SPICE.
+    """
+    lines = []
+    for line in netlist_text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("**.subckt") or stripped.startswith("**.ends"):
+            line = line.replace("**.", ".", 1)
+        lines.append(line)
+    return "\n".join(lines) + "\n"
 
 
 # --- 2. Floorplanning (pure, PDK-free) --------------------------------------
@@ -835,11 +857,23 @@ def main(argv: list[str] | None = None) -> int:
             "(for the shell driver's per-block klt calls)"
         ),
     )
+    ap.add_argument(
+        "--emit-lvs-reference",
+        action="store_true",
+        help=(
+            "also write reference.spice (the schematic netlist with its top "
+            "level's .subckt/.ends uncommented -- see lvs_reference_text) "
+            "for use as a `klt lvs` reference netlist"
+        ),
+    )
     args = ap.parse_args(argv)
 
-    plan = build_plan(args.netlist.read_text())
+    netlist_text = args.netlist.read_text()
+    plan = build_plan(netlist_text)
     args.out_dir.mkdir(parents=True, exist_ok=True)
     (args.out_dir / "plan.json").write_text(json.dumps(plan, indent=2) + "\n")
+    if args.emit_lvs_reference:
+        (args.out_dir / "reference.spice").write_text(lvs_reference_text(netlist_text))
     if args.print_blocks:
         for block in plan["blocks"]:
             has_stdcells = any(g["kind"] == "stdcell" for g in block["groups"])

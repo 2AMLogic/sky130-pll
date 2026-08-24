@@ -27,11 +27,15 @@ What it asserts, and why those are the honest claims for issue #16:
   once per minimum-gate-length device -- so a *new* violation class appearing
   is a FAIL.
 
-It deliberately does **not** assert LVS: the composed layout carries no
+It deliberately does **not** assert LVS: the shipped layout carries no
 inter-device routing (see the record's own "What this layout is not"
-section), so an LVS comparison against the schematic could only ever report
-mismatch, and asserting a mismatch would dress a known gap up as a passing
-check.
+section), so an LVS comparison against it could only ever report mismatch,
+and asserting a mismatch would dress a known gap up as a passing check.
+Since issue #18, a `klt lvs` comparison **is** attempted -- against the
+routed routing-spot-check build, the one stream in the record with any
+topology to compare at all -- and its result is reported verbatim (never
+asserted "PASS"), so a still-substantial mismatch is recorded as evidence of
+how much routing remains, not silently omitted.
 """
 
 from __future__ import annotations
@@ -361,12 +365,14 @@ def main() -> int:
         # script's.
         routed_spice = (out_dir / "route-spot-check" / "pll_top.spice").read_text()
         merged = sorted({m for m in re.findall(r"[A-Za-z_0-9]+(?:\|[A-Za-z_0-9]+)+", routed_spice)})
+        lvs_path = out_dir / "route-spot-check" / "lvs.json"
         spot = {
             "build": _load(spot_path),
             "drc": _load(out_dir / "route-spot-check" / "drc.json"),
             "extract": _load(out_dir / "route-spot-check" / "extract.json"),
             "merged_nodes": merged,
             "routing": route_stats(out_dir / "route-spot-check"),
+            "lvs": _load(lvs_path) if lvs_path.is_file() else None,
         }
 
     lines: list[str] = []
@@ -447,10 +453,12 @@ def main() -> int:
         "(see the DRC check above); DRC-clean closure is issue #17."
     )
     a(
-        "- **Not LVS-clean, and not LVS-compared.** With no routing there is "
-        "no topology in the stream to compare, so no LVS run is attempted "
-        "here at all rather than reporting a foregone mismatch. LVS closure "
-        "is issue #18."
+        "- **Not LVS-clean.** The shipped stream carries no routing, so no "
+        "`klt lvs` run is attempted against it (a foregone mismatch is not "
+        "evidence). `klt lvs` *is* run against the routed routing-spot-check "
+        "build below, and reports a large, honestly-recorded mismatch -- see "
+        "the spot-check's own LVS section for the counts and why. LVS "
+        "closure is issue #18."
     )
     a(
         "- **Not a verified circuit.** Nothing here is a claim against "
@@ -544,6 +552,74 @@ def main() -> int:
             "`run-pll-layout-flow.sh` regenerates the streams on demand.)"
         )
         a("")
+        lvs = spot["lvs"]
+        a("### LVS (spot-check)")
+        a("")
+        if lvs is None:
+            a(
+                "`klt lvs` was not run for this record (no "
+                "`route-spot-check/lvs.json`)."
+            )
+        elif "error" in lvs:
+            a(
+                "`klt lvs` itself errored rather than returning a comparison "
+                f"-- `{lvs['error'].get('message')}`."
+            )
+        else:
+            counts = lvs.get("counts", {})
+            nets = counts.get("nets", {})
+            devices = counts.get("devices", {})
+            a(
+                f"`klt lvs` compared the spot-check's routed "
+                f"`{build['top']['cell_name']}` against the authored schematic "
+                "(`reference.spice`, the same netlist `pll_layout.py` derives "
+                "the plan from, with its top "
+                "level's `.subckt`/`.ends` uncommented so `klt lvs`'s SPICE "
+                "reader recognises it -- both sides flattened first, since "
+                "this flow's composed block names (`pll_pfd_cp`, ...) differ "
+                "from the schematic's own subcircuit names (`pfd_cp`, ...) "
+                "and `klt lvs` does not resolve that across un-flattened "
+                "circuit boundaries)."
+            )
+            a("")
+            a(
+                f"**Status: `{lvs.get('status')}`, "
+                f"{lvs.get('mismatch_count')} mismatches** -- "
+                f"nets {nets.get('matched', 0)}/{nets.get('reference', 0)} "
+                f"reference nets matched ({nets.get('layout', 0)} in the "
+                "layout), devices "
+                f"{devices.get('matched', 0)}/{devices.get('reference', 0)} "
+                f"reference devices matched ({devices.get('layout', 0)} in "
+                "the layout)."
+            )
+            a("")
+            cat_counts = lvs.get("category_counts", {})
+            if cat_counts:
+                a("| Mismatch category | Count |")
+                a("| --- | --- |")
+                for category, count in sorted(
+                    cat_counts.items(), key=lambda item: -item[1]
+                ):
+                    a(f"| `{category}` | {count} |")
+                a("")
+            a(
+                "This is the expected shape of the result, not a surprise: "
+                f"only {routing['drawn_legs']} of {routing['legs']} two-pin "
+                "legs are drawn (see the table above), so almost every "
+                "reference net and device is structurally unreachable from "
+                "the layout side. `klt lvs` is run and its result recorded "
+                "in full precisely so that claim rests on the tool's own "
+                "comparison rather than on this record's own leg-reason "
+                "tally -- per this repo's CLAUDE.md, a miss is recorded as a "
+                "miss, never rounded up to \"clean.\" Full `klt lvs` closure "
+                "(issue #18) needs the router's structural gaps above "
+                "(chiefly the point-to-point router's inability to route a "
+                "pin buried inside a matched device array) closed first, and "
+                "klayout-tools#1197's residual same-block short fixed "
+                "upstream before routing further is safe to attempt at all "
+                "-- see `layout/pll/README.md`."
+            )
+            a("")
     a("## Device set: schematic vs. extracted")
     a("")
     a(

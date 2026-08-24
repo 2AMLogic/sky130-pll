@@ -41,7 +41,7 @@ if str(_REPO_ROOT) not in sys.path:
 
 # Re-exported (not just used below): layout/tests/test_record_dirty_flag.py
 # loads this module by path and calls `render_record.is_dirty(...)` directly.
-from scripts.git_status import is_dirty, run_git  # noqa: E402,F401
+from scripts.git_status import is_dirty  # noqa: E402,F401
 
 _BIN_DIR = Path(__file__).resolve().parent
 if str(_BIN_DIR) not in sys.path:

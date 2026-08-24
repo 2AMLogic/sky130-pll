@@ -1,0 +1,16 @@
+# Pins local overrides that a `resync-installed.sh` run must NOT overwrite.
+# One relative path per line (relative to `.loom/`, e.g. `scripts/foo.sh`,
+# `hooks/bar.sh`, `roles/baz.md`), matching the report-relative label
+# `resync-installed.sh` prints for each file. Blank lines and `#` comments
+# are ignored. See `.loom/scripts/resync-installed.sh` ("Local-override
+# convention") for the full mechanics — the same list also tells the
+# installer (`loom-daemon init` / `uninstall-loom.sh --clean`) that a path
+# under `.loom/` is repo-owned and must not be deleted on reinstall.
+
+# #78: pins the `state`-only gh pr view fix (no nonexistent `merged` --json
+# field) restored from this repo's own history at commit 7270355. A later
+# resync (commit 2f436d0) had silently reverted that fix back to the broken
+# `,merged` form because the resync source at the time was still serving the
+# pre-fix upstream content; pin here until upstream `rjwalters/loom` is
+# confirmed to consistently serve the fixed version (rjwalters/loom PR #6799).
+scripts/verdict-staleness-guard.sh
