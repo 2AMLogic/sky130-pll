@@ -45,12 +45,26 @@
 #       recovers via a freshly minted installation token and the renewal
 #       still succeeds; when the ladder is fully exhausted, renew-once still
 #       fails closed with the existing "ERROR: PATCH of lease comment ...
-#       failed" message (never silently-allow-through)
+#       failed" message (never silently-allow-through). The same (l) block
+#       also covers Issue #56's foreign-GH_CONFIG_DIR stripping (sub-labels
+#       (l-1)/(l-2)/(l-3)): a GH_CONFIG_DIR that does not resolve to this
+#       workspace's own gh-config dir (simulating the incident's leaked
+#       `/home/ubuntu/GitHub/anvil/.loom/gh-config`) is stripped before
+#       calling `gh api` on both call sites, while a GH_CONFIG_DIR that DOES
+#       resolve to this workspace's own gh-config dir, and GH_TOKEN /
+#       GITHUB_TOKEN, are left untouched.
 #   (m) cmd_start's renewal loop emits a visible log line (Issue #6541) when
 #       a renew-once cycle genuinely FAILS, even though the loop's own I/O is
 #       unconditionally sent to /dev/null for detachment -- and does NOT log
 #       a "failure" line for the normal exit-2 (no lease) or exit-4
 #       (#6485 own-yield guard) outcomes, which are not failures
+#   (n) Issue #56 -- start's detached loop ALSO surfaces a SUSTAINED run of
+#       renewal failures (every renew-once call failing) as a WARN line in
+#       the sustained-failure log once SWEEP_LEASE_RENEW_FAIL_WARN_THRESHOLD
+#       consecutive failures are reached, while a single transient failure
+#       (below threshold) produces NO warn line and does not kill the loop —
+#       the existing "one transient hiccup must never kill the loop" contract
+#       from test (g) above is re-verified unchanged in this same scenario
 #
 # Usage:
 #   ./.loom/scripts/tests/test-sweep-lease-renew.sh
@@ -148,9 +162,20 @@ trap 'rm -rf "$STUB_DIR" 2>/dev/null || true' EXIT
 #   stub records the literal two-character string `@-` as the PATCHed body
 #   instead of the piped renewed content -- exactly like the real `gh` CLI --
 #   so a script that (incorrectly) uses `-f body=@-` fails test (a) below.
+#
+#   Issue #56: every invocation also APPENDS one line to
+#   $STUB_DIR/env-seen.log recording whatever GH_CONFIG_DIR/GH_TOKEN/
+#   GITHUB_TOKEN reached this stub's own process env (or "<unset>" for each
+#   that did not) -- this is how test (l) below verifies renew-once actually
+#   strips a foreign GH_CONFIG_DIR before invoking `gh`, without needing the
+#   stub to fail the call outright (which would conflate "env was stripped"
+#   with "the call itself succeeded").
 cat > "$STUB_DIR/gh" <<'STUB'
 #!/usr/bin/env bash
 D="${LOOM_TEST_STUB_DIR:?stub gh: LOOM_TEST_STUB_DIR not set}"
+printf 'GH_CONFIG_DIR=%s GH_TOKEN=%s GITHUB_TOKEN=%s\n' \
+  "${GH_CONFIG_DIR:-<unset>}" "${GH_TOKEN:-<unset>}" "${GITHUB_TOKEN:-<unset>}" \
+  >> "$D/env-seen.log"
 if [[ "$1" == "api" ]]; then
   shift
   method="GET"
@@ -256,6 +281,7 @@ reset_state() {
     # or drop ambient creds explicitly; this default just keeps unrelated
     # tests from accidentally depending on an operator's real credential.
     unset LOOM_PERSONAL_GH_TOKEN 2> /dev/null || true
+    rm -f "$STUB_DIR"/env-seen.log "$STUB_DIR"/renew-warn.log
     # Strip ambient dispatch-time identity env vars (#6485): a Builder session
     # running THIS test suite is itself a daemon-dispatched sweep, so
     # $LOOM_TERMINAL_ID/$LOOM_HOST_ID are routinely already set in the real
@@ -265,6 +291,14 @@ reset_state() {
     # become exact-match tests against identity values the fixtures were
     # never written to match.
     unset LOOM_TERMINAL_ID LOOM_HOST_ID LOOM_LEASE_PUBLISH_HOSTNAME HOSTNAME 2> /dev/null || true
+    # Issue #56: also strip any GH_CONFIG_DIR/GH_TOKEN/GITHUB_TOKEN this test
+    # SUITE'S OWN shell happens to have ambient (e.g. a leaked GH_CONFIG_DIR
+    # from an unrelated repo's session, the exact incident this issue
+    # reports) so every test not specifically exercising (l) below runs
+    # against a deterministic, known env regardless of what leaked into the
+    # environment this suite happens to run in.
+    unset GH_CONFIG_DIR GH_TOKEN GITHUB_TOKEN SWEEP_LEASE_RENEW_LOG_FILE \
+        SWEEP_LEASE_RENEW_FAIL_WARN_THRESHOLD 2> /dev/null || true
 }
 
 run_script() {
@@ -523,9 +557,19 @@ wait "$WATCH_PID_K" 2> /dev/null || true
 kill "$LOOP_PID_K" 2> /dev/null || true
 assert_true "$([[ ! -f "$STUB_DIR/patch-55-1.body" ]] && echo true || echo false)" "(k) the yielded lease was never PATCHed"
 
-# --- (l) forge_gh_perm_safe escalation-ladder routing (#6541) -------------
+# --- (l) forge_gh_perm_safe escalation-ladder routing (#6541), plus Issue
+#     #56's foreign-GH_CONFIG_DIR stripping (sub-labels (l-1)/(l-2)/(l-3)) --
 echo ""
 echo "--- (l) forge_gh_perm_safe escalation-ladder routing on both gh api call sites ---"
+
+# This workspace's own gh-config dir, computed exactly the way the real
+# script's own_gh_config_dir() computes it (same $SCRIPT_DIR, same formula) --
+# used to prove a GH_CONFIG_DIR naming THIS workspace is left untouched.
+OWN_WORKSPACE_DIR="$(cd "$SCRIPTS_DIR/.." 2> /dev/null && pwd -P)"
+OWN_GH_CONFIG_DIR="$OWN_WORKSPACE_DIR/gh-config"
+# An unrelated repo's own dir -- simulates the incident's leaked
+# /home/ubuntu/GitHub/anvil/.loom/gh-config.
+FOREIGN_GH_CONFIG_DIR="$(mktemp -d)/unrelated-repo/.loom/gh-config"
 
 # (l1) comments-list read: a transient App-token 403 on the FIRST attempt
 # recovers via a freshly minted installation token, and the renewal still
@@ -542,6 +586,19 @@ run_script renew-once 6180
 assert_eq "0" "$RC" "(l1) a transient 403 on the comments-list read recovers via the escalation ladder"
 assert_contains "$ERR" "forge:" "(l1) forge_gh_perm_safe's escalation diagnostic is visible on stderr"
 assert_true "$([[ -f "$STUB_DIR/patch-42-1.body" ]] && echo true || echo false)" "(l1) the renewal still PATCHes the lease comment after the escalated read"
+
+# (l-1) a FOREIGN GH_CONFIG_DIR must never reach the `gh` child process.
+reset_state
+cat > "$STUB_DIR/comments.json" <<'JSON'
+[
+  {"id": 42, "body": "<!-- loom:lease host=studio-host sweep=sweep-issue-6180-1000 -->\nLease acquired."}
+]
+JSON
+GH_CONFIG_DIR="$FOREIGN_GH_CONFIG_DIR" run_script renew-once 6180
+assert_eq "0" "$RC" "(l-1) renew-once still succeeds despite a foreign GH_CONFIG_DIR leaking in"
+ENV_SEEN_L1="$(cat "$STUB_DIR/env-seen.log" 2> /dev/null || echo MISSING)"
+assert_true "$([[ "$ENV_SEEN_L1" != *"$FOREIGN_GH_CONFIG_DIR"* ]] && echo true || echo false)" "(l-1) the foreign GH_CONFIG_DIR value never reached the gh child process"
+assert_contains "$ENV_SEEN_L1" "GH_CONFIG_DIR=<unset>" "(l-1) gh saw GH_CONFIG_DIR as unset, not the foreign value"
 
 # (l2) PATCH call: a transient App-token 403 on the FIRST attempt recovers
 # via a freshly minted installation token, and the PATCH still lands with
@@ -562,6 +619,20 @@ BODY_L2="$(cat "$STUB_DIR/patch-42-2.body" 2>/dev/null || echo MISSING)"
 assert_contains "$BODY_L2" "<!-- loom:lease host=studio-host sweep=sweep-issue-6180-1000 -->" "(l2) the escalated retry's PATCH body still preserves the marker byte-for-byte"
 assert_contains "$BODY_L2" "<!-- loom:lease-renewed " "(l2) the escalated retry's PATCH body still carries the renewed trailer"
 
+# (l-2) a GH_CONFIG_DIR that DOES resolve to this workspace's own gh-config
+# dir (a legitimately daemon-scoped credential dir) must reach `gh`
+# unmodified -- the precise, non-blanket scoping this issue calls for.
+reset_state
+cat > "$STUB_DIR/comments.json" <<'JSON'
+[
+  {"id": 42, "body": "<!-- loom:lease host=studio-host sweep=sweep-issue-6180-1000 -->\nLease acquired."}
+]
+JSON
+GH_CONFIG_DIR="$OWN_GH_CONFIG_DIR" run_script renew-once 6180
+assert_eq "0" "$RC" "(l-2) renew-once succeeds with its own workspace's gh-config dir set"
+ENV_SEEN_L2="$(cat "$STUB_DIR/env-seen.log" 2> /dev/null || echo MISSING)"
+assert_contains "$ENV_SEEN_L2" "GH_CONFIG_DIR=${OWN_GH_CONFIG_DIR}" "(l-2) a GH_CONFIG_DIR naming THIS workspace's own dir is passed through unmodified"
+
 # (l3) PATCH call: a FULLY EXHAUSTED escalation ladder (every rung 403s)
 # still fails closed -- non-zero exit, the existing "ERROR: PATCH of lease
 # comment ... failed" message -- never silently-allow-through.
@@ -574,6 +645,7 @@ JSON
 touch "$STUB_DIR/patch-403-always"
 run_script renew-once 6180
 assert_eq "1" "$RC" "(l3) an exhausted escalation ladder on the PATCH call still fails closed (non-zero exit)"
+
 assert_contains "$ERR" "ERROR: PATCH of lease comment 42 on issue #6180 failed" "(l3) the existing fail-closed error message is preserved verbatim"
 assert_true "$(! ls "$STUB_DIR"/patch-42-*.body > /dev/null 2>&1 && echo true || echo false)" "(l3) no PATCH body was ever successfully written when the ladder is exhausted"
 
@@ -653,6 +725,85 @@ wait "$WATCH_PID_M3" 2> /dev/null || true
 kill "$LOOP_PID_M3" 2> /dev/null || true
 M3_ERR="$(cat "$STUB_DIR/start-m3-stderr.log" 2> /dev/null || true)"
 assert_true "$([[ "$M3_ERR" != *FAILED* ]] && echo true || echo false)" "(m3) the own-yield-guard outcome (exit 4) does not log a FAILED line"
+
+# (l-3) GH_TOKEN/GITHUB_TOKEN are NEVER stripped, deliberately -- an
+# operator-exported personal token legitimately scoped to this repo is
+# indistinguishable, by value alone, from a leaked one (see the script's own
+# header comment).
+reset_state
+cat > "$STUB_DIR/comments.json" <<'JSON'
+[
+  {"id": 42, "body": "<!-- loom:lease host=studio-host sweep=sweep-issue-6180-1000 -->\nLease acquired."}
+]
+JSON
+GH_CONFIG_DIR="$FOREIGN_GH_CONFIG_DIR" GH_TOKEN="my-personal-token" GITHUB_TOKEN="my-gh-token" \
+    run_script renew-once 6180
+assert_eq "0" "$RC" "(l-3) renew-once still succeeds with GH_TOKEN/GITHUB_TOKEN set alongside a foreign GH_CONFIG_DIR"
+ENV_SEEN_L3="$(cat "$STUB_DIR/env-seen.log" 2> /dev/null || echo MISSING)"
+assert_contains "$ENV_SEEN_L3" "GH_TOKEN=my-personal-token" "(l-3) GH_TOKEN passes through unmodified"
+assert_contains "$ENV_SEEN_L3" "GITHUB_TOKEN=my-gh-token" "(l-3) GITHUB_TOKEN passes through unmodified"
+assert_contains "$ENV_SEEN_L3" "GH_CONFIG_DIR=<unset>" "(l-3) the foreign GH_CONFIG_DIR is still stripped even with GH_TOKEN/GITHUB_TOKEN also set"
+
+# --- (n) Issue #56: start's loop surfaces a SUSTAINED renewal failure, but
+#     not a single transient one -------------------------------------------
+echo ""
+echo "--- (n) Issue #56: sustained (not transient) renewal failure is surfaced ---"
+
+# (n-1) a single transient failure (below the WARN threshold) must NOT
+# produce a sustained-failure WARN log -- the pre-existing "one hiccup must
+# never kill the loop" contract, re-verified in this same failure-surfacing
+# scenario.
+reset_state
+cat > "$STUB_DIR/comments.json" <<'JSON'
+[
+  {"id": 42, "body": "<!-- loom:lease host=studio-host sweep=sweep-issue-6180-1000 -->\nLease acquired."}
+]
+JSON
+WARN_LOG_N1="$STUB_DIR/renew-warn-n1.log"
+export SWEEP_LEASE_RENEW_LOG_FILE="$WARN_LOG_N1"
+export SWEEP_LEASE_RENEW_FAIL_WARN_THRESHOLD=2
+touch "$STUB_DIR/patch-fail"
+sleep 6 &
+WATCH_PID_N1=$!
+LOOP_PID_N1="$("$SCRIPT" start 6180 --interval 1 --watch-pid "$WATCH_PID_N1" 2> "$STUB_DIR/start-n1-stderr.log")"
+sleep 1.5
+rm -f "$STUB_DIR/patch-fail" # recover after exactly ONE failed cycle
+sleep 1.8
+LOOP_ALIVE_N1="false"
+kill -0 "$LOOP_PID_N1" 2> /dev/null && LOOP_ALIVE_N1="true"
+assert_true "$([[ "$LOOP_ALIVE_N1" == "true" ]] && echo true || echo false)" "(n-1) the loop survives a single transient failure (unchanged contract)"
+assert_true "$([[ ! -s "$WARN_LOG_N1" ]] && echo true || echo false)" "(n-1) a single transient failure (below threshold) produces no sustained-failure WARN log"
+kill "$WATCH_PID_N1" 2> /dev/null || true
+wait "$WATCH_PID_N1" 2> /dev/null || true
+kill "$LOOP_PID_N1" 2> /dev/null || true
+
+# (n-2) a SUSTAINED run of failures (every attempt fails, crossing the
+# threshold) must produce a non-empty WARN log naming the issue, while the
+# loop itself keeps running (a sustained failure is surfaced, not fatal).
+reset_state
+cat > "$STUB_DIR/comments.json" <<'JSON'
+[
+  {"id": 42, "body": "<!-- loom:lease host=studio-host sweep=sweep-issue-6180-1000 -->\nLease acquired."}
+]
+JSON
+WARN_LOG_N2="$STUB_DIR/renew-warn-n2.log"
+export SWEEP_LEASE_RENEW_LOG_FILE="$WARN_LOG_N2"
+export SWEEP_LEASE_RENEW_FAIL_WARN_THRESHOLD=2
+touch "$STUB_DIR/patch-fail"
+sleep 8 &
+WATCH_PID_N2=$!
+LOOP_PID_N2="$("$SCRIPT" start 6180 --interval 1 --watch-pid "$WATCH_PID_N2" 2> "$STUB_DIR/start-n2-stderr.log")"
+sleep 3.5
+LOOP_ALIVE_N2="false"
+kill -0 "$LOOP_PID_N2" 2> /dev/null && LOOP_ALIVE_N2="true"
+assert_true "$([[ "$LOOP_ALIVE_N2" == "true" ]] && echo true || echo false)" "(n-2) the loop is still alive after several sustained failures (a sustained failure must not kill the loop either)"
+assert_true "$([[ -s "$WARN_LOG_N2" ]] && echo true || echo false)" "(n-2) a sustained run of failures (>= threshold) produces a non-empty WARN log"
+assert_contains "$(cat "$WARN_LOG_N2" 2> /dev/null || true)" "WARN sustained lease-renewal failure for issue #6180" "(n-2) the WARN log names the issue and the sustained-failure condition"
+rm -f "$STUB_DIR/patch-fail"
+kill "$WATCH_PID_N2" 2> /dev/null || true
+wait "$WATCH_PID_N2" 2> /dev/null || true
+kill "$LOOP_PID_N2" 2> /dev/null || true
+unset SWEEP_LEASE_RENEW_LOG_FILE SWEEP_LEASE_RENEW_FAIL_WARN_THRESHOLD
 
 # --- Contract checks (mirrors test-check-quarantine-stashes.sh's style) ---
 "$SCRIPT" --help > "$STUB_DIR/help.out" 2>&1
