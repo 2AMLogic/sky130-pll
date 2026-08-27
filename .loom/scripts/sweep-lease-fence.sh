@@ -162,11 +162,7 @@
 #       3  ABORT: EXPIRED -- the freshest lease comment is older than
 #          ttl-minutes AND belongs to THIS sweep's own host (Issue #6783: an
 #          expired lease owned by a different host now PASSes instead, see
-#          above). The stderr message also points at (and tails, if
-#          non-empty) sweep-lease-renew.sh's own sustained-failure WARN log
-#          for this issue (Issue #56), so a human/agent can tell "the
-#          renewal loop was actually failing" apart from "this host's own
-#          claim genuinely went stale" without reconstructing it by hand.
+#          above).
 #       4  ABORT: SUPERSEDED -- the freshest lease comment is still FRESH but
 #          its host= differs from this sweep's own host.
 #
@@ -175,8 +171,6 @@
 #   .loom/scripts/sweep-lease-fence.sh check 6309 --host studio-host --ttl-minutes 15
 
 set -euo pipefail
-
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 LEASE_MARKER_PREFIX="<!-- loom:lease host="
 YIELD_MARKER_PREFIX="<!-- loom:lease-yield host="
@@ -249,40 +243,6 @@ resolve_published_host() {
 usage() {
     awk 'NR < 3 { next } /^#/ { sub(/^# ?/, ""); print; next } { exit }' "$0"
     exit 1
-}
-
-# --- Renewal-loop attempt history (Issue #56) --------------------------
-# renew_attempt_log_file <issue> -- mirrors sweep-lease-renew.sh's helper of
-# the same name BYTE FOR BYTE (both scripts live in the same
-# `.loom/scripts/` directory of a given checkout, so `$SCRIPT_DIR` resolves
-# to the same path for both) so this script reads the exact file
-# `sweep-lease-renew.sh`'s detached loop writes its sustained-failure WARN
-# lines to, with no second source of truth for the path. Overridable via
-# SWEEP_LEASE_RENEW_LOG_FILE, same as the renewal script.
-renew_attempt_log_file() {
-    local issue="$1"
-    if [[ -n "${SWEEP_LEASE_RENEW_LOG_FILE:-}" ]]; then
-        printf '%s' "$SWEEP_LEASE_RENEW_LOG_FILE"
-        return 0
-    fi
-    printf '%s/../logs/sweep-lease-renew-%s.log' "$SCRIPT_DIR" "$issue"
-}
-
-# renewal_history_note <issue> -- a short, human-readable pointer appended to
-# an EXPIRED verdict (Issue #56) so a human/agent hitting it can distinguish
-# "the renewal loop was actually failing" (log has recent WARN entries) from
-# "a peer genuinely superseded this lease" (log absent/empty right up to
-# expiry) without manually reconstructing it from scratch.
-renewal_history_note() {
-    local issue="$1" log_file
-    log_file="$(renew_attempt_log_file "$issue")"
-    if [[ -s "$log_file" ]]; then
-        printf ' Renewal-loop attempt history for this issue (last 5 lines of %s, Issue #56): %s' \
-            "$log_file" "$(tail -n 5 "$log_file" 2> /dev/null | tr '\n' ' ~ ')"
-    else
-        printf ' No renewal-loop sustained-failure WARN log found at %s (Issue #56) -- either the loop was never started for this claim (manual/no-daemon run), or every renewal attempt genuinely succeeded/no-opped right up until this expiry, which favors "a peer superseded this lease" over "the renewal loop was silently failing."' \
-            "$log_file"
-    fi
 }
 
 # --- Repo-relative `gh` targeting (mirrors sweep-lease-renew.sh) -----------
@@ -531,9 +491,7 @@ cmd_check() {
 
     if ((age_seconds > ttl_seconds)); then
         if [[ "$lease_host" == "$host" ]]; then
-            local history_note
-            history_note="$(renewal_history_note "$issue")"
-            echo "ABORT: EXPIRED -- lease fence failed for issue #${issue}. Freshest lease comment (host=${lease_host} sweep=${lease_sweep}) was last renewed at ${updated_at}, age ${age_minutes} min > ttl ${ttl_minutes} min. This sweep (host=${host}) is aborting BEFORE push/PR-open (Epic #6165 Phase 3, #6309) rather than proceed on a stale claim it can no longer trust as its own. Not contesting or cleaning up the peer/lease -- the loom:building label and claim are left alone.${history_note}" >&2
+            echo "ABORT: EXPIRED -- lease fence failed for issue #${issue}. Freshest lease comment (host=${lease_host} sweep=${lease_sweep}) was last renewed at ${updated_at}, age ${age_minutes} min > ttl ${ttl_minutes} min. This sweep (host=${host}) is aborting BEFORE push/PR-open (Epic #6165 Phase 3, #6309) rather than proceed on a stale claim it can no longer trust as its own. Not contesting or cleaning up the peer/lease -- the loom:building label and claim are left alone." >&2
             exit 3
         fi
         # Issue #6783: an expired lease owned by a DIFFERENT host is an

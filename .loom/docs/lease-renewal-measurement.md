@@ -255,21 +255,6 @@ estimate" above). Re-enabling multi-host dispatch is a decision for whoever
 owns that mitigation to make, not this one, but the evidence it needs about a
 fleet's forge-write economics lives here.
 
-## Note: Issue #56's sustained-failure WARN log does not change this model
-
-Issue #56 (a leaked `GH_CONFIG_DIR` silently breaking every renewal attempt
-for ~2.2h with zero visible signal) added a sustained-failure WARN line,
-written to a local per-issue log file (`.loom/logs/sweep-lease-renew-
-<issue>.log`) once a run of consecutive `renew-once` failures crosses a
-threshold — see [`lease-renewal.md`](lease-renewal.md#sustained-failure-is-surfaced-not-just-swallowed-issue-56).
-That log write is a **local filesystem append**, not a forge API call — it
-adds zero `gh` writes/reads and therefore does not change the writes/min
-model (measured or projected) anywhere in this document. What DID change:
-`renew-once`'s existing two `gh api` calls (the comments read, the PATCH) now
-strip a foreign `GH_CONFIG_DIR` before invoking `gh`, which is also not an
-additional call — same one read + one PATCH per successful renewal cycle as
-before.
-
 ## See also
 
 - [`lease-record.md`](lease-record.md) — the marker format this measurement

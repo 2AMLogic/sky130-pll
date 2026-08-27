@@ -109,14 +109,6 @@
 #     can be resolved (manual `/loom:sweep`, GH Actions cron, `--no-daemon`),
 #     `start` falls back to the previous "newest wins" behavior unchanged.
 #
-#     Issue #56: a single transient `renew-once` failure is still swallowed
-#     silently (unchanged). A SUSTAINED run of `SWEEP_LEASE_RENEW_FAIL_WARN_
-#     THRESHOLD` (default 3) consecutive non-zero, non-own-yield failures in
-#     a row appends a WARN line to `renew_attempt_log_file` (default
-#     `.loom/logs/sweep-lease-renew-<issue>.log`, override via
-#     `SWEEP_LEASE_RENEW_LOG_FILE`) on every cycle the streak stays crossed --
-#     `sweep-lease-fence.sh`'s EXPIRED verdict reads this same file.
-#
 #   sweep-lease-renew.sh renew-once <issue> [--host HOST] [--sweep-id ID]
 #     Perform exactly one renewal cycle synchronously (used internally by
 #     `start`'s loop; also directly testable). Locates the newest comment on
@@ -186,15 +178,10 @@ SELF="$SCRIPT_DIR/$(basename "${BASH_SOURCE[0]}")"
 # retries a GitHub App-installation permission-scope 403 ("not accessible by
 # integration") with a freshly minted installation token, then a personal
 # token, before giving up. Both `gh api` call sites in cmd_renew_once() below
-# route through it (via gh_api_leak_safe, which composes this ladder with the
-# foreign-GH_CONFIG_DIR defense below) so a mid-lease-lifetime 403 escalates
-# and recovers instead of failing closed for the sweep's entire lease
-# lifetime.
+# route through it so a mid-lease-lifetime 403 escalates and recovers instead
+# of failing closed for the sweep's entire lease lifetime.
 # shellcheck source=./lib/forge-helpers.sh
 source "$SCRIPT_DIR/lib/forge-helpers.sh"
-
-# --- Sustained-renewal-failure WARN threshold (Issue #56) -------------------
-DEFAULT_FAIL_WARN_THRESHOLD="${SWEEP_LEASE_RENEW_FAIL_WARN_THRESHOLD:-3}"
 
 usage() {
     awk 'NR < 3 { next } /^#/ { sub(/^# ?/, ""); print; next } { exit }' "$0"
@@ -205,64 +192,6 @@ usage() {
 gh_repo_args() {
     if [[ -n "${LOOM_REPO:-}" ]]; then
         printf -- '-R\n%s\n' "$LOOM_REPO"
-    fi
-}
-
-# --- Cross-repo forge-env leak defense (Issue #56) --------------------------
-# Incident: a `GH_CONFIG_DIR` env var leaked into this sweep's process tree
-# from an UNRELATED repo's own daemon-owned config dir
-# (`/home/ubuntu/GitHub/anvil/.loom/gh-config`, while this sweep was running
-# in a `sky130-pll` checkout) broke every `gh api` call `renew-once` made for
-# ~2.2h, silently, because neither call routed through `forge-helpers.sh`'s
-# `env -u GH_CONFIG_DIR`-scoped rungs (those exist for a DIFFERENT problem --
-# the #6074 App-permission-scope escalation ladder -- and its own first
-# ("ambient") rung does not strip GH_CONFIG_DIR either, so routing through it
-# would not actually have caught this).
-#
-# Per `.loom/docs/github-authentication.md` ("Delivery mechanism (#4458)"),
-# a daemon that legitimately owns a `GH_CONFIG_DIR` for App-token auth always
-# points it at its OWN workspace's `<workspace>/.loom/gh-config` -- so this
-# script (which lives at `<workspace>/.loom/scripts/`) can tell "this
-# workspace's own, legitimately-scoped dir" apart from "some OTHER
-# workspace's dir that leaked in" by comparing the resolved path, not by
-# blindly stripping the variable. `GH_TOKEN`/`GITHUB_TOKEN` are deliberately
-# NOT stripped here: unlike `GH_CONFIG_DIR`, an operator-exported personal
-# token scoped to THIS repo (the common, documented `export GH_TOKEN=...`
-# ambient-auth path -- see that same doc's "Setup" section) is
-# indistinguishable, by value alone, from a leaked one, so unconditionally
-# stripping it would break every repo using that ordinary auth style instead
-# of fixing a leak.
-own_gh_config_dir() {
-    printf '%s/gh-config' "$(cd "$SCRIPT_DIR/.." 2> /dev/null && pwd -P)"
-}
-
-# gh_config_dir_is_foreign -- true (exit 0) when GH_CONFIG_DIR is set AND
-# does not resolve to this workspace's own gh-config dir.
-gh_config_dir_is_foreign() {
-    [[ -n "${GH_CONFIG_DIR:-}" ]] || return 1
-    local own resolved
-    own="$(own_gh_config_dir)"
-    resolved="$(cd "$GH_CONFIG_DIR" 2> /dev/null && pwd -P)" || resolved="$GH_CONFIG_DIR"
-    [[ "$resolved" != "$own" ]]
-}
-
-# gh_api_leak_safe <gh api args...> -- wraps `gh api` for renew-once's two
-# call sites, stripping a foreign GH_CONFIG_DIR (see above) from the child's
-# env when one is present, then routing the call through forge_gh_perm_safe
-# (Issue #6541, sourced above) so a mid-lease-lifetime App-permission 403
-# still escalates through a fresh installation token / personal token.
-# `env` cannot invoke forge_gh_perm_safe directly (it is a shell function,
-# not an executable), so the foreign-dir case unsets GH_CONFIG_DIR in a
-# subshell instead -- this also ensures none of the ladder's rungs (which
-# only strip GH_CONFIG_DIR on the personal-token/personal-ambient rungs, not
-# the first "ambient" attempt) ever see the foreign value. Behaves exactly
-# like a plain `forge_gh_perm_safe api "$@"` call in every other case (no
-# GH_CONFIG_DIR set, or one that legitimately names this workspace).
-gh_api_leak_safe() {
-    if gh_config_dir_is_foreign; then
-        (unset GH_CONFIG_DIR; forge_gh_perm_safe api "$@")
-    else
-        forge_gh_perm_safe api "$@"
     fi
 }
 
@@ -418,42 +347,6 @@ iso_now() {
     date -u +"%Y-%m-%dT%H:%M:%SZ"
 }
 
-# --- Sustained-renewal-failure surfacing (Issue #56) ------------------------
-# renew_attempt_log_file <issue> -- the append-only log the detached loop
-# (see `cmd_start` below) writes a WARN line to once SUSTAINED (not merely
-# transient) renewal failures cross DEFAULT_FAIL_WARN_THRESHOLD in a row.
-# Mirrored byte-for-byte in sweep-lease-fence.sh so an EXPIRED verdict there
-# can read/tail the SAME file without a second source of truth for the path.
-# Overridable via SWEEP_LEASE_RENEW_LOG_FILE (tests; also lets an operator
-# relocate it). Lives under the ordinary `.loom/logs/` convention this repo
-# already uses for other host-local, gitignored script logs.
-renew_attempt_log_file() {
-    local issue="$1"
-    if [[ -n "${SWEEP_LEASE_RENEW_LOG_FILE:-}" ]]; then
-        printf '%s' "$SWEEP_LEASE_RENEW_LOG_FILE"
-        return 0
-    fi
-    printf '%s/../logs/sweep-lease-renew-%s.log' "$SCRIPT_DIR" "$issue"
-}
-
-# log_renew_warn <issue> <consecutive-failure-count> <last-exit-code>
-#                <last-renew-once-output>
-# Appends one WARN entry (best-effort -- a logging failure must never take
-# down the renewal loop). Called only once a STREAK of consecutive non-4,
-# non-2, non-0 `renew-once` exits crosses the threshold -- a single transient
-# hiccup (the pre-existing, deliberately preserved contract) never reaches
-# this function.
-log_renew_warn() {
-    local issue="$1" streak="$2" rc="$3" detail="$4" log_file
-    log_file="$(renew_attempt_log_file "$issue")"
-    mkdir -p "$(dirname "$log_file")" 2> /dev/null || true
-    {
-        printf '%s WARN sustained lease-renewal failure for issue #%s: %d consecutive non-zero, non-own-yield renew-once attempts, most recent exit=%s (#56)\n' \
-            "$(iso_now)" "$issue" "$streak" "$rc"
-        printf '    last renew-once output: %s\n' "$detail"
-    } >> "$log_file" 2> /dev/null || true
-}
-
 # --- renew-once --------------------------------------------------------
 
 cmd_renew_once() {
@@ -504,7 +397,7 @@ cmd_renew_once() {
     # eventual SUCCESS, and merging those into $comments_json would corrupt
     # the JSON this function is about to parse.
     local comments_json
-    if ! comments_json="$(gh_api_leak_safe "${repo_args[@]}" "repos/{owner}/{repo}/issues/${issue}/comments" --paginate)"; then
+    if ! comments_json="$(forge_gh_perm_safe api "${repo_args[@]}" "repos/{owner}/{repo}/issues/${issue}/comments" --paginate)"; then
         echo "ERROR: 'gh api .../issues/${issue}/comments --paginate' failed (escalation ladder exhausted)" >&2
         exit 1
     fi
@@ -565,20 +458,19 @@ cmd_renew_once() {
     new_body="$(printf '%s\n\n%sat=%s by=sweep-lease-renew.sh (#6180) -->\n' \
         "$stripped_body" "$RENEWED_MARKER_PREFIX" "$now_iso")"
 
-    # Routed through gh_api_leak_safe (foreign-GH_CONFIG_DIR defense + the
-    # #6541 escalation ladder), same rationale as the comments-list read
-    # above. The renewed body is written to a temp file and referenced via
-    # `-F body=@<path>` rather than piped through stdin (`-F body=@-`, the
-    # pre-#6541 shape): the escalation ladder inside gh_api_leak_safe can
-    # re-run this `gh api` call up to three times (ambient, fresh App token,
-    # personal token), and a stdin pipe is only readable ONCE -- a retry
-    # after the first rung's 403 would see empty stdin and PATCH the lease
-    # comment's body to empty. A file survives every rung. `-F` (not `-f`)
-    # is still required to expand the `@<path>` reference (#6357).
+    # Routed through forge_gh_perm_safe (Issue #6541), same rationale as the
+    # comments-list read above. The renewed body is written to a temp file
+    # and referenced via `-F body=@<path>` rather than piped through stdin
+    # (`-F body=@-`, the pre-#6541 shape): forge_gh_perm_safe's escalation
+    # ladder can re-run this `gh api` call up to three times (ambient, fresh
+    # App token, personal token), and a stdin pipe is only readable ONCE --
+    # a retry after the first rung's 403 would see empty stdin and PATCH the
+    # lease comment's body to empty. A file survives every rung. `-F` (not
+    # `-f`) is still required to expand the `@<path>` reference (#6357).
     local patch_body_file
     patch_body_file="$(mktemp)"
     printf '%s' "$new_body" > "$patch_body_file"
-    if ! gh_api_leak_safe "${repo_args[@]}" --method PATCH "repos/{owner}/{repo}/issues/comments/${candidate_id}" \
+    if ! forge_gh_perm_safe api "${repo_args[@]}" --method PATCH "repos/{owner}/{repo}/issues/comments/${candidate_id}" \
         -F "body=@${patch_body_file}" \
         > /dev/null; then
         rm -f "$patch_body_file"
@@ -700,46 +592,17 @@ cmd_start() {
     # record -- the loop stops renewing immediately rather than waiting for
     # the watched PID to die, since renewing further would only keep a
     # stood-down claim looking artificially fresh.
-    #
-    # Issue #56: a SUSTAINED run of failures (every attempt failing, e.g. a
-    # leaked GH_CONFIG_DIR breaking every `gh api` call) is a fundamentally
-    # different situation from one transient hiccup, and swallowing it
-    # identically left a ~2.2h renewal outage with zero visible signal until
-    # `sweep-lease-fence.sh` independently reported the lease EXPIRED right
-    # before the one irreversible action it gates (push/PR-open). A run of
-    # `consecutive_failures` non-zero, non-own-yield (rc != 0, 2, 4) exits in
-    # a row -- crossing DEFAULT_FAIL_WARN_THRESHOLD -- now appends one WARN
-    # line (with the captured `renew-once` output, not /dev/null) to
-    # `renew_attempt_log_file` on every cycle it stays crossed, so a human/
-    # agent (or `sweep-lease-fence.sh`'s own EXPIRED path) has positive
-    # evidence the loop was failing, not just silence. A rc of 0 (success) or
-    # 2 (no lease comment to renew -- a normal, non-error no-op, not evidence
-    # of a broken `gh` call) resets the streak. This loop's own stdout/stderr
-    # stay redirected to /dev/null exactly as before -- the WARN goes to the
-    # log file, not to a terminal nobody is watching. `renew-once` is invoked
-    # exactly once per cycle; both the immediate fd-9 line (Issue #6541) and
-    # the sustained-failure log (Issue #56) are derived from that single
-    # captured output, not from separate re-runs.
     (
-        consecutive_failures=0
         while pid_is_live "$watch_pid"; do
             sleep "$interval"
             pid_is_live "$watch_pid" || break
             renew_rc=0
-            renew_output="$("$SELF" renew-once "$issue" "${extra_args[@]}" 2>&1)" || renew_rc=$?
+            renew_err="$("$SELF" renew-once "$issue" "${extra_args[@]}" 2>&1 > /dev/null)" || renew_rc=$?
             if [[ "$renew_rc" -ne 0 && "$renew_rc" -ne 2 && "$renew_rc" -ne 4 ]]; then
-                echo "sweep-lease-renew: renewal cycle for issue #${issue} FAILED (renew-once exit ${renew_rc}): ${renew_output}" >&9
+                echo "sweep-lease-renew: renewal cycle for issue #${issue} FAILED (renew-once exit ${renew_rc}): ${renew_err}" >&9
             fi
             if [[ "$renew_rc" -eq 4 ]]; then
                 break
-            fi
-            if [[ "$renew_rc" -eq 0 || "$renew_rc" -eq 2 ]]; then
-                consecutive_failures=0
-            else
-                consecutive_failures=$((consecutive_failures + 1))
-                if ((consecutive_failures >= DEFAULT_FAIL_WARN_THRESHOLD)); then
-                    log_renew_warn "$issue" "$consecutive_failures" "$renew_rc" "$renew_output"
-                fi
             fi
         done
     ) < /dev/null > /dev/null 2>&1 &
