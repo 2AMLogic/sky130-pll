@@ -1,11 +1,17 @@
 # PLL target specification
 
-- **Status**: **RATIFIED (rows 0, 1) — row 0 2026-08-13 via `DR-001` in #1;
-  row 1 2026-08-19 via `DR-002` in #19.**
+- **Status**: **RATIFIED (rows 0, 1, 19, 20) — row 0 2026-08-13 via `DR-001`
+  in #1; row 1 2026-08-19 via `DR-002` in #19; rows 19 and 20 2026-08-27 via
+  `DR-003` in #77.**
   The **supply flavor is settled**: the 1.8 V core
   (`nfet_01v8`/`pfet_01v8`). That row is binding, and design/sim/layout work
   may now lock to it. The **supply range is settled**: 1.8 V ± 10 %
   (1.62 – 1.98 V), single supply domain (no ring / PFD-CP / digital split).
+  The **PVT process-corner set is settled**: sky130's five standard MOS/BJT
+  process corners — `tt`, `ff`, `ss`, `sf`, `fs`. The **operating temperature
+  range is settled**: −40 °C to 125 °C, sampled at −40/27/125 °C. Rows 19 and
+  20, crossed with the ratified row 1 supply range, define the PVT grid every
+  future per-corner row is verified against once that row is itself ratified.
   **No other numeric row below is ratified.** Ratifying a row does not ratify
   the rows it merely informs — each remaining row's "what must be settled on
   sky130" column is a committed obligation (re-derive / confirm /
@@ -13,7 +19,7 @@
   must be closed by a sky130 campaign producing evidence; it may not be closed
   by porting the gf180-pll number.
 - **Date**: 2026-08-10 (drafted); 2026-08-13 (row 0 ratified); 2026-08-19
-  (row 1 ratified)
+  (row 1 ratified); 2026-08-27 (rows 19, 20 ratified)
 - **Written by**: scaffold, repo creation
 - **Block class**: integer-N, ring-oscillator phase-locked loop.
 - **Port relationship**: this is the sky130 port of `2AMLogic/gf180-pll`. Its
@@ -69,9 +75,9 @@ exists yet. Every value is a target to design toward, not a measurement.
 
 ## Summary table
 
-Rows 0 and 1 are **RATIFIED** (see their own cells below). Every other row's
-status is uniformly **DRAFT — to be ratified** until its own decision record
-closes.
+Rows 0, 1, 19, and 20 are **RATIFIED** (see their own cells below). Every
+other row's status is uniformly **DRAFT — to be ratified** until its own
+decision record closes.
 
 | # | Parameter | DRAFT target (starting point) | Source | sky130 open question to resolve at ratification |
 |---|---|---|---|---|
@@ -94,6 +100,8 @@ closes.
 | 16 | [Lock detector](#lock-detector) | digital `lock` output; assert window + hysteresis criteria | gf180-pll row 16 | port the behavioral contract; re-verify the window on sky130 |
 | 17 | [Standby / power-down](#standby) | no power-down mode in v1 (always-on) | gf180-pll row 11 | confirm the same v1 scope call |
 | 18 | [Area](#area) | a budget, not a result (no layout exists) | gf180-pll row 15 | sky130 area differs from gf180 — set a sky130 budget at ratification |
+| 19 | [Process corners](#process-corners) | sky130's five standard MOS/BJT process corners: `tt`, `ff`, `ss`, `sf`, `fs` — **RATIFIED 2026-08-27 (DR-003, #77)** | `sky130.lib.spice`'s own `.lib` corner sections (`sim/pdk.json`'s provenance note); re-derived for this PLL's PFD/charge-pump topology in `DR-003`, not ported from gf180-pll or silently inherited from `tb.json`'s prior `tt`/`ss`/`ff`-only convention | **Settled.** The mixed-skew corners `sf`/`fs` — absent from the prior harness convention — are included because they stress this design's un-cascoded PFD/charge-pump `UP`/`DN` current mirror; interconnect R/C skew corners (`ll`/`hh`) and mismatch Monte Carlo (`_mm`) are separate axes, out of scope here (`DR-003` *Alternatives considered*) |
+| 20 | [Operating temperature range](#operating-temperature-range) | −40 °C to 125 °C, sampled at −40 / 27 / 125 °C — **RATIFIED 2026-08-27 (DR-003, #77)** | industrial temperature-range convention; independently adopted by `2AMLogic/sky130-bandgap`'s own ratified target spec for the same sky130 PDK, not silently inherited from this repo's own `tb.json` | **Settled.** Crossed with the ratified row 19 process-corner set and row 1 supply range to form the full PVT grid every future per-corner row is verified against once that row is itself ratified |
 
 ---
 
@@ -248,6 +256,50 @@ are up (gf180-pll row 11). Confirm the same v1 scope call.
 **DRAFT — to be ratified.** A budget, not a result — no layout exists. Set a
 sky130-specific area budget at ratification; gf180-pll's 0.15 mm² is a 180 nm
 figure and is not portable to sky130's 130 nm geometry.
+
+## Process corners
+
+**RATIFIED 2026-08-27** (`DR-003`, ruled via #77). The **process-corner axis**
+of "PVT corner" (row 14's "all corners" and every future per-corner row) is
+bound to sky130's five standard MOS/BJT process corners: `tt` (typical-
+typical), `ff` (fast-fast), `ss` (slow-slow), `sf` (slow NMOS / fast PMOS),
+and `fs` (fast NMOS / slow PMOS) — the five named `.lib` sections
+`sky130.lib.spice` defines for `nfet_01v8`/`pfet_01v8` (confirmed against the
+installed PDK; see `DR-003` *Context*).
+
+This **adds** the two mixed-skew corners (`sf`, `fs`) that
+`sim/pll/testbench/tb.json`'s prior, unratified convention omitted
+(`process_corners: ["tt","ss","ff"]`). They are included on a specific,
+structural argument, not generic thoroughness: `design/pfd-cp/DESIGN.md`'s
+own reference-spur note identifies the charge pump's un-cascoded `MPCP`/
+`MNCP` current mirror as the dominant source of `UP`/`DN` current mismatch,
+and a mixed-skew corner is exactly the condition that maximizes an NMOS-vs-
+PMOS speed/current differential — the case `tt`/`ss`/`ff` (which always move
+both device types together) cannot exercise. Interconnect R/C skew corners
+(`ll`/`hh`, and the `hl`/`lh`/`*_mm` combinations `sim/pdk.json`'s provenance
+note also lists as available in this PDK) and statistical mismatch
+(`mc_mm_switch`/Monte Carlo) are each a separate axis from process-corner
+skew and are **not** part of this row — see `DR-003` *Alternatives
+considered* for why each is deferred rather than folded in here.
+
+## Operating temperature range
+
+**RATIFIED 2026-08-27** (`DR-003`, ruled via #77). The **temperature axis**
+of "PVT corner" is bound to **−40 °C to 125 °C**, sampled at three points:
+−40 °C, 27 °C, and 125 °C. Unlike the process-corner axis (row 19), sky130's
+device models carry no discrete, named temperature set to select from — the
+BSIM4 model files (`sky130_fd_pr__nfet_01v8__*`) parameterize temperature
+continuously via their own temperature-dependence coefficients around a
+30 °C nominal (`tnom`), so the range is a verification-scope choice this row
+makes explicitly rather than a PDK-provided enumeration.
+
+−40 °C to 125 °C is the conventional industrial temperature range, and this
+choice is corroborated independently of this repo's own (previously
+unratified) harness convention: `2AMLogic/sky130-bandgap` — the sibling
+canary on the same sky130 PDK — independently ratified the identical
+−40…125 °C range for its own target spec. Crossed with row 19's process-
+corner set and row 1's supply range, these three points give the full PVT
+grid every future per-corner row is verified against.
 
 ---
 
