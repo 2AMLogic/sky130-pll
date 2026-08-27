@@ -4,11 +4,11 @@
   "schematic": "tb_pdk_smoke.sch",
   "corner_pattern": "(\\.lib\\s+\\S*sky130\\.lib\\.spice\\s+)(\\w+)",
   "supply_pattern": "(V1 GND net1 )([0-9.]+)",
-  "process_corners": ["tt", "ss", "ff"],
+  "process_corners": ["tt", "ff", "ss", "sf", "fs"],
   "temps_c": [-40, 27, 125],
   "supply_nominal": 1.8,
   "supply_tolerance": 0.1,
-  "methodology_note": "this testbench's DUT is a throwaway resistor divider (issue #2's harness self-test), not the PLL -- see the sim/pll experiment (issue #23) for the closed-loop PLL testbench.",
+  "methodology_note": "this testbench's DUT is a throwaway resistor divider (issue #2's harness self-test), not the PLL -- see the sim/pll experiment (issue #23) for the closed-loop PLL testbench. process_corners is the ratified rows 19/20 PVT grid (spec/target-spec.md, DR-003, #77) -- sky130's five standard MOS/BJT process corners -- not a bare local convention.",
   "analysis": "DC operating point (`.op`)",
   "monte_carlo": {
     "claim": "harness self-test -- proves sim/harness's Monte Carlo trial generation + sky130 MC_MM_SWITCH/MC_PR_SWITCH statistical-sampling patching + ngspice execution work end-to-end against the sky130 PDK (issue #20). This is a plumbing claim, not a PLL statistical-spec claim: this testbench's DUT is a throwaway resistor divider, not the PLL, and spec/target-spec.md's statistical-shaped rows (period jitter row 9, reference spur row 10, supply sensitivity row 13) remain DRAFT/unratified.",

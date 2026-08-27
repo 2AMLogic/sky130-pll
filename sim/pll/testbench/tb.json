@@ -4,10 +4,10 @@
   "schematic": "tb_pll.sch",
   "corner_pattern": "(\\.lib\\s+\\S*sky130\\.lib\\.spice\\s+)(\\w+)",
   "supply_pattern": "(V1 VDD GND )([0-9.]+)",
-  "process_corners": ["tt", "ss", "ff"],
+  "process_corners": ["tt", "ff", "ss", "sf", "fs"],
   "temps_c": [-40, 27, 125],
   "supply_nominal": 1.8,
   "supply_tolerance": 0.1,
-  "methodology_note": "this testbench's DUT is design/top/top.sch, the real four-block closed-loop PLL (not a throwaway circuit) -- straps NSEL[5:0]=011000 (N=25) and drives REF with a 10 MHz clock and RESETB with a power-on reset pwl, per sim/pll/testbench/tb_pll.sch's own header comment. Every point currently FAILS at ngspice execution due to issue #44 (a pre-existing SPICE instance-naming defect in design/divider/divider_intN.sch, unrelated to this testbench or the harness) -- see that issue for the root cause and fix.",
+  "methodology_note": "this testbench's DUT is design/top/top.sch, the real four-block closed-loop PLL (not a throwaway circuit) -- straps NSEL[5:0]=011000 (N=25) and drives REF with a 10 MHz clock and RESETB with a power-on reset pwl, per sim/pll/testbench/tb_pll.sch's own header comment. Every point currently FAILS at ngspice execution due to issue #44 (a pre-existing SPICE instance-naming defect in design/divider/divider_intN.sch, unrelated to this testbench or the harness) -- see that issue for the root cause and fix. process_corners is the ratified rows 19/20 PVT grid (spec/target-spec.md, DR-003, #77) -- sky130's five standard MOS/BJT process corners including the two mixed-skew corners (sf, fs) that stress this design's un-cascoded PFD/charge-pump UP/DN current mirror -- not a bare local convention.",
   "analysis": "transient (`.tran 50p 200n`)"
 }
