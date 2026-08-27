@@ -1,16 +1,19 @@
 # PLL target specification
 
-- **Status**: **RATIFIED (row 0) — 2026-08-13, via `DR-001` in #1.**
+- **Status**: **RATIFIED (rows 0, 1) — row 0 2026-08-13 via `DR-001` in #1;
+  row 1 2026-08-19 via `DR-002` in #19.**
   The **supply flavor is settled**: the 1.8 V core
   (`nfet_01v8`/`pfet_01v8`). That row is binding, and design/sim/layout work
-  may now lock to it.
-  **No numeric row below is ratified.** Ratifying row 0 does not ratify the
-  values it gates — it makes their *stance* binding: each row's "what must be
-  settled on sky130" column is now a committed obligation (re-derive / confirm /
+  may now lock to it. The **supply range is settled**: 1.8 V ± 10 %
+  (1.62 – 1.98 V), single supply domain (no ring / PFD-CP / digital split).
+  **No other numeric row below is ratified.** Ratifying a row does not ratify
+  the rows it merely informs — each remaining row's "what must be settled on
+  sky130" column is a committed obligation (re-derive / confirm /
   port-and-verify) rather than a draft intention. A row marked **re-derive**
   must be closed by a sky130 campaign producing evidence; it may not be closed
   by porting the gf180-pll number.
-- **Date**: 2026-08-10 (drafted); 2026-08-13 (row 0 ratified)
+- **Date**: 2026-08-10 (drafted); 2026-08-13 (row 0 ratified); 2026-08-19
+  (row 1 ratified)
 - **Written by**: scaffold, repo creation
 - **Block class**: integer-N, ring-oscillator phase-locked loop.
 - **Port relationship**: this is the sky130 port of `2AMLogic/gf180-pll`. Its
@@ -66,12 +69,14 @@ exists yet. Every value is a target to design toward, not a measurement.
 
 ## Summary table
 
-Status is uniformly **DRAFT — to be ratified (#1)** until ratification.
+Rows 0 and 1 are **RATIFIED** (see their own cells below). Every other row's
+status is uniformly **DRAFT — to be ratified** until its own decision record
+closes.
 
 | # | Parameter | DRAFT target (starting point) | Source | sky130 open question to resolve at ratification |
 |---|---|---|---|---|
 | 0 | [Supply flavor](#supply-flavor) | 1.8 V core (`nfet_01v8`/`pfet_01v8`) — **RATIFIED 2026-08-13 (DR-001, #1)** | sky130 core device menu; `DR-001` | **Settled.** I/O-class (`g5v0`-family) deferred, not rejected — revisit only on a demonstrated downstream interface constraint |
-| 1 | [Supply range](#supply-range) | 1.8 V ±10 % (1.62–1.98 V) *if* 1.8 V core | derived from row 0 candidate; cf. gf180-pll 3.3 V ±10 % | confirm the tolerance band and the domain split (ring / PFD-CP / digital) on sky130 |
+| 1 | [Supply range](#supply-range) | 1.8 V ±10 % (1.62–1.98 V) — **RATIFIED 2026-08-19 (DR-002, #19)** | derived from ratified row 0; tolerance ported with rationale from gf180-pll row 1 (3.3 V ±10 %) | **Settled.** Single supply domain confirmed by `design/top/netlist/top.spice` (one `VDD`/`GND` pair for `pfd_cp`/`vco_ring5`/`divider_intN`) — no ring/PFD-CP/digital split exists in the merged design |
 | 2 | [Output band](#output-band) | 10 – 200 MHz continuous, **carried from gf180-pll and NOT assumed to hold** | gf180-pll row 1 | a 130 nm ring on 1.8 V core may reach *higher* or trade range for Kvco — re-derive the band and stage count on sky130 |
 | 3 | [Reference input](#reference-input) | 1 – 25 MHz, CMOS square wave, rising-edge triggered, duty 30–70 % | gf180-pll row 2 | confirm input levels for the ratified supply flavor |
 | 4 | [Multiplication ratio](#multiplication-ratio) | N = 4 – 64, every integer, static configuration | gf180-pll row 3 | confirm divider retiming closes at the sky130 top frequency |
@@ -125,9 +130,20 @@ only if a downstream integration surfaces a real interface constraint (e.g. a
 
 ## Supply range
 
-**DRAFT — to be ratified.** 1.8 V ±10 % (1.62–1.98 V) *conditional on the 1.8 V
-core*. gf180-pll's 3.3 V ±10 % does not carry over. Confirm the tolerance and
-the number of supply domains (gf180-pll split ring / reference / digital).
+**RATIFIED 2026-08-19** (`DR-002`, ruled via #19). **1.8 V ± 10 %
+(1.62 – 1.98 V), a single supply domain** — no separate ring / PFD-CP /
+digital domain split.
+
+The ± 10 % tolerance is ported from gf180-pll's own row 1 with rationale,
+not as a bare number: the *absolute voltage* does not carry across the
+row-0 supply-flavor change, but the ± 10 % figure is a generic
+supply-tolerance convention independent of the nominal voltage it applies
+to (see `DR-002`). The single-domain answer is confirmed by inspection of
+the merged design: `design/top/netlist/top.spice` ties `pfd_cp`,
+`vco_ring5`, and `divider_intN` to one shared `VDD`/`GND` pair
+(`design/top/DESIGN.md`'s pin-mapping table) — there is no domain-split
+structure to verify against. This matches what `sim/pll/testbench/tb.json`
+has assumed since #45 (`supply_nominal: 1.8`, `supply_tolerance: 0.1`).
 
 ## Output band
 
