@@ -1,0 +1,30 @@
+{
+  "schema": "sky130-pll.harness.tb/1",
+  "claim": "does the closed-loop PLL (design/top/top.sch -- VCO + PFD/charge pump + loop filter + divider, issue #28), driven from a cold start (RESETB power-on, VCTRL starting at whatever the loop filter's own initial condition is), lock its output to N * Fref = 25 * 10 MHz = 250 MHz within this manifest's transient window, across the full PVT corner matrix (tt/ss/ff x -40/27/125 degC x 1.62/1.80/1.98 V -- the same grid sim/pll uses, taken from spec/target-spec.md row 1's DRAFT supply range; see this record's own methodology note for that row's ratification status at record time). This supersedes sim/pll's own 200 ns plumbing-only claim as the closed-loop lock measurement issue #52 asks for -- sim/pll itself keeps its narrower plumbing claim (does xschem+ngspice+sky130 run this DUT to completion at all), unedited, per CLAUDE.md's append-only rule.",
+  "schematic": "tb_pll_lock.sch",
+  "corner_pattern": "(\\.lib\\s+\\S*sky130\\.lib\\.spice\\s+)(\\w+)",
+  "supply_pattern": "(V1 VDD GND )([0-9.]+)",
+  "process_corners": ["tt", "ss", "ff"],
+  "temps_c": [-40, 27, 125],
+  "supply_nominal": 1.8,
+  "supply_tolerance": 0.1,
+  "measure": {
+    "node": "CLK",
+    "tran_step": "200p",
+    "tran_stop": "3u",
+    "timeout_s": 1800,
+    "threshold_frac": 0.5,
+    "hysteresis_frac": 0.15,
+    "settle_from": "0",
+    "min_edges": 4,
+    "lock": {
+      "target_hz": 250000000,
+      "tolerance_frac": 0.05,
+      "window_cycles": 20,
+      "min_hold_cycles": 20
+    },
+    "require_lock": false
+  },
+  "methodology_note": "this testbench's DUT is design/top/top.sch, the real four-block closed-loop PLL (not a throwaway circuit) -- straps NSEL[5:0]=011000 (N=25) and drives REF with a 10 MHz clock and RESETB with a power-on reset pwl, identically to sim/pll/testbench/tb_pll.sch, per sim/pll-lock/testbench/tb_pll_lock.sch's own header comment. `require_lock` is false: a point that completes but never locks is recorded as evidence (no lock within this window, at this corner -- see sim/harness/measure.py's lock criterion), not as a harness failure, because 'the loop does not lock within N microseconds at this corner' is exactly the kind of design fact this campaign exists to surface, and a v1 canary with an undocumented Icp-vs-loop-filter-vs-Kvco coordination gap (see design/top/DESIGN.md's own 'Coordination note') is not assumed to lock going in. A gated pass/fail on lock is a decision for the future ratifying DR once loop bandwidth/lock-time (rows 6/8) are argued from this record.",
+  "analysis": "cold-start transient, closed loop (`tran 200p 3u`, injected by sim/harness/measure.py from this manifest's own measure block -- see sim/pll-lock/testbench/tb_pll_lock.sch's header comment for why the schematic itself carries no .tran card)"
+}

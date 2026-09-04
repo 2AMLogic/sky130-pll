@@ -344,5 +344,71 @@ class SubsetReasonGateOrderingTests(unittest.TestCase):
         self.assertIn("bogus_corner", err)
 
 
+class TimeoutDecodingTests(unittest.TestCase):
+    """Regression coverage for a real crash hit while running issue #52's
+    lock-capable campaign: `subprocess.run(..., text=True, timeout=...)`
+    raising `TimeoutExpired` does not guarantee its `.stdout`/`.stderr` are
+    already-decoded `str` -- on a real timeout each can independently be
+    `str`, `bytes`, or `None` (Popen.communicate() had not finished decoding
+    when it raised). The pre-fix code did `(e.stdout or "") + (e.stderr or
+    "")`, which raises `TypeError: can't concat str to bytes` whenever one
+    stream came back as `bytes` -- crashing the *entire* multi-point run
+    (not just the one point that timed out) the first time a real ngspice
+    process actually blew its manifest's timeout budget. Hit in production
+    running sim/pll's full PVT matrix (point 14/27, `ss_27c_1.80v`)."""
+
+    def _timeout_reason(self, work_dir: Path, *, stdout, stderr) -> tuple:
+        import subprocess
+        from unittest import mock
+
+        class _StubPdk:
+            def as_env(self):
+                return {}
+
+        exc = subprocess.TimeoutExpired(cmd=["ngspice", "-b", "x.spice"], timeout=1, output=stdout, stderr=stderr)
+        with mock.patch.object(runner.subprocess, "run", side_effect=exc):
+            passed, reason, log_path, _spice_path = runner._run_ngspice_and_judge(
+                _StubPdk(), work_dir / ".spiceinit", "* patched\n.end\n", "x", work_dir, timeout_s=1
+            )
+        return passed, reason, log_path
+
+    def test_bytes_stdout_and_str_stderr_does_not_crash(self):
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            work_dir = Path(tmp)
+            (work_dir / ".spiceinit").write_text("")
+            passed, reason, log_path = self._timeout_reason(
+                work_dir, stdout=b"partial ngspice output\n", stderr=""
+            )
+            self.assertFalse(passed)
+            self.assertIn("timeout", reason)
+            self.assertIn("partial ngspice output", log_path.read_text())
+
+    def test_none_stdout_and_none_stderr_does_not_crash(self):
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            work_dir = Path(tmp)
+            (work_dir / ".spiceinit").write_text("")
+            passed, reason, log_path = self._timeout_reason(work_dir, stdout=None, stderr=None)
+            self.assertFalse(passed)
+            self.assertIn("timeout", reason)
+            self.assertEqual(log_path.read_text(), "")
+
+    def test_both_bytes_concatenates_both_streams(self):
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            work_dir = Path(tmp)
+            (work_dir / ".spiceinit").write_text("")
+            _passed, _reason, log_path = self._timeout_reason(
+                work_dir, stdout=b"stdout chunk", stderr=b"stderr chunk"
+            )
+            text = log_path.read_text()
+            self.assertIn("stdout chunk", text)
+            self.assertIn("stderr chunk", text)
+
+
 if __name__ == "__main__":
     unittest.main()

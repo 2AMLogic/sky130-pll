@@ -1,0 +1,32 @@
+{
+  "schema": "sky130-pll.harness.tb/1",
+  "claim": "VCO frequency-vs-VCTRL characterization for design/vco/vco_ring5.sch (the standalone current-starved 5-stage ring VCO, issue #24), measured at six VCTRL points from 0.8 V to 1.6 V, matching design/vco/DESIGN.md's own informal sanity-check table (issue #52). This is a measured design-input record, not a spec claim: it replaces that informal, uncommitted, single-corner sanity check with real committed sim/ evidence, so a future decision record has something citable to argue spec/target-spec.md row 2 (output band) and row 5 (Kvco) from. It ratifies nothing -- per CLAUDE.md, ratification is a separate decision-record act argued on its own merits. The PVT grid this manifest declares is the same one sim/pll uses (tt/ss/ff x -40/27/125 degC x 1.62/1.80/1.98 V, taken from spec/target-spec.md row 1's supply range; that row's status at the time this manifest was written is stated in the record's own methodology note) -- a given record's own **Corner matrix run** field states whether it covers that full grid or a declared subset, per sim/README.md's subset-justification rule.",
+  "schematic": "tb_vco.sch",
+  "corner_pattern": "(\\.lib\\s+\\S*sky130\\.lib\\.spice\\s+)(\\w+)",
+  "supply_pattern": "(V1 VDD GND )([0-9.]+)",
+  "process_corners": ["tt", "ss", "ff"],
+  "temps_c": [-40, 27, 125],
+  "supply_nominal": 1.8,
+  "supply_tolerance": 0.1,
+  "measure": {
+    "node": "clk",
+    "tran_step": "50p",
+    "tran_stop": "200n",
+    "settle_from": "60n",
+    "threshold_frac": 0.5,
+    "hysteresis_frac": 0.15,
+    "min_edges": 4,
+    "ic": ["v(xxxvco.ring0)=0"],
+    "uic": true,
+    "require_oscillation": false,
+    "min_oscillating_points": 3,
+    "timeout_s": 3600,
+    "sweep": {
+      "source": "V2",
+      "quantity": "VCTRL",
+      "values": [0.8, 0.9, 1.0, 1.2, 1.4, 1.6]
+    }
+  },
+  "methodology_note": "this testbench's DUT is design/vco/vco_ring5.sch driven open-loop (no PFD, charge pump, loop filter or divider in the path) -- it characterizes the VCO block alone, not the closed loop, which is sim/pll's job. The six VCTRL values match design/vco/DESIGN.md's own informal sanity-check table, so this record is directly comparable to it; a swept value where the ring does not free-run is recorded as data (the edge of the range) rather than as a failure, and the per-point verdict requires at least three of the six to oscillate. Each swept point is a fresh 200 ns transient started from RING0 forced low with `uic`, because a noiseless simulator will otherwise sit on the ring's unstable all-stages-at-midrail DC equilibrium indefinitely; the first 60 ns are discarded as startup. The reported slope is an endpoint-to-endpoint mean across the whole swept range, not a local small-signal Kvco, and the curve is strongly non-linear -- read the per-swept-value table for the shape.",
+  "analysis": "transient per swept VCTRL value (`tran 50p 200n uic`, six values, one ngspice invocation per PVT point)"
+}

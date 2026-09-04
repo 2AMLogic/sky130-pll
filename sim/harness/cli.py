@@ -10,6 +10,7 @@ import tempfile
 from pathlib import Path
 
 from . import corners as corners_mod
+from . import measure as measure_mod
 from . import montecarlo as mc_mod
 from . import pdk as pdk_mod
 from . import report as report_mod
@@ -172,7 +173,7 @@ def _run_experiment(
 
     try:
         units = build_units(manifest, pdk)
-    except (corners_mod.CornerError, mc_mod.McConfigError) as e:
+    except (corners_mod.CornerError, mc_mod.McConfigError, measure_mod.MeasureError) as e:
         print(f"run_corners.py: {e}", file=sys.stderr)
         return 1
 
@@ -244,6 +245,9 @@ def cmd_run(args: argparse.Namespace) -> int:
         )
 
     def build_units(manifest, pdk):
+        # Fail fast on a malformed `measure` block rather than at the first
+        # point, so a typo in the manifest costs a second, not a corner run.
+        measure_mod.MeasureSpec.from_manifest(manifest)
         return corners_mod.build_matrix(
             manifest,
             pdk.process_corners,
@@ -254,6 +258,7 @@ def cmd_run(args: argparse.Namespace) -> int:
 
     def render_record(*, manifest, slug, record_id, pdk, netlist_snapshot, units, results, subset_reason):
         return report_mod.render(
+            spec=measure_mod.MeasureSpec.from_manifest(manifest),
             record_id=record_id,
             slug=slug,
             claim=manifest.get("claim", "(no claim stated in manifest)"),

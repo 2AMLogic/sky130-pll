@@ -297,3 +297,72 @@ formed`, `can't find model`, and `unknown parameter` found none. This
 confirms the closed-loop netlist is simulatable end to end post-fix — it is
 not a lock-time, frequency, or jitter claim, and it does not replace the
 `sim/pll/` evidence record #23 is responsible for minting.
+
+## `sim/pll/testbench/tb_pll.sch` was still missing the stdcell include (issue #52)
+
+The ad hoc verification above added the `sky130_fd_sc_hd` PDK spice deck to
+its own **scratch copy** of `tb_pll.sch` — that addition never landed in the
+committed testbench. `sim/pll/testbench/tb_pll.sch` (the real, committed
+manifest #23's own evidence record ran against) kept only the primitive-device
+`.lib .../sky130.lib.spice tt` include, which does not define the
+`sky130_fd_sc_hd__*` subcircuit bodies `design/divider/divider_intN.sch`
+instantiates — so the committed testbench still failed with `Error: unknown
+subckt: ... sky130_fd_sc_hd__dfrtp_2` even after #47's X-prefix fix, and
+`sim/pll/records/20260819-061455-f61b6d4.md` (0/27 FAIL) is stale evidence of
+that gap, not of #47's own defect. Fixed by issue #52: `.include
+$::SKYWATER_STDCELLS/sky130_fd_sc_hd.spice` added to `tb_pll.sch`'s own
+`MODELS` code block (the same `$::SKYWATER_STDCELLS` xschemrc variable the
+PDK's own `libs.tech/xschem/xschemrc` already defines) — see
+`sim/pll/records/` for the re-run that supersedes the stale FAIL record.
+
+The re-run (`sim/pll/records/20260819-123508-fe0e6df.md`) shows 17/27 points
+PASS. The remaining 10 fail in two ways, both traced in the raw per-point
+logs rather than left unexplained: 6 exceed this manifest's 300 s per-point
+timeout (the transient makes very slow progress rather than erroring out),
+and 4 hit an ngspice numeric-overflow error (`Error: <huge value>, 2 out of
+range for ^`) inside the loop filter's `R1` resistor body-diode model
+(`b.xxxtop.xxlf.xr1.brbody` in the per-point logs) — i.e. `VCTRL` (or an
+adjacent loop-filter node) is being driven to a bias extreme outside that
+primitive device model's well-conditioned range. Both failure modes are
+consistent with the open `Icp`/loop-filter/`Kvco` coordination gap described
+below (the `sim/pll-lock` cold-start lock campaign) rather than with a new
+testbench or harness defect: this testbench's 200 ns window captures the loop
+in its initial, uncontrolled transient, which is exactly where an
+under-damped or badly-conditioned loop would produce large swings and slow
+convergence. Reconciling that coordination gap is out of scope for issue #52
+(measurement/campaign work only, no block redesign) — see the `sim/pll-lock`
+section below for the tracking context.
+
+## `sim/pll-lock` (issue #52): the closed loop does not lock within a few
+microseconds of cold start, at the corners run so far
+
+A new sibling testbench, `sim/pll-lock/testbench/tb_pll_lock.sch` +
+`sim/harness/measure.py`'s injected `.control`-block analysis, drives this
+same closed loop from a cold start (RESETB power-on, `VCTRL` starting
+wherever the loop filter's own initial condition lands) for several
+microseconds instead of #23's 200 ns plumbing window, and measures whether
+`CLK` locks to `N * Fref` = 250 MHz. The first committed record
+(`sim/pll-lock/records/20260819-122135-fe0e6df.md`, a 3-point tt/ss/ff
+subset at 27 °C/1.80 V — the full PVT grid is deferred to a follow-up issue
+given the per-point simulation cost observed in this environment) shows:
+
+- **tt**: `CLK` never oscillates within the 3 µs window at all — consistent
+  with `VCTRL` still ramping up from a discharged loop filter capacitor
+  toward the VCO's own documented ~0.8 V oscillation threshold
+  (`design/vco/DESIGN.md`), not yet having crossed it.
+- **ss**: `CLK` does oscillate, but at 941 MHz — far above the 250 MHz
+  target — and never settles into the lock tolerance band within the window.
+- **ff**: the point exceeded this manifest's per-point simulation timeout
+  before finishing.
+
+This is exactly the "Coordination note" gap above made visible in
+simulation: `Icp` (charge-pump current) vs. the loop filter's `R`/`C` sizing
+vs. the VCO's `Kvco` were each sized in their own block's issue without a
+closed-loop time-constant check, and that gap plausibly shows up here as
+"lock takes longer than a few microseconds" (or does not happen within this
+window at all) rather than as a netlisting or convergence defect. This
+observation is evidence for a future decision record / design issue against
+spec rows 6 (loop bandwidth) and 8 (lock time) — reconciling the
+`Icp`/loop-filter/`Kvco` coordination gap is explicitly **not** done by
+issue #52 (its own Non-goals section: measurement/campaign work only, no
+block redesign).

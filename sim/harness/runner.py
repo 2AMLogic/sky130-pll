@@ -15,6 +15,7 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
+from . import measure as measure_mod
 from .corners import PvtPoint
 from .montecarlo import McTrial
 from .pdk import ResolvedPdk
@@ -40,6 +41,10 @@ class PointResult:
     reason: str
     log_path: Path
     spice_path: Path
+    # Empty for a plumbing-only manifest (no `measure` block); otherwise one
+    # entry per swept operating point of this PVT point -- see
+    # sim/harness/measure.py.
+    measurements: tuple = ()
 
 
 @dataclass(frozen=True)
@@ -117,12 +122,26 @@ def _substitute_corner_and_supply(netlist_text: str, manifest: dict, corner_labe
     return text
 
 
-def patch_netlist(netlist_text: str, manifest: dict, point: PvtPoint) -> str:
+def patch_netlist(
+    netlist_text: str,
+    manifest: dict,
+    point: PvtPoint,
+    spec=None,
+    prefix: str = "",
+) -> str:
     text = _substitute_corner_and_supply(netlist_text, manifest, point.corner, point.supply_v)
 
     if not _END_CARD_RE.search(text):
         raise NetlistError("patched netlist has no standalone .end card to anchor .temp before")
-    text = _END_CARD_RE.sub(lambda m: f".temp {point.temp_c:g}\n{m.group(1)}", text, count=1)
+    injected = f".temp {point.temp_c:g}\n"
+    if spec is not None:
+        # A measurement manifest owns the analysis: the testbench schematic
+        # carries no `.tran` card, and the harness injects the transient
+        # window, initial conditions and waveform dumps from the manifest's
+        # `measure` block. That is what makes the window (e.g. sim/pll's
+        # lock-capable one) a manifest knob rather than a schematic edit.
+        injected += measure_mod.build_control_block(spec, prefix)
+    text = _END_CARD_RE.sub(lambda m: f"{injected}{m.group(1)}", text, count=1)
     return text
 
 
@@ -158,7 +177,13 @@ def patch_netlist_mc(netlist_text: str, manifest: dict, trial: McTrial) -> str:
 
 
 def _run_ngspice_and_judge(
-    pdk: ResolvedPdk, spiceinit: Path, patched: str, corner_id: str, work_dir: Path
+    pdk: ResolvedPdk,
+    spiceinit: Path,
+    patched: str,
+    corner_id: str,
+    work_dir: Path,
+    completion_marker: str = COMPLETION_MARKER,
+    timeout_s: int = 300,
 ) -> tuple[bool, str, Path, Path]:
     """Write `patched` + a per-run `.spiceinit`, execute ngspice batch mode,
     and apply the shared plumbing pass/fail criterion. Returns (passed,
@@ -175,26 +200,57 @@ def _run_ngspice_and_judge(
     spiceinit_dst = work_dir / ".spiceinit"
     spiceinit_dst.write_text(spiceinit.read_text())
 
-    proc = subprocess.run(
-        ["ngspice", "-b", spice_path.name],
-        capture_output=True,
-        text=True,
-        cwd=work_dir,
-        env=_env_with_pdk(pdk),
-        timeout=300,
-    )
+    try:
+        proc = subprocess.run(
+            ["ngspice", "-b", spice_path.name],
+            capture_output=True,
+            text=True,
+            cwd=work_dir,
+            env=_env_with_pdk(pdk),
+            timeout=timeout_s,
+        )
+    except subprocess.TimeoutExpired as e:
+        # A lock-capable transient window can legitimately run for many
+        # minutes; a point that blows the manifest's own budget is recorded
+        # as a failed point, not as a crashed harness.
+        #
+        # e.stdout/e.stderr can each independently be `str`, `bytes`, or
+        # `None` here even though `subprocess.run` was called with
+        # `text=True`: on a timeout, Popen.communicate() has not finished
+        # decoding when it raises, so TimeoutExpired carries whatever partial
+        # output it managed to read back in its original (possibly-bytes)
+        # form. Decoding each stream independently before concatenating is
+        # load-bearing -- `str + bytes` raises TypeError, which previously
+        # crashed the whole run (not just this one point) the first time a
+        # point actually timed out.
+        def _decode(chunk) -> str:
+            if chunk is None:
+                return ""
+            if isinstance(chunk, bytes):
+                return chunk.decode("utf-8", "replace")
+            return chunk
+
+        log_text = _decode(e.stdout) + _decode(e.stderr)
+        log_path.write_text(log_text)
+        return (
+            False,
+            f"ngspice exceeded this manifest's {timeout_s} s per-point timeout",
+            log_path,
+            spice_path,
+        )
+
     log_text = proc.stdout + proc.stderr
     log_path.write_text(log_text)
 
     error_lines = [ln for ln in log_text.splitlines() if ERROR_LINE_RE.match(ln)]
-    completed = COMPLETION_MARKER in log_text
+    completed = completion_marker in log_text
     passed = proc.returncode == 0 and completed and not error_lines
 
     if not passed:
         if error_lines:
             reason = "ngspice reported: " + "; ".join(error_lines[:3])
         elif not completed:
-            reason = f"ngspice did not print {COMPLETION_MARKER!r} (run did not finish)"
+            reason = f"ngspice did not print {completion_marker!r} (run did not finish)"
         else:
             reason = f"ngspice exited {proc.returncode}"
     else:
@@ -211,11 +267,63 @@ def run_point(
     point: PvtPoint,
     work_dir: Path,
 ) -> PointResult:
-    patched = patch_netlist(netlist_text, manifest, point)
+    spec = measure_mod.MeasureSpec.from_manifest(manifest)
+    prefix = f"{point.corner_id}-"
+    patched = patch_netlist(netlist_text, manifest, point, spec=spec, prefix=prefix)
     passed, reason, log_path, spice_path = _run_ngspice_and_judge(
-        pdk, spiceinit, patched, point.corner_id, work_dir
+        pdk,
+        spiceinit,
+        patched,
+        point.corner_id,
+        work_dir,
+        completion_marker=(
+            measure_mod.COMPLETION_MARKER if spec is not None else COMPLETION_MARKER
+        ),
+        timeout_s=(spec.timeout_s if spec is not None else 300),
     )
-    return PointResult(point=point, passed=passed, reason=reason, log_path=log_path, spice_path=spice_path)
+    measurements: tuple = ()
+    if spec is not None and passed:
+        measurements, passed, reason = _reduce_measurements(spec, point, work_dir, prefix)
+    return PointResult(
+        point=point,
+        passed=passed,
+        reason=reason,
+        log_path=log_path,
+        spice_path=spice_path,
+        measurements=measurements,
+    )
+
+
+def _reduce_measurements(spec, point: PvtPoint, work_dir: Path, prefix: str):
+    """Read this point's waveform dumps back and reduce them to measurements.
+
+    Returns (measurements, passed, reason). A point that ngspice completed
+    cleanly can still FAIL here -- that is the whole point of the measurement
+    layer: "the simulator finished" and "the circuit did what the manifest
+    says it must" are different claims, and only the second one is evidence
+    for a spec row.
+    """
+    names = measure_mod.waveform_names(spec, prefix)
+    labels = [p.label for p in spec.sweep] or [None]
+    measurements = []
+    for name, label in zip(names, labels):
+        dump = work_dir / name
+        if not dump.is_file():
+            return (
+                tuple(measurements),
+                False,
+                f"ngspice completed but wrote no waveform dump {name!r}",
+            )
+        try:
+            times, values = measure_mod.parse_wrdata(dump.read_text())
+        except measure_mod.MeasureError as e:
+            return tuple(measurements), False, f"{name}: {e}"
+        measurements.append(
+            measure_mod.measure_trace(times, values, spec, point.supply_v, label=label)
+        )
+
+    passed, reason = measure_mod.aggregate(measurements, spec)
+    return tuple(measurements), passed, reason
 
 
 def run_mc_trial(
