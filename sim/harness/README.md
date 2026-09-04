@@ -35,7 +35,7 @@ issues once there is a PLL netlist.
   "claim": "one-sentence statement of what this experiment substantiates",
   "schematic": "tb_foo.sch",
   "corner_pattern": "regex, one capture group ending right before the corner token",
-  "supply_pattern": "regex, one capture group ending right before the supply value",
+  "supply_pattern": "regex, one capture group ending right before the supply value (or null -- see below)",
   "process_corners": ["tt", "ss", "ff"],
   "temps_c": [-40, 27, 125],
   "supply_nominal": 1.8,
@@ -58,6 +58,9 @@ issues once there is a PLL netlist.
   corner (a `.lib ... <corner>` line) and the supply (a voltage source's DC
   value) live. Temperature is not pattern-based: a `.temp <T>` card is always
   inserted immediately before the netlist's final, standalone `.end` line.
+  `supply_pattern` may be `null` (or omitted) for a DUT with no supply
+  terminal — see the `ac` block section below, which is where that case
+  arises. `corner_pattern` is always required.
 - **`process_corners`** — must be a subset of `sim/pdk.json`'s
   `process_corners` list (the corners the installed sky130 PDK's combined
   ngspice library actually defines `.lib` sections for).
@@ -204,7 +207,83 @@ transient needs either a broken-loop AC testbench or a step-response fit
 whose accuracy is dominated by the fit's own assumptions, neither of which
 this transient reducer attempts. See `sim/harness/measure.py`'s module
 docstring for the full scoping rationale (issue #52 explicitly allows
-deferring this to a dedicated AC/linearized-model testbench).
+deferring this to a dedicated AC/linearized-model testbench). That
+testbench now exists — see the `ac` block below.
+
+## Loop-dynamics campaigns (`ac` manifest block)
+
+A manifest that declares a top-level `ac` block instead of a `measure`
+block runs an **AC small-signal sweep** rather than a transient, and is
+reduced by `sim/harness/acmeasure.py` into the two numbers
+`spec/target-spec.md` rows 6 (loop bandwidth) and 7 (phase margin) are
+owed. A manifest declares one analysis mode or the other, never both
+(`cli.cmd_run` rejects a manifest carrying both blocks).
+
+```json
+{
+  "supply_pattern": null,
+  "corner_note": "optional prose about why this manifest's corner set is what it is",
+  "ac": {
+    "node": "phi",
+    "source": "I1",
+    "f_start": "100",
+    "f_stop": "100meg",
+    "points_per_decade": 40,
+    "timeout_s": 600,
+    "f_ref_hz": 8000000.0,
+    "phase_margin_floor_deg": 45,
+    "f_c_ceiling_frac_of_f_ref": 0.1,
+    "gate_on_bounds": false,
+    "require_crossover": true,
+    "loop_gain": [
+      {
+        "label": "lf-sizing-point",
+        "icp_a": 5e-06,
+        "kvco_hz_per_v": 460000000.0,
+        "n_divide": 20,
+        "basis": "where these three numbers came from, verbatim into the record"
+      }
+    ]
+  }
+}
+```
+
+- **`node`** — the netlist node carrying the dimensionless open-loop gain
+  `T(j*omega)`. Unity gain is 0 dB; the low-frequency asymptote of a
+  type-II loop sits at −180°.
+- **`source`** — the independent current source whose **AC magnitude**
+  carries the loop-gain scalar. One
+  `alter @<source>[acmag] = <A>` + one `ac dec` + one `wrdata` is emitted
+  per `loop_gain` entry, all inside a single ngspice invocation per PVT
+  point, so the sky130 model library is parsed once per point rather than
+  once per swept value.
+- **`loop_gain`** — the swept axis. For a charge-pump PLL,
+  `T(s) = (Icp/2π)·Z(s)·(2π·Kvco/s)/N = (Icp·Kvco/N)·Z(s)/s`: only `Z(s)`
+  is frequency-dependent, so the charge pump, VCO and divider collapse into
+  the scalar `A = Icp·Kvco/N` and only the loop filter has to be in the
+  netlist. Each entry's **`basis`** is copied verbatim into the record, so
+  a reader can tell a block's own DESIGN.md assumption from a committed
+  `sim/` measurement from a hand guess.
+- **`phase_margin_floor_deg`** / **`f_ref_hz`** +
+  **`f_c_ceiling_frac_of_f_ref`** — DRAFT spec bounds, **reported**
+  alongside each measurement (a `meets` / `**miss**` column in the record),
+  not enforced. Set `gate_on_bounds` true to make a miss fail the point;
+  leave it false while the rows are DRAFT, so a harness PASS is never
+  readable as a ratification (nor a FAIL as a demand to relax a target).
+- **`require_crossover`** — when true (the default), a swept point whose
+  gain never falls through unity in the swept band FAILs. Either way the
+  point is reported as **no crossover** with no bandwidth or margin
+  attributed to it — the AC counterpart of `measure.py`'s "no lock"
+  discipline.
+- **`supply_pattern: null`** — legal, and meaningful: it declares that this
+  DUT has **no supply terminal**, so there is nothing in its netlist a
+  supply substitution could honestly patch. The alternative — adding a
+  decorative supply source to the testbench so a regex has something to
+  match — would fake an axis that was never exercised. The record says so
+  explicitly in place of its supply row. `corner_pattern` stays mandatory:
+  process corner and temperature do move a passive sky130 network.
+
+`sim/loop-ac/` is the first campaign of this shape.
 
 ## Monte Carlo (`--mc`)
 

@@ -15,4 +15,10 @@ execution, and append-only evidence-record rendering -- the generic machinery
 every future campaign will build on. Measurement-specific reduction (lock
 criteria, jitter, etc.) is added by later issues once there is a PLL netlist
 to measure.
+
+Since then, issue #52 has added two reduction layers on top of that
+machinery: `measure.py` (transient -- output frequency, duty cycle,
+time-to-lock, with an explicit "no lock" verdict) and `acmeasure.py` (AC --
+unity-gain crossover, phase margin, gain margin, with an explicit "no
+crossover" verdict). Jitter and phase noise remain unimplemented.
 """

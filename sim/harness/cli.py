@@ -9,6 +9,7 @@ import sys
 import tempfile
 from pathlib import Path
 
+from . import acmeasure as ac_mod
 from . import corners as corners_mod
 from . import measure as measure_mod
 from . import montecarlo as mc_mod
@@ -245,9 +246,18 @@ def cmd_run(args: argparse.Namespace) -> int:
         )
 
     def build_units(manifest, pdk):
-        # Fail fast on a malformed `measure` block rather than at the first
-        # point, so a typo in the manifest costs a second, not a corner run.
-        measure_mod.MeasureSpec.from_manifest(manifest)
+        # Fail fast on a malformed `measure` / `ac` block rather than at the
+        # first point, so a typo in the manifest costs a second, not a corner
+        # run.
+        spec = measure_mod.MeasureSpec.from_manifest(manifest)
+        ac_spec = ac_mod.AcSpec.from_manifest(manifest)
+        if spec is not None and ac_spec is not None:
+            raise measure_mod.MeasureError(
+                "manifest declares both a `measure` block and an `ac` block -- a "
+                "testbench runs one analysis mode per manifest (transient "
+                "measurement or AC loop-dynamics), so split them into sibling "
+                "experiment directories"
+            )
         return corners_mod.build_matrix(
             manifest,
             pdk.process_corners,
@@ -259,6 +269,9 @@ def cmd_run(args: argparse.Namespace) -> int:
     def render_record(*, manifest, slug, record_id, pdk, netlist_snapshot, units, results, subset_reason):
         return report_mod.render(
             spec=measure_mod.MeasureSpec.from_manifest(manifest),
+            ac_spec=ac_mod.AcSpec.from_manifest(manifest),
+            manifest_has_supply=manifest.get("supply_pattern") is not None,
+            corner_note=manifest.get("corner_note"),
             record_id=record_id,
             slug=slug,
             claim=manifest.get("claim", "(no claim stated in manifest)"),
