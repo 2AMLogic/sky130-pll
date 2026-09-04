@@ -4,7 +4,7 @@
   "schematic": "tb_pll_lock_1mhz.sch",
   "corner_pattern": "(\\.lib\\s+\\S*sky130\\.lib\\.spice\\s+)(\\w+)",
   "supply_pattern": "(V1 VDD GND )([0-9.]+)",
-  "process_corners": ["tt", "ss", "ff"],
+  "process_corners": ["tt", "ff", "ss", "sf", "fs"],
   "temps_c": [-40, 27, 125],
   "supply_nominal": 1.8,
   "supply_tolerance": 0.1,
@@ -25,6 +25,6 @@
     },
     "require_lock": false
   },
-  "methodology_note": "this testbench's DUT is design/top/top.sch, the real four-block closed-loop PLL (not a throwaway circuit) -- straps NSEL[5:0]=111111 (N=64, the divider's maximum representable ratio) and drives REF with a 1 MHz clock and RESETB with the same power-on reset pwl sim/pll-lock/testbench/tb_pll_lock.sch uses. `require_lock` is false, for the same reason sim/pll-lock's own manifest gives (a point that completes but never locks is recorded as evidence, not a harness failure) -- here compounded by N=64*1 MHz=64 MHz sitting below sim/vco's characterized tuning floor (~145.1 MHz at VCTRL=0.8V; VCTRL<0.8V is not characterized and this testbench does not extrapolate past it per issue #55/CLAUDE.md), so a lock at this exact target is not expected to be achievable with the current VCO/divider combination -- that is itself the row-3-low-band-edge evidence this campaign exists to produce. A gated pass/fail, and any resulting spec/design decision, is deferred to a future ratifying DR once this record and sim/pll-lock's own are both available to argue from.",
+  "methodology_note": "this testbench's DUT is design/top/top.sch, the real four-block closed-loop PLL (not a throwaway circuit) -- straps NSEL[5:0]=111111 (N=64, the divider's maximum representable ratio) and drives REF with a 1 MHz clock and RESETB with the same power-on reset pwl sim/pll-lock/testbench/tb_pll_lock.sch uses. `require_lock` is false, for the same reason sim/pll-lock's own manifest gives (a point that completes but never locks is recorded as evidence, not a harness failure) -- here compounded by N=64*1 MHz=64 MHz sitting below sim/vco's characterized tuning floor (~145.1 MHz at VCTRL=0.8V; VCTRL<0.8V is not characterized and this testbench does not extrapolate past it per issue #55/CLAUDE.md), so a lock at this exact target is not expected to be achievable with the current VCO/divider combination -- that is itself the row-3-low-band-edge evidence this campaign exists to produce. A gated pass/fail, and any resulting spec/design decision, is deferred to a future ratifying DR once this record and sim/pll-lock's own are both available to argue from. process_corners is the ratified rows 19/20 PVT grid (spec/target-spec.md, DR-003, #77) -- sky130's five standard MOS/BJT process corners including the two mixed-skew corners (sf, fs) that stress this design's un-cascoded PFD/charge-pump UP/DN current mirror -- not a bare local convention, following sim/pll's own tb.json (PR #86); this supersedes the tt/ss/ff-only grid this manifest originally declared (issue #52).",
   "analysis": "cold-start transient, closed loop (`tran 200p 3u`, injected by sim/harness/measure.py from this manifest's own measure block -- see sim/pll-lock-1mhz/testbench/tb_pll_lock_1mhz.sch's header comment for why the schematic itself carries no .tran card)"
 }

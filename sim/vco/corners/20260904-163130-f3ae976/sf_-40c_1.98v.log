@@ -1,0 +1,128 @@
+
+Note: Compatibility modes selected: hs a
+
+
+Circuit: ** sch_path: /users/rwalters/github/sky130-pll/.loom/worktrees/issue-52/sim/vco/testbench/tb_vco.sch
+
+option SCALE: Scale is set to 1e-06 for instance and model parameters
+option SCALE: Scale is set to 1e-06 for instance and model parameters
+option SCALE: Scale is set to 1e-06 for instance and model parameters
+option SCALE: Scale is set to 1e-06 for instance and model parameters
+Doing analysis at TEMP = -40.000000 and TNOM = 27.000000
+
+Using KLU as Direct Linear Solver
+Operating point simulation skipped by 'uic',
+  now using transient initial conditions.
+ Reference value :  5.00000e-13
+ Reference value :  3.52223e-08
+ Reference value :  7.27179e-08
+ Reference value :  1.09294e-07
+ Reference value :  1.46092e-07
+ Reference value :  1.81767e-07
+No. of Data Rows : 4061
+Doing analysis at TEMP = -40.000000 and TNOM = 27.000000
+
+Using KLU as Direct Linear Solver
+Operating point simulation skipped by 'uic',
+  now using transient initial conditions.
+ Reference value :  1.12135e-08
+ Reference value :  3.70446e-08
+ Reference value :  6.21429e-08
+ Reference value :  8.70465e-08
+ Reference value :  1.12156e-07
+ Reference value :  1.37096e-07
+ Reference value :  1.62472e-07
+ Reference value :  1.87924e-07
+No. of Data Rows : 4226
+Doing analysis at TEMP = -40.000000 and TNOM = 27.000000
+
+Using KLU as Direct Linear Solver
+Operating point simulation skipped by 'uic',
+  now using transient initial conditions.
+ Reference value :  7.42065e-09
+ Reference value :  2.35044e-08
+ Reference value :  3.87291e-08
+ Reference value :  5.47601e-08
+ Reference value :  7.05747e-08
+ Reference value :  8.65674e-08
+ Reference value :  1.02893e-07
+ Reference value :  1.18097e-07
+ Reference value :  1.34595e-07
+ Reference value :  1.50635e-07
+ Reference value :  1.66010e-07
+ Reference value :  1.82181e-07
+ Reference value :  1.98175e-07
+No. of Data Rows : 4494
+Doing analysis at TEMP = -40.000000 and TNOM = 27.000000
+
+Using KLU as Direct Linear Solver
+Operating point simulation skipped by 'uic',
+  now using transient initial conditions.
+ Reference value :  1.13349e-08
+ Reference value :  2.40828e-08
+ Reference value :  3.66664e-08
+ Reference value :  4.96750e-08
+ Reference value :  6.30422e-08
+ Reference value :  7.78114e-08
+ Reference value :  9.15109e-08
+ Reference value :  1.05356e-07
+ Reference value :  1.19559e-07
+ Reference value :  1.33445e-07
+ Reference value :  1.47173e-07
+ Reference value :  1.60129e-07
+ Reference value :  1.73903e-07
+ Reference value :  1.88919e-07
+No. of Data Rows : 4916
+Doing analysis at TEMP = -40.000000 and TNOM = 27.000000
+
+Using KLU as Direct Linear Solver
+Operating point simulation skipped by 'uic',
+  now using transient initial conditions.
+ Reference value :  8.35374e-10
+ Reference value :  1.20559e-08
+ Reference value :  2.26750e-08
+ Reference value :  3.62546e-08
+ Reference value :  4.83005e-08
+ Reference value :  6.21732e-08
+ Reference value :  7.42241e-08
+ Reference value :  8.58415e-08
+ Reference value :  9.82112e-08
+ Reference value :  1.09694e-07
+ Reference value :  1.22667e-07
+ Reference value :  1.34919e-07
+ Reference value :  1.48225e-07
+ Reference value :  1.60027e-07
+ Reference value :  1.72486e-07
+ Reference value :  1.83486e-07
+ Reference value :  1.94383e-07
+No. of Data Rows : 5147
+Doing analysis at TEMP = -40.000000 and TNOM = 27.000000
+
+Using KLU as Direct Linear Solver
+Operating point simulation skipped by 'uic',
+  now using transient initial conditions.
+ Reference value :  3.99450e-09
+ Reference value :  1.35397e-08
+ Reference value :  2.25399e-08
+ Reference value :  3.21991e-08
+ Reference value :  4.00162e-08
+ Reference value :  4.93542e-08
+ Reference value :  5.77134e-08
+ Reference value :  6.60688e-08
+ Reference value :  7.46495e-08
+ Reference value :  8.42242e-08
+ Reference value :  9.27684e-08
+ Reference value :  1.01931e-07
+ Reference value :  1.11984e-07
+ Reference value :  1.20412e-07
+ Reference value :  1.30066e-07
+ Reference value :  1.39795e-07
+ Reference value :  1.48464e-07
+ Reference value :  1.57777e-07
+ Reference value :  1.66861e-07
+ Reference value :  1.76962e-07
+ Reference value :  1.85297e-07
+ Reference value :  1.95664e-07
+No. of Data Rows : 5830
+sim/harness: analysis complete
+Note: Simulation executed from .control section 
