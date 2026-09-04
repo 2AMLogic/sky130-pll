@@ -1,0 +1,30 @@
+{
+  "schema": "sky130-pll.harness.tb/1",
+  "claim": "does the closed-loop PLL (design/top/top.sch -- VCO + PFD/charge pump + loop filter + divider, issue #28), driven from a cold start (RESETB power-on, VCTRL starting at whatever the loop filter's own initial condition is) with a 25 MHz reference (spec/target-spec.md row 3's DRAFT high band edge), lock its output to N * Fref = 10 * 25 MHz = 250 MHz within this manifest's transient window -- issue #55's sibling of sim/pll-lock's own 10 MHz-reference campaign, exercising row 3's frequency-range claim at more than the single 10 MHz point sim/pll-lock/testbench/tb_pll_lock.sch drives. This is a design-input record, not a spec claim: row 3 is DRAFT/unratified. 250 MHz is deliberately the same target frequency sim/pll-lock/testbench/tb_pll_lock.sch already targets (N=25 * 10 MHz), so this record is directly comparable to that one -- only the reference frequency (and, by construction, N) changes.",
+  "schematic": "tb_pll_lock_25mhz.sch",
+  "corner_pattern": "(\\.lib\\s+\\S*sky130\\.lib\\.spice\\s+)(\\w+)",
+  "supply_pattern": "(V1 VDD GND )([0-9.]+)",
+  "process_corners": ["tt", "ss", "ff"],
+  "temps_c": [-40, 27, 125],
+  "supply_nominal": 1.8,
+  "supply_tolerance": 0.1,
+  "measure": {
+    "node": "CLK",
+    "tran_step": "200p",
+    "tran_stop": "3u",
+    "timeout_s": 1800,
+    "threshold_frac": 0.5,
+    "hysteresis_frac": 0.15,
+    "settle_from": "0",
+    "min_edges": 4,
+    "lock": {
+      "target_hz": 250000000,
+      "tolerance_frac": 0.05,
+      "window_cycles": 20,
+      "min_hold_cycles": 20
+    },
+    "require_lock": false
+  },
+  "methodology_note": "this testbench's DUT is design/top/top.sch, the real four-block closed-loop PLL (not a throwaway circuit) -- straps NSEL[5:0]=001001 (N=10) and drives REF with a 25 MHz clock and RESETB with the same power-on reset pwl sim/pll-lock/testbench/tb_pll_lock.sch uses. N=10 was chosen (see sim/pll-lock-25mhz/testbench/tb_pll_lock_25mhz.sch's header comment for the arithmetic) to land the closed-loop target inside sim/vco/records/20260819-131741-fe0e6df.md's characterized VCO tuning range (~145.1 MHz to ~1.034 GHz) at exactly the same 250 MHz target sim/pll-lock/testbench/tb_pll_lock.sch already exercises with N=25 at a 10 MHz reference -- so a difference in outcome between this record and that one isolates the effect of the reference frequency (loop update rate) rather than a different target output frequency. `require_lock` is false, for the same reason sim/pll-lock's own manifest gives: a point that completes but never locks is recorded as evidence, not a harness failure. A gated pass/fail, and any resulting spec/design decision, is deferred to a future ratifying DR once this record and sim/pll-lock's own are both available to argue from.",
+  "analysis": "cold-start transient, closed loop (`tran 200p 3u`, injected by sim/harness/measure.py from this manifest's own measure block -- see sim/pll-lock-25mhz/testbench/tb_pll_lock_25mhz.sch's header comment for why the schematic itself carries no .tran card)"
+}
