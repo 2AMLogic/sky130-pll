@@ -315,6 +315,24 @@ $::SKYWATER_STDCELLS/sky130_fd_sc_hd.spice` added to `tb_pll.sch`'s own
 PDK's own `libs.tech/xschem/xschemrc` already defines) — see
 `sim/pll/records/` for the re-run that supersedes the stale FAIL record.
 
+The re-run (`sim/pll/records/20260819-123508-fe0e6df.md`) shows 17/27 points
+PASS. The remaining 10 fail in two ways, both traced in the raw per-point
+logs rather than left unexplained: 6 exceed this manifest's 300 s per-point
+timeout (the transient makes very slow progress rather than erroring out),
+and 4 hit an ngspice numeric-overflow error (`Error: <huge value>, 2 out of
+range for ^`) inside the loop filter's `R1` resistor body-diode model
+(`b.xxxtop.xxlf.xr1.brbody` in the per-point logs) — i.e. `VCTRL` (or an
+adjacent loop-filter node) is being driven to a bias extreme outside that
+primitive device model's well-conditioned range. Both failure modes are
+consistent with the open `Icp`/loop-filter/`Kvco` coordination gap described
+below (the `sim/pll-lock` cold-start lock campaign) rather than with a new
+testbench or harness defect: this testbench's 200 ns window captures the loop
+in its initial, uncontrolled transient, which is exactly where an
+under-damped or badly-conditioned loop would produce large swings and slow
+convergence. Reconciling that coordination gap is out of scope for issue #52
+(measurement/campaign work only, no block redesign) — see the `sim/pll-lock`
+section below for the tracking context.
+
 ## `sim/pll-lock` (issue #52): the closed loop does not lock within a few
 microseconds of cold start, at the corners run so far
 
