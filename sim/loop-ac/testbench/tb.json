@@ -1,0 +1,57 @@
+{
+  "schema": "sky130-pll.harness.tb/1",
+  "claim": "Linearized open-loop AC characterization of the PLL loop dynamics (issue #52): unity-gain crossover frequency (spec/target-spec.md row 6, loop bandwidth) and phase margin (row 7), measured from a real ngspice AC sweep of design/loop-filter/loop_filter.sch's own sky130 R/C network across the DR-003-ratified process-corner and temperature grid, with the charge-pump/VCO/divider contribution applied as a swept scalar loop gain A = Icp*Kvco/N. This is a measured design-input record, not a spec claim: it replaces design/loop-filter/DESIGN.md's f_c and phase-margin figures -- which that file itself labels 'a hand calculation per the equations above, not a simulation result', computed at one design point with no stated corner -- with committed sim/ evidence a future decision record can argue rows 6 and 7 from. It ratifies nothing; per CLAUDE.md ratification is a separate decision-record act argued on its own merits, and the DRAFT row-6/row-7 bounds are reported alongside each measurement rather than gated on.",
+  "schematic": "tb_loop_ac.sch",
+  "corner_pattern": "(\\.lib\\s+\\S*sky130\\.lib\\.spice\\s+)(\\w+)",
+  "supply_pattern": null,
+  "process_corners": ["tt", "ff", "ss", "sf", "fs", "ll", "hh"],
+  "temps_c": [-40, 27, 125],
+  "supply_nominal": 1.8,
+  "supply_tolerance": 0,
+  "ac": {
+    "node": "phi",
+    "source": "I1",
+    "f_start": "100",
+    "f_stop": "100meg",
+    "points_per_decade": 40,
+    "timeout_s": 600,
+    "f_ref_hz": 8000000.0,
+    "phase_margin_floor_deg": 45,
+    "f_c_ceiling_frac_of_f_ref": 0.1,
+    "gate_on_bounds": false,
+    "require_crossover": true,
+    "loop_gain": [
+      {
+        "label": "lf-sizing-point",
+        "icp_a": 5e-06,
+        "kvco_hz_per_v": 460000000.0,
+        "n_divide": 20,
+        "basis": "design/loop-filter/DESIGN.md's own 'Design-point inputs' table -- the exact assumptions its R/C sizing derivation was solved for (Icp a documented 5 uA placeholder because PFD/CP #25 had not landed a value yet; Kvco read off design/vco/DESIGN.md's informal sanity-check table). Included so this record's simulated f_c and phase margin can be read directly against that file's hand-calculated ones at the same operating point."
+      },
+      {
+        "label": "cp-landed-icp",
+        "icp_a": 1e-05,
+        "kvco_hz_per_v": 460000000.0,
+        "n_divide": 20,
+        "basis": "the same point with the charge-pump current design/pfd-cp/DESIGN.md actually landed (Icp = 10 uA, double the loop filter's placeholder). Both DESIGN.md files flag this unreconciled mismatch as integration work owed to #14; this row prices what it costs rows 6 and 7."
+      },
+      {
+        "label": "measured-kvco-min",
+        "icp_a": 1e-05,
+        "kvco_hz_per_v": 692000000.0,
+        "n_divide": 20,
+        "basis": "the landed Icp with the LOWEST mean VCO tuning slope in sim/vco/records/20260904-163130-f3ae976.md's full 45-point PVT grid (692 MHz/V at ss/125 C/1.62 V). That record's slope column is an endpoint-to-endpoint mean over VCTRL 0.8-1.6 V, not a local small-signal Kvco -- read its own caveat before citing this row."
+      },
+      {
+        "label": "measured-kvco-max",
+        "icp_a": 1e-05,
+        "kvco_hz_per_v": 1751000000.0,
+        "n_divide": 20,
+        "basis": "the landed Icp with the HIGHEST mean VCO tuning slope in the same record (1751 MHz/V at ff/-40 C/1.98 V). Same endpoint-to-endpoint caveat as the row above."
+      }
+    ]
+  },
+  "corner_note": "this manifest runs the five DR-003-ratified MOS/BJT process corners (tt/ff/ss/sf/fs) AND the two passive-skew corners ll/hh, and the second half is the load-bearing half for this DUT. sky130.lib.spice's own section header describes every one of the five ratified corners as 'nominal resistance, nominal capacitance' -- they re-parameterize N/P devices only. This DUT contains no transistors at all, so across the ratified five its R/C values are identical by construction and the corner axis reports a robustness it never tested. DR-003 scoped ll/hh (low/high resistance and capacitance, riding on the nominal tt device corner) out of its own decision as a separate axis, which is not the same as ruling them out of a testbench; running them here WIDENS the ratified grid rather than narrowing it, and is the only way this campaign can say anything at all about how process spread moves this filter's poles. Both are already pinned in sim/pdk.json's process_corners list.",
+  "methodology_note": "the DUT is design/loop-filter/loop_filter.sch alone -- the passive third-order R/C network (R1/C1 zero, C2 pole, R3/C3 isolating pole) -- driven by an ideal AC current source at its CP node, with an ideal 1/s VCO phase integrator (a 1 A/V VCCS into a 1 F capacitor) on its VCTRL output. That decomposition is exact for the continuous-time linearized model: in T(s) = (Icp*Kvco/N)*Z(s)/s only Z(s) is frequency-dependent, so simulating the filter and parameterizing the rest loses nothing that this analysis models. It does lose everything this analysis does NOT model: the charge pump's finite output impedance, UP/DN current mismatch and dead-zone behaviour, the VCO control node's own input capacitance, and the sampled nature of a real phase detector (the continuous-time approximation is standard for f_c well below f_ref, which is the regime row 6 itself contracts for). N is held at the loop filter's own design point of 20, not sim/pll-lock's 25 -- this record is the filter's dynamics against the assumptions it was sized under. The supply axis of the ratified PVT grid (spec/target-spec.md row 1 x DR-003) is deliberately NOT exercised: this DUT is passive and has no supply terminal, so the manifest declares a null supply_pattern rather than adding a decorative supply source for a regex to match. Supply's real influence on rows 6 and 7 arrives through Kvco, and it arrives here as the swept loop-gain axis, whose min and max values are taken from sim/vco's own measured spread across the full 45-point supply-and-corner grid.",
+  "analysis": "AC small-signal sweep, 40 points/decade from 100 Hz to 100 MHz, repeated once per swept loop-gain design point inside a single ngspice invocation per PVT point (the injected source's acmag carries A = Icp*Kvco/N); reduced to unity-gain crossover, phase margin and gain margin by sim/harness/acmeasure.py"
+}

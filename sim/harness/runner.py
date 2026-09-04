@@ -15,6 +15,7 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
+from . import acmeasure as ac_mod
 from . import measure as measure_mod
 from .corners import PvtPoint
 from .montecarlo import McTrial
@@ -108,18 +109,29 @@ def _substitute_corner_and_supply(netlist_text: str, manifest: dict, corner_labe
 
     Shared by `patch_netlist` (PVT) and `patch_netlist_mc` (Monte Carlo),
     which differ only in which corner label and supply value they select.
+
+    `supply_pattern` may be `null` (or absent) for a DUT that **has no supply
+    terminal** -- `sim/loop-ac`'s DUT is `design/loop-filter`'s passive R/C
+    network, which connects to no rail at all, so there is nothing in its
+    netlist a supply substitution could honestly patch. Declaring the pattern
+    null says that explicitly, instead of adding a decorative supply source to
+    the testbench so a regex has something to match. Corner substitution is
+    still mandatory: process corner and temperature both genuinely move a
+    passive sky130 network.
     """
     corner_re = re.compile(manifest["corner_pattern"])
-    supply_re = re.compile(manifest["supply_pattern"])
-
     if not corner_re.search(netlist_text):
         raise NetlistError(f"corner_pattern {manifest['corner_pattern']!r} matched nothing")
-    if not supply_re.search(netlist_text):
-        raise NetlistError(f"supply_pattern {manifest['supply_pattern']!r} matched nothing")
-
     text = corner_re.sub(lambda m: f"{m.group(1)}{corner_label}", netlist_text)
-    text = supply_re.sub(lambda m: f"{m.group(1)}{supply_v:g}", text)
-    return text
+
+    supply_pattern = manifest.get("supply_pattern")
+    if supply_pattern is None:
+        return text
+
+    supply_re = re.compile(supply_pattern)
+    if not supply_re.search(text):
+        raise NetlistError(f"supply_pattern {supply_pattern!r} matched nothing")
+    return supply_re.sub(lambda m: f"{m.group(1)}{supply_v:g}", text)
 
 
 def patch_netlist(
@@ -128,6 +140,7 @@ def patch_netlist(
     point: PvtPoint,
     spec=None,
     prefix: str = "",
+    ac_spec=None,
 ) -> str:
     text = _substitute_corner_and_supply(netlist_text, manifest, point.corner, point.supply_v)
 
@@ -141,6 +154,12 @@ def patch_netlist(
         # `measure` block. That is what makes the window (e.g. sim/pll's
         # lock-capable one) a manifest knob rather than a schematic edit.
         injected += measure_mod.build_control_block(spec, prefix)
+    elif ac_spec is not None:
+        # Same ownership rule for an AC manifest: the schematic carries no
+        # `.ac` card, and the harness injects the frequency sweep plus the
+        # per-swept-point loop-gain `alter` from the manifest's `ac` block
+        # (see sim/harness/acmeasure.py).
+        injected += ac_mod.build_ac_control_block(ac_spec, prefix)
     text = _END_CARD_RE.sub(lambda m: f"{injected}{m.group(1)}", text, count=1)
     return text
 
@@ -268,22 +287,31 @@ def run_point(
     work_dir: Path,
 ) -> PointResult:
     spec = measure_mod.MeasureSpec.from_manifest(manifest)
+    ac_spec = ac_mod.AcSpec.from_manifest(manifest) if spec is None else None
     prefix = f"{point.corner_id}-"
-    patched = patch_netlist(netlist_text, manifest, point, spec=spec, prefix=prefix)
+    patched = patch_netlist(
+        netlist_text, manifest, point, spec=spec, prefix=prefix, ac_spec=ac_spec
+    )
+    if spec is not None:
+        marker, timeout_s = measure_mod.COMPLETION_MARKER, spec.timeout_s
+    elif ac_spec is not None:
+        marker, timeout_s = ac_mod.COMPLETION_MARKER, ac_spec.timeout_s
+    else:
+        marker, timeout_s = COMPLETION_MARKER, 300
     passed, reason, log_path, spice_path = _run_ngspice_and_judge(
         pdk,
         spiceinit,
         patched,
         point.corner_id,
         work_dir,
-        completion_marker=(
-            measure_mod.COMPLETION_MARKER if spec is not None else COMPLETION_MARKER
-        ),
-        timeout_s=(spec.timeout_s if spec is not None else 300),
+        completion_marker=marker,
+        timeout_s=timeout_s,
     )
     measurements: tuple = ()
-    if spec is not None and passed:
+    if passed and spec is not None:
         measurements, passed, reason = _reduce_measurements(spec, point, work_dir, prefix)
+    elif passed and ac_spec is not None:
+        measurements, passed, reason = _reduce_ac_measurements(ac_spec, work_dir, prefix)
     return PointResult(
         point=point,
         passed=passed,
@@ -323,6 +351,36 @@ def _reduce_measurements(spec, point: PvtPoint, work_dir: Path, prefix: str):
         )
 
     passed, reason = measure_mod.aggregate(measurements, spec)
+    return tuple(measurements), passed, reason
+
+
+def _reduce_ac_measurements(spec, work_dir: Path, prefix: str):
+    """Read this point's AC dumps back and reduce them to loop-dynamics numbers.
+
+    Same shape (and the same "ngspice finished" vs. "the circuit did what the
+    manifest says" split) as `_reduce_measurements`, over
+    `sim/harness/acmeasure.py`'s frequency-response reducer instead of the
+    transient one.
+    """
+    names = ac_mod.waveform_names(spec, prefix)
+    measurements = []
+    for name, gain_point in zip(names, spec.loop_gain):
+        dump = work_dir / name
+        if not dump.is_file():
+            return (
+                tuple(measurements),
+                False,
+                f"ngspice completed but wrote no AC waveform dump {name!r}",
+            )
+        try:
+            freqs, reals, imags = ac_mod.parse_ac_wrdata(dump.read_text())
+        except measure_mod.MeasureError as e:
+            return tuple(measurements), False, f"{name}: {e}"
+        measurements.append(
+            ac_mod.measure_ac_response(freqs, reals, imags, spec, gain_point=gain_point)
+        )
+
+    passed, reason = ac_mod.aggregate(measurements, spec)
     return tuple(measurements), passed, reason
 
 

@@ -1,0 +1,53 @@
+** sch_path: /Users/rwalters/GitHub/sky130-pll/.loom/worktrees/issue-52/sim/loop-ac/testbench/tb_loop_ac.sch
+**.subckt tb_loop_ac
+XXLF CP GND VCTRL loop_filter
+I1 GND CP dc 0 ac 1
+GINT GND PHI VCTRL GND 1
+CINT PHI GND 1 m=1
+RLEAK PHI GND 1T m=1
+**** begin user architecture code
+
+** sky130 PDK model include (tt corner) -- patched per-point by sim/harness
+.lib /Users/rwalters/.volare/sky130A/libs.tech/combined/sky130.lib.spice tt
+
+**** end user architecture code
+**.ends
+
+* expanding   symbol:  design/loop-filter/loop_filter.sym # of pins=3
+** sym_path: /Users/rwalters/GitHub/sky130-pll/.loom/worktrees/issue-52/design/loop-filter/loop_filter.sym
+** sch_path: /Users/rwalters/GitHub/sky130-pll/.loom/worktrees/issue-52/design/loop-filter/loop_filter.sch
+.subckt loop_filter CP GND VCTRL
+*.ipin CP
+*.iopin GND
+*.opin VCTRL
+XR1 Z1 CP GND sky130_fd_pr__res_xhigh_po W=1 L=10.3 mult=1 m=1
+XC1 Z1 GND sky130_fd_pr__cap_mim_m3_1 W=163 L=163 MF=1 m=1
+XC2 CP GND sky130_fd_pr__cap_mim_m3_1 W=35 L=35 MF=1 m=1
+XR3 VCTRL CP GND sky130_fd_pr__res_xhigh_po W=1 L=5 mult=1 m=1
+XC3 VCTRL GND sky130_fd_pr__cap_mim_m3_1 W=42 L=42 MF=1 m=1
+.ends
+
+.GLOBAL GND
+.temp 27
+.control
+set filetype=ascii
+save v(phi)
+alter @i1[acmag] = 115
+ac dec 40 100 100meg
+wrdata tt_27c_1.80v-ac000.raw v(phi)
+destroy all
+alter @i1[acmag] = 230
+ac dec 40 100 100meg
+wrdata tt_27c_1.80v-ac001.raw v(phi)
+destroy all
+alter @i1[acmag] = 346
+ac dec 40 100 100meg
+wrdata tt_27c_1.80v-ac002.raw v(phi)
+destroy all
+alter @i1[acmag] = 875.5
+ac dec 40 100 100meg
+wrdata tt_27c_1.80v-ac003.raw v(phi)
+destroy all
+echo "sim/harness: analysis complete"
+.endc
+.end

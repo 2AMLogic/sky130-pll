@@ -60,6 +60,8 @@ sim/
   | `pll-lock-25mhz` | sibling of `pll-lock`, same DUT and measurement layer, driven at spec row 3's DRAFT high reference-frequency band edge (25 MHz) instead of 10 MHz — `NSEL[5:0]`=`N`=10 (target 250 MHz, deliberately the same target `pll-lock` uses, isolating the effect of reference frequency alone) | #55 |
   | `vco` | frequency-vs-`VCTRL` characterization of `design/vco/vco_ring5.sch` alone (open loop, no PFD/charge pump/loop filter/divider), replacing the informal single-corner sanity check `design/vco/DESIGN.md` disclaims with real committed `sim/` evidence across the full PVT matrix | #52 |
 
+  | `loop-ac` | linearized open-loop AC characterization of the loop dynamics — unity-gain crossover frequency (row 6, loop bandwidth) and phase margin (row 7), from a real ngspice `ac` sweep of `design/loop-filter/loop_filter.sch`'s own sky130 R/C network, with the charge pump / VCO / divider applied as a swept scalar loop gain `A = Icp*Kvco/N`. Replaces `design/loop-filter/DESIGN.md`'s explicitly hand-calculated, single-design-point, no-stated-corner `f_c` and phase-margin figures with committed `sim/` evidence. It is the AC/linearized-model testbench `sim/harness/measure.py`'s own docstring defers these two rows to | #52 |
+
   New campaigns add rows here as they are created; the list is descriptive,
   not a closed set.
 

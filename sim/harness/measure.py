@@ -53,9 +53,13 @@ measurement of this one) or a step-response fit whose accuracy is dominated
 by the fit's own assumptions. `2AMLogic/gf180-pll`'s harness draws the same
 line -- its transient reduction covers frequency/lock/jitter-shaped
 quantities, and the loop-dynamics rows are argued from a separate analysis.
-Both are therefore left to a dedicated open-loop/AC testbench (a follow-up
-issue), not bolted onto this transient reducer where they would produce a
-number nobody could defend.
+Both are therefore left to a dedicated open-loop/AC testbench, not bolted
+onto this transient reducer where they would produce a number nobody could
+defend.
+
+**That testbench now exists**: `sim/harness/acmeasure.py` is its reducer and
+`sim/loop-ac/` is the campaign. The split above is unchanged -- this module
+still measures nothing open-loop -- but the deferral is no longer open.
 """
 
 from __future__ import annotations
