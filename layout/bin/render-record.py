@@ -28,6 +28,7 @@ from __future__ import annotations
 import argparse
 import sys
 from pathlib import Path
+from typing import Any
 
 # scripts/git_status.py lives at the repo root (shared with
 # sim/harness/report.py -- sim/ and layout/ are otherwise independent trees
@@ -52,28 +53,80 @@ from render_common import git_provenance, klt_info, load_json  # noqa: E402
 _load = load_json  # local alias, kept short for the calls below
 
 
-def main() -> int:
+def _parse_args() -> argparse.Namespace:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out-dir", required=True, type=Path)
     ap.add_argument("--record-id", required=True)
     ap.add_argument("--repo-root", required=True, type=Path)
     ap.add_argument("--klt", required=True)
     ap.add_argument("--pdk-variant", required=True)
-    args = ap.parse_args()
+    return ap.parse_args()
 
-    out_dir: Path = args.out_dir
-    gen = _load(out_dir / "gen.json")
-    drc = _load(out_dir / "drc.json")
-    drc_nc = _load(out_dir / "drc.negative-control.json")
-    nc_params = _load(out_dir / "drc-negative-control.params.json")
-    extract = _load(out_dir / "extract.json")
-    lvs_good = _load(out_dir / "lvs.json")
-    lvs_bad_dev = _load(out_dir / "lvs.broken-device.json")
-    lvs_bad_topo = _load(out_dir / "lvs.broken-topology.json")
 
-    sha, branch, dirty = git_provenance(args.repo_root, out_dir)
-    klt_version, pdk_info = klt_info(args.klt, args.pdk_variant)
+# --- compute: derive `checks` (and the two negative-control rule lists the
+# record's detail paragraph needs) from the loaded `klt` JSON evidence. Each
+# `_check_*` helper below owns exactly one of the six verdicts the module
+# docstring lists; `_build_checks` is a flat, branch-free sequence over
+# them. -----------------------------------------------------------------
 
+
+def _check_drc_clean(drc: dict[str, Any]) -> tuple[str, bool]:
+    return ("DRC on trivial_mos_array is clean", drc.get("status") == "clean")
+
+
+def _check_drc_negative_control_violations(drc_nc: dict[str, Any]) -> tuple[str, bool]:
+    return (
+        "DRC negative control (deliberately illegal geometry) reports violations",
+        drc_nc.get("status") == "violations",
+    )
+
+
+def _check_drc_negative_control_exact_rules(
+    expected_nc_rules: list[str], fired_nc_rules: list[str]
+) -> tuple[str, bool]:
+    return (
+        "DRC negative control trips exactly the rules its fixture "
+        f"declares ({', '.join(expected_nc_rules) or 'none declared'})",
+        bool(expected_nc_rules) and fired_nc_rules == expected_nc_rules,
+    )
+
+
+def _check_lvs_good(lvs_good: dict[str, Any]) -> tuple[str, bool]:
+    return (
+        "LVS matches the known-good reference",
+        lvs_good.get("status") == "match",
+    )
+
+
+def _check_lvs_negative_control_device(lvs_bad_dev: dict[str, Any]) -> tuple[str, bool]:
+    return (
+        "LVS negative control (device-parameter corruption) reports mismatch",
+        lvs_bad_dev.get("status") == "mismatch",
+    )
+
+
+def _check_lvs_negative_control_topology(lvs_bad_topo: dict[str, Any]) -> tuple[str, bool]:
+    return (
+        "LVS negative control (topology corruption) reports mismatch",
+        lvs_bad_topo.get("status") == "mismatch",
+    )
+
+
+def _build_checks(
+    drc: dict[str, Any],
+    drc_nc: dict[str, Any],
+    nc_params: dict[str, Any],
+    lvs_good: dict[str, Any],
+    lvs_bad_dev: dict[str, Any],
+    lvs_bad_topo: dict[str, Any],
+) -> tuple[list[tuple[str, bool]], list[str], list[str]]:
+    """The record's `checks` list, plus the two negative-control rule lists.
+
+    Same six assertions, same order, as the pre-split `main()` built inline;
+    only the "how" moved, one `_check_*` helper per assertion. The rule
+    lists are also returned since `_render_drc_negative_control_detail`
+    needs them again for its own paragraph.
+    """
     # The fixture declares which rules it is engineered to trip; the record
     # asserts the deck fired exactly those, so a fixture that silently stops
     # violating (or a deck that silently stops checking) is a FAIL rather
@@ -82,31 +135,24 @@ def main() -> int:
     fired_nc_rules = sorted(drc_nc.get("rule_counts", {}))
 
     checks = [
-        ("DRC on trivial_mos_array is clean", drc.get("status") == "clean"),
-        (
-            "DRC negative control (deliberately illegal geometry) reports "
-            "violations",
-            drc_nc.get("status") == "violations",
-        ),
-        (
-            "DRC negative control trips exactly the rules its fixture "
-            f"declares ({', '.join(expected_nc_rules) or 'none declared'})",
-            bool(expected_nc_rules) and fired_nc_rules == expected_nc_rules,
-        ),
-        ("LVS matches the known-good reference", lvs_good.get("status") == "match"),
-        (
-            "LVS negative control (device-parameter corruption) reports mismatch",
-            lvs_bad_dev.get("status") == "mismatch",
-        ),
-        (
-            "LVS negative control (topology corruption) reports mismatch",
-            lvs_bad_topo.get("status") == "mismatch",
-        ),
+        _check_drc_clean(drc),
+        _check_drc_negative_control_violations(drc_nc),
+        _check_drc_negative_control_exact_rules(expected_nc_rules, fired_nc_rules),
+        _check_lvs_good(lvs_good),
+        _check_lvs_negative_control_device(lvs_bad_dev),
+        _check_lvs_negative_control_topology(lvs_bad_topo),
     ]
-    all_pass = all(ok for _, ok in checks)
+    return checks, expected_nc_rules, fired_nc_rules
 
-    lines: list[str] = []
-    a = lines.append
+
+# --- render: each `_render_*` helper appends one `## `-headed markdown
+# section (or, for the header, the record's title + intro; or, for the two
+# negative-control/LVS-good detail paragraphs, a sub-part of the "## Results"
+# section) to the shared `lines` list via `a = lines.append`. `main()` calls
+# them in the record's own section order. --------------------------------
+
+
+def _render_header(a: Any, args: argparse.Namespace) -> None:
     a(f"# Layout DRC/LVS record: {args.record_id}")
     a("")
     a(
@@ -115,11 +161,17 @@ def main() -> int:
         "no PLL schematic yet)."
     )
     a("")
+
+
+def _render_verdict(a: Any, checks: list[tuple[str, bool]], all_pass: bool) -> None:
     a("## Overall verdict: " + ("PASS" if all_pass else "FAIL"))
     a("")
     for desc, ok in checks:
         a(f"- [{'x' if ok else ' '}] {desc}")
     a("")
+
+
+def _render_flow(a: Any, args: argparse.Namespace) -> None:
     a("## Flow")
     a("")
     a(
@@ -140,6 +192,9 @@ def main() -> int:
         "`reference.broken-topology.spice`)."
     )
     a("")
+
+
+def _render_cell(a: Any, gen: dict[str, Any], extract: dict[str, Any]) -> None:
     a("## Cell")
     a("")
     a("- Generator: `mos_array` (`klt gen --list` for the full params schema)")
@@ -148,6 +203,17 @@ def main() -> int:
     a(f"- bbox (um): {gen.get('bbox_um')}")
     a(f"- `matched_group_id`: {gen.get('drc_hints', {}).get('matched_group_id')}")
     a("")
+
+
+def _render_results(
+    a: Any,
+    drc: dict[str, Any],
+    drc_nc: dict[str, Any],
+    extract: dict[str, Any],
+    lvs_good: dict[str, Any],
+    lvs_bad_dev: dict[str, Any],
+    lvs_bad_topo: dict[str, Any],
+) -> None:
     a("## Results")
     a("")
     a("| Stage | Status | Detail |")
@@ -181,6 +247,14 @@ def main() -> int:
         f"{lvs_bad_topo.get('status')} | mismatch_count={lvs_bad_topo.get('mismatch_count')} |"
     )
     a("")
+
+
+def _render_drc_negative_control_detail(
+    a: Any,
+    nc_params: dict[str, Any],
+    expected_nc_rules: list[str],
+    fired_nc_rules: list[str],
+) -> None:
     a(
         "The DRC negative control is a `klt draw` fixture -- geometry written "
         "verbatim with no rule checking -- carrying one deliberately illegal "
@@ -194,6 +268,9 @@ def main() -> int:
     for rule in expected_nc_rules:
         a(f"- `{rule}` -- {nc_params['_expected_rules'][rule]}")
     a("")
+
+
+def _render_lvs_good_detail(a: Any, lvs_good: dict[str, Any]) -> None:
     good_mismatches = lvs_good.get("mismatches", [])
     non_warning = [m for m in good_mismatches if m.get("severity") != "warning"]
     ambiguous_net = [
@@ -244,6 +321,18 @@ def main() -> int:
             "should have failed.**"
         )
     a("")
+
+
+def _render_provenance(
+    a: Any,
+    args: argparse.Namespace,
+    klt_version: str,
+    pdk_info: dict[str, Any],
+    drc: dict[str, Any],
+    sha: str,
+    branch: str,
+    dirty: bool,
+) -> None:
     a("## Provenance")
     a("")
     a(f"- Record ID: `{args.record_id}`")
@@ -261,6 +350,9 @@ def main() -> int:
     )
     a(f"- Repo state: `{sha}` on `{branch}`" + (" (dirty)" if dirty else ""))
     a("")
+
+
+def _render_links(a: Any) -> None:
     a("## Links")
     a("")
     a("- [`gen.json`](gen.json), [`trivial_mos_array.gds`](trivial_mos_array.gds)")
@@ -285,6 +377,40 @@ def main() -> int:
     )
     a("- [`report.md`](report.md) -- combined `klt report --format github-summary` rendering")
     a("")
+
+
+def main() -> int:
+    args = _parse_args()
+
+    out_dir: Path = args.out_dir
+    gen = _load(out_dir / "gen.json")
+    drc = _load(out_dir / "drc.json")
+    drc_nc = _load(out_dir / "drc.negative-control.json")
+    nc_params = _load(out_dir / "drc-negative-control.params.json")
+    extract = _load(out_dir / "extract.json")
+    lvs_good = _load(out_dir / "lvs.json")
+    lvs_bad_dev = _load(out_dir / "lvs.broken-device.json")
+    lvs_bad_topo = _load(out_dir / "lvs.broken-topology.json")
+
+    sha, branch, dirty = git_provenance(args.repo_root, out_dir)
+    klt_version, pdk_info = klt_info(args.klt, args.pdk_variant)
+
+    checks, expected_nc_rules, fired_nc_rules = _build_checks(
+        drc, drc_nc, nc_params, lvs_good, lvs_bad_dev, lvs_bad_topo
+    )
+    all_pass = all(ok for _, ok in checks)
+
+    lines: list[str] = []
+    a = lines.append
+    _render_header(a, args)
+    _render_verdict(a, checks, all_pass)
+    _render_flow(a, args)
+    _render_cell(a, gen, extract)
+    _render_results(a, drc, drc_nc, extract, lvs_good, lvs_bad_dev, lvs_bad_topo)
+    _render_drc_negative_control_detail(a, nc_params, expected_nc_rules, fired_nc_rules)
+    _render_lvs_good_detail(a, lvs_good)
+    _render_provenance(a, args, klt_version, pdk_info, drc, sha, branch, dirty)
+    _render_links(a)
 
     print("\n".join(lines))
     return 0 if all_pass else 1
