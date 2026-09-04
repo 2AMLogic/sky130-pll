@@ -1,6 +1,6 @@
 {
   "schema": "sky130-pll.harness.tb/1",
-  "claim": "Linearized open-loop AC characterization of the PLL loop dynamics (issue #52): unity-gain crossover frequency (spec/target-spec.md row 6, loop bandwidth) and phase margin (row 7), measured from a real ngspice AC sweep of design/loop-filter/loop_filter.sch's own sky130 R/C network across the DR-003-ratified process-corner and temperature grid, with the charge-pump/VCO/divider contribution applied as a swept scalar loop gain A = Icp*Kvco/N. This is a measured design-input record, not a spec claim: it replaces design/loop-filter/DESIGN.md's f_c and phase-margin figures -- which that file itself labels 'a hand calculation per the equations above, not a simulation result', computed at one design point with no stated corner -- with committed sim/ evidence a future decision record can argue rows 6 and 7 from. It ratifies nothing; per CLAUDE.md ratification is a separate decision-record act argued on its own merits, and the DRAFT row-6/row-7 bounds are reported alongside each measurement rather than gated on.",
+  "claim": "Linearized open-loop AC characterization of the PLL loop dynamics (issue #52): unity-gain crossover frequency (spec/target-spec.md row 6, loop bandwidth) and phase margin (row 7), measured from a real ngspice AC sweep of design/loop-filter/loop_filter.sch's own sky130 R/C network across the DR-003-ratified process-corner and temperature grid, with the charge-pump/VCO/divider contribution applied as a swept scalar loop gain A = Icp*Kvco/N. This is a measured design-input record, not a spec claim: it is the governing evidence for design/loop-filter/DESIGN.md's realized f_c and phase margin, which that file now cites here rather than hand-calculating (issue #92 removed the hand-calculated table the first run of this campaign showed to be optimistic by roughly 8 degrees). It ratifies nothing; per CLAUDE.md ratification is a separate decision-record act argued on its own merits, and the DRAFT row-6/row-7 bounds are reported alongside each measurement rather than gated on.",
   "schematic": "tb_loop_ac.sch",
   "corner_pattern": "(\\.lib\\s+\\S*sky130\\.lib\\.spice\\s+)(\\w+)",
   "supply_pattern": null,
@@ -22,18 +22,18 @@
     "require_crossover": true,
     "loop_gain": [
       {
-        "label": "lf-sizing-point",
-        "icp_a": 5e-06,
-        "kvco_hz_per_v": 460000000.0,
+        "label": "lf-sizing-point-v2",
+        "icp_a": 1e-05,
+        "kvco_hz_per_v": 1101000000.0,
         "n_divide": 20,
-        "basis": "design/loop-filter/DESIGN.md's own 'Design-point inputs' table -- the exact assumptions its R/C sizing derivation was solved for (Icp a documented 5 uA placeholder because PFD/CP #25 had not landed a value yet; Kvco read off design/vco/DESIGN.md's informal sanity-check table). Included so this record's simulated f_c and phase margin can be read directly against that file's hand-calculated ones at the same operating point."
+        "basis": "design/loop-filter/DESIGN.md's re-derived 'Design-point inputs' table after issue #92 -- the exact assumptions its R1/C1/C2/R3/C3 sizing derivation is now solved for: the charge-pump current design/pfd-cp/DESIGN.md actually landed (Icp = 10 uA, replacing the 5 uA placeholder) and a Kvco design point of 1101 MHz/V, the geometric mean of the 692-1751 MHz/V spread sim/vco/records/20260904-163130-f3ae976.md measured across its 45-point PVT grid. The geometric mean is the point that centres the +/-1.59x loop-gain excursion symmetrically in log-frequency, which is where a fixed filter's worst-case phase margin over the spread is maximised. This label deliberately differs from the superseded record's `lf-sizing-point` (5 uA / 460 MHz/V) because it denotes a different design point, not the same one re-measured."
       },
       {
         "label": "cp-landed-icp",
         "icp_a": 1e-05,
         "kvco_hz_per_v": 460000000.0,
         "n_divide": 20,
-        "basis": "the same point with the charge-pump current design/pfd-cp/DESIGN.md actually landed (Icp = 10 uA, double the loop filter's placeholder). Both DESIGN.md files flag this unreconciled mismatch as integration work owed to #14; this row prices what it costs rows 6 and 7."
+        "basis": "retained verbatim from the superseded record 20260904-184005-51dae17 so the re-sized filter can be read against the old one at an identical loop gain (A = 230), isolating the effect of the re-sizing from the effect of the design-point change. NOTE: 460 MHz/V is BELOW the 692 MHz/V floor sim/vco actually measured, so this point lies outside the loop-gain range design/loop-filter/DESIGN.md now sizes for; its row-6/row-7 annotations are a continuity artefact, not a design verdict."
       },
       {
         "label": "measured-kvco-min",

@@ -17,12 +17,16 @@ v {xschem version=3.4.7 file_version=1.2
 * disturbing the DC operating point (the VCO's gate-only VCTRL load draws no
 * static current through R3).
 *
-* Component sizing, the loop-bandwidth/phase-margin/Vctrl-headroom design
-* targets this sizing is built toward, and the Icp/Kvco design-point
-* assumptions this first-pass sizing coordinates against (the PFD/charge
-* pump sub-issue, #25, had not landed its own Icp value at authoring time)
-* are documented in design/loop-filter/DESIGN.md. Not verified by
-* simulation -- that is a later issue's testbench, per #26's own scope.
+* Component sizing and the loop-bandwidth/phase-margin/Vctrl-headroom design
+* targets it is built toward are documented in design/loop-filter/DESIGN.md.
+* The R/C values here were re-derived under issue #92 against the charge-pump
+* current design/pfd-cp/DESIGN.md actually landed (Icp = 10 uA, replacing the
+* 5 uA placeholder this block was first sized against) and against the VCO
+* tuning slope sim/vco/records/20260904-163130-f3ae976.md actually measured
+* (692-1751 MHz/V across the PVT grid, replacing the 460 MHz/V read off
+* design/vco/DESIGN.md's informal table). The realized crossover frequency
+* and phase margin these values deliver are simulated, not hand-calculated:
+* see the governing sim/loop-ac record cited in DESIGN.md.
 *
 * This is a forward design (CLAUDE.md "Reverse-engineering-free"): a
 * textbook 3rd-order passive charge-pump PLL loop filter topology, not
@@ -37,7 +41,7 @@ S {}
 E {}
 C {sky130_fd_pr/res_xhigh_po.sym} -400 -100 0 0 {name=R1
 W=1
-L=10.3
+L=2.53
 mult=1
 model=res_xhigh_po
 spiceprefix=X}
@@ -46,16 +50,16 @@ C {devices/lab_pin.sym} -400 -130 0 0 {name=p2 sig_type=std_logic lab=CP}
 C {devices/lab_pin.sym} -420 -100 0 0 {name=p3 sig_type=std_logic lab=GND}
 C {sky130_fd_pr/cap_mim_m3_1.sym} -400 100 0 0 {name=C1
 model=cap_mim_m3_1
-W=163
-L=163
+W=322
+L=322
 MF=1
 spiceprefix=X}
 C {devices/lab_pin.sym} -400 70 0 0 {name=p4 sig_type=std_logic lab=Z1}
 C {devices/lab_pin.sym} -400 130 0 0 {name=p5 sig_type=std_logic lab=GND}
 C {sky130_fd_pr/cap_mim_m3_1.sym} 0 0 0 0 {name=C2
 model=cap_mim_m3_1
-W=35
-L=35
+W=72
+L=72
 MF=1
 spiceprefix=X}
 C {devices/lab_pin.sym} 0 -30 0 0 {name=p6 sig_type=std_logic lab=CP}
@@ -71,8 +75,8 @@ C {devices/lab_pin.sym} 400 -130 0 0 {name=p9 sig_type=std_logic lab=CP}
 C {devices/lab_pin.sym} 380 -100 0 0 {name=p10 sig_type=std_logic lab=GND}
 C {sky130_fd_pr/cap_mim_m3_1.sym} 400 100 0 0 {name=C3
 model=cap_mim_m3_1
-W=42
-L=42
+W=40
+L=40
 MF=1
 spiceprefix=X}
 C {devices/lab_pin.sym} 400 70 0 0 {name=p11 sig_type=std_logic lab=VCTRL}
