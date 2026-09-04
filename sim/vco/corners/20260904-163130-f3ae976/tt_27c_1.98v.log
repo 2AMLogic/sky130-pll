@@ -1,0 +1,97 @@
+
+Note: Compatibility modes selected: hs a
+
+
+Circuit: ** sch_path: /users/rwalters/github/sky130-pll/.loom/worktrees/issue-52/sim/vco/testbench/tb_vco.sch
+
+option SCALE: Scale is set to 1e-06 for instance and model parameters
+option SCALE: Scale is set to 1e-06 for instance and model parameters
+option SCALE: Scale is set to 1e-06 for instance and model parameters
+option SCALE: Scale is set to 1e-06 for instance and model parameters
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using KLU as Direct Linear Solver
+Operating point simulation skipped by 'uic',
+  now using transient initial conditions.
+ Reference value :  5.00000e-13
+ Reference value :  3.65180e-08
+ Reference value :  7.35127e-08
+ Reference value :  1.11034e-07
+ Reference value :  1.47837e-07
+ Reference value :  1.84661e-07
+No. of Data Rows : 4049
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using KLU as Direct Linear Solver
+Operating point simulation skipped by 'uic',
+  now using transient initial conditions.
+ Reference value :  1.60801e-08
+ Reference value :  4.73463e-08
+ Reference value :  7.80664e-08
+ Reference value :  1.10125e-07
+ Reference value :  1.42373e-07
+ Reference value :  1.74787e-07
+No. of Data Rows : 4113
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using KLU as Direct Linear Solver
+Operating point simulation skipped by 'uic',
+  now using transient initial conditions.
+ Reference value :  4.51273e-09
+ Reference value :  3.14981e-08
+ Reference value :  6.43111e-08
+ Reference value :  9.20740e-08
+ Reference value :  1.19249e-07
+ Reference value :  1.46720e-07
+ Reference value :  1.74804e-07
+No. of Data Rows : 4226
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using KLU as Direct Linear Solver
+Operating point simulation skipped by 'uic',
+  now using transient initial conditions.
+ Reference value :  4.32058e-10
+ Reference value :  2.19419e-08
+ Reference value :  4.27027e-08
+ Reference value :  6.52591e-08
+ Reference value :  8.62427e-08
+ Reference value :  1.07604e-07
+ Reference value :  1.29933e-07
+ Reference value :  1.51573e-07
+ Reference value :  1.72881e-07
+ Reference value :  1.94138e-07
+No. of Data Rows : 4533
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using KLU as Direct Linear Solver
+Operating point simulation skipped by 'uic',
+  now using transient initial conditions.
+ Reference value :  1.32849e-08
+ Reference value :  3.27920e-08
+ Reference value :  5.20816e-08
+ Reference value :  7.25133e-08
+ Reference value :  9.22713e-08
+ Reference value :  1.12188e-07
+ Reference value :  1.31028e-07
+ Reference value :  1.51205e-07
+ Reference value :  1.71046e-07
+ Reference value :  1.90325e-07
+No. of Data Rows : 4706
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using KLU as Direct Linear Solver
+Operating point simulation skipped by 'uic',
+  now using transient initial conditions.
+ Reference value :  6.99207e-09
+ Reference value :  2.46828e-08
+ Reference value :  4.57141e-08
+ Reference value :  6.63608e-08
+ Reference value :  8.63121e-08
+ Reference value :  1.05246e-07
+ Reference value :  1.23806e-07
+ Reference value :  1.42663e-07
+ Reference value :  1.63016e-07
+ Reference value :  1.82841e-07
+No. of Data Rows : 4582
+sim/harness: analysis complete
+Note: Simulation executed from .control section 
