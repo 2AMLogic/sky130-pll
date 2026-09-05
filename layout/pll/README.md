@@ -54,10 +54,14 @@ would otherwise have to discover for themselves:
   because it cannot route a pin buried inside a matched device array (see
   "Friction" below and each record's routing spot-check for the per-leg
   evidence).
-- **Not DRC-clean.** Every violation is one instance of a single documented
-  `klt gen` limitation (see "Friction"), one per minimum-gate-length device.
-  The record asserts exactly that, so a *new* violation class appearing is a
-  FAIL — but "clean" is issue #17's job, not this one's.
+- **DRC-clean (issue #17, 2026-09-05).** Through issue #46's `klt` pin, every
+  violation was one instance of a single documented `klt gen` limitation (see
+  "Friction") — one `li1.space.1` per minimum-gate-length device, 52 of them.
+  Issue #17 bumped the `klt` pin past the upstream fix
+  ([klayout-tools#1201](https://github.com/2AMLogic/klayout-tools/pull/1201))
+  and the violation is gone: the current record's `drc.json` reports
+  `status: "clean"`, zero violations. The record's own DRC check now asserts
+  that bar directly, so a *new* violation appearing is a FAIL.
 - **Not LVS-clean.** The shipped stream carries no routing, so no `klt lvs`
   run is attempted against it (a foregone mismatch is not evidence). Since
   issue #18, `klt lvs` *is* run against the routed routing-spot-check build
@@ -84,7 +88,7 @@ Filed here:
 
 | Gap | Filed | How this flow copes |
 | --- | --- | --- |
-| MOS generators cannot draw a DRC-clean device at a PDK's minimum gate length: the unit device's source/drain local-metal pads abut the gate, so their spacing equals the gate length, below the metal min-spacing rule | [klayout-tools#1187](https://github.com/2AMLogic/klayout-tools/issues/1187) | Draws them anyway (the schematic's minimum-length devices are real); the record asserts the resulting violations are exactly one per such device and of no other rule class, so a *new* violation class is a FAIL |
+| ~~MOS generators cannot draw a DRC-clean device at a PDK's minimum gate length: the unit device's source/drain local-metal pads abut the gate, so their spacing equals the gate length, below the metal min-spacing rule~~ **Fixed upstream** ([klayout-tools#1201](https://github.com/2AMLogic/klayout-tools/pull/1201), merged as `bd5c7f4`) | [klayout-tools#1187](https://github.com/2AMLogic/klayout-tools/issues/1187) (closed) | Issue #17 bumped `layout/requirements.txt`'s `klt` pin past the fix (`klayout-tools==0.4.0`) and re-ran this flow: the pads no longer abut the gate, and the layout's DRC comes back clean of this rule (0 violations, confirmed in the current record) — no workaround needed any more |
 | `connectivity[]` cannot be declared without also requesting metal — there is no "record the intended topology, draw nothing" mode | [klayout-tools#1188](https://github.com/2AMLogic/klayout-tools/issues/1188) | The unrouted request omits `connectivity[]`; the declared topology is written to the flow's own `plan.json` instead |
 | `gen-compose` cannot consume a cell it did not generate — its own response is not a valid block input (no `generator`, no `ports[]`), so hierarchical composition and PDK library cells need a hand-forged `generator_report` | [klayout-tools#1189](https://github.com/2AMLogic/klayout-tools/issues/1189) | Synthesizes the inline block report for the top level and for library cells |
 

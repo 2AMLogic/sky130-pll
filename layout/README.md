@@ -10,9 +10,10 @@ Two flows live here, both headless and repeatable, both driven by
 
 The PLL layout is a **device-level floorplan**: every device the schematic
 declares is physically drawn at its own W/L, and the extracted device set is
-checked back against the schematic — but it is **not routed, not DRC-clean,
-and not LVS-compared**. `pll/README.md`'s "What it is not" section states the
-gaps in full; DRC-clean closure is #17, LVS-clean closure is #18.
+checked back against the schematic. It is **DRC-clean** (issue #17, since
+2026-09-05) but still **not routed and not LVS-compared**. `pll/README.md`'s
+"What it is not" section states the remaining gaps in full; LVS-clean closure
+is #18.
 
 The trivial-cell proof below is unchanged and still the flow's own regression
 gate: it is what establishes that a DRC/LVS "pass" from this directory can
