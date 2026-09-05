@@ -21,11 +21,17 @@ What it asserts, and why those are the honest claims for issue #16:
   schematic names.
 * **Supply flavor** -- every MOS device is a sky130 1.8 V core device
   (DR-001); no 3.3 V-class device is drawn.
-* **DRC** -- reported, **not** asserted clean (DRC-clean closure is #17). The
-  assertion is narrower and more useful: the only rule the deck fires is the
-  one known `klt gen` limitation this flow documents, and it fires exactly
-  once per minimum-gate-length device -- so a *new* violation class appearing
-  is a FAIL.
+* **DRC** -- asserted clean (`status == "clean"`, zero violations, zero rule
+  classes). Through issue #46's pin, the only rule the deck could fire was one
+  known `klt gen` limitation (the minimum-gate-length MOS unit device's
+  source/drain local-metal pads abutting the gate, `li1.space.1`, one per
+  device -- filed as klayout-tools#1187) that this flow could only report
+  around, not clear -- DRC-clean closure was blocked on an upstream fix.
+  Issue #17 bumped the `klt` pin past that fix (klayout-tools#1201, merged as
+  `bd5c7f4`) and re-ran this flow: the violation is gone and DRC comes back
+  genuinely clean, so this check now asserts that bar rather than the old
+  "exactly this one documented rule class" workaround-shaped one -- any
+  violation appearing here again, from any rule, is a FAIL.
 
 It deliberately does **not** assert LVS: the shipped layout carries no
 inter-device routing (see the record's own "What this layout is not"
@@ -333,6 +339,12 @@ def _check_top_hierarchy(cells_top: dict[str, Any], plan: dict[str, Any]) -> tup
 
 
 def _check_drc(plan: dict[str, Any], drc: dict[str, Any]) -> tuple[str, bool, str]:
+    # Through issue #46's pin this could only ever report the single
+    # documented klayout-tools#1187 workaround signature (one `li1.space.1`
+    # per minimum-gate-length device); issue #17 bumped `klt` past the fix
+    # (klayout-tools#1201 / commit `bd5c7f4`) and confirmed the deck now
+    # comes back genuinely clean, so this asserts that bar directly rather
+    # than special-casing a violation count that no longer occurs.
     min_length_devices = sum(
         group["count"]
         for block in plan["blocks"]
@@ -340,15 +352,15 @@ def _check_drc(plan: dict[str, Any], drc: dict[str, Any]) -> tuple[str, bool, st
         if group["kind"] == "mos_array" and group["params"]["l_um"] < LI1_MIN_SPACE_UM
     )
     rule_counts = drc.get("rule_counts", {})
-    drc_ok = set(rule_counts) == {"li1.space.1"} and rule_counts.get(
-        "li1.space.1"
-    ) == min_length_devices
+    drc_ok = drc.get("status") == "clean" and not rule_counts
     return (
-        "DRC fires exactly one rule class -- the documented `klt gen` "
-        "minimum-gate-length limitation -- once per minimum-length device "
-        f"({min_length_devices} of them), and nothing else",
+        "DRC is clean -- zero violations (previously "
+        f"{min_length_devices} `li1.space.1` violations, one per "
+        "minimum-gate-length device, traced to klayout-tools#1187 and "
+        "fixed upstream by klayout-tools#1201)",
         drc_ok,
-        f"status={drc.get('status')}, rule_counts={rule_counts}",
+        f"status={drc.get('status')}, violation_count={drc.get('violation_count')}, "
+        f"rule_counts={rule_counts}",
     )
 
 
@@ -479,11 +491,22 @@ def _render_layout_is_not(a: Any, build: dict[str, Any], drc: dict[str, Any]) ->
         "across the four blocks -- but the composed GDS carries no wires "
         "between them. See the routing spot-check below for why."
     )
-    a(
-        "- **Not DRC-clean.** "
-        f"{drc.get('violation_count')} violations, all of one rule class "
-        "(see the DRC check above); DRC-clean closure is issue #17."
-    )
+    violation_count = drc.get("violation_count")
+    if drc.get("status") == "clean" and not violation_count:
+        a(
+            "- **DRC-clean.** 0 violations (see the DRC check above) -- "
+            "issue #17. Through issue #46's `klt` pin this reported 52 "
+            "`li1.space.1` violations, one per minimum-gate-length device, "
+            "traced to a documented `klt gen` limitation "
+            "(klayout-tools#1187); issue #17 bumped the pin past the "
+            "upstream fix (klayout-tools#1201) and the violation is gone."
+        )
+    else:
+        a(
+            "- **Not DRC-clean.** "
+            f"{violation_count} violations (see the DRC check above); "
+            "DRC-clean closure is issue #17."
+        )
     a(
         "- **Not LVS-clean.** The shipped stream carries no routing, so no "
         "`klt lvs` run is attempted against it (a foregone mismatch is not "

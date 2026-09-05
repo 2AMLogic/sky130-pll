@@ -11,77 +11,59 @@
 # (https://pypi.org/project/klayout-tools/0.2.0/) ships `gen`/`extract`/`lvs`,
 # so this file pinned that plain PyPI version from issue #2 through issue #16.
 #
-# Bumped to a git-commit pin for issue #46 (2026-08-19). The full argument --
-# what the version pin bought, what it cost, and what was measured either way
-# -- is layout/klt-pin-decision.md; read that first. In short: `0.2.0` (built
-# 2026-08-04) is hundreds of commits behind the tool's `main`, PyPI has had no
-# release since, and five of the eight `klt` gaps the PLL layout (#16) had to
-# work around are already fixed on `main`. Each of the five was verified to
-# behave as claimed at the commit pinned below, rather than trusted from its
-# issue's closed status:
+# Bumped to a git-commit pin for issue #46 (2026-08-19) because PyPI had
+# published nothing past `0.2.0` at that time and five of the eight `klt`
+# gaps the PLL layout (#16) hit were fixed only on the tool's `main`. See
+# `layout/klt-pin-decision.md` for that decision in full -- it is unchanged
+# history, kept for context on why a git-commit pin was chosen once.
 #
-#   * 2AMLogic/klayout-tools#1057 -> merged via #1070. `gen-compose`'s router
-#     now checks a candidate route against every already-drawn route in the
-#     same request and rejects the collision (`legs[].reason` "crosses
-#     already-routed net '<net>'") instead of drawing both. Measured on this
-#     design: at `0.2.0` all 7 routes the router spot-check drew came back
-#     merged by `klt extract` onto 2 electrical nodes; at this pin the same
-#     spot-check draws 51 legs and the extractor reports exactly one merged
-#     node (a different, still-open defect -- see klt-pin-decision.md).
-#   * 2AMLogic/klayout-tools#1073 -> merged via #1094. A `connectivity[]` net
-#     with more than two pins routes as a spanning tree of two-pin legs, so a
-#     shared rail or a fanout net is expressible at all. 53 of this design's
-#     60 declared nets are such bundles; at `0.2.0` every one was unroutable
-#     by construction.
-#   * 2AMLogic/klayout-tools#1059 -> merged via #1074. A `klt draw` response
-#     carries `generator: "draw"`, so drawn geometry composes as a
-#     `gen-compose` block without a hand-forged block report.
-#   * 2AMLogic/klayout-tools#1117 -> merged via #1137. `klt gen cap_array`
-#     draws a matched MiM-capacitor row (sky130 capm/met3) with a top-plate
-#     via and landing pad. Available at this pin, not yet adopted by this
-#     flow, which still draws bare plates with `klt draw`: adopting it is
-#     layout work with its own evidence, not a pin bump.
-#   * 2AMLogic/klayout-tools#1166 -> merged via #1174. A `gen-compose` block
-#     takes an `orientation` ("mirror_x"/"mirror_y"/"rotate_180"), which is
-#     what a multi-row standard-cell block needs to abut rows power-rail to
-#     power-rail. Also available, also not yet adopted (the divider is one
-#     row, so nothing in the shipped layout needs it today).
+# Bumped again for issue #17 (2026-09-05), this time back to a plain PyPI
+# version pin: `klayout-tools==0.4.0`
+# (https://pypi.org/project/klayout-tools/0.4.0/, published 2026-09-05).
+# `requirements.txt`'s prior header argued for a commit pin specifically
+# because "there is no newer release" -- that premise is now stale. PyPI
+# published `0.3.0` on 2026-08-22 and `0.4.0` on 2026-09-05 (release PR
+# klayout-tools#1486), so the artifact-immutability / hash-checkable-wheel
+# properties a version pin gives (and a commit pin does not) are available
+# again without giving up anything the prior commit pin (`66f73d0`) picked
+# up: `0.4.0`'s tag (`v0.4.0` -> commit `8a199cea7054b6a95144b0827f8484c9a7e0b52c`)
+# is a descendant of both `66f73d0` (`gh api .../compare/66f73d0...v0.4.0`
+# -> `ahead_by: 72, behind_by: 0`) and of klayout-tools#1201's DRC fix commit
+# `bd5c7f43288c1ca372eb2e57116de26882d132c4` (`gh api
+# .../compare/bd5c7f4...v0.4.0` -> `ahead_by: 258, behind_by: 0`), so this
+# bump is a strict superset of the prior pin, not a partial rebase onto a
+# different line of history.
 #
-# Two behaviour changes this pin carries are load-bearing for the checked-in
-# evidence, and are called out here so a reader does not mistake either for a
-# regression:
+# What #17's bump picks up, on top of everything #46 already picked up
+# (restated in this file's git history for anyone diffing the header):
 #
-#   * `klt extract` now includes a perimeter/fringe term in a MiM capacitor's
-#     value (`CapacitorDevice.perim_cap_f_um`, 1.9e-16 F/um in sky130's
-#     curated deck), correcting a documented one-sided undercount. The PLL
-#     record's schematic-vs-extracted capacitor cross-check now predicts the
-#     same two-term value (layout/bin/pll_layout.py's MIM_PERIM_CAP_F_UM), so
-#     the comparison stays exact instead of being loosened to absorb it.
-#   * sky130's curated deck declares a `dummy` marker layer and `mos_array`
-#     draws it, so `klt extract` suppresses the trivial cell's 4 dummy-column
-#     units: `device_count` 8 -> 4, `dummy_devices_dropped` 0 -> 4.
-#     layout/trivial-cell/reference*.spice are re-stated at 4 M-cards --
-#     see reference.spice's own header for why that is the topologically
-#     correct reference and not a relaxation to make a comparison pass.
+#   * 2AMLogic/klayout-tools#1201 -> merged via PR #1201, commit `bd5c7f4`.
+#     `klt gen`'s minimum-gate-length MOS unit device no longer lets its
+#     source/drain local-metal pads abut the gate -- they are now padded
+#     clear of it. This is the fix for the exact defect this repo filed
+#     generically as klayout-tools#1187 ("MOS unit device S/D local-metal
+#     pads abut the gate at short l_um, tripping li1.space.1"), which is what
+#     every one of the 52 `li1.space.1` violations in the PLL layout's prior
+#     DRC record (`layout/pll/reports/20260821-080803-b0c10bd/drc.json`)
+#     traced back to. See `layout/pll/reports/<record-id>/record.md` (the
+#     record this bump produced) for whether the fresh DRC run at this pin
+#     actually comes back clean of that rule class -- this header states what
+#     the bump *picks up*, not what a re-run *proves*; those are checked
+#     separately, per this repo's CLAUDE.md ("no claim without evidence").
 #
-# Why a git commit and not a newer release: there is no newer release. PyPI's
-# latest is still `0.2.0`, and every fix above sits in the tool's own
-# CHANGELOG under "Unreleased" (2AMLogic/klayout-tools#953 is the
-# release-cadence gap this repo cross-confirmed). A commit pin is reproducible
-# in the way that matters here -- a git object hash names one immutable tree,
-# re-fetched identically -- it simply does not get PyPI's artifact
-# immutability or a hash-checkable wheel. sky130-bandgap's own
-# layout/requirements.txt has pinned by commit through eight deliberate bumps
-# for the same reason, and this repo's CLAUDE.md says to mirror that plumbing
-# rather than reinvent it.
+# Bump discipline, mirrored from sky130-bandgap and from #46's own commit-pin
+# precedent (still the discipline to follow if a future bump goes back to a
+# git-commit pin instead of a PyPI version): pin explicitly (a commit hash or
+# an exact version, never floating `main` or an unpinned release); state in
+# this header what the bump picks up and what it changes; and re-run BOTH
+# layout/bin/run-trivial-cell-flow.sh and layout/bin/run-pll-layout-flow.sh,
+# checking the refreshed records in, as the non-regression proof.
 #
-# Bump discipline, mirrored from sky130-bandgap: pin an exact commit, never
-# floating `main`; state in this header what the bump picks up and what it
-# changes; and re-run BOTH layout/bin/run-trivial-cell-flow.sh and
-# layout/bin/run-pll-layout-flow.sh, checking the refreshed records in, as the
-# non-regression proof. Note that `klt --version` still reports `0.2.0` at
-# this commit (upstream has not bumped the package version), so
-# layout/bin/setup-venv.sh reinstalls with `--force-reinstall`: pip would
-# otherwise consider an already-installed `0.2.0` up to date and silently keep
-# the old build.
-klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@66f73d0c753968d53bb58a45cda508b2698a41b7
+# `klt --version` reports `0.4.0` at this pin (upstream bumped the package
+# version this time, unlike the #46 commit-pin era where `klt --version`
+# stayed at `0.2.0` across different commits) -- but `layout/bin/setup-venv.sh`
+# still installs with `--force-reinstall` unconditionally, which remains
+# correct and is not a no-op to remove: it is what makes a future pin bump
+# that reuses the same reported version (e.g. a later commit pin) safe again
+# without a separate code change.
+klayout-tools==0.4.0
