@@ -1,0 +1,165 @@
+{
+  "schema_version": 1,
+  "file": "/Users/rwalters/GitHub/sky130-pll/.loom/worktrees/issue-18/layout/pll/reports/20260906-170938-e2a91aa/route-spot-check/pll_top.gds",
+  "deck": "sky130",
+  "dbu_um": 0.001,
+  "status": "violations",
+  "violation_count": 1,
+  "rule_counts": {
+    "met1.space.1": 1
+  },
+  "violations": [
+    {
+      "rule": "met1.space.1",
+      "description": "minimum met1 spacing",
+      "check": "space",
+      "layer": "met1.drawing",
+      "cell": "pll_top",
+      "source_cell": "mos_array$4$1",
+      "source_path": [
+        "pll_vco_ring5__pll_vco_ring5",
+        "vco_ring5_pfet_w4_l0p5__vco_ring5_pfet_w4_l0p5",
+        "mos_array$4$1"
+      ],
+      "bbox": {
+        "left": 583250,
+        "bottom": 2150,
+        "right": 583350,
+        "top": 2308
+      },
+      "polygon": [
+        [
+          583250,
+          2150
+        ],
+        [
+          583250,
+          2308
+        ],
+        [
+          583350,
+          2210
+        ],
+        [
+          583350,
+          2150
+        ]
+      ]
+    }
+  ],
+  "coverage": {
+    "deck_layers": [
+      "64/20",
+      "65/20",
+      "66/20",
+      "66/44",
+      "67/20",
+      "67/44",
+      "68/20",
+      "68/44",
+      "69/20",
+      "69/44",
+      "70/20",
+      "70/44",
+      "71/20",
+      "71/44",
+      "72/20",
+      "89/44",
+      "97/44"
+    ],
+    "layers_checked": [
+      "64/20",
+      "65/20",
+      "66/20",
+      "66/44",
+      "67/20",
+      "67/44",
+      "68/20",
+      "70/20",
+      "89/44"
+    ],
+    "layers_in_stream_without_rules": [
+      "64/5",
+      "64/16",
+      "64/59",
+      "66/13",
+      "67/5",
+      "67/16",
+      "68/5",
+      "68/16",
+      "78/44",
+      "79/20",
+      "81/4",
+      "83/44",
+      "93/44",
+      "94/20",
+      "95/20",
+      "122/16",
+      "236/0"
+    ],
+    "rules_skipped": [
+      "capm.enclosing.via3.1",
+      "capm.separation.via3.1",
+      "capm2.enclosing.via4.1",
+      "capm2.separation.via4.1",
+      "capm2.space.1",
+      "capm2.width.1",
+      "met1.enclosing.via.1",
+      "met2.enclosing.via.1",
+      "met2.enclosing.via2.1",
+      "met2.space.1",
+      "met2.width.1",
+      "met3.enclosing.via2.1",
+      "met3.enclosing.via3.1",
+      "met4.enclosing.capm2.1",
+      "met4.enclosing.via3.1",
+      "met4.enclosing.via4.1",
+      "met4.space.1",
+      "met4.width.1",
+      "met5.enclosing.via4.1",
+      "met5.space.1",
+      "met5.width.1",
+      "via.space.1",
+      "via.width.1",
+      "via2.space.1",
+      "via2.width.1",
+      "via3.space.1",
+      "via3.width.1",
+      "via4.space.1",
+      "via4.width.1"
+    ],
+    "voltage_domain_warnings": [],
+    "deck_scope": [
+      "cap2m",
+      "capm",
+      "ct",
+      "difftap",
+      "li",
+      "licon",
+      "m1",
+      "m2",
+      "m3",
+      "m4",
+      "m5",
+      "nwell",
+      "poly",
+      "via",
+      "via2",
+      "via3",
+      "via4"
+    ]
+  },
+  "provenance": {
+    "klt_version": "0.4.0",
+    "klayout_version": "0.30.12",
+    "pdk": null,
+    "deck": {
+      "name": "sky130",
+      "content_hash": "sha256:5afac7ab8561545859f5e2e74f4621c6ffc052756dc8fe344ea263398e96b240",
+      "released": false
+    },
+    "input": {
+      "content_hash": "sha256:f220ffec96e241f972744f2d8b072cc765b84459b01901d0d765f1402c526616"
+    }
+  }
+}

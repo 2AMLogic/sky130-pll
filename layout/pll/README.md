@@ -139,21 +139,58 @@ measurement above) — routing that would need an actual channel *inside* the
 array, which is a floorplan redesign, not a spacing tweak (a throwaway
 experiment raising `GROUP_SPACING_UM`/`BLOCK_SPACING_UM` 2.5x barely moved
 the numbers, since that spacing is between *groups*, not between an array's
-own internal rows/columns). Issue #18 also tried a genuine floorplan change
-here: `klt gen mos_array` draws every unit's gate contact facing the array's
-own +y edge regardless of which internal row it is placed on, so in the
-prior near-square grouping (`factor_rows_cols`) only the array's *top* row
-had gates within the router's small edge-margin allowance — every gate below
-it was interior by construction. Forcing every matched group into a single
-row (`rows=1`, all units on that one reachable row) measured a further, real
-gain: 74 of 827 legs drawn, 0 shorts, LVS mismatches 1166 → 1155. (The
-opposite orientation — one column, every gate buried but every source/drain
-pad reachable — was measured too and is worse on this design: 40 of 978 legs,
-1189 mismatches; this design's declared nets lean on gate connectivity more
-than on source/drain, empirically.) This does not close the gap — most legs
-still fail the same way, just fewer of them — a genuine per-unit interior
-routing channel is still needed and is not something this flow's floorplan
-choices alone can supply. The current record's routing spot-check tabulates
+own internal rows/columns).
+
+Issue #18 also tried a genuine floorplan change here, and it **did not
+work** — recorded because the reasoning behind it is plausible enough to be
+re-proposed otherwise. `klt gen mos_array` draws every unit's gate contact
+facing the array's own +y edge regardless of which internal row it is placed
+on, so in the near-square grouping (`factor_rows_cols`) only the array's
+*top* row has gates within the router's small edge-margin allowance — every
+gate below it is interior by construction. Forcing every matched group into
+a single row (`rows=1`, so every unit sits on that one reachable row) should
+therefore have helped. The gate-orientation premise is real; the conclusion
+was not. Measuring the full 2×2 — all four cells on the same `klt` 0.4.0 /
+KLayout 0.30.12 / `open_pdks c6d73a35` pin, so they are directly comparable
+— gives legs drawn out of legs attempted:
+
+| `topology` \ packing | near-square grid | `rows=1` |
+| --- | --- | --- |
+| `common_centroid` (even counts) — **shipped** | **62 / 917** | 55 / 945 |
+| `array` (forced, *not* adopted) | 76 / 862 | 74 / 827 |
+
+Read by column, the single-row packing is neutral-to-worse in *both*
+topology regimes (62 → 55, and 76 → 74), so its own effect is approximately
+zero and slightly negative. An earlier revision of this work reported
+"62/917 → 74/827, single-row packing improves routing coverage" — that is
+the confounded diagonal of this table: the same change also flipped
+`topology` from `common_centroid` to an unconditional `array`, and the
+topology knob is where the entire gain came from. Both changes were
+withdrawn; the plan keeps the near-square grid, which is independently the
+better analog choice (a 1×N row spreads a matched group across the widest
+possible span — exactly the linear-gradient distance common-centroid
+ordering exists to cancel).
+
+The `topology` gain is real and is deliberately **not** taken. The stream
+this flow ships is unrouted, so the routing spot-check is a *diagnostic*,
+whereas the device-to-position assignment `topology` controls is a property
+of the *shipped* geometry: `common_centroid` is `klt gen mos_array`'s own
+documented default and a real centroid-symmetric visiting order that pairs
+each instance with its point-reflection through the grid centre, which is
+what cancels process-gradient mismatch across the VCO ring stages and the
+PFD/CP current mirrors. Spending that to improve a diagnostic number would
+be laundering a failing result, which this repo's `CLAUDE.md` forbids — the
+routing shortfall stays recorded as a miss instead. Two regression tests in
+`layout/tests/test_pll_layout_plan.py` now assert both fields, so neither
+can move again as an unremarked side effect.
+
+(The remaining orientation — one column, every gate buried but every
+source/drain pad reachable — was measured too and is worse still on this
+design: 40 of 978 legs; its declared nets lean on gate connectivity more
+than on source/drain, empirically.) None of these floorplan choices closes
+the gap — a genuine per-unit interior routing channel is still needed and is
+not something this flow's floorplan choices alone can supply. The current
+record's routing spot-check tabulates
 the router's own reason for every leg it declined, and its LVS (spot-check)
 section runs `klt lvs` against that build and records the resulting mismatch
 in full.

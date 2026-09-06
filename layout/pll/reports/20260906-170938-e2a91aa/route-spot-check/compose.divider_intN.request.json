@@ -1,0 +1,599 @@
+{
+  "schema": "klt.gen_compose.request/1",
+  "pdk": {
+    "variant": "sky130A"
+  },
+  "blocks": [
+    {
+      "id": "divider_intN_XCNT0",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__dfrtp_2",
+        "gds_path": "../../../../../../../../../../.volare/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 9.85,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XLDMUX0",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__mux2_2",
+        "gds_path": "../../../../../../../../../../.volare/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 4.33,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XQINV0",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__inv_2",
+        "gds_path": "../../../../../../../../../../.volare/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 1.57,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XCNT1",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__dfrtp_2",
+        "gds_path": "../../../../../../../../../../.volare/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 9.85,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XLDMUX1",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__mux2_2",
+        "gds_path": "../../../../../../../../../../.volare/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 4.33,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XDECXOR1",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__xor2_2",
+        "gds_path": "../../../../../../../../../../.volare/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 6.17,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XQINV1",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__inv_2",
+        "gds_path": "../../../../../../../../../../.volare/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 1.57,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XCNT2",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__dfrtp_2",
+        "gds_path": "../../../../../../../../../../.volare/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 9.85,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XLDMUX2",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__mux2_2",
+        "gds_path": "../../../../../../../../../../.volare/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 4.33,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XDECXOR2",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__xor2_2",
+        "gds_path": "../../../../../../../../../../.volare/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 6.17,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XBORAND2",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__and2_2",
+        "gds_path": "../../../../../../../../../../.volare/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 2.95,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XQINV2",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__inv_2",
+        "gds_path": "../../../../../../../../../../.volare/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 1.57,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XCNT3",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__dfrtp_2",
+        "gds_path": "../../../../../../../../../../.volare/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 9.85,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XLDMUX3",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__mux2_2",
+        "gds_path": "../../../../../../../../../../.volare/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 4.33,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XDECXOR3",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__xor2_2",
+        "gds_path": "../../../../../../../../../../.volare/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 6.17,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XBORAND3",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__and2_2",
+        "gds_path": "../../../../../../../../../../.volare/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 2.95,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XQINV3",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__inv_2",
+        "gds_path": "../../../../../../../../../../.volare/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 1.57,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XCNT4",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__dfrtp_2",
+        "gds_path": "../../../../../../../../../../.volare/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 9.85,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XLDMUX4",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__mux2_2",
+        "gds_path": "../../../../../../../../../../.volare/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 4.33,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XDECXOR4",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__xor2_2",
+        "gds_path": "../../../../../../../../../../.volare/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 6.17,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XBORAND4",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__and2_2",
+        "gds_path": "../../../../../../../../../../.volare/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 2.95,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XQINV4",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__inv_2",
+        "gds_path": "../../../../../../../../../../.volare/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 1.57,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XCNT5",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__dfrtp_2",
+        "gds_path": "../../../../../../../../../../.volare/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 9.85,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XLDMUX5",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__mux2_2",
+        "gds_path": "../../../../../../../../../../.volare/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 4.33,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XDECXOR5",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__xor2_2",
+        "gds_path": "../../../../../../../../../../.volare/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 6.17,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XBORAND5",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__and2_2",
+        "gds_path": "../../../../../../../../../../.volare/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 2.95,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XQINV5",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__inv_2",
+        "gds_path": "../../../../../../../../../../.volare/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 1.57,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XZDET",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__and2_2",
+        "gds_path": "../../../../../../../../../../.volare/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 2.95,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XFBFF",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__dfxtp_2",
+        "gds_path": "../../../../../../../../../../.volare/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 8.01,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    }
+  ],
+  "placement": {
+    "strategy": "explicit",
+    "order": [
+      "divider_intN_XCNT0",
+      "divider_intN_XLDMUX0",
+      "divider_intN_XQINV0",
+      "divider_intN_XCNT1",
+      "divider_intN_XLDMUX1",
+      "divider_intN_XDECXOR1",
+      "divider_intN_XQINV1",
+      "divider_intN_XCNT2",
+      "divider_intN_XLDMUX2",
+      "divider_intN_XDECXOR2",
+      "divider_intN_XBORAND2",
+      "divider_intN_XQINV2",
+      "divider_intN_XCNT3",
+      "divider_intN_XLDMUX3",
+      "divider_intN_XDECXOR3",
+      "divider_intN_XBORAND3",
+      "divider_intN_XQINV3",
+      "divider_intN_XCNT4",
+      "divider_intN_XLDMUX4",
+      "divider_intN_XDECXOR4",
+      "divider_intN_XBORAND4",
+      "divider_intN_XQINV4",
+      "divider_intN_XCNT5",
+      "divider_intN_XLDMUX5",
+      "divider_intN_XDECXOR5",
+      "divider_intN_XBORAND5",
+      "divider_intN_XQINV5",
+      "divider_intN_XZDET",
+      "divider_intN_XFBFF"
+    ],
+    "origins_um": {
+      "divider_intN_XCNT0": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "divider_intN_XLDMUX0": {
+        "x": 9.66,
+        "y": 0.0
+      },
+      "divider_intN_XQINV0": {
+        "x": 13.8,
+        "y": 0.0
+      },
+      "divider_intN_XCNT1": {
+        "x": 15.18,
+        "y": 0.0
+      },
+      "divider_intN_XLDMUX1": {
+        "x": 24.84,
+        "y": 0.0
+      },
+      "divider_intN_XDECXOR1": {
+        "x": 28.98,
+        "y": 0.0
+      },
+      "divider_intN_XQINV1": {
+        "x": 34.96,
+        "y": 0.0
+      },
+      "divider_intN_XCNT2": {
+        "x": 36.34,
+        "y": 0.0
+      },
+      "divider_intN_XLDMUX2": {
+        "x": 46.0,
+        "y": 0.0
+      },
+      "divider_intN_XDECXOR2": {
+        "x": 50.14,
+        "y": 0.0
+      },
+      "divider_intN_XBORAND2": {
+        "x": 56.12,
+        "y": 0.0
+      },
+      "divider_intN_XQINV2": {
+        "x": 58.88,
+        "y": 0.0
+      },
+      "divider_intN_XCNT3": {
+        "x": 60.26,
+        "y": 0.0
+      },
+      "divider_intN_XLDMUX3": {
+        "x": 69.92,
+        "y": 0.0
+      },
+      "divider_intN_XDECXOR3": {
+        "x": 74.06,
+        "y": 0.0
+      },
+      "divider_intN_XBORAND3": {
+        "x": 80.04,
+        "y": 0.0
+      },
+      "divider_intN_XQINV3": {
+        "x": 82.8,
+        "y": 0.0
+      },
+      "divider_intN_XCNT4": {
+        "x": 84.18,
+        "y": 0.0
+      },
+      "divider_intN_XLDMUX4": {
+        "x": 93.84,
+        "y": 0.0
+      },
+      "divider_intN_XDECXOR4": {
+        "x": 97.98,
+        "y": 0.0
+      },
+      "divider_intN_XBORAND4": {
+        "x": 103.96,
+        "y": 0.0
+      },
+      "divider_intN_XQINV4": {
+        "x": 106.72,
+        "y": 0.0
+      },
+      "divider_intN_XCNT5": {
+        "x": 108.1,
+        "y": 0.0
+      },
+      "divider_intN_XLDMUX5": {
+        "x": 117.76,
+        "y": 0.0
+      },
+      "divider_intN_XDECXOR5": {
+        "x": 121.9,
+        "y": 0.0
+      },
+      "divider_intN_XBORAND5": {
+        "x": 127.88,
+        "y": 0.0
+      },
+      "divider_intN_XQINV5": {
+        "x": 130.64,
+        "y": 0.0
+      },
+      "divider_intN_XZDET": {
+        "x": 132.02,
+        "y": 0.0
+      },
+      "divider_intN_XFBFF": {
+        "x": 134.78,
+        "y": 0.0
+      }
+    }
+  },
+  "options": {
+    "cell_name": "pll_divider_intN",
+    "output": "pll_divider_intN.gds"
+  }
+}
