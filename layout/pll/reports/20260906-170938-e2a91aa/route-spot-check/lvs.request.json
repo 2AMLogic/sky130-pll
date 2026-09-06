@@ -1,0 +1,7 @@
+{
+  "schema": "klt.lvs.request/1",
+  "engine": "klayout",
+  "layout": { "file": "pll_top.gds", "deck": "sky130", "top": "pll_top" },
+  "reference": { "netlist": "reference.spice", "top": "top", "form": "subckt-call" },
+  "options": { "flatten_reference": true, "flatten_layout": true }
+}

@@ -1,0 +1,104 @@
+{
+  "blocks": [
+    {
+      "name": "pfd_cp",
+      "cell_name": "pll_pfd_cp",
+      "group_count": 13,
+      "device_count": 60,
+      "declared_nets": 35,
+      "routed_nets": 0,
+      "unrouted_nets": 35,
+      "routing_notes": [],
+      "bbox_um": {
+        "x0": 0.0,
+        "y0": -0.15,
+        "x1": 300.84000000000003,
+        "y1": 26.12
+      },
+      "size_um": [
+        300.84,
+        26.12
+      ]
+    },
+    {
+      "name": "loop_filter",
+      "cell_name": "pll_loop_filter",
+      "group_count": 5,
+      "device_count": 5,
+      "declared_nets": 4,
+      "routed_nets": 0,
+      "unrouted_nets": 4,
+      "routing_notes": [],
+      "bbox_um": {
+        "x0": 0.0,
+        "y0": 0.0,
+        "x1": 188.38,
+        "y1": 209.8
+      },
+      "size_um": [
+        188.38,
+        209.8
+      ]
+    },
+    {
+      "name": "vco_ring5",
+      "cell_name": "pll_vco_ring5",
+      "group_count": 6,
+      "device_count": 26,
+      "declared_nets": 21,
+      "routed_nets": 0,
+      "unrouted_nets": 21,
+      "routing_notes": [],
+      "bbox_um": {
+        "x0": 0.0,
+        "y0": -0.15,
+        "x1": 40.71,
+        "y1": 16.97
+      },
+      "size_um": [
+        40.86,
+        17.12
+      ]
+    },
+    {
+      "name": "divider_intN",
+      "cell_name": "pll_divider_intN",
+      "group_count": 29,
+      "device_count": 29,
+      "declared_nets": 0,
+      "routed_nets": 0,
+      "unrouted_nets": 0,
+      "routing_notes": [],
+      "bbox_um": {
+        "x0": -0.19,
+        "y0": -0.24,
+        "x1": 142.79,
+        "y1": 2.96
+      },
+      "size_um": [
+        142.6,
+        2.72
+      ]
+    }
+  ],
+  "top": {
+    "cell_name": "pll_top",
+    "gds_path": "pll_top.gds",
+    "bbox_um": {
+      "x0": -0.19,
+      "y0": -0.15,
+      "x1": 569.9300000000001,
+      "y1": 232.76000000000002
+    },
+    "size_um": [
+      569.93,
+      233.0
+    ]
+  },
+  "totals": {
+    "mos_array": 85,
+    "res_array": 3,
+    "mim_cap": 3,
+    "stdcell": 29
+  }
+}

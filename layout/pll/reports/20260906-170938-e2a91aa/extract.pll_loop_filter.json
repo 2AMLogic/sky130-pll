@@ -1,0 +1,269 @@
+{
+  "schema_version": 3,
+  "file": "/Users/rwalters/GitHub/sky130-pll/.loom/worktrees/issue-18/layout/pll/reports/20260906-170938-e2a91aa/pll_loop_filter.gds",
+  "deck": "sky130",
+  "top": "pll_loop_filter",
+  "dbu_um": 0.001,
+  "netlist_path": "/Users/rwalters/GitHub/sky130-pll/.loom/worktrees/issue-18/layout/pll/reports/20260906-170938-e2a91aa/pll_loop_filter.extract.spice",
+  "netlist_sha256": "29d7e7f00f56569c907f1082fa2139e751f93469a164aa599eadb2e40af8b68d",
+  "status": "extracted",
+  "device_count": 5,
+  "net_count": 11,
+  "pin_count": 1,
+  "device_counts": {
+    "res_xhigh_po": 2,
+    "sky130_fd_pr__model__cap_mim": 3
+  },
+  "dummy_devices_dropped": 0,
+  "ignored_layers": [],
+  "device_recognition_only_layers": [
+    {
+      "layer": 66,
+      "datatype": 13,
+      "shapes": 2
+    },
+    {
+      "layer": 79,
+      "datatype": 20,
+      "shapes": 2
+    },
+    {
+      "layer": 89,
+      "datatype": 44,
+      "shapes": 3
+    },
+    {
+      "layer": 94,
+      "datatype": 20,
+      "shapes": 2
+    }
+  ],
+  "device_classes": [
+    "nfet",
+    "pfet",
+    "pnp",
+    "sky130_fd_pr__model__cap_mim",
+    "sky130_fd_pr__model__cap_mim_m4",
+    "resistor"
+  ],
+  "devices": [
+    {
+      "name": "$1",
+      "class": "sky130_fd_pr__model__cap_mim",
+      "nets": {
+        "a": "\\$5",
+        "b": "\\$8"
+      },
+      "params": {
+        "c_f": 5.326188e-11,
+        "area_um2": 26569.0,
+        "perimeter_um": 652.0
+      }
+    },
+    {
+      "name": "$2",
+      "class": "sky130_fd_pr__model__cap_mim",
+      "nets": {
+        "a": "\\$6",
+        "b": "\\$9"
+      },
+      "params": {
+        "c_f": 2.4766e-12,
+        "area_um2": 1225.0,
+        "perimeter_um": 140.0
+      }
+    },
+    {
+      "name": "$3",
+      "class": "sky130_fd_pr__model__cap_mim",
+      "nets": {
+        "a": "\\$7",
+        "b": "\\$10"
+      },
+      "params": {
+        "c_f": 3.55992e-12,
+        "area_um2": 1764.0,
+        "perimeter_um": 168.0
+      }
+    },
+    {
+      "name": "$4",
+      "class": "res_xhigh_po",
+      "nets": {
+        "a": "\\$1",
+        "b": "\\$2",
+        "w": "vsubs"
+      },
+      "params": {
+        "r_ohm": 10000.0,
+        "l_um": 5.0,
+        "w_um": 1.0,
+        "area_um2": 5.0,
+        "perimeter_um": 12.0
+      }
+    },
+    {
+      "name": "$5",
+      "class": "res_xhigh_po",
+      "nets": {
+        "a": "\\$3",
+        "b": "\\$4",
+        "w": "vsubs"
+      },
+      "params": {
+        "r_ohm": 20600.0,
+        "l_um": 10.3,
+        "w_um": 1.0,
+        "area_um2": 10.3,
+        "perimeter_um": 22.6
+      }
+    }
+  ],
+  "nets": [
+    {
+      "name": "\\$1",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$10",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$2",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$3",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$4",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$5",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$6",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$7",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$8",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$9",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "vsubs",
+      "pin": true,
+      "device_count": 2
+    }
+  ],
+  "warnings": [
+    "found 0 pin-name label(s) on any of this deck's label layers (64/5, 66/5, 67/5, 68/5, 69/5, 70/5, 71/5, 72/5) anywhere in 'pll_loop_filter' -- no net can be named, so 0 top-level pins will be promoted below and `klt lvs` will have no net/device anchor to seed a match against a reference netlist. Compare the layers `klt layers` reports for this GDS against the list above; for a `klt place-and-route` layout in particular, check that request.io.layer_h/layer_v chose a layer this --deck actually scans for pin labels (issue #1385)",
+    "10 nets connect to exactly one device terminal -- source/drain/body/resistor-equivalent, not a gate -- and are not a declared pin; this can be a legitimate single-terminal tie (e.g. an intentionally unterminated dummy's diffusion tie), but confirm these nets have no other intended connectivity -- see single_terminal_nets[] for the full list."
+  ],
+  "black_box_regions": [],
+  "abstracted_cells": [],
+  "unmodelled_poly": [],
+  "merged_net_labels": [],
+  "voltage_domain_warnings": [],
+  "unbiased_pmos_body_nets": [],
+  "single_terminal_nets": [
+    {
+      "net": "\\$1",
+      "device": "$4",
+      "terminal": "a",
+      "terminal_kind": "a"
+    },
+    {
+      "net": "\\$10",
+      "device": "$3",
+      "terminal": "b",
+      "terminal_kind": "b"
+    },
+    {
+      "net": "\\$2",
+      "device": "$4",
+      "terminal": "b",
+      "terminal_kind": "b"
+    },
+    {
+      "net": "\\$3",
+      "device": "$5",
+      "terminal": "a",
+      "terminal_kind": "a"
+    },
+    {
+      "net": "\\$4",
+      "device": "$5",
+      "terminal": "b",
+      "terminal_kind": "b"
+    },
+    {
+      "net": "\\$5",
+      "device": "$1",
+      "terminal": "a",
+      "terminal_kind": "a"
+    },
+    {
+      "net": "\\$6",
+      "device": "$2",
+      "terminal": "a",
+      "terminal_kind": "a"
+    },
+    {
+      "net": "\\$7",
+      "device": "$3",
+      "terminal": "a",
+      "terminal_kind": "a"
+    },
+    {
+      "net": "\\$8",
+      "device": "$1",
+      "terminal": "b",
+      "terminal_kind": "b"
+    },
+    {
+      "net": "\\$9",
+      "device": "$2",
+      "terminal": "b",
+      "terminal_kind": "b"
+    }
+  ],
+  "dead_metal": [],
+  "matched_device_groups": [],
+  "pdk": null,
+  "provenance": {
+    "klt_version": "0.4.0",
+    "klayout_version": "0.30.12",
+    "pdk": null,
+    "deck": {
+      "name": "sky130",
+      "content_hash": "sha256:5afac7ab8561545859f5e2e74f4621c6ffc052756dc8fe344ea263398e96b240",
+      "released": false
+    },
+    "input": {
+      "content_hash": "sha256:2d30b51d24956cd8da0d13a4e13e8ff64ea71649c6dc3cdbf96a8a3f02a32a0a"
+    }
+  },
+  "parasitics": null,
+  "spef_path": null
+}

@@ -96,7 +96,7 @@ Filed after the `klt` pin bump (#46), by the router the bump made usable:
 
 | Gap | Filed | How this flow copes |
 | --- | --- | --- |
-| `gen-compose`'s route-vs-route collision check misses two same-block self-nets: both compose `routed: true` with no warning, and extraction reads them back as one node | [klayout-tools#1197](https://github.com/2AMLogic/klayout-tools/issues/1197) | Ships the unrouted stream; the routed build stays as a spot-check under `route-spot-check/`, whose extraction names the merged node, so the claim is evidenced rather than asserted |
+| ~~`gen-compose`'s route-vs-route collision check misses two same-block self-nets: both compose `routed: true` with no warning, and extraction reads them back as one node~~ **Fixed upstream** (klayout-tools PR #1216, merged as `dd41d23f`) | [klayout-tools#1197](https://github.com/2AMLogic/klayout-tools/issues/1197) (closed) | Issue #17's DRC-motivated pin bump (`klayout-tools==0.4.0`) turned out to be a strict descendant of this fix too — a re-run of this design's routing spot-check confirmed 0 shorted nodes, down from 3. Still ships the unrouted stream regardless (most legs remain undrawn — see the routing-channel gap below), and the routed build stays as a spot-check under `route-spot-check/` |
 
 Five further gaps this layout originally hit were **already fixed on the tool's
 `main`** and reached this repo only through the PyPI pin
@@ -124,22 +124,76 @@ certified shorts. Issue #18 wired `mos_array`'s `params.gate_contact`
 ([#492](https://github.com/2AMLogic/klayout-tools/issues/492)) for every
 matched device group, closing one of the two "this design's own" gaps named
 here previously (bare-poly gate pins are now contacted landing pads,
-reachable by the router) — 51 legs became 74. What still blocks a routed
-stream is bigger than the other named gap (routing channels between abutted
-groups, a floorplan-spacing fix that issue #18 measured as barely
-load-bearing on its own): the dominant remaining failure is the
+reachable by the router) — 51 legs became 74. A later `klt` pin bump (issue
+#17's DRC-motivated bump past `bd5c7f4`, which turned out to be a strict
+descendant of klayout-tools#1197's fix too) eliminated the residual
+route-vs-route short described below as a side effect: the same design,
+re-measured, drew 62 of 917 legs with **zero** shorted nodes (down from three)
+— confirming #1197 no longer needs a dedicated bump, only the structural gap
+below remains open for this issue.
+
+What still blocks a routed stream is the dominant remaining failure: the
 point-to-point router's inability to route a pin buried inside a matched
-device array's own interior (265 of 901 legs, the largest single reason —
-routing that would need an actual channel *inside* the array, which is a
-floorplan redesign, not a spacing tweak) — plus #1197 above. **Routing further
-makes #1197 worse, not better**: going from 51 to 74 drawn legs took the
-routed spot-check from one shorted node (`DN|GND`) to three
-(`BUF1|RING0`, `DIVD|DN|DNN|GND`, `SETU|UP|VDD`) — direct evidence that
-#1197 needs its upstream fix before pushing this design's routing further is
-safe to attempt at all, not just before it is complete. The current record's
-routing spot-check tabulates the router's own reason for every leg it
-declined, and its LVS (spot-check) section runs `klt lvs` against that build
-and records the resulting mismatch in full.
+device array's own interior (263 of 917 legs at the post-pin-bump
+measurement above) — routing that would need an actual channel *inside* the
+array, which is a floorplan redesign, not a spacing tweak (a throwaway
+experiment raising `GROUP_SPACING_UM`/`BLOCK_SPACING_UM` 2.5x barely moved
+the numbers, since that spacing is between *groups*, not between an array's
+own internal rows/columns).
+
+Issue #18 also tried a genuine floorplan change here, and it **did not
+work** — recorded because the reasoning behind it is plausible enough to be
+re-proposed otherwise. `klt gen mos_array` draws every unit's gate contact
+facing the array's own +y edge regardless of which internal row it is placed
+on, so in the near-square grouping (`factor_rows_cols`) only the array's
+*top* row has gates within the router's small edge-margin allowance — every
+gate below it is interior by construction. Forcing every matched group into
+a single row (`rows=1`, so every unit sits on that one reachable row) should
+therefore have helped. The gate-orientation premise is real; the conclusion
+was not. Measuring the full 2×2 — all four cells on the same `klt` 0.4.0 /
+KLayout 0.30.12 / `open_pdks c6d73a35` pin, so they are directly comparable
+— gives legs drawn out of legs attempted:
+
+| `topology` \ packing | near-square grid | `rows=1` |
+| --- | --- | --- |
+| `common_centroid` (even counts) — **shipped** | **62 / 917** | 55 / 945 |
+| `array` (forced, *not* adopted) | 76 / 862 | 74 / 827 |
+
+Read by column, the single-row packing is neutral-to-worse in *both*
+topology regimes (62 → 55, and 76 → 74), so its own effect is approximately
+zero and slightly negative. An earlier revision of this work reported
+"62/917 → 74/827, single-row packing improves routing coverage" — that is
+the confounded diagonal of this table: the same change also flipped
+`topology` from `common_centroid` to an unconditional `array`, and the
+topology knob is where the entire gain came from. Both changes were
+withdrawn; the plan keeps the near-square grid, which is independently the
+better analog choice (a 1×N row spreads a matched group across the widest
+possible span — exactly the linear-gradient distance common-centroid
+ordering exists to cancel).
+
+The `topology` gain is real and is deliberately **not** taken. The stream
+this flow ships is unrouted, so the routing spot-check is a *diagnostic*,
+whereas the device-to-position assignment `topology` controls is a property
+of the *shipped* geometry: `common_centroid` is `klt gen mos_array`'s own
+documented default and a real centroid-symmetric visiting order that pairs
+each instance with its point-reflection through the grid centre, which is
+what cancels process-gradient mismatch across the VCO ring stages and the
+PFD/CP current mirrors. Spending that to improve a diagnostic number would
+be laundering a failing result, which this repo's `CLAUDE.md` forbids — the
+routing shortfall stays recorded as a miss instead. Two regression tests in
+`layout/tests/test_pll_layout_plan.py` now assert both fields, so neither
+can move again as an unremarked side effect.
+
+(The remaining orientation — one column, every gate buried but every
+source/drain pad reachable — was measured too and is worse still on this
+design: 40 of 978 legs; its declared nets lean on gate connectivity more
+than on source/drain, empirically.) None of these floorplan choices closes
+the gap — a genuine per-unit interior routing channel is still needed and is
+not something this flow's floorplan choices alone can supply. The current
+record's routing spot-check tabulates
+the router's own reason for every leg it declined, and its LVS (spot-check)
+section runs `klt lvs` against that build and records the resulting mismatch
+in full.
 
 Two capabilities the bump makes available are deliberately **not yet adopted**,
 because adopting either changes drawn geometry and needs its own evidence:

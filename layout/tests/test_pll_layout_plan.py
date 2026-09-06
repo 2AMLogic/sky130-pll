@@ -116,6 +116,52 @@ class PlanCoverageTests(unittest.TestCase):
                     group["params"].get("gate_contact"), group["id"]
                 )
 
+    def test_mos_arrays_keep_common_centroid_device_matching(self):
+        # issue #18 / PR #118 review: every even-count matched group must
+        # keep `klt gen mos_array`'s common-centroid port-numbering topology
+        # (the generator's own documented default) -- a real
+        # centroid-symmetric visiting order that pairs instance 2k with its
+        # point-reflection through the grid center, which is what cancels
+        # process-gradient mismatch across the VCO ring stages and the
+        # PFD/CP current mirrors. An odd count cannot be paired, so it
+        # legitimately falls back to plain row-major `array`.
+        #
+        # Forcing this to a plain "array" does measurably improve this flow's
+        # routing spot-check coverage, so the temptation is real and was
+        # acted on once. It is not a trade this design may make: the shipped
+        # stream is unrouted, so the spot-check is a diagnostic while the
+        # device-to-position assignment is a property of the shipped
+        # geometry. This test is the guard that makes dropping it a
+        # deliberate, visible act rather than a silent side effect of an
+        # unrelated floorplan change.
+        for block in self.plan["blocks"]:
+            for group in block["groups"]:
+                if group["kind"] != "mos_array":
+                    continue
+                expected = "common_centroid" if group["count"] % 2 == 0 else "array"
+                self.assertEqual(
+                    group["params"]["topology"], expected, group["id"]
+                )
+
+    def test_mos_arrays_are_packed_in_a_near_square_grid(self):
+        # issue #18: matched groups use `factor_rows_cols`'s near-square
+        # grid, not a 1xN row. A single-row packing was measured across the
+        # full topology x packing 2x2 (see the comment at the call site in
+        # layout/bin/pll_layout.py) and is neutral-to-worse for routing
+        # coverage in both topology regimes, while spreading a matched
+        # group's devices over the widest possible span -- the very gradient
+        # distance common-centroid ordering exists to cancel.
+        for block in self.plan["blocks"]:
+            for group in block["groups"]:
+                if group["kind"] != "mos_array":
+                    continue
+                params = group["params"]
+                self.assertEqual(
+                    (params["rows"], params["cols"]),
+                    pll_layout.factor_rows_cols(group["count"]),
+                    group["id"],
+                )
+
     def test_res_arrays_draw_no_dummy_elements(self):
         for block in self.plan["blocks"]:
             for group in block["groups"]:

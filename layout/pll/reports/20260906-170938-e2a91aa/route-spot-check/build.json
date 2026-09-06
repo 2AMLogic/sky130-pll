@@ -1,0 +1,164 @@
+{
+  "blocks": [
+    {
+      "name": "pfd_cp",
+      "cell_name": "pll_pfd_cp",
+      "group_count": 13,
+      "device_count": 60,
+      "declared_nets": 35,
+      "routed_nets": 1,
+      "unrouted_nets": 34,
+      "routing_notes": [
+        "net 'CP' could not be routed: backbone's 0.3um-wide drawn path crosses 2.14um through unrelated block 'pfd_cp_nfet_w10_l1''s bbox (including its own edge, within half the route's width) -- the route is not point-to-point between only the two connected blocks",
+        "net 'DIV' could not be routed: 2 of 4 pins could not be connected into one net ('pfd_cp_pfet_w2_l0p15.U3_G', 'pfd_cp_pfet_w2_l0p3.U3_G') -- every candidate leg reaching them was rejected (per-leg detail in nets[].legs[]); nearest rejection ('pfd_cp_nfet_w1_l0p3.U3_G' -> 'pfd_cp_pfet_w2_l0p15.U3_G'): backbone's 0.3um-wide drawn path crosses 1.39um through unrelated block 'pfd_cp_nfet_w10_l0p15''s bbox (including its own edge, within half the route's width) -- the route is not point-to-point between only the two connected blocks -- a bounded detour around it (2 alternate lanes placed clear of every block between the two pins) was tried first, and each one still crossed a placed block",
+        "net 'DIVD' could not be routed: 3 of 4 pins could not be connected into one net ('pfd_cp_nfet_w1_l0p3.U5_D', 'pfd_cp_pfet_w2_l0p15.U4_G', 'pfd_cp_pfet_w2_l0p3.U5_D') -- every candidate leg reaching them was rejected (per-leg detail in nets[].legs[]); nearest rejection ('pfd_cp_nfet_w1_l0p15.U4_G' -> 'pfd_cp_nfet_w1_l0p3.U5_D'): backbone's 0.3um-wide drawn path crosses 18.19um through its own pin's block 'pfd_cp_nfet_w1_l0p15' -- more than that pin's own 0.36um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly",
+        "net 'DIVD1' could not be routed: 2 of 4 pins could not be connected into one net ('pfd_cp_pfet_w2_l0p3.U3_D', 'pfd_cp_pfet_w2_l0p3.U4_G') -- every candidate leg reaching them was rejected (per-leg detail in nets[].legs[]); nearest rejection ('pfd_cp_nfet_w1_l0p3.U3_D' -> 'pfd_cp_pfet_w2_l0p3.U4_G'): backbone's 0.3um-wide drawn path crosses 4.38um through unrelated block 'pfd_cp_nfet_w1_l1''s bbox (including its own edge, within half the route's width) -- the route is not point-to-point between only the two connected blocks",
+        "net 'DIVD2' could not be routed: 3 of 4 pins could not be connected into one net ('pfd_cp_nfet_w1_l0p3.U5_G', 'pfd_cp_pfet_w2_l0p3.U4_D', 'pfd_cp_pfet_w2_l0p3.U5_G') -- every candidate leg reaching them was rejected (per-leg detail in nets[].legs[]); nearest rejection ('pfd_cp_nfet_w1_l0p3.U4_D' -> 'pfd_cp_nfet_w1_l0p3.U5_G'): crosses already-routed net 'DIVD1'",
+        "net 'DN' could not be routed: 4 of 8 pins could not be connected into one net ('pfd_cp_nfet_w10_l0p15.U0_G', 'pfd_cp_pfet_w2_l0p15.U11_D', 'pfd_cp_pfet_w2_l0p15.U13_G', 'pfd_cp_pfet_w2_l0p15.U15_G') -- every candidate leg reaching them was rejected (per-leg detail in nets[].legs[]); nearest rejection ('pfd_cp_pfet_w2_l0p15.U13_G' -> 'pfd_cp_pfet_w2_l0p15.U15_G'): comes within 0.14um of already-routed net 'DIV' -- closer than the resolved deck's own 'met1.space.1' minimum same-layer spacing rule (no literal overlap, but still a real `klt drc` violation on the composed layout)",
+        "net 'DNN' could not be routed: 4 of 5 pins could not be connected into one net ('pfd_cp_nfet_w1_l0p15.U12_D', 'pfd_cp_nfet_w1_l0p15.U13_D', 'pfd_cp_pfet_w2_l0p15.U11_G', 'pfd_cp_pfet_w2_l0p15.U13_D') -- every candidate leg reaching them was rejected (per-leg detail in nets[].legs[]); nearest rejection ('pfd_cp_nfet_w1_l0p15.U11_G' -> 'pfd_cp_nfet_w1_l0p15.U13_D'): crosses already-routed net 'DN'",
+        "net 'DNNORB_MID' could not be routed: crosses already-routed net 'DN'",
+        "net 'GND' could not be routed: 20 of 26 pins could not be connected into one net ('pfd_cp_nfet_w1_l0p15.U1_S', 'pfd_cp_nfet_w1_l0p15.U2_S', 'pfd_cp_nfet_w1_l0p15.U4_S', 'pfd_cp_nfet_w1_l0p15.U5_S', 'pfd_cp_nfet_w1_l0p15.U6_S', 'pfd_cp_nfet_w1_l0p15.U7_S', 'pfd_cp_nfet_w1_l0p15.U8_S', 'pfd_cp_nfet_w1_l0p15.U9_S', 'pfd_cp_nfet_w1_l0p15.U10_S', 'pfd_cp_nfet_w1_l0p15.U11_S', 'pfd_cp_nfet_w1_l0p15.U12_S', 'pfd_cp_nfet_w1_l0p15.U13_S', 'pfd_cp_nfet_w1_l0p15.U15_S', 'pfd_cp_nfet_w1_l0p15.U16_S', 'pfd_cp_nfet_w1_l0p15.U17_S', 'pfd_cp_nfet_w1_l0p3.U0_S', 'pfd_cp_nfet_w1_l0p3.U1_S', 'pfd_cp_nfet_w1_l0p3.U2_S', 'pfd_cp_nfet_w1_l0p3.U3_S', 'pfd_cp_nfet_w1_l0p3.U4_S') -- every candidate leg reaching them was rejected (per-leg detail in nets[].legs[]); nearest rejection ('pfd_cp_nfet_w1_l0p15.U9_S' -> 'pfd_cp_nfet_w1_l0p15.U11_S'): crosses already-routed net 'DN'",
+        "net 'NB' could not be routed: 2 of 5 pins could not be connected into one net ('pfd_cp_nfet_w2_l1.U0_D', 'pfd_cp_resxhigh_w1_l300.R0_A') -- every candidate leg reaching them was rejected (per-leg detail in nets[].legs[]); nearest rejection ('pfd_cp_nfet_w2_l1.U0_D' -> 'pfd_cp_nfet_w2_l1.U0_G'): crosses already-routed net 'GND'",
+        "net 'PB' could not be routed: 1 of 4 pins could not be connected into one net ('pfd_cp_nfet_w2_l1.U1_D') -- every candidate leg reaching them was rejected (per-leg detail in nets[].legs[]); nearest rejection ('pfd_cp_nfet_w2_l1.U1_D' -> 'pfd_cp_pfet_w4_l1.U0_D'): backbone's 0.3um-wide drawn path crosses 1.39um through unrelated block 'pfd_cp_nfet_w10_l0p15''s bbox (including its own edge, within half the route's width) -- the route is not point-to-point between only the two connected blocks",
+        "net 'RDN_MID' could not be routed: crosses already-routed net 'DN'",
+        "net 'RDN_NAND' could not be routed: 4 of 5 pins could not be connected into one net ('pfd_cp_nfet_w1_l0p15.U5_G', 'pfd_cp_pfet_w2_l0p15.U3_D', 'pfd_cp_pfet_w2_l0p15.U4_D', 'pfd_cp_pfet_w2_l0p15.U5_G') -- every candidate leg reaching them was rejected (per-leg detail in nets[].legs[]); nearest rejection ('pfd_cp_nfet_w1_l0p15.U3_D' -> 'pfd_cp_nfet_w1_l0p15.U5_G'): crosses already-routed net 'DN'",
+        "net 'REF' could not be routed: 3 of 4 pins could not be connected into one net ('pfd_cp_nfet_w1_l0p3.U0_G', 'pfd_cp_pfet_w2_l0p15.U0_G', 'pfd_cp_pfet_w2_l0p3.U0_G') -- every candidate leg reaching them was rejected (per-leg detail in nets[].legs[]); nearest rejection ('pfd_cp_nfet_w1_l0p15.U0_G' -> 'pfd_cp_nfet_w1_l0p3.U0_G'): crosses already-routed net 'DIV'",
+        "net 'REFD' could not be routed: 3 of 4 pins could not be connected into one net ('pfd_cp_nfet_w1_l0p3.U2_D', 'pfd_cp_pfet_w2_l0p15.U1_G', 'pfd_cp_pfet_w2_l0p3.U2_D') -- every candidate leg reaching them was rejected (per-leg detail in nets[].legs[]); nearest rejection ('pfd_cp_nfet_w1_l0p15.U1_G' -> 'pfd_cp_nfet_w1_l0p3.U2_D'): backbone's 0.3um-wide drawn path crosses 13.72um through its own pin's block 'pfd_cp_nfet_w1_l0p15' -- more than that pin's own 0.36um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly",
+        "net 'REFD1' could not be routed: 3 of 4 pins could not be connected into one net ('pfd_cp_nfet_w1_l0p3.U1_G', 'pfd_cp_pfet_w2_l0p3.U0_D', 'pfd_cp_pfet_w2_l0p3.U1_G') -- every candidate leg reaching them was rejected (per-leg detail in nets[].legs[]); nearest rejection ('pfd_cp_nfet_w1_l0p3.U0_D' -> 'pfd_cp_nfet_w1_l0p3.U1_G'): crosses already-routed net 'DIVD1'",
+        "net 'REFD2' could not be routed: 3 of 4 pins could not be connected into one net ('pfd_cp_nfet_w1_l0p3.U2_G', 'pfd_cp_pfet_w2_l0p3.U1_D', 'pfd_cp_pfet_w2_l0p3.U2_G') -- every candidate leg reaching them was rejected (per-leg detail in nets[].legs[]); nearest rejection ('pfd_cp_nfet_w1_l0p3.U1_D' -> 'pfd_cp_nfet_w1_l0p3.U2_G'): crosses already-routed net 'DIVD1'",
+        "net 'RST' could not be routed: 4 of 6 pins could not be connected into one net ('pfd_cp_nfet_w1_l1.U1_D', 'pfd_cp_pfet_w2_l0p15.U6_G', 'pfd_cp_pfet_w2_l0p15.U10_G', 'pfd_cp_pfet_w2_l1.U1_D') -- every candidate leg reaching them was rejected (per-leg detail in nets[].legs[]); nearest rejection ('pfd_cp_nfet_w1_l1.U1_D' -> 'pfd_cp_pfet_w2_l0p15.U10_G'): backbone's 0.3um-wide drawn path crosses 4.38um through unrelated block 'pfd_cp_nfet_w2_l1''s bbox (including its own edge, within half the route's width) -- the route is not point-to-point between only the two connected blocks",
+        "net 'RSTD1' could not be routed: 2 of 4 pins could not be connected into one net ('pfd_cp_nfet_w1_l1.U0_D', 'pfd_cp_nfet_w1_l1.U1_G') -- every candidate leg reaching them was rejected (per-leg detail in nets[].legs[]); nearest rejection ('pfd_cp_nfet_w1_l1.U0_D' -> 'pfd_cp_nfet_w1_l1.U1_G'): crosses already-routed net 'GND'",
+        "net 'RSTG_MID' could not be routed: crosses already-routed net 'DN'",
+        "net 'RSTG_NAND' could not be routed: 3 of 5 pins could not be connected into one net ('pfd_cp_nfet_w1_l0p15.U14_D', 'pfd_cp_nfet_w1_l0p15.U16_G', 'pfd_cp_pfet_w2_l0p15.U15_D') -- every candidate leg reaching them was rejected (per-leg detail in nets[].legs[]); nearest rejection ('pfd_cp_nfet_w1_l0p15.U14_D' -> 'pfd_cp_nfet_w1_l0p15.U16_G'): crosses already-routed net 'GND'",
+        "net 'RSTPRE' could not be routed: 3 of 4 pins could not be connected into one net ('pfd_cp_nfet_w1_l1.U0_G', 'pfd_cp_pfet_w2_l0p15.U16_D', 'pfd_cp_pfet_w2_l1.U0_G') -- every candidate leg reaching them was rejected (per-leg detail in nets[].legs[]); nearest rejection ('pfd_cp_nfet_w1_l1.U0_G' -> 'pfd_cp_pfet_w2_l0p15.U16_D'): backbone's 0.3um-wide drawn path crosses 3.92um through its own pin's block 'pfd_cp_nfet_w1_l1' -- more than that pin's own 0.36um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly",
+        "net 'RUP_MID' could not be routed: crosses already-routed net 'DN'",
+        "net 'RUP_NAND' could not be routed: 4 of 5 pins could not be connected into one net ('pfd_cp_nfet_w1_l0p15.U2_G', 'pfd_cp_pfet_w2_l0p15.U0_D', 'pfd_cp_pfet_w2_l0p15.U1_D', 'pfd_cp_pfet_w2_l0p15.U2_G') -- every candidate leg reaching them was rejected (per-leg detail in nets[].legs[]); nearest rejection ('pfd_cp_pfet_w2_l0p15.U0_D' -> 'pfd_cp_pfet_w2_l0p15.U1_D'): crosses already-routed net 'DNNORA_MID'",
+        "net 'SETD' could not be routed: 3 of 4 pins could not be connected into one net ('pfd_cp_nfet_w1_l0p15.U12_G', 'pfd_cp_pfet_w2_l0p15.U5_D', 'pfd_cp_pfet_w2_l0p15.U12_G') -- every candidate leg reaching them was rejected (per-leg detail in nets[].legs[]); nearest rejection ('pfd_cp_nfet_w1_l0p15.U5_D' -> 'pfd_cp_nfet_w1_l0p15.U12_G'): crosses already-routed net 'DN'",
+        "net 'SETU' could not be routed: 3 of 4 pins could not be connected into one net ('pfd_cp_nfet_w1_l0p15.U8_G', 'pfd_cp_pfet_w2_l0p15.U2_D', 'pfd_cp_pfet_w2_l0p15.U8_G') -- every candidate leg reaching them was rejected (per-leg detail in nets[].legs[]); nearest rejection ('pfd_cp_nfet_w1_l0p15.U2_D' -> 'pfd_cp_nfet_w1_l0p15.U8_G'): crosses already-routed net 'DN'",
+        "net 'SN' could not be routed: backbone's 0.3um-wide drawn path crosses 1.03um through its own pin's block 'pfd_cp_nfet_w10_l0p15' -- more than that pin's own 0.36um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly",
+        "net 'SP' could not be routed: backbone's 0.3um-wide drawn path crosses 1.18um through its own pin's block 'pfd_cp_pfet_w20_l0p15' -- more than that pin's own 0.51um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly",
+        "net 'UP' could not be routed: 8 of 9 pins could not be connected into one net ('pfd_cp_nfet_w1_l0p15.U7_D', 'pfd_cp_nfet_w1_l0p15.U9_G', 'pfd_cp_nfet_w1_l0p15.U14_G', 'pfd_cp_nfet_w1_l0p15.U17_G', 'pfd_cp_pfet_w2_l0p15.U7_D', 'pfd_cp_pfet_w2_l0p15.U9_G', 'pfd_cp_pfet_w2_l0p15.U14_G', 'pfd_cp_pfet_w2_l0p15.U17_G') -- every candidate leg reaching them was rejected (per-leg detail in nets[].legs[]); nearest rejection ('pfd_cp_nfet_w1_l0p15.U7_D' -> 'pfd_cp_nfet_w1_l0p15.U9_G'): crosses already-routed net 'DN'",
+        "net 'UPB' could not be routed: 2 of 3 pins could not be connected into one net ('pfd_cp_pfet_w2_l0p15.U17_D', 'pfd_cp_pfet_w20_l0p15.U0_G') -- every candidate leg reaching them was rejected (per-leg detail in nets[].legs[]); nearest rejection ('pfd_cp_pfet_w2_l0p15.U17_D' -> 'pfd_cp_pfet_w20_l0p15.U0_G'): backbone's 0.3um-wide drawn path crosses 9.44um through unrelated block 'pfd_cp_pfet_w2_l0p3''s bbox (including its own edge, within half the route's width) -- the route is not point-to-point between only the two connected blocks",
+        "net 'UPN' could not be routed: 4 of 5 pins could not be connected into one net ('pfd_cp_nfet_w1_l0p15.U8_D', 'pfd_cp_nfet_w1_l0p15.U9_D', 'pfd_cp_pfet_w2_l0p15.U7_G', 'pfd_cp_pfet_w2_l0p15.U9_D') -- every candidate leg reaching them was rejected (per-leg detail in nets[].legs[]); nearest rejection ('pfd_cp_nfet_w1_l0p15.U7_G' -> 'pfd_cp_nfet_w1_l0p15.U9_D'): crosses already-routed net 'DN'",
+        "net 'UPNORA_MID' could not be routed: crosses already-routed net 'DNNORA_MID'",
+        "net 'UPNORB_MID' could not be routed: crosses already-routed net 'DNNORA_MID'",
+        "net 'VDD' could not be routed: 23 of 25 pins could not be connected into one net ('pfd_cp_pfet_w2_l0p15.U0_S', 'pfd_cp_pfet_w2_l0p15.U1_S', 'pfd_cp_pfet_w2_l0p15.U2_S', 'pfd_cp_pfet_w2_l0p15.U3_S', 'pfd_cp_pfet_w2_l0p15.U4_S', 'pfd_cp_pfet_w2_l0p15.U5_S', 'pfd_cp_pfet_w2_l0p15.U6_S', 'pfd_cp_pfet_w2_l0p15.U8_S', 'pfd_cp_pfet_w2_l0p15.U14_S', 'pfd_cp_pfet_w2_l0p15.U15_S', 'pfd_cp_pfet_w2_l0p15.U16_S', 'pfd_cp_pfet_w2_l0p15.U17_S', 'pfd_cp_pfet_w2_l0p3.U0_S', 'pfd_cp_pfet_w2_l0p3.U1_S', 'pfd_cp_pfet_w2_l0p3.U2_S', 'pfd_cp_pfet_w2_l0p3.U3_S', 'pfd_cp_pfet_w2_l0p3.U4_S', 'pfd_cp_pfet_w2_l0p3.U5_S', 'pfd_cp_pfet_w2_l1.U0_S', 'pfd_cp_pfet_w2_l1.U1_S', 'pfd_cp_pfet_w4_l1.U0_S', 'pfd_cp_pfet_w20_l1.U0_S', 'pfd_cp_resxhigh_w1_l300.R0_B') -- every candidate leg reaching them was rejected (per-leg detail in nets[].legs[]); nearest rejection ('pfd_cp_pfet_w2_l0p15.U0_S' -> 'pfd_cp_pfet_w2_l0p15.U2_S'): crosses already-routed net 'DNNORA_MID'"
+      ],
+      "bbox_um": {
+        "x0": 0.0,
+        "y0": -0.15,
+        "x1": 300.84000000000003,
+        "y1": 26.12
+      },
+      "size_um": [
+        300.84,
+        26.12
+      ]
+    },
+    {
+      "name": "loop_filter",
+      "cell_name": "pll_loop_filter",
+      "group_count": 5,
+      "device_count": 5,
+      "declared_nets": 4,
+      "routed_nets": 0,
+      "unrouted_nets": 4,
+      "routing_notes": [
+        "net 'CP' could not be routed: 2 of 3 pins could not be connected into one net ('loop_filter_resxhigh_w1_l10p3.R0_B', 'loop_filter_XC2.TOP') -- every candidate leg reaching them was rejected (per-leg detail in nets[].legs[]); nearest rejection ('loop_filter_resxhigh_w1_l5.R0_B' -> 'loop_filter_resxhigh_w1_l10p3.R0_B'): backbone's 0.3um-wide drawn path crosses 11.08um through its own pin's block 'loop_filter_resxhigh_w1_l10p3' -- more than that pin's own 0.36um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly",
+        "net 'GND' could not be routed: 2 of 3 pins could not be connected into one net ('loop_filter_XC2.BOT', 'loop_filter_XC3.BOT') -- every candidate leg reaching them was rejected (per-leg detail in nets[].legs[]); nearest rejection ('loop_filter_XC2.BOT' -> 'loop_filter_XC3.BOT'): backbone's 0.3um-wide drawn path crosses 38.95um through its own pin's block 'loop_filter_XC2' -- more than that pin's own 0.25um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly",
+        "net 'VCTRL' could not be routed: backbone's 0.3um-wide drawn path crosses 5.78um through its own pin's block 'loop_filter_resxhigh_w1_l5' -- more than that pin's own 0.36um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly",
+        "net 'Z1' could not be routed: backbone's 0.3um-wide drawn path crosses 11.08um through its own pin's block 'loop_filter_resxhigh_w1_l10p3' -- more than that pin's own 0.36um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly"
+      ],
+      "bbox_um": {
+        "x0": 0.0,
+        "y0": 0.0,
+        "x1": 188.38,
+        "y1": 209.8
+      },
+      "size_um": [
+        188.38,
+        209.8
+      ]
+    },
+    {
+      "name": "vco_ring5",
+      "cell_name": "pll_vco_ring5",
+      "group_count": 6,
+      "device_count": 26,
+      "declared_nets": 21,
+      "routed_nets": 2,
+      "unrouted_nets": 19,
+      "routing_notes": [
+        "net 'BUF1' could not be routed: 2 of 4 pins could not be connected into one net ('vco_ring5_nfet_w2_l0p15.U5_D', 'vco_ring5_pfet_w4_l0p15.U5_D') -- every candidate leg reaching them was rejected (per-leg detail in nets[].legs[]); nearest rejection ('vco_ring5_nfet_w8_l0p15.U0_G' -> 'vco_ring5_pfet_w4_l0p15.U5_D'): backbone's 0.3um-wide drawn path crosses 7.305um through its own pin's block 'vco_ring5_nfet_w8_l0p15' -- more than that pin's own 0.36um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly",
+        "net 'CLK' could not be routed: backbone's 0.3um-wide drawn path crosses 9.14um through unrelated block 'vco_ring5_pfet_w4_l0p15''s bbox (including its own edge, within half the route's width) -- the route is not point-to-point between only the two connected blocks",
+        "net 'RING0' could not be routed: 3 of 6 pins could not be connected into one net ('vco_ring5_pfet_w4_l0p15.U0_D', 'vco_ring5_pfet_w4_l0p15.U1_G', 'vco_ring5_pfet_w4_l0p15.U5_G') -- every candidate leg reaching them was rejected (per-leg detail in nets[].legs[]); nearest rejection ('vco_ring5_nfet_w2_l0p15.U5_G' -> 'vco_ring5_pfet_w4_l0p15.U0_D'): backbone's 0.3um-wide drawn path crosses 1.305um through its own pin's block 'vco_ring5_nfet_w2_l0p15' -- more than that pin's own 0.36um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly",
+        "net 'RING1' could not be routed: 3 of 4 pins could not be connected into one net ('vco_ring5_nfet_w2_l0p15.U2_G', 'vco_ring5_pfet_w4_l0p15.U1_D', 'vco_ring5_pfet_w4_l0p15.U2_G') -- every candidate leg reaching them was rejected (per-leg detail in nets[].legs[]); nearest rejection ('vco_ring5_nfet_w2_l0p15.U1_D' -> 'vco_ring5_nfet_w2_l0p15.U2_G'): crosses already-routed net 'RING0'",
+        "net 'RING2' could not be routed: 3 of 4 pins could not be connected into one net ('vco_ring5_nfet_w2_l0p15.U3_G', 'vco_ring5_pfet_w4_l0p15.U2_D', 'vco_ring5_pfet_w4_l0p15.U3_G') -- every candidate leg reaching them was rejected (per-leg detail in nets[].legs[]); nearest rejection ('vco_ring5_nfet_w2_l0p15.U2_D' -> 'vco_ring5_nfet_w2_l0p15.U3_G'): crosses already-routed net 'RING0'",
+        "net 'RING3' could not be routed: 3 of 4 pins could not be connected into one net ('vco_ring5_nfet_w2_l0p15.U4_G', 'vco_ring5_pfet_w4_l0p15.U3_D', 'vco_ring5_pfet_w4_l0p15.U4_G') -- every candidate leg reaching them was rejected (per-leg detail in nets[].legs[]); nearest rejection ('vco_ring5_nfet_w2_l0p15.U3_D' -> 'vco_ring5_nfet_w2_l0p15.U4_G'): crosses already-routed net 'RING0'",
+        "net 'RING4' could not be routed: 3 of 4 pins could not be connected into one net ('vco_ring5_nfet_w2_l0p15.U4_D', 'vco_ring5_pfet_w4_l0p15.U0_G', 'vco_ring5_pfet_w4_l0p15.U4_D') -- every candidate leg reaching them was rejected (per-leg detail in nets[].legs[]); nearest rejection ('vco_ring5_nfet_w2_l0p15.U0_G' -> 'vco_ring5_nfet_w2_l0p15.U4_D'): crosses already-routed net 'RING0'",
+        "net 'SN0' could not be routed: backbone's 0.3um-wide drawn path crosses 5.5um through its own pin's block 'vco_ring5_nfet_w2_l0p15' -- more than that pin's own 3.34um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly",
+        "net 'SN1' could not be routed: backbone's 0.3um-wide drawn path crosses 6.5um through its own pin's block 'vco_ring5_nfet_w2_l0p5' -- more than that pin's own 3.84um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly",
+        "net 'SN2' could not be routed: backbone's 0.3um-wide drawn path crosses 6.99um through its own pin's block 'vco_ring5_nfet_w2_l0p15' -- more than that pin's own 1.85um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly",
+        "net 'SN3' could not be routed: backbone's 0.3um-wide drawn path crosses 8.24um through its own pin's block 'vco_ring5_nfet_w2_l0p5' -- more than that pin's own 2.1um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly",
+        "net 'SN4' could not be routed: backbone's 0.3um-wide drawn path crosses 8.48um through its own pin's block 'vco_ring5_nfet_w2_l0p15' -- more than that pin's own 0.36um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly",
+        "net 'SP0' could not be routed: backbone's 0.3um-wide drawn path crosses 5.65um through its own pin's block 'vco_ring5_pfet_w4_l0p15' -- more than that pin's own 3.49um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly",
+        "net 'SP1' could not be routed: backbone's 0.3um-wide drawn path crosses 6.65um through its own pin's block 'vco_ring5_pfet_w4_l0p5' -- more than that pin's own 3.99um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly",
+        "net 'SP2' could not be routed: backbone's 0.3um-wide drawn path crosses 7.14um through its own pin's block 'vco_ring5_pfet_w4_l0p15' -- more than that pin's own 2um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly",
+        "net 'SP3' could not be routed: backbone's 0.3um-wide drawn path crosses 8.39um through its own pin's block 'vco_ring5_pfet_w4_l0p5' -- more than that pin's own 2.25um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly",
+        "net 'SP4' could not be routed: backbone's 0.3um-wide drawn path crosses 8.63um through its own pin's block 'vco_ring5_pfet_w4_l0p15' -- more than that pin's own 0.51um edge margin (including 0.15um for the route's own half-width), so the route plows through, or clips the edge of, the block's interior (e.g. a same-facing port pair reaching a pin on the block's far side, crossing another pin on the way, or a connecting jog running close enough alongside the block's own edge that the drawn wire's width still overlaps it) rather than approaching the pin cleanly",
+        "net 'VBP' could not be routed: 1 of 8 pins could not be connected into one net ('vco_ring5_nfet_w2_l0p5.U5_D') -- every candidate leg reaching them was rejected (per-leg detail in nets[].legs[]); nearest rejection ('vco_ring5_nfet_w2_l0p5.U5_D' -> 'vco_ring5_pfet_w4_l0p5.U4_G'): backbone's 0.3um-wide drawn path crosses 1.39um through unrelated block 'vco_ring5_nfet_w8_l0p15''s bbox (including its own edge, within half the route's width) -- the route is not point-to-point between only the two connected blocks",
+        "net 'VDD' could not be routed: 2 of 8 pins could not be connected into one net ('vco_ring5_pfet_w4_l0p5.U5_S', 'vco_ring5_pfet_w16_l0p15.U0_S') -- every candidate leg reaching them was rejected (per-leg detail in nets[].legs[]); nearest rejection ('vco_ring5_pfet_w4_l0p5.U3_S' -> 'vco_ring5_pfet_w4_l0p5.U5_S'): comes within 0.14um of already-routed net 'VBP' -- closer than the resolved deck's own 'met1.space.1' minimum same-layer spacing rule (no literal overlap, but still a real `klt drc` violation on the composed layout)"
+      ],
+      "bbox_um": {
+        "x0": 0.0,
+        "y0": -0.15,
+        "x1": 60.09,
+        "y1": 16.97
+      },
+      "size_um": [
+        60.24,
+        17.12
+      ]
+    },
+    {
+      "name": "divider_intN",
+      "cell_name": "pll_divider_intN",
+      "group_count": 29,
+      "device_count": 29,
+      "declared_nets": 0,
+      "routed_nets": 0,
+      "unrouted_nets": 0,
+      "routing_notes": [],
+      "bbox_um": {
+        "x0": -0.19,
+        "y0": -0.24,
+        "x1": 142.79,
+        "y1": 2.96
+      },
+      "size_um": [
+        142.6,
+        2.72
+      ]
+    }
+  ],
+  "top": {
+    "cell_name": "pll_top",
+    "gds_path": "pll_top.gds",
+    "bbox_um": {
+      "x0": -0.19,
+      "y0": -0.15,
+      "x1": 589.3100000000001,
+      "y1": 232.76000000000002
+    },
+    "size_um": [
+      589.31,
+      233.0
+    ]
+  },
+  "totals": {
+    "mos_array": 85,
+    "res_array": 3,
+    "mim_cap": 3,
+    "stdcell": 29
+  }
+}

@@ -1,0 +1,1454 @@
+{
+  "schema_version": 1,
+  "file": "/Users/rwalters/GitHub/sky130-pll/.loom/worktrees/issue-18/layout/pll/reports/20260906-162756-9be24a9/pll_top.gds",
+  "dbu_um": 0.001,
+  "cell_count": 79,
+  "top_cell_count": 1,
+  "cells": [
+    {
+      "name": "mos_array$12",
+      "index": 0,
+      "is_top": false,
+      "shapes": 54,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "vco_ring5_nfet_w2_l0p15__vco_ring5_nfet_w2_l0p15"
+      ],
+      "bbox_um": {
+        "left": 0.0,
+        "bottom": 0.0,
+        "right": 8.540000000000001,
+        "top": 2.82
+      }
+    },
+    {
+      "name": "mos_array$1$1",
+      "index": 1,
+      "is_top": false,
+      "shapes": 54,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "vco_ring5_nfet_w2_l0p5__vco_ring5_nfet_w2_l0p5"
+      ],
+      "bbox_um": {
+        "left": 0.0,
+        "bottom": 0.0,
+        "right": 10.040000000000001,
+        "top": 2.82
+      }
+    },
+    {
+      "name": "mos_array$2$1",
+      "index": 2,
+      "is_top": false,
+      "shapes": 9,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "vco_ring5_nfet_w8_l0p15__vco_ring5_nfet_w8_l0p15"
+      ],
+      "bbox_um": {
+        "left": 0.0,
+        "bottom": 0.0,
+        "right": 1.09,
+        "top": 8.82
+      }
+    },
+    {
+      "name": "mos_array$3$1",
+      "index": 3,
+      "is_top": false,
+      "shapes": 55,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "vco_ring5_pfet_w4_l0p15__vco_ring5_pfet_w4_l0p15"
+      ],
+      "bbox_um": {
+        "left": -0.15,
+        "bottom": -0.15,
+        "right": 8.69,
+        "top": 4.97
+      }
+    },
+    {
+      "name": "mos_array$4$1",
+      "index": 4,
+      "is_top": false,
+      "shapes": 55,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "vco_ring5_pfet_w4_l0p5__vco_ring5_pfet_w4_l0p5"
+      ],
+      "bbox_um": {
+        "left": -0.15,
+        "bottom": -0.15,
+        "right": 10.19,
+        "top": 4.97
+      }
+    },
+    {
+      "name": "mos_array$5$1",
+      "index": 5,
+      "is_top": false,
+      "shapes": 10,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "vco_ring5_pfet_w16_l0p15__vco_ring5_pfet_w16_l0p15"
+      ],
+      "bbox_um": {
+        "left": -0.15,
+        "bottom": -0.15,
+        "right": 1.24,
+        "top": 16.97
+      }
+    },
+    {
+      "name": "res_array$2",
+      "index": 6,
+      "is_top": false,
+      "shapes": 8,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "loop_filter_resxhigh_w1_l5__loop_filter_resxhigh_w1_l5"
+      ],
+      "bbox_um": {
+        "left": 0.0,
+        "bottom": 0.0,
+        "right": 5.84,
+        "top": 1.0
+      }
+    },
+    {
+      "name": "res_array$1",
+      "index": 7,
+      "is_top": false,
+      "shapes": 8,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "loop_filter_resxhigh_w1_l10p3__loop_filter_resxhigh_w1_l10p3"
+      ],
+      "bbox_um": {
+        "left": 0.0,
+        "bottom": 0.0,
+        "right": 11.14,
+        "top": 1.0
+      }
+    },
+    {
+      "name": "mos_array",
+      "index": 8,
+      "is_top": false,
+      "shapes": 162,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pfd_cp_nfet_w1_l0p15__pfd_cp_nfet_w1_l0p15"
+      ],
+      "bbox_um": {
+        "left": 0.0,
+        "bottom": 0.0,
+        "right": 26.42,
+        "top": 1.82
+      }
+    },
+    {
+      "name": "mos_array$1",
+      "index": 9,
+      "is_top": false,
+      "shapes": 54,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pfd_cp_nfet_w1_l0p3__pfd_cp_nfet_w1_l0p3"
+      ],
+      "bbox_um": {
+        "left": 0.0,
+        "bottom": 0.0,
+        "right": 8.84,
+        "top": 1.82
+      }
+    },
+    {
+      "name": "mos_array$2",
+      "index": 10,
+      "is_top": false,
+      "shapes": 18,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pfd_cp_nfet_w1_l1__pfd_cp_nfet_w1_l1"
+      ],
+      "bbox_um": {
+        "left": 0.0,
+        "bottom": 0.0,
+        "right": 4.08,
+        "top": 1.82
+      }
+    },
+    {
+      "name": "mos_array$3",
+      "index": 11,
+      "is_top": false,
+      "shapes": 18,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pfd_cp_nfet_w2_l1__pfd_cp_nfet_w2_l1"
+      ],
+      "bbox_um": {
+        "left": 0.0,
+        "bottom": 0.0,
+        "right": 4.08,
+        "top": 2.82
+      }
+    },
+    {
+      "name": "mos_array$4",
+      "index": 12,
+      "is_top": false,
+      "shapes": 9,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pfd_cp_nfet_w10_l0p15__pfd_cp_nfet_w10_l0p15"
+      ],
+      "bbox_um": {
+        "left": 0.0,
+        "bottom": 0.0,
+        "right": 1.09,
+        "top": 10.82
+      }
+    },
+    {
+      "name": "mos_array$5",
+      "index": 13,
+      "is_top": false,
+      "shapes": 9,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pfd_cp_nfet_w10_l1__pfd_cp_nfet_w10_l1"
+      ],
+      "bbox_um": {
+        "left": 0.0,
+        "bottom": 0.0,
+        "right": 1.84,
+        "top": 10.82
+      }
+    },
+    {
+      "name": "mos_array$6",
+      "index": 14,
+      "is_top": false,
+      "shapes": 163,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pfd_cp_pfet_w2_l0p15__pfd_cp_pfet_w2_l0p15"
+      ],
+      "bbox_um": {
+        "left": -0.15,
+        "bottom": -0.15,
+        "right": 26.57,
+        "top": 2.97
+      }
+    },
+    {
+      "name": "mos_array$7",
+      "index": 15,
+      "is_top": false,
+      "shapes": 55,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pfd_cp_pfet_w2_l0p3__pfd_cp_pfet_w2_l0p3"
+      ],
+      "bbox_um": {
+        "left": -0.15,
+        "bottom": -0.15,
+        "right": 8.99,
+        "top": 2.97
+      }
+    },
+    {
+      "name": "mos_array$8",
+      "index": 16,
+      "is_top": false,
+      "shapes": 19,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pfd_cp_pfet_w2_l1__pfd_cp_pfet_w2_l1"
+      ],
+      "bbox_um": {
+        "left": -0.15,
+        "bottom": -0.15,
+        "right": 4.23,
+        "top": 2.97
+      }
+    },
+    {
+      "name": "mos_array$9",
+      "index": 17,
+      "is_top": false,
+      "shapes": 10,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pfd_cp_pfet_w4_l1__pfd_cp_pfet_w4_l1"
+      ],
+      "bbox_um": {
+        "left": -0.15,
+        "bottom": -0.15,
+        "right": 1.99,
+        "top": 4.97
+      }
+    },
+    {
+      "name": "mos_array$10",
+      "index": 18,
+      "is_top": false,
+      "shapes": 10,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pfd_cp_pfet_w20_l0p15__pfd_cp_pfet_w20_l0p15"
+      ],
+      "bbox_um": {
+        "left": -0.15,
+        "bottom": -0.15,
+        "right": 1.24,
+        "top": 20.97
+      }
+    },
+    {
+      "name": "mos_array$11",
+      "index": 19,
+      "is_top": false,
+      "shapes": 10,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pfd_cp_pfet_w20_l1__pfd_cp_pfet_w20_l1"
+      ],
+      "bbox_um": {
+        "left": -0.15,
+        "bottom": -0.15,
+        "right": 1.99,
+        "top": 20.97
+      }
+    },
+    {
+      "name": "res_array",
+      "index": 20,
+      "is_top": false,
+      "shapes": 8,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pfd_cp_resxhigh_w1_l300__pfd_cp_resxhigh_w1_l300"
+      ],
+      "bbox_um": {
+        "left": 0.0,
+        "bottom": 0.0,
+        "right": 300.84000000000003,
+        "top": 1.0
+      }
+    },
+    {
+      "name": "divider_intN_XCNT0__sky130_fd_sc_hd__dfrtp_2",
+      "index": 21,
+      "is_top": false,
+      "shapes": 217,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN__pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 9.85,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XLDMUX0__sky130_fd_sc_hd__mux2_2",
+      "index": 22,
+      "is_top": false,
+      "shapes": 98,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN__pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 4.33,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XQINV0__sky130_fd_sc_hd__inv_2",
+      "index": 23,
+      "is_top": false,
+      "shapes": 55,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN__pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 1.57,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XCNT1__sky130_fd_sc_hd__dfrtp_2",
+      "index": 24,
+      "is_top": false,
+      "shapes": 217,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN__pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 9.85,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XLDMUX1__sky130_fd_sc_hd__mux2_2",
+      "index": 25,
+      "is_top": false,
+      "shapes": 98,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN__pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 4.33,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XDECXOR1__sky130_fd_sc_hd__xor2_2",
+      "index": 26,
+      "is_top": false,
+      "shapes": 120,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN__pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 6.17,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XQINV1__sky130_fd_sc_hd__inv_2",
+      "index": 27,
+      "is_top": false,
+      "shapes": 55,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN__pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 1.57,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XCNT2__sky130_fd_sc_hd__dfrtp_2",
+      "index": 28,
+      "is_top": false,
+      "shapes": 217,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN__pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 9.85,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XLDMUX2__sky130_fd_sc_hd__mux2_2",
+      "index": 29,
+      "is_top": false,
+      "shapes": 98,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN__pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 4.33,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XDECXOR2__sky130_fd_sc_hd__xor2_2",
+      "index": 30,
+      "is_top": false,
+      "shapes": 120,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN__pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 6.17,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XBORAND2__sky130_fd_sc_hd__and2_2",
+      "index": 31,
+      "is_top": false,
+      "shapes": 77,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN__pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 2.95,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XQINV2__sky130_fd_sc_hd__inv_2",
+      "index": 32,
+      "is_top": false,
+      "shapes": 55,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN__pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 1.57,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XCNT3__sky130_fd_sc_hd__dfrtp_2",
+      "index": 33,
+      "is_top": false,
+      "shapes": 217,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN__pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 9.85,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XLDMUX3__sky130_fd_sc_hd__mux2_2",
+      "index": 34,
+      "is_top": false,
+      "shapes": 98,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN__pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 4.33,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XDECXOR3__sky130_fd_sc_hd__xor2_2",
+      "index": 35,
+      "is_top": false,
+      "shapes": 120,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN__pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 6.17,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XBORAND3__sky130_fd_sc_hd__and2_2",
+      "index": 36,
+      "is_top": false,
+      "shapes": 77,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN__pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 2.95,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XQINV3__sky130_fd_sc_hd__inv_2",
+      "index": 37,
+      "is_top": false,
+      "shapes": 55,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN__pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 1.57,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XCNT4__sky130_fd_sc_hd__dfrtp_2",
+      "index": 38,
+      "is_top": false,
+      "shapes": 217,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN__pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 9.85,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XLDMUX4__sky130_fd_sc_hd__mux2_2",
+      "index": 39,
+      "is_top": false,
+      "shapes": 98,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN__pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 4.33,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XDECXOR4__sky130_fd_sc_hd__xor2_2",
+      "index": 40,
+      "is_top": false,
+      "shapes": 120,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN__pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 6.17,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XBORAND4__sky130_fd_sc_hd__and2_2",
+      "index": 41,
+      "is_top": false,
+      "shapes": 77,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN__pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 2.95,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XQINV4__sky130_fd_sc_hd__inv_2",
+      "index": 42,
+      "is_top": false,
+      "shapes": 55,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN__pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 1.57,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XCNT5__sky130_fd_sc_hd__dfrtp_2",
+      "index": 43,
+      "is_top": false,
+      "shapes": 217,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN__pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 9.85,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XLDMUX5__sky130_fd_sc_hd__mux2_2",
+      "index": 44,
+      "is_top": false,
+      "shapes": 98,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN__pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 4.33,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XDECXOR5__sky130_fd_sc_hd__xor2_2",
+      "index": 45,
+      "is_top": false,
+      "shapes": 120,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN__pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 6.17,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XBORAND5__sky130_fd_sc_hd__and2_2",
+      "index": 46,
+      "is_top": false,
+      "shapes": 77,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN__pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 2.95,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XQINV5__sky130_fd_sc_hd__inv_2",
+      "index": 47,
+      "is_top": false,
+      "shapes": 55,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN__pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 1.57,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XZDET__sky130_fd_sc_hd__and2_2",
+      "index": 48,
+      "is_top": false,
+      "shapes": 77,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN__pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 2.95,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XFBFF__sky130_fd_sc_hd__dfxtp_2",
+      "index": 49,
+      "is_top": false,
+      "shapes": 159,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN__pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 8.01,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "vco_ring5_nfet_w2_l0p15__vco_ring5_nfet_w2_l0p15",
+      "index": 50,
+      "is_top": false,
+      "shapes": 0,
+      "instances": 1,
+      "children": [
+        "mos_array$12"
+      ],
+      "parents": [
+        "pll_vco_ring5__pll_vco_ring5"
+      ],
+      "bbox_um": {
+        "left": 0.0,
+        "bottom": 0.0,
+        "right": 8.540000000000001,
+        "top": 2.82
+      }
+    },
+    {
+      "name": "vco_ring5_nfet_w2_l0p5__vco_ring5_nfet_w2_l0p5",
+      "index": 51,
+      "is_top": false,
+      "shapes": 0,
+      "instances": 1,
+      "children": [
+        "mos_array$1$1"
+      ],
+      "parents": [
+        "pll_vco_ring5__pll_vco_ring5"
+      ],
+      "bbox_um": {
+        "left": 0.0,
+        "bottom": 0.0,
+        "right": 10.040000000000001,
+        "top": 2.82
+      }
+    },
+    {
+      "name": "vco_ring5_nfet_w8_l0p15__vco_ring5_nfet_w8_l0p15",
+      "index": 52,
+      "is_top": false,
+      "shapes": 0,
+      "instances": 1,
+      "children": [
+        "mos_array$2$1"
+      ],
+      "parents": [
+        "pll_vco_ring5__pll_vco_ring5"
+      ],
+      "bbox_um": {
+        "left": 0.0,
+        "bottom": 0.0,
+        "right": 1.09,
+        "top": 8.82
+      }
+    },
+    {
+      "name": "vco_ring5_pfet_w4_l0p15__vco_ring5_pfet_w4_l0p15",
+      "index": 53,
+      "is_top": false,
+      "shapes": 0,
+      "instances": 1,
+      "children": [
+        "mos_array$3$1"
+      ],
+      "parents": [
+        "pll_vco_ring5__pll_vco_ring5"
+      ],
+      "bbox_um": {
+        "left": -0.15,
+        "bottom": -0.15,
+        "right": 8.69,
+        "top": 4.97
+      }
+    },
+    {
+      "name": "vco_ring5_pfet_w4_l0p5__vco_ring5_pfet_w4_l0p5",
+      "index": 54,
+      "is_top": false,
+      "shapes": 0,
+      "instances": 1,
+      "children": [
+        "mos_array$4$1"
+      ],
+      "parents": [
+        "pll_vco_ring5__pll_vco_ring5"
+      ],
+      "bbox_um": {
+        "left": -0.15,
+        "bottom": -0.15,
+        "right": 10.19,
+        "top": 4.97
+      }
+    },
+    {
+      "name": "vco_ring5_pfet_w16_l0p15__vco_ring5_pfet_w16_l0p15",
+      "index": 55,
+      "is_top": false,
+      "shapes": 0,
+      "instances": 1,
+      "children": [
+        "mos_array$5$1"
+      ],
+      "parents": [
+        "pll_vco_ring5__pll_vco_ring5"
+      ],
+      "bbox_um": {
+        "left": -0.15,
+        "bottom": -0.15,
+        "right": 1.24,
+        "top": 16.97
+      }
+    },
+    {
+      "name": "loop_filter_resxhigh_w1_l5__loop_filter_resxhigh_w1_l5",
+      "index": 56,
+      "is_top": false,
+      "shapes": 0,
+      "instances": 1,
+      "children": [
+        "res_array$2"
+      ],
+      "parents": [
+        "pll_loop_filter__pll_loop_filter"
+      ],
+      "bbox_um": {
+        "left": 0.0,
+        "bottom": 0.0,
+        "right": 5.84,
+        "top": 1.0
+      }
+    },
+    {
+      "name": "loop_filter_resxhigh_w1_l10p3__loop_filter_resxhigh_w1_l10p3",
+      "index": 57,
+      "is_top": false,
+      "shapes": 0,
+      "instances": 1,
+      "children": [
+        "res_array$1"
+      ],
+      "parents": [
+        "pll_loop_filter__pll_loop_filter"
+      ],
+      "bbox_um": {
+        "left": 0.0,
+        "bottom": 0.0,
+        "right": 11.14,
+        "top": 1.0
+      }
+    },
+    {
+      "name": "loop_filter_XC1__loop_filter_XC1",
+      "index": 58,
+      "is_top": false,
+      "shapes": 2,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_loop_filter__pll_loop_filter"
+      ],
+      "bbox_um": {
+        "left": 0.0,
+        "bottom": 0.0,
+        "right": 163.4,
+        "top": 163.4
+      }
+    },
+    {
+      "name": "loop_filter_XC2__loop_filter_XC2",
+      "index": 59,
+      "is_top": false,
+      "shapes": 2,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_loop_filter__pll_loop_filter"
+      ],
+      "bbox_um": {
+        "left": 0.0,
+        "bottom": 0.0,
+        "right": 35.4,
+        "top": 35.4
+      }
+    },
+    {
+      "name": "loop_filter_XC3__loop_filter_XC3",
+      "index": 60,
+      "is_top": false,
+      "shapes": 2,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_loop_filter__pll_loop_filter"
+      ],
+      "bbox_um": {
+        "left": 0.0,
+        "bottom": 0.0,
+        "right": 42.4,
+        "top": 42.4
+      }
+    },
+    {
+      "name": "pfd_cp_nfet_w1_l0p15__pfd_cp_nfet_w1_l0p15",
+      "index": 61,
+      "is_top": false,
+      "shapes": 0,
+      "instances": 1,
+      "children": [
+        "mos_array"
+      ],
+      "parents": [
+        "pll_pfd_cp__pll_pfd_cp"
+      ],
+      "bbox_um": {
+        "left": 0.0,
+        "bottom": 0.0,
+        "right": 26.42,
+        "top": 1.82
+      }
+    },
+    {
+      "name": "pfd_cp_nfet_w1_l0p3__pfd_cp_nfet_w1_l0p3",
+      "index": 62,
+      "is_top": false,
+      "shapes": 0,
+      "instances": 1,
+      "children": [
+        "mos_array$1"
+      ],
+      "parents": [
+        "pll_pfd_cp__pll_pfd_cp"
+      ],
+      "bbox_um": {
+        "left": 0.0,
+        "bottom": 0.0,
+        "right": 8.84,
+        "top": 1.82
+      }
+    },
+    {
+      "name": "pfd_cp_nfet_w1_l1__pfd_cp_nfet_w1_l1",
+      "index": 63,
+      "is_top": false,
+      "shapes": 0,
+      "instances": 1,
+      "children": [
+        "mos_array$2"
+      ],
+      "parents": [
+        "pll_pfd_cp__pll_pfd_cp"
+      ],
+      "bbox_um": {
+        "left": 0.0,
+        "bottom": 0.0,
+        "right": 4.08,
+        "top": 1.82
+      }
+    },
+    {
+      "name": "pfd_cp_nfet_w2_l1__pfd_cp_nfet_w2_l1",
+      "index": 64,
+      "is_top": false,
+      "shapes": 0,
+      "instances": 1,
+      "children": [
+        "mos_array$3"
+      ],
+      "parents": [
+        "pll_pfd_cp__pll_pfd_cp"
+      ],
+      "bbox_um": {
+        "left": 0.0,
+        "bottom": 0.0,
+        "right": 4.08,
+        "top": 2.82
+      }
+    },
+    {
+      "name": "pfd_cp_nfet_w10_l0p15__pfd_cp_nfet_w10_l0p15",
+      "index": 65,
+      "is_top": false,
+      "shapes": 0,
+      "instances": 1,
+      "children": [
+        "mos_array$4"
+      ],
+      "parents": [
+        "pll_pfd_cp__pll_pfd_cp"
+      ],
+      "bbox_um": {
+        "left": 0.0,
+        "bottom": 0.0,
+        "right": 1.09,
+        "top": 10.82
+      }
+    },
+    {
+      "name": "pfd_cp_nfet_w10_l1__pfd_cp_nfet_w10_l1",
+      "index": 66,
+      "is_top": false,
+      "shapes": 0,
+      "instances": 1,
+      "children": [
+        "mos_array$5"
+      ],
+      "parents": [
+        "pll_pfd_cp__pll_pfd_cp"
+      ],
+      "bbox_um": {
+        "left": 0.0,
+        "bottom": 0.0,
+        "right": 1.84,
+        "top": 10.82
+      }
+    },
+    {
+      "name": "pfd_cp_pfet_w2_l0p15__pfd_cp_pfet_w2_l0p15",
+      "index": 67,
+      "is_top": false,
+      "shapes": 0,
+      "instances": 1,
+      "children": [
+        "mos_array$6"
+      ],
+      "parents": [
+        "pll_pfd_cp__pll_pfd_cp"
+      ],
+      "bbox_um": {
+        "left": -0.15,
+        "bottom": -0.15,
+        "right": 26.57,
+        "top": 2.97
+      }
+    },
+    {
+      "name": "pfd_cp_pfet_w2_l0p3__pfd_cp_pfet_w2_l0p3",
+      "index": 68,
+      "is_top": false,
+      "shapes": 0,
+      "instances": 1,
+      "children": [
+        "mos_array$7"
+      ],
+      "parents": [
+        "pll_pfd_cp__pll_pfd_cp"
+      ],
+      "bbox_um": {
+        "left": -0.15,
+        "bottom": -0.15,
+        "right": 8.99,
+        "top": 2.97
+      }
+    },
+    {
+      "name": "pfd_cp_pfet_w2_l1__pfd_cp_pfet_w2_l1",
+      "index": 69,
+      "is_top": false,
+      "shapes": 0,
+      "instances": 1,
+      "children": [
+        "mos_array$8"
+      ],
+      "parents": [
+        "pll_pfd_cp__pll_pfd_cp"
+      ],
+      "bbox_um": {
+        "left": -0.15,
+        "bottom": -0.15,
+        "right": 4.23,
+        "top": 2.97
+      }
+    },
+    {
+      "name": "pfd_cp_pfet_w4_l1__pfd_cp_pfet_w4_l1",
+      "index": 70,
+      "is_top": false,
+      "shapes": 0,
+      "instances": 1,
+      "children": [
+        "mos_array$9"
+      ],
+      "parents": [
+        "pll_pfd_cp__pll_pfd_cp"
+      ],
+      "bbox_um": {
+        "left": -0.15,
+        "bottom": -0.15,
+        "right": 1.99,
+        "top": 4.97
+      }
+    },
+    {
+      "name": "pfd_cp_pfet_w20_l0p15__pfd_cp_pfet_w20_l0p15",
+      "index": 71,
+      "is_top": false,
+      "shapes": 0,
+      "instances": 1,
+      "children": [
+        "mos_array$10"
+      ],
+      "parents": [
+        "pll_pfd_cp__pll_pfd_cp"
+      ],
+      "bbox_um": {
+        "left": -0.15,
+        "bottom": -0.15,
+        "right": 1.24,
+        "top": 20.97
+      }
+    },
+    {
+      "name": "pfd_cp_pfet_w20_l1__pfd_cp_pfet_w20_l1",
+      "index": 72,
+      "is_top": false,
+      "shapes": 0,
+      "instances": 1,
+      "children": [
+        "mos_array$11"
+      ],
+      "parents": [
+        "pll_pfd_cp__pll_pfd_cp"
+      ],
+      "bbox_um": {
+        "left": -0.15,
+        "bottom": -0.15,
+        "right": 1.99,
+        "top": 20.97
+      }
+    },
+    {
+      "name": "pfd_cp_resxhigh_w1_l300__pfd_cp_resxhigh_w1_l300",
+      "index": 73,
+      "is_top": false,
+      "shapes": 0,
+      "instances": 1,
+      "children": [
+        "res_array"
+      ],
+      "parents": [
+        "pll_pfd_cp__pll_pfd_cp"
+      ],
+      "bbox_um": {
+        "left": 0.0,
+        "bottom": 0.0,
+        "right": 300.84000000000003,
+        "top": 1.0
+      }
+    },
+    {
+      "name": "pll_divider_intN__pll_divider_intN",
+      "index": 74,
+      "is_top": false,
+      "shapes": 0,
+      "instances": 29,
+      "children": [
+        "divider_intN_XBORAND2__sky130_fd_sc_hd__and2_2",
+        "divider_intN_XBORAND3__sky130_fd_sc_hd__and2_2",
+        "divider_intN_XBORAND4__sky130_fd_sc_hd__and2_2",
+        "divider_intN_XBORAND5__sky130_fd_sc_hd__and2_2",
+        "divider_intN_XCNT0__sky130_fd_sc_hd__dfrtp_2",
+        "divider_intN_XCNT1__sky130_fd_sc_hd__dfrtp_2",
+        "divider_intN_XCNT2__sky130_fd_sc_hd__dfrtp_2",
+        "divider_intN_XCNT3__sky130_fd_sc_hd__dfrtp_2",
+        "divider_intN_XCNT4__sky130_fd_sc_hd__dfrtp_2",
+        "divider_intN_XCNT5__sky130_fd_sc_hd__dfrtp_2",
+        "divider_intN_XDECXOR1__sky130_fd_sc_hd__xor2_2",
+        "divider_intN_XDECXOR2__sky130_fd_sc_hd__xor2_2",
+        "divider_intN_XDECXOR3__sky130_fd_sc_hd__xor2_2",
+        "divider_intN_XDECXOR4__sky130_fd_sc_hd__xor2_2",
+        "divider_intN_XDECXOR5__sky130_fd_sc_hd__xor2_2",
+        "divider_intN_XFBFF__sky130_fd_sc_hd__dfxtp_2",
+        "divider_intN_XLDMUX0__sky130_fd_sc_hd__mux2_2",
+        "divider_intN_XLDMUX1__sky130_fd_sc_hd__mux2_2",
+        "divider_intN_XLDMUX2__sky130_fd_sc_hd__mux2_2",
+        "divider_intN_XLDMUX3__sky130_fd_sc_hd__mux2_2",
+        "divider_intN_XLDMUX4__sky130_fd_sc_hd__mux2_2",
+        "divider_intN_XLDMUX5__sky130_fd_sc_hd__mux2_2",
+        "divider_intN_XQINV0__sky130_fd_sc_hd__inv_2",
+        "divider_intN_XQINV1__sky130_fd_sc_hd__inv_2",
+        "divider_intN_XQINV2__sky130_fd_sc_hd__inv_2",
+        "divider_intN_XQINV3__sky130_fd_sc_hd__inv_2",
+        "divider_intN_XQINV4__sky130_fd_sc_hd__inv_2",
+        "divider_intN_XQINV5__sky130_fd_sc_hd__inv_2",
+        "divider_intN_XZDET__sky130_fd_sc_hd__and2_2"
+      ],
+      "parents": [
+        "pll_top"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 142.79,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "pll_vco_ring5__pll_vco_ring5",
+      "index": 75,
+      "is_top": false,
+      "shapes": 0,
+      "instances": 6,
+      "children": [
+        "vco_ring5_nfet_w2_l0p15__vco_ring5_nfet_w2_l0p15",
+        "vco_ring5_nfet_w2_l0p5__vco_ring5_nfet_w2_l0p5",
+        "vco_ring5_nfet_w8_l0p15__vco_ring5_nfet_w8_l0p15",
+        "vco_ring5_pfet_w16_l0p15__vco_ring5_pfet_w16_l0p15",
+        "vco_ring5_pfet_w4_l0p15__vco_ring5_pfet_w4_l0p15",
+        "vco_ring5_pfet_w4_l0p5__vco_ring5_pfet_w4_l0p5"
+      ],
+      "parents": [
+        "pll_top"
+      ],
+      "bbox_um": {
+        "left": 0.0,
+        "bottom": -0.15,
+        "right": 60.09,
+        "top": 16.97
+      }
+    },
+    {
+      "name": "pll_loop_filter__pll_loop_filter",
+      "index": 76,
+      "is_top": false,
+      "shapes": 0,
+      "instances": 5,
+      "children": [
+        "loop_filter_XC1__loop_filter_XC1",
+        "loop_filter_XC2__loop_filter_XC2",
+        "loop_filter_XC3__loop_filter_XC3",
+        "loop_filter_resxhigh_w1_l10p3__loop_filter_resxhigh_w1_l10p3",
+        "loop_filter_resxhigh_w1_l5__loop_filter_resxhigh_w1_l5"
+      ],
+      "parents": [
+        "pll_top"
+      ],
+      "bbox_um": {
+        "left": 0.0,
+        "bottom": 0.0,
+        "right": 188.38,
+        "top": 209.8
+      }
+    },
+    {
+      "name": "pll_pfd_cp__pll_pfd_cp",
+      "index": 77,
+      "is_top": false,
+      "shapes": 0,
+      "instances": 13,
+      "children": [
+        "pfd_cp_nfet_w10_l0p15__pfd_cp_nfet_w10_l0p15",
+        "pfd_cp_nfet_w10_l1__pfd_cp_nfet_w10_l1",
+        "pfd_cp_nfet_w1_l0p15__pfd_cp_nfet_w1_l0p15",
+        "pfd_cp_nfet_w1_l0p3__pfd_cp_nfet_w1_l0p3",
+        "pfd_cp_nfet_w1_l1__pfd_cp_nfet_w1_l1",
+        "pfd_cp_nfet_w2_l1__pfd_cp_nfet_w2_l1",
+        "pfd_cp_pfet_w20_l0p15__pfd_cp_pfet_w20_l0p15",
+        "pfd_cp_pfet_w20_l1__pfd_cp_pfet_w20_l1",
+        "pfd_cp_pfet_w2_l0p15__pfd_cp_pfet_w2_l0p15",
+        "pfd_cp_pfet_w2_l0p3__pfd_cp_pfet_w2_l0p3",
+        "pfd_cp_pfet_w2_l1__pfd_cp_pfet_w2_l1",
+        "pfd_cp_pfet_w4_l1__pfd_cp_pfet_w4_l1",
+        "pfd_cp_resxhigh_w1_l300__pfd_cp_resxhigh_w1_l300"
+      ],
+      "parents": [
+        "pll_top"
+      ],
+      "bbox_um": {
+        "left": 0.0,
+        "bottom": -0.15,
+        "right": 300.84000000000003,
+        "top": 26.12
+      }
+    },
+    {
+      "name": "pll_top",
+      "index": 78,
+      "is_top": true,
+      "shapes": 0,
+      "instances": 4,
+      "children": [
+        "pll_divider_intN__pll_divider_intN",
+        "pll_loop_filter__pll_loop_filter",
+        "pll_pfd_cp__pll_pfd_cp",
+        "pll_vco_ring5__pll_vco_ring5"
+      ],
+      "parents": [],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.15,
+        "right": 589.3100000000001,
+        "top": 232.76
+      }
+    }
+  ]
+}
