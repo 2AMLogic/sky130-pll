@@ -1140,8 +1140,9 @@ full `timeout_s` = 10800 s budget. That is the cost problem issue #103
 already tracks against the current manifest defaults, not something this
 change introduced, and it was made worse here by a separate full-grid
 campaign occupying the same host. Rather than commit a record whose points
-are timeouts, no record was minted; the full-grid closed-loop
-re-verification is filed as a follow-up that cross-references #103.
+are timeouts, no record was minted; the closed-loop re-verification is
+filed as **issue #127**, which cross-references #103's cost work and
+carries the informal A/B below as its starting evidence.
 
 What *was* done instead is a cheap, honest, informal closed-loop diagnostic
 in the same family as #104's testbench (B) -- and it is arguably a sharper
@@ -1183,7 +1184,8 @@ this setup: from the manifest's genuinely discharged cold start
 microseconds and the trap is not reachable inside a short window at all.
 That is a second, independent reason the closed-loop question needs the
 manifest's full 100 microsecond window -- and therefore #103's cost work --
-rather than a cheap short run.
+rather than a cheap short run. Both observations are carried into #127 so
+the next pass does not rediscover them.
 
 ### No spec edits from this issue
 
