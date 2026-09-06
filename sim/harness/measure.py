@@ -174,10 +174,6 @@ class MeasureSpec:
     def tran_stop_s(self) -> float:
         return parse_spice_time(self.tran_stop)
 
-    @property
-    def tran_step_s(self) -> float:
-        return parse_spice_time(self.tran_step)
-
     @classmethod
     def from_manifest(cls, manifest: dict):
         block = manifest.get("measure")
