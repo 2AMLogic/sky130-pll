@@ -13,13 +13,33 @@ v {xschem version=3.4.7 file_version=1.2
 * Each counter bit i has a decrement path (borrow-chain subtractor,
 * comparator-free) muxed against the static NSELi input, selected by
 * ZERO (all-bits-zero detect, itself built from the same borrow
-* chain): when ZERO=1 the counter synchronously reloads NSEL[5:0]
+* logic): when ZERO=1 the counter synchronously reloads NSEL[5:0]
 * (=N-1) instead of continuing to decrement past 0. The registered
 * copy of ZERO (FBFF) is FBCLK -- a clean, one-CLK-period-wide pulse
 * every N input cycles. Architecture choice, the programming
 * interface, and the retiming/top-frequency target are documented in
 * design/divider/DESIGN.md (design target, not verified by
 * simulation -- that is a later issue's testbench, per #27's scope).
+*
+* Issue #107 retiming: BOR3/BOR4 (borrow into bits 3/4) and ZERO are
+* computed from wide AND gates (and3_2/and4_2) off NQ0..NQ5 directly
+* -- ZERO now goes through BOR4 and a parallel NQ4*NQ5 term (BORZ45)
+* instead of rippling through BOR5 -- rather than rippling through one
+* and2_2 per bit (BOR2->BOR3->BOR4->BOR5->ZDET). This flattens the
+* CLK->D5 combinational depth from 7 gates to 5 (measured worst-case
+* CLK-rise-to-D5-settle drops from #104's ~1180 ps at tt/27C/1.80V --
+* see design/divider/DESIGN.md's "Issue #107" section for the measured
+* before/after frequency ceilings). This is a real, verified
+* improvement (roughly 25-40% higher maximum correct-division
+* frequency at every corner) but on its own it does NOT durably close
+* the trap this issue set out to close: only the ff/-40C/1.98V corner
+* clears the VCO's ~1.09 GHz top free-running frequency; ss, sf, fs
+* and tt all still fall short. A uniform drive-strength bump (_2->_4,
+* the other cheap candidate #104 named) was tried and measured to make
+* timing WORSE, not better, at this circuit's fanout -- also recorded
+* in DESIGN.md. Closing the remaining gap needs a bigger change
+* (dual-modulus prescaler or a non-ripple-borrow counter encoding),
+* tracked as a follow-up, not attempted in this schematic.
 *
 * This is a forward design (CLAUDE.md "Reverse-engineering-free"): a
 * textbook synchronous down-counter with a comparator-free zero
@@ -98,9 +118,10 @@ C {sky130_stdcells/xor2_2.sym} 1850 0 0 0 {name=XDECXOR3 VGND=GND VNB=GND VPB=VD
 C {devices/lab_pin.sym} 1790 -20 0 0 {name=p48 sig_type=std_logic lab=Q3}
 C {devices/lab_pin.sym} 1790 20 0 0 {name=p49 sig_type=std_logic lab=BOR3}
 C {devices/lab_pin.sym} 1910 0 0 0 {name=p50 sig_type=std_logic lab=DDEC3}
-C {sky130_stdcells/and2_2.sym} 1850 200 0 0 {name=XBORAND3 VGND=GND VNB=GND VPB=VDD VPWR=VDD}
-C {devices/lab_pin.sym} 1790 180 0 0 {name=p51 sig_type=std_logic lab=BOR2}
-C {devices/lab_pin.sym} 1790 220 0 0 {name=p52 sig_type=std_logic lab=NQ2}
+C {sky130_stdcells/and3_2.sym} 1850 200 0 0 {name=XBORAND3 VGND=GND VNB=GND VPB=VDD VPWR=VDD}
+C {devices/lab_pin.sym} 1790 160 0 0 {name=p51 sig_type=std_logic lab=NQ0}
+C {devices/lab_pin.sym} 1790 200 0 0 {name=p52 sig_type=std_logic lab=NQ1}
+C {devices/lab_pin.sym} 1790 240 0 0 {name=p94 sig_type=std_logic lab=NQ2}
 C {devices/lab_pin.sym} 1910 200 0 0 {name=p53 sig_type=std_logic lab=BOR3}
 C {sky130_stdcells/inv_2.sym} 1850 400 0 0 {name=XQINV3 VGND=GND VNB=GND VPB=VDD VPWR=VDD}
 C {devices/lab_pin.sym} 1810 400 0 0 {name=p54 sig_type=std_logic lab=Q3}
@@ -119,9 +140,11 @@ C {sky130_stdcells/xor2_2.sym} 2400 0 0 0 {name=XDECXOR4 VGND=GND VNB=GND VPB=VD
 C {devices/lab_pin.sym} 2340 -20 0 0 {name=p64 sig_type=std_logic lab=Q4}
 C {devices/lab_pin.sym} 2340 20 0 0 {name=p65 sig_type=std_logic lab=BOR4}
 C {devices/lab_pin.sym} 2460 0 0 0 {name=p66 sig_type=std_logic lab=DDEC4}
-C {sky130_stdcells/and2_2.sym} 2400 200 0 0 {name=XBORAND4 VGND=GND VNB=GND VPB=VDD VPWR=VDD}
-C {devices/lab_pin.sym} 2340 180 0 0 {name=p67 sig_type=std_logic lab=BOR3}
-C {devices/lab_pin.sym} 2340 220 0 0 {name=p68 sig_type=std_logic lab=NQ3}
+C {sky130_stdcells/and4_2.sym} 2400 200 0 0 {name=XBORAND4 VGND=GND VNB=GND VPB=VDD VPWR=VDD}
+C {devices/lab_pin.sym} 2340 140 0 0 {name=p95 sig_type=std_logic lab=NQ0}
+C {devices/lab_pin.sym} 2340 180 0 0 {name=p67 sig_type=std_logic lab=NQ1}
+C {devices/lab_pin.sym} 2340 220 0 0 {name=p68 sig_type=std_logic lab=NQ2}
+C {devices/lab_pin.sym} 2340 260 0 0 {name=p96 sig_type=std_logic lab=NQ3}
 C {devices/lab_pin.sym} 2460 200 0 0 {name=p69 sig_type=std_logic lab=BOR4}
 C {sky130_stdcells/inv_2.sym} 2400 400 0 0 {name=XQINV4 VGND=GND VNB=GND VPB=VDD VPWR=VDD}
 C {devices/lab_pin.sym} 2360 400 0 0 {name=p70 sig_type=std_logic lab=Q4}
@@ -148,9 +171,13 @@ C {sky130_stdcells/inv_2.sym} 2950 400 0 0 {name=XQINV5 VGND=GND VNB=GND VPB=VDD
 C {devices/lab_pin.sym} 2910 400 0 0 {name=p86 sig_type=std_logic lab=Q5}
 C {devices/lab_pin.sym} 2990 400 0 0 {name=p87 sig_type=std_logic lab=NQ5}
 C {sky130_stdcells/and2_2.sym} 2950 500 0 0 {name=XZDET VGND=GND VNB=GND VPB=VDD VPWR=VDD}
-C {devices/lab_pin.sym} 2890 480 0 0 {name=p88 sig_type=std_logic lab=BOR5}
-C {devices/lab_pin.sym} 2890 520 0 0 {name=p89 sig_type=std_logic lab=NQ5}
+C {devices/lab_pin.sym} 2890 480 0 0 {name=p88 sig_type=std_logic lab=BOR4}
+C {devices/lab_pin.sym} 2890 520 0 0 {name=p89 sig_type=std_logic lab=NQ45}
 C {devices/lab_pin.sym} 3010 500 0 0 {name=p90 sig_type=std_logic lab=ZERO}
+C {sky130_stdcells/and2_2.sym} 3400 500 0 0 {name=XBORZ45 VGND=GND VNB=GND VPB=VDD VPWR=VDD}
+C {devices/lab_pin.sym} 3340 480 0 0 {name=p97 sig_type=std_logic lab=NQ4}
+C {devices/lab_pin.sym} 3340 520 0 0 {name=p98 sig_type=std_logic lab=NQ5}
+C {devices/lab_pin.sym} 3460 500 0 0 {name=p99 sig_type=std_logic lab=NQ45}
 C {sky130_stdcells/dfxtp_2.sym} 3800 -400 0 0 {name=XFBFF VGND=GND VNB=GND VPB=VDD VPWR=VDD}
 C {devices/lab_pin.sym} 3710 -410 0 0 {name=p91 sig_type=std_logic lab=CLK}
 C {devices/lab_pin.sym} 3710 -390 0 0 {name=p92 sig_type=std_logic lab=ZERO}
