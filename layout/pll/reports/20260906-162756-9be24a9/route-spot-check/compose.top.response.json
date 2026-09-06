@@ -1,0 +1,97 @@
+{
+  "schema_version": 1,
+  "generator": "gen-compose",
+  "cell_name": "pll_top",
+  "gds_path": "pll_top.gds",
+  "pdk": {
+    "name": "sky130A",
+    "variant": "sky130A",
+    "version": "open_pdks c6d73a35f524070e85faff4a6a9eef49553ebc2b"
+  },
+  "bbox_um": {
+    "x0": -0.19,
+    "y0": -0.15,
+    "x1": 589.3100000000001,
+    "y1": 232.76000000000002
+  },
+  "ports": [],
+  "blocks": [
+    {
+      "id": "pll_pfd_cp",
+      "source": "generator_report",
+      "generator": "gen-compose",
+      "cell_name": "pll_pfd_cp",
+      "offset_um": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "bbox_um": {
+        "x0": 0.0,
+        "y0": -0.15,
+        "x1": 300.84000000000003,
+        "y1": 26.12
+      },
+      "orientation": "none"
+    },
+    {
+      "id": "pll_loop_filter",
+      "source": "generator_report",
+      "generator": "gen-compose",
+      "cell_name": "pll_loop_filter",
+      "offset_um": {
+        "x": 320.84,
+        "y": 0.0
+      },
+      "bbox_um": {
+        "x0": 320.84,
+        "y0": 0.0,
+        "x1": 509.21999999999997,
+        "y1": 209.8
+      },
+      "orientation": "none"
+    },
+    {
+      "id": "pll_vco_ring5",
+      "source": "generator_report",
+      "generator": "gen-compose",
+      "cell_name": "pll_vco_ring5",
+      "offset_um": {
+        "x": 529.22,
+        "y": 0.0
+      },
+      "bbox_um": {
+        "x0": 529.22,
+        "y0": -0.15,
+        "x1": 589.3100000000001,
+        "y1": 16.97
+      },
+      "orientation": "none"
+    },
+    {
+      "id": "pll_divider_intN",
+      "source": "generator_report",
+      "generator": "gen-compose",
+      "cell_name": "pll_divider_intN",
+      "offset_um": {
+        "x": 0.0,
+        "y": 229.8
+      },
+      "bbox_um": {
+        "x0": -0.19,
+        "y0": 229.56,
+        "x1": 142.79,
+        "y1": 232.76000000000002
+      },
+      "orientation": "none"
+    }
+  ],
+  "nets": [],
+  "pins": [],
+  "unrouted_nets": [],
+  "drc_hints": {
+    "min_spacing_um": null,
+    "matched_groups": [],
+    "notes": []
+  },
+  "warnings": []
+}

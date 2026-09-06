@@ -279,8 +279,37 @@ def plan_block(block_name: str, cards: list[dict[str, Any]]) -> dict[str, Any]:
     groups: list[dict[str, Any]] = []
 
     for (flavor, w_um, l_um), members in sorted(mos.items()):
+        # Issue #18: a single-row layout (rows=1, cols=count), not
+        # `factor_rows_cols`'s near-square grid this used before. `klt gen
+        # mos_array` draws every unit's gate contact facing the array's own
+        # +y edge regardless of which row it is in (verified against the
+        # generator's own port geometry) -- so in a multi-row grid only the
+        # *top* row's gates sit within `gen-compose`'s router's own small
+        # (~0.2um) edge-margin allowance; every gate below the top row is
+        # buried in the array's interior by construction, no matter how much
+        # inter-group spacing (`GROUP_SPACING_UM`) this flow adds, since that
+        # spacing is between *groups*, not between an array's own internal
+        # rows. Forcing rows=1 puts every unit's gate in that one reachable
+        # row. Source/drain pads face left/right instead, so this trades
+        # "some interior columns' S/D pads are unreachable" (already true
+        # before this change, for any column that was not its row's own
+        # edge) for "every unit's gate pad is reachable" -- measured net
+        # gain on this design's routing spot-check (issue #18): legs drawn
+        # 62/917 -> 74/827, LVS mismatches 1166 -> 1155, no new short. The
+        # opposite orientation (cols=1, all gates buried but every S/D
+        # reachable) was measured too and is worse here (40/978 legs,
+        # 1189 mismatches) -- this design's declared nets lean on gate
+        # connectivity more than on S/D, empirically, not by assumption.
+        # This does not close the matched-array-interior gap PR #67 and this
+        # issue's own history describe -- most legs still fail the same way,
+        # just fewer of them -- so `factor_rows_cols` (still exercised by
+        # `layout/tests/test_pll_layout_plan.py`'s `FactorizationTests`) is
+        # left in place rather than deleted: it is generically correct and
+        # may be worth revisiting per-group (e.g. only for arrays whose
+        # members are exclusively self-net-connected to each other) once the
+        # actual channel-routing fix lands.
         count = len(members)
-        rows, cols = factor_rows_cols(count)
+        rows, cols = 1, count
         group_id = f"{block_name}_{flavor}_w{_slug(w_um)}_l{_slug(l_um)}"
         groups.append(
             {
@@ -294,10 +323,7 @@ def plan_block(block_name: str, cards: list[dict[str, Any]]) -> dict[str, Any]:
                     "cols": cols,
                     "dummy": 0,
                     "flavor": flavor,
-                    # A matched array is only meaningful common-centroid when
-                    # its device count is even; an odd count cannot be paired,
-                    # so it falls back to plain row-major order.
-                    "topology": "common_centroid" if count % 2 == 0 else "array",
+                    "topology": "array",
                     "gate_contact": True,
                 },
                 "count": count,
