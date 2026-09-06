@@ -854,3 +854,342 @@ diagnostic above) to still trip the trap at most corners.
 
 Nothing in `spec/target-spec.md` is edited or ratified by issue #107. Row 4
 (multiplication ratio) and row 2 (output band) stay DRAFT.
+
+## Issue #114: dual-modulus /2-/3 prescaler front-end -- the remaining
+## margin gap, closed at every ratified PVT corner
+
+Issue #107 (above) flattened the borrow chain and measured a real 25-45%
+improvement, but only the `ff`/-40 degC/1.98 V corner cleared the VCO's own
+~1.09 GHz top free-running frequency (`design/vco/DESIGN.md`'s sanity-check
+table). Issue #114 closes the rest of the gap. This section records the
+approach chosen, the measurements behind that choice (including three
+alternatives that were built and measured and lost), the new full-grid
+result, and what is honestly still owed.
+
+### Why no amount of retiming or gate sizing on the old architecture could
+### have closed it -- the flip-flop overhead, from this repo's own numbers
+
+The relevant budget is one `CLK` period at the worst corner. Take the
+figures already in this document: at `tt`/27 degC/1.80 V #104 measured the
+counter flip-flop's clk->Q at ~230 ps and the *pre*-#107 `D5` settle at
+~1180 ps through seven loaded gate levels, i.e. ~136 ps per loaded gate
+level, against a 1282 ps period at the measured breakpoint -- which leaves
+~78 ps of `dfrtp_2` setup. So at `tt` the fixed flip-flop overhead
+(clk->Q + setup) is ~308 ps and each gate level costs ~136 ps. #107's
+retimed five-level design measures 1012 MHz at `tt` (988 ps), which those
+same two numbers reproduce exactly: 308 + 5 x 136 = 988 ps.
+
+Scale that budget to the slow corner using the same design's own measured
+ratio (`ss`/125 degC/1.62 V: 638 MHz = 1567 ps, versus 988 ps at `tt`, a
+factor of 1.59): at `ss`/125 degC/1.62 V the flip-flop overhead is ~490 ps
+and a gate level costs ~216 ps. To run at the VCO's ~1.09 GHz ceiling the
+period may be no longer than 917 ps, so the budget allows
+
+    (917 - 490) / 216 = 1.98
+
+**at most two loaded gate levels between flip-flops.** The bit-5 decrement
+alone cannot fit in two: `BOR5` is a five-input AND of `NQ0..NQ4`, and
+`sky130_fd_sc_hd` has no `and5`, so `BOR5` already costs two levels on its
+own (`and4` + `and2`, the structure #107 uses and the shallowest the
+library allows) before the decrement `XOR` and the reload `MUX` are added.
+The old architecture is therefore **two levels over budget at the slow
+corner by construction**, and no gate-sizing pass can recover two levels:
+sizing moves the ~216 ps per level by a few percent, not by 100%. That is
+the structural reason #107's honest "not closed" verdict was not a matter
+of trying harder at the same architecture.
+
+### The alternatives, built and measured rather than argued
+
+Issue #114 named three candidate approaches. Two of them (and two further
+ideas that suggested themselves during the work) were built as real
+netlists and measured on the same standalone diagnostic described below,
+rather than being reasoned about and dropped:
+
+| Variant (all `N` = 25, same diagnostic) | `ss`/-40 degC/1.62 V | `ss`/125 degC/1.62 V | `tt`/27 degC/1.80 V | Verdict |
+|---|---|---|---|---|
+| #107 baseline, as on `main` | -- | 638 MHz | 1012 MHz | the starting point |
+| **Option 2**: targeted, fanout-aware sizing of the #107 baseline (`XQINV0` -> `inv_4`, `XQINV1` -> `inv_4`, `XBORAND4` -> `and4_4`; off-critical-path `XZDET`/`XBORZ45` -> `and2_1`) | -- | **625 MHz** | **991 MHz** | **rejected: 2-3% *worse* at every corner** |
+| **Option 1**: dual-modulus /2-/3 prescaler (this section's design) | **1166 MHz** | **1306 MHz** | **2094 MHz** | **chosen** |
+| ... with the 7-load `PCLK` buffer upsized `inv_2` -> `inv_4` | 1172 MHz | -- | -- | rejected: within the sweep's own 25 MHz resolution |
+| ... with the same buffer upsized `inv_2` -> `inv_8` | 1109 MHz | -- | -- | rejected: 5% worse |
+| ... with the back-end borrow chain De Morgan'd (`inv`+`and3`/`and4` -> `nor3`/`nor4`, one level shallower) | 1000 MHz | 1211 MHz | 1858 MHz | **rejected: worse, despite being shallower** |
+| ... with the back-end reload mux absorbed into the flip-flop (`mux2_2`+`dfrtp_2` -> `sdfrtp_2`) | 1197 MHz | -- | -- | rejected: +2.7%, at the edge of resolution, for a cell-type change on all five bits |
+
+Two of those deserve a note, because both contradict a plausible intuition:
+
+- **Targeted fanout-aware sizing (option 2) does not help this circuit
+  either.** #107 measured a *uniform* `_2`->`_4` bump to be a net loss and
+  suggested a targeted pass might still win. Measured: it does not. Upsizing
+  only the genuinely multi-load nodes (`NQ0` at five loads, `NQ1` at three,
+  `BOR4` at three) and downsizing the off-critical-path tail still comes out
+  2-3% *behind* the uniform `_2` design at every corner. The same lever was
+  re-tried on the new architecture's one genuinely high-fanout node -- `PCLK`,
+  which drives **seven** flip-flop clock pins -- with the same result:
+  `inv_4` is a wash and `inv_8` is 5% worse. Sizing is simply not the lever
+  for this circuit at this load, and this pass ships **`_2` drive strength
+  uniformly**, exactly as #107 did. There is therefore no sizing change in
+  this PR that could reintroduce #107's regression, and the measurements
+  above are the check rather than an assumption.
+- **A shallower borrow chain can still be slower.** Rewriting
+  `BOR3`/`BOR4` as `nor3`/`nor4` directly off `Q0..Q3` is Boolean-identical
+  and removes the inverter level entirely -- four levels become three. It
+  measures **worse at every corner**, and worst at low supply
+  (1000 MHz vs. 1166 MHz at `ss`/-40 degC/1.62 V), because a four-input NOR
+  stacks four PMOS in series in its pull-up and that stack degrades faster
+  with falling `VDD` than the extra inverter costs. Gate *count* and gate
+  *depth* are not the same thing as delay, and at 1.62 V the difference is
+  14%.
+
+### Chosen: a divide-by-2/3 dual-modulus prescaler front-end (option 1)
+
+    N = 2*M + S,   M = floor(N/2),   S = N mod 2 (0 or 1)
+
+The prescaler (`XPA`/`XPB`) is the only thing clocked at the full `CLK`
+(VCO) rate, and each of its two flip-flops sees exactly **one** gate --
+`DPA = ~(PA | PB)` (`XPANOR`, a `nor2_2`) and `DPB = PA & MC` (`XPBAND`,
+an `and2_2`) -- which fits inside the two-level budget derived above with
+room to spare. `PA` is high for exactly one `CLK` cycle per prescaler
+period, so `PCLK = ~PA` (`XPCKINV`) has exactly one rising edge per period
+and clocks the back-end at `CLK`/2 (or `CLK`/3). The back-end -- the same
+comparator-free synchronous down-counter with #107's flattened borrow chain,
+one bit narrower at five bits -- therefore gets **two to three `CLK`
+periods** to settle instead of one, which is where the whole factor of two
+comes from.
+
+**Why /2-/3 and a single swallow flag, rather than the textbook /4-/5
+pulse-swallow.** A `P`/`P+1` pulse-swallow counter needs `S <= M`, so it
+only covers `N >= P^2 - P` continuously; with `P` = 4 that is `N >= 12`,
+and this block's DRAFT range starts at `N` = 4. `N` = 6, 7 and 11 are not
+synthesizable at all by a /4-/5 pulse-swallow -- they would need more
+swallowed cycles than there are prescaler periods to swallow them in. With
+`P` = 2, `S` is 0 or 1, so at most one cycle is ever swallowed per output
+period: no swallow *counter* is needed, just a single registered flag
+(`MC = ODD & ZERO`, `XMCAND`/`XMCFF`), and coverage is complete for every
+`N >= 4` (in fact for every `N >= 2`). The cost of `P` = 2 rather than
+`P` = 4 is that the back-end sees `CLK`/2 rather than `CLK`/4, which the
+measurements below show is comfortably enough.
+
+**The usual pulse-swallow modulus-control race, and how it is avoided.**
+`MC` is sampled by `XPB` at the `CLK` edge where `PA` = 1, and `MC` is
+produced by a flip-flop in the back-end (`PCLK`) domain. If the back-end
+were clocked on `PA`'s **rising** edge, the chain from that edge to the
+sampling edge would be one `CLK` period long and would have to absorb two
+flip-flop clk->Q delays plus a setup -- roughly 850 ps against a 917 ps
+period at `ss`, i.e. no margin at all. Taking the back-end clock off `PA`'s
+**falling** edge instead (`PCLK = ~PA`) moves the sampling edge two `CLK`
+periods away in /2 mode (three in /3 mode), so `MC` has ~1.4 ns of margin
+at the corner where it used to have none. This is why `PCLK` is an
+inverted `PA` rather than `PA` itself, and it is the one non-obvious piece
+of the arrangement.
+
+**Static decode, off every timing path.** `ODD = ~NSEL0` (`N = NSEL + 1` is
+odd exactly when `NSEL0` = 0) and `L[4:0]` = bits [5:1] of `NSEL - 1`
+= `floor((NSEL-1)/2)` = `M - 1`, the back-end's reload word. `NSEL[5:0]` is
+a static configuration input (spec row 4), so this decode is pure DC
+combinational logic on constant pins -- eleven cells, none of them on any
+clocked path. Worked examples: `N` = 4 -> `L` = 1, `ODD` = 0, total
+2 x 2 = 4; `N` = 25 -> `L` = 11, `ODD` = 1, total 2 x 12 + 1 = 25;
+`N` = 64 -> `L` = 31, `ODD` = 0, total 2 x 32 = 64.
+
+**Port list unchanged.** `divider_intN.sym` is untouched and
+`design/top/top.sch` needs no change. The one behavioural difference at the
+block's boundary is that `FBCLK` is now one prescaler period (2-3 `CLK`
+cycles) wide rather than one `CLK` period; the PFD (`design/pfd-cp`) is
+rising-edge triggered through an edge-pulse generator, so a wider `FBCLK`
+high time is equivalent for the loop.
+
+The block goes from 30 standard-cell instances to 42 (five counter
+flip-flops + five reload muxes + four decrement XORs + four borrow/zero
+ANDs + two bit-complement inverters in the back-end; two prescaler
+flip-flops + three gates in the front-end; one modulus-control flip-flop +
+one gate; one output register; eleven static-decode cells).
+
+### Standalone diagnostic: same method as #104's testbench (A), re-validated
+
+Informal, uncommitted diagnostic -- same status and convention as #104's
+and #107's, not a `sim/` evidence record. `divider_intN` is netlisted
+standalone from `netlist/divider_intN.spice` and driven by an ideal
+rail-to-rail `pulse` `CLK` source (12.5 ps edges, 50% duty), `NSEL[5:0]`
+strapped, `RESETB` released by a `pwl` at 5-6 ns, 150 `CLK` cycles per
+point (about six divide-by-25 output periods). `ngspice-46`, the `sky130A`
+install pinned in `sim/pdk.json`, `sim/spiceinit` copied in as `.spiceinit`,
+the PDK's `sky130.lib.spice` for devices and
+`sky130_fd_sc_hd.spice` for the standard-cell bodies -- the same includes
+`sim/pll-lock`'s own testbench uses. `FBCLK` rising edges are read from a
+`wrdata` dump; a point scores **correct** only if every steady-state
+inter-edge gap matches `N / f_CLK` to within 2% (the first gap, from reset
+release to the first steady-state reload, is excluded, since reset release
+is not phase-aligned to an `N`-cycle boundary). The maximum correct-division
+frequency is then bisected to a 25-50 MHz resolution, so every figure below
+carries roughly +/- that.
+
+**The harness was validated before it was trusted**: it was first pointed at
+the *unmodified* #107 netlist from `origin/main` and reproduced this
+document's own published #107 table --
+
+| Corner | #107 table above | re-measured here | agreement |
+|---|---|---|---|
+| `ss` / 125 degC / 1.62 V | 650 MHz | 638 MHz | within resolution |
+| `sf` / 27 degC / 1.80 V | 950 MHz | 938 MHz | within resolution |
+| `fs` / 27 degC / 1.80 V | 1.00 GHz | 1050 MHz | within resolution |
+| `tt` / 27 degC / 1.80 V | 1.00 GHz | 1012 MHz | within resolution |
+| `ff` / -40 degC / 1.98 V | ">= 1.3 GHz" | 1444 MHz | consistent |
+
+-- so the before/after comparison below is between two numbers produced by
+the same instrument, not between a new measurement and an old write-up.
+
+### Result: maximum correct-division frequency, before vs. after
+
+`N` = 25, at the five corners #104/#107 reported:
+
+| Corner (process / temp / supply) | #107 (on `main`) | #114 (this section) | change | VCO top free-running freq. | Clears it? |
+|---|---|---|---|---|---|
+| `ss` / 125 degC / 1.62 V | 638 MHz | **1306 MHz** | +105% | ~1.09 GHz | **Yes** |
+| `sf` / 27 degC / 1.80 V | 938 MHz | **1845 MHz** | +97% | ~1.09 GHz | **Yes** |
+| `fs` / 27 degC / 1.80 V | 1050 MHz | **2169 MHz** | +107% | ~1.09 GHz | **Yes** |
+| `tt` / 27 degC / 1.80 V | 1012 MHz | **2097 MHz** | +107% | ~1.09 GHz | **Yes** |
+| `ff` / -40 degC / 1.98 V | 1444 MHz | **>= 2600 MHz** | >= +80% | ~1.09 GHz | **Yes** |
+
+### Result: the full ratified 45-point PVT grid
+
+The five corners above are the ones #104/#107 happened to probe; they are
+not the ratified grid, and the worst point in the grid turns out **not** to
+be one of them. The full DR-003 grid (`tt`/`ff`/`ss`/`sf`/`fs` x
+-40/27/125 degC x 1.62/1.80/1.98 V, the same 45 points `sim/pll-lock`'s
+manifest declares) was swept for this pass, `N` = 25, bisected to 28 MHz:
+
+| Corner | -40 degC | 27 degC | 125 degC |
+|---|---|---|---|
+| `tt` / 1.62 V | 1559 | 1672 | 1784 |
+| `tt` / 1.80 V | 2066 | 2094 | 2150 |
+| `tt` / 1.98 V | 2488 | 2488 | 2459 |
+| `ff` / 1.62 V | 2009 | 2094 | 2150 |
+| `ff` / 1.80 V | 2544 | 2572 | 2516 |
+| `ff` / 1.98 V | >= 2600 | >= 2600 | >= 2600 |
+| **`ss` / 1.62 V** | **1166** | 1250 | 1306 |
+| `ss` / 1.80 V | 1588 | 1616 | 1644 |
+| `ss` / 1.98 V | 1981 | 1981 | 1925 |
+| `sf` / 1.62 V | 1278 | 1447 | 1616 |
+| `sf` / 1.80 V | 1756 | 1869 | 1981 |
+| `sf` / 1.98 V | 2150 | 2234 | 2291 |
+| `fs` / 1.62 V | 1728 | 1756 | 1756 |
+| `fs` / 1.80 V | 2234 | 2178 | 2150 |
+| `fs` / 1.98 V | >= 2600 | >= 2600 | 2488 |
+
+(figures in MHz; `>= 2600` means the point still divided exactly at the
+sweep's own 2.6 GHz ceiling and was not pinned further)
+
+**Every one of the 45 ratified points exceeds the VCO's ~1.09 GHz top
+free-running frequency.** The acceptance criterion is met.
+
+**But say plainly how much margin that is.** The worst point is
+`ss`/**-40 degC**/1.62 V at **1166 MHz** -- 1.07x the VCO ceiling, not a
+comfortable multiple. Note where it sits: the worst point is the *cold* end
+of the slow/low-supply column, not the hot end. That is temperature
+inversion -- at 1.62 V the threshold-voltage increase at -40 degC costs more
+drive than the mobility increase returns -- and it is exactly why sweeping
+the full ratified grid mattered rather than reusing #104/#107's five
+hand-picked corners: the `ss`/125 degC/1.62 V point those used is 12%
+*faster* than the true worst point and would have overstated the margin.
+
+### What binds now, measured
+
+The prescaler is not the limit. Re-measured with the back-end still
+attached and loading `PCLK` (so the loading is representative), but with the
+block's output taken straight off the prescaler, the front-end alone divides
+correctly to **1481 MHz** at `ss`/-40 degC/1.62 V, versus the whole block's
+1166 MHz. So at the worst corner the binding path is the **back-end**
+counter's own borrow chain, running at `CLK`/2, and there is roughly 27% of
+prescaler headroom left unused. That is the natural place for any future
+pass that wants more margin to look -- and the two obvious ideas for
+getting it (De Morgan'ing the chain, absorbing the reload mux into an
+`sdfrtp_2`) were both measured here and neither paid, so it would need a
+real idea rather than a rearrangement.
+
+### Modulus correctness across the DRAFT range
+
+Spot-checks at 250 MHz (the design's own lock target), same diagnostic, all
+scoring exact division on every steady-state period:
+
+| `N` | `NSEL[5:0]` | decoded `L` / `ODD` | corner | measured `CLK`/`FBCLK` ratio |
+|---|---|---|---|---|
+| **4** (DRAFT range floor, even) | 000011 | 1 / 0 | `tt` / 27 degC / 1.80 V | 4.00017 |
+| **4** | 000011 | 1 / 0 | `ss` / 125 degC / 1.62 V | 3.99992 |
+| **5** (smallest odd `N`, `M` = `L`+1 = 2) | 000100 | 1 / 1 | `tt` / 27 degC / 1.80 V | 5.00000 |
+| **25** (`sim/pll-lock`'s strap, odd) | 011000 | 11 / 1 | `tt` / 27 degC / 1.80 V | 24.9987 |
+| **63** (largest odd in range) | 111110 | 30 / 1 | `tt` / 27 degC / 1.80 V | 62.9984 |
+| **64** (DRAFT range ceiling, even) | 111111 | 31 / 0 | `tt` / 27 degC / 1.80 V | 63.99999 |
+
+`N` = 25 was additionally checked exact at 500 MHz and 900 MHz at
+`tt`/27 degC/1.80 V, and at every one of the 45 grid entries above. Between
+them these cover both halves of the decode: `N` = 4 and 64 take the even
+path (`ODD` = 0, no prescaler period is ever stretched to /3), `N` = 5, 25
+and 63 take the odd path (exactly one /3 period per output period), and
+`N` = 4/5 exercise the smallest back-end reload word (`L` = 1) while
+`N` = 63/64 exercise the largest (`L` = 30 and 31) and the `NSEL - 1`
+decode's own borrow chain running its full width.
+
+### Closed loop: what was and was not done, and what is still owed
+
+**A fresh full-grid `sim/pll-lock` record was NOT minted in this pass, and
+this section makes no closed-loop *lock* claim.** A subset run
+(`--corners ss --temps 125 --supply-tol 0.1`, the worst ratified corner
+family) was started against this change and **timed out**: the first point
+reached ~32 microseconds of its 100 microsecond window in the manifest's
+full `timeout_s` = 10800 s budget. That is the cost problem issue #103
+already tracks against the current manifest defaults, not something this
+change introduced, and it was made worse here by a separate full-grid
+campaign occupying the same host. Rather than commit a record whose points
+are timeouts, no record was minted; the full-grid closed-loop
+re-verification is filed as a follow-up that cross-references #103.
+
+What *was* done instead is a cheap, honest, informal closed-loop diagnostic
+in the same family as #104's testbench (B) -- and it is arguably a sharper
+test of the specific claim than a cold-start grid run would be. The
+question this change has to answer is: *if the loop ever finds itself above
+the divider's ceiling, is the feedback path still correct?* So the loop was
+started **already in that state** -- `design/top/top.sch`, the same corner
+decks the harness generates, with `VCTRL`, `CP` and the loop filter's `Z1`
+all initialized to within 10 mV of the rail so the VCO free-runs at the top
+of its range from t = 0, then run for 3 microseconds. Old divider versus
+new, same deck otherwise:
+
+| Corner | divider | VCO (free-running) | `FBCLK` | measured `CLK`/`FBCLK` ratio | verdict |
+|---|---|---|---|---|---|
+| `tt` / 27 degC / 1.80 V | #107 (on `main`) | 1.060 -> 1.037 GHz | 34 MHz | **31.2** | **wrong modulus (/32, not /25)** |
+| `tt` / 27 degC / 1.80 V | #114 (this PR) | 1.059 -> 1.035 GHz | 43 MHz | **25.1** | correct /25 |
+| `ss` / 125 degC / 1.62 V | #107 (on `main`) | 0.695 -> 0.679 GHz | 22 MHz | **31.6** | **wrong modulus (/32, not /25)** |
+| `ss` / 125 degC / 1.62 V | #114 (this PR) | 0.696 -> 0.678 GHz | 27 MHz | **25.1** | correct /25 |
+
+(ratios are averaged over 1 microsecond windows; the /25 rows read 24.6-25.6
+window-to-window purely from edge-counting quantization in a fixed window)
+
+This reproduces, in the closed loop and at two corners including the one
+#104 called worst, exactly what the standalone diagnostic predicts: at the
+top of the VCO's own range the divider on `main` silently divides by 32
+instead of 25 -- the loop still gets edges, but at a ratio it was never
+programmed for, so the frequency it would converge toward is not
+`N x Fref` -- while the divider in this PR divides correctly. It does not
+show the loop *locking*: over 3 microseconds `VCTRL` walks down by only
+~80 mV in both cases, so this is a statement about the feedback path's
+correctness at the top of the range, not about lock time. **Lock behaviour
+remains unproven at every corner until the follow-up full-grid `sim/pll-lock`
+record exists**, and nothing here should be read as claiming otherwise.
+
+Note also what the 5 microsecond cold-start probes showed on the way to
+this setup: from the manifest's genuinely discharged cold start
+(`VCTRL` = `CP` = `Z1` = 0), `VCTRL` ramps at only ~32 mV/microsecond at
+`tt`/27 degC/1.80 V, so the VCO has not even started oscillating at 5
+microseconds and the trap is not reachable inside a short window at all.
+That is a second, independent reason the closed-loop question needs the
+manifest's full 100 microsecond window -- and therefore #103's cost work --
+rather than a cheap short run.
+
+### No spec edits from this issue
+
+Nothing in `spec/target-spec.md` is edited or ratified by issue #114. Row 4
+(multiplication ratio) and row 2 (output band) stay DRAFT. The
+maximum-division-frequency figures above are diagnostic evidence about this
+schematic, not a specification of what the divider shall do; the ~1.09 GHz
+they are compared against is `design/vco/DESIGN.md`'s own informal
+sanity-check figure, not a ratified number either.
