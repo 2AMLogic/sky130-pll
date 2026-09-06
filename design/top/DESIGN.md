@@ -276,6 +276,44 @@ in this pass. This section reflects issue #98's own acceptance criterion
 evidence-based answer for the two corners probed; it is not itself a
 45-point re-run and does not substitute for one.
 
+### Harness-defaults follow-up (issue #100, item 1)
+
+The harness-fix prerequisite named above has now landed:
+`sim/pll-lock/testbench/tb.json` carries the cold-start nudge and widened
+window as **permanent manifest defaults** rather than one-off diagnostic
+overrides — `measure.ic: ["v(xxxtop.xxvco.ring0)=0"]`, `measure.tran_stop`
+`3u` → `100u` (matching row 8's own DRAFT budget), and `measure.timeout_s`
+`1800` → `10800` to accommodate the larger per-point wall-clock cost.
+`spec/decision-records/DR-004-pll-lock-cold-start-nudge-and-window.md`
+argues the full justification for why the nudge is representative of real
+silicon startup behavior (breaking a SPICE exact-device-symmetry
+idealization no real, mismatched, noisy device has) rather than papering
+over a genuine defect, including why it does not risk manufacturing a false
+lock (point 4 above — a nudged corner that still fails to lock for an
+unrelated reason still correctly reports "no lock within window").
+
+This change was smoke-tested, not full-grid-verified, before landing: the
+new `.control` block (`sim/harness/measure.py`'s `build_control_block`)
+generates the expected `.ic v(xxxtop.xxvco.ring0)=0` / `tran 200p 100u`
+cards from the updated manifest, and a bounded (900 s), uncommitted
+single-point run at `tt`/27 °C/1.80 V — the exact corner the nudge targets
+— launched a real ngspice invocation against the widened-window netlist
+that ran for the full bounded window without a netlist/parse error before
+being cut off (100 µs is well beyond what fits in a 900 s smoke-test
+budget; the existing 30 µs diagnostic above already cost 25–40 minutes of
+wall time). This confirms the new defaults are syntactically and
+operationally valid, not that any specific corner's verdict changed — that
+determination is `#100` item 2's full re-run, not this pass.
+
+This change is **methodology only** — no design file changed, and
+`spec/target-spec.md` row 8 stays DRAFT. It does not itself constitute a
+new `sim/pll-lock` evidence record: `20260905-193322-0f1934d.md` (recorded
+against the prior 3 µs/no-nudge defaults) remains the most recent committed
+full-grid baseline until a fresh 45-point re-run against these new defaults
+lands. That re-run, and root-causing the `divider_intN` `FBCLK` dropout
+(point 4 above), are `#100`'s items 2 and 3 — still open, still tracked
+there, and still not attempted in this pass.
+
 ## No spec edits
 
 Nothing in `spec/target-spec.md` is edited by this issue. All DRAFT rows
