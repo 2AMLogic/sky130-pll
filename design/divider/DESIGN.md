@@ -241,44 +241,79 @@ for a clean digital signal).
 |---|---|---|
 | 250 MHz (control; the `sim/pll-lock` reference-clock-times-N target) | 4.0 ns | Clean divide-by-25: `FBCLK` at 10.0 MHz, 9 edges/µs, all 100.0 ns apart |
 | 500 MHz | 2.0 ns | Clean divide-by-25: `FBCLK` at 20.0 MHz, all periods 50.0 ns |
-| 800 MHz | 1.25 ns | Clean divide-by-25: `FBCLK` at 25.0 MHz, all periods 40.0 ns |
+| 800 MHz | 1.25 ns | **÷32, not ÷25** (40.0 ns ÷ 1.25 ns = 32 input cycles) — raw measurement was `FBCLK` at 25.0 MHz, all periods 40.0 ns; see "Reconciliation (issue #112)" below |
 | 950 MHz | 1.053 ns | **Broken**: 0 `FBCLK` rising edges over 475 input cycles (475 ns), despite the internal `ZERO` node still toggling 29 times — `ZERO` is asserting but never being cleanly registered onto `FBCLK` |
 | 1.07 GHz (the free-running frequency PR #101's own single-corner diagnostic observed) | 0.935 ns | **Broken**: 0 `FBCLK` rising edges over 642 input cycles (600 ns); `ZERO` never even registers a clean rising edge either (0, vs. control runs' ~1 per divide period) |
+
+### Reconciliation (issue #112): the 800 MHz row above was a misread, not a re-measurement discrepancy
+
+The table's 800 MHz row originally read "Clean divide-by-25" here, while the
+"Issue #104" section later in this document (added in the same push window)
+reports ÷32 at 800 MHz — a direct contradiction at the same corner, modulus,
+and reset release. A third, independent re-run (issue #112, 2026-09-06)
+rebuilt the standalone testbench from scratch and reproduced this section's
+own raw numbers exactly: `FBCLK` at 25.0 MHz, period 40.0 ns, at 800 MHz. The
+raw data was never in dispute between the two write-ups; only the verdict
+drawn from it was wrong here. At an 800 MHz input the `CLK` period is
+1.25 ns, so 40.0 ns / 1.25 ns = 32 input cycles per `FBCLK` period — N = 32,
+not 25. A correct ÷25 at 800 MHz would show `FBCLK` at 32.0 MHz (period
+31.25 ns), not 25.0 MHz.
+
+The misread was a numerical coincidence: 800 / 32 = 25.0 exactly, so the
+*frequency* produced by the failing ÷32 mode happened to equal the
+*modulus* N = 25, and this section's pass criterion ("`FBCLK` lands on the
+expected number") matched against the modulus instead of the expected
+output frequency. The 250 MHz and 500 MHz rows above are unaffected — their
+expected outputs (10 MHz, 20 MHz) are nowhere near 25, so the coincidence
+only bites at 800 MHz. The corrected `tt`/27 °C/1.80 V breakpoint is not
+800 MHz; it is the **765/780 MHz** figure measured later in this document's
+"Issue #104: root cause of the `FBCLK` dropout at high `CLK` frequency"
+section, which stands as originally reported and reproduces independently
+under issue #112's re-run.
 
 **Conclusion**: this is a real, reproducible, **frequency-threshold** failure
 of the synchronous counter's own combinational path (the borrow chain and/or
 the `ZERO`-to-`FBCLK` registration path), not a cold-start reset race, not a
 loop-filter/VCO coordination artifact, and not a measurement-window
 artifact — the counter is driven by a clean, glitch-free ideal clock source
-for hundreds of cycles with no other circuit attached, and it still never
-reaches its own zero-detect state above roughly 800-950 MHz. That failure
-threshold sits **below**, not "comfortably inside," the VCO's own
-characterized ~1.09 GHz tuning-range ceiling (`design/vco/DESIGN.md`'s
-sanity-check table) — the "well inside a ~1 ns period" plausibility argument
-this section opened with was never checked against real standard-cell
-delays and does not hold up. Practically, this means: (1) the divider is
-**not** the limiting factor for this design's actual 250 MHz lock target
-(clean operation is demonstrated well past it, through 800 MHz); (2) the
-divider **is** a real hazard during any cold-start transient that lets the
-VCO's `VCTRL` wander into the 800 MHz-to-top-of-range band before the loop
-achieves negative feedback, which is exactly the "no lock, `VCTRL` pinned
-near `VDD`" failure mode `sim/pll-lock`'s 45-point baseline records; and (3)
+for hundreds of cycles with no other circuit attached, and it never reaches
+its own zero-detect state above roughly 765-780 MHz at `tt`/27 °C/1.80 V
+(the precise breakpoint measured in the "Issue #104" section below;
+corrected per the reconciliation note above from this section's original,
+mistaken "800-950 MHz" reading). That failure threshold sits **below**, not
+"comfortably inside," the VCO's own characterized ~1.09 GHz tuning-range
+ceiling (`design/vco/DESIGN.md`'s sanity-check table) — the "well inside a
+~1 ns period" plausibility argument this section opened with was never
+checked against real standard-cell delays and does not hold up. Practically,
+this means: (1) the divider is **not** the limiting factor for this design's
+actual 250 MHz lock target (clean operation is demonstrated well past it,
+through ~765 MHz at `tt`/27 °C/1.80 V — see the #104 section's PVT sweep
+below for the tighter figures at other corners); (2) the divider **is** a
+real hazard during any cold-start transient that lets the VCO's `VCTRL`
+wander into the ~765 MHz(`tt`)-to-top-of-range band before the loop achieves
+negative feedback — and this band is materially wider, and the hazard
+correspondingly worse, at `ss`/125 °C/1.62 V, where the #104 section's PVT
+sweep measures the same trap closing at only ~475-500 MHz, just ~2× above
+the 250 MHz target — which is exactly the "no lock, `VCTRL` pinned near
+`VDD`" failure mode `sim/pll-lock`'s 45-point baseline records; and (3)
 closing this at the standard-cell level (faster drive strengths on the
 borrow-chain/output-register critical path, or a retimed/pipelined counter,
 or the dual-modulus escalation this section already named as a candidate)
 is a real option, but so is simply keeping the closed loop's cold-start
-`VCTRL` excursion below this now-measured ~800 MHz ceiling via the VCO-bias/
-`Icp`/loop-filter levers issue #98 already scoped — the latter avoids
-touching an already-reviewed digital block's standard-cell sizing at all.
-Neither redesign is attempted in this pass; see `design/top/DESIGN.md`'s
-"Known gap" section and issue #100 for how this finding feeds the next
-design decision.
+`VCTRL` excursion below this now-measured ~765 MHz (`tt`) / ~475-500 MHz
+(`ss`/125 °C/1.62 V) ceiling via the VCO-bias/`Icp`/loop-filter levers issue
+#98 already scoped — the latter avoids touching an already-reviewed digital
+block's standard-cell sizing at all. Neither redesign is attempted in this
+pass; see `design/top/DESIGN.md`'s "Known gap" section and issue #100 for
+how this finding feeds the next design decision.
 
 **Update (issue #104): the plausibility argument above has now been measured,
-and it was optimistic.** The text above is left unedited as the authoring-time
-rationale it was; the measured result is in "Issue #104: root cause of the
-`FBCLK` dropout at high `CLK` frequency" at the end of this document. In
-short: the counter does *not* close "comfortably inside the
+and it was optimistic.** (The Conclusion paragraph above was itself corrected
+by issue #112 after a self-contradictory 800 MHz reading was found — see the
+"Reconciliation (issue #112)" note above; the figures below are unchanged from
+#104's original measurement.) The measured result is in "Issue #104: root
+cause of the `FBCLK` dropout at high `CLK` frequency" at the end of this
+document. In short: the counter does *not* close "comfortably inside the
 few-hundred-MHz-to-~1 GHz range." Measured maximum correct-division
 frequency is **≈765–780 MHz at `tt`/27 °C/1.80 V** and **≈475–500 MHz at
 `ss`/125 °C/1.62 V**, because the limiting path is not the "one `dfrtp_2`
