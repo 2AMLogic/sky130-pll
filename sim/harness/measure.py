@@ -413,7 +413,6 @@ class Measurement:
 
     label: str | None
     oscillating: bool
-    edge_count: int
     freq_hz: float | None
     duty_cycle: float | None
     locked: bool | None
@@ -480,7 +479,6 @@ def measure_trace(
         return Measurement(
             label=label,
             oscillating=False,
-            edge_count=len(usable),
             freq_hz=None,
             duty_cycle=None,
             locked=False if spec.lock else None,
@@ -499,7 +497,6 @@ def measure_trace(
         return Measurement(
             label=label,
             oscillating=True,
-            edge_count=len(usable),
             freq_hz=f,
             duty_cycle=d,
             locked=None,
@@ -522,7 +519,6 @@ def measure_trace(
         return Measurement(
             label=label,
             oscillating=True,
-            edge_count=len(usable),
             freq_hz=None,
             duty_cycle=None,
             locked=False,
@@ -541,7 +537,6 @@ def measure_trace(
     return Measurement(
         label=label,
         oscillating=True,
-        edge_count=len(usable),
         freq_hz=f,
         duty_cycle=d,
         locked=True,

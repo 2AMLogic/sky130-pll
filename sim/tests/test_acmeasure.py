@@ -398,7 +398,6 @@ class AggregateTests(unittest.TestCase):
             phase_margin_deg=50.0,
             gain_margin_db=12.0,
             gain_margin_hz=3e6,
-            dc_gain_db=130.0,
             meets_pm_floor=True,
             meets_fc_ceiling=True,
             note="f_c 350 kHz, phase margin 50.0 deg",

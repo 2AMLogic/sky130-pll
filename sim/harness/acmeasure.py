@@ -392,7 +392,6 @@ class AcMeasurement:
     phase_margin_deg: float | None
     gain_margin_db: float | None
     gain_margin_hz: float | None
-    dc_gain_db: float | None
     meets_pm_floor: bool | None
     meets_fc_ceiling: bool | None
     note: str
@@ -417,7 +416,6 @@ def measure_ac_response(
     label = gain_point.label if gain_point is not None else None
     mags = magnitudes(reals, imags)
     phases = unwrapped_phase_deg(reals, imags)
-    dc_gain_db = 20.0 * math.log10(mags[0]) if mags and mags[0] > 0 else None
 
     crossings = unity_gain_crossings(freqs, mags, phases)
     if not crossings:
@@ -439,7 +437,6 @@ def measure_ac_response(
             phase_margin_deg=None,
             gain_margin_db=None,
             gain_margin_hz=None,
-            dc_gain_db=dc_gain_db,
             meets_pm_floor=None,
             meets_fc_ceiling=None,
             note=note,
@@ -489,7 +486,6 @@ def measure_ac_response(
         phase_margin_deg=pm,
         gain_margin_db=gm_db,
         gain_margin_hz=gm_hz,
-        dc_gain_db=dc_gain_db,
         meets_pm_floor=meets_pm,
         meets_fc_ceiling=meets_fc,
         note="; ".join(parts),
