@@ -314,6 +314,80 @@ lands. That re-run, and root-causing the `divider_intN` `FBCLK` dropout
 (point 4 above), are `#100`'s items 2 and 3 — still open, still tracked
 there, and still not attempted in this pass.
 
+### Divider `FBCLK` dropout, root-caused (issue #100, item 3)
+
+`design/divider/DESIGN.md`'s new "Measured finding (issue #98/#100)" section
+answers what point 4 above left open. A standalone digital-only diagnostic —
+`divider_intN` alone, driven by an **ideal** clock source at a fixed
+frequency, completely decoupled from the VCO/PFD/charge pump/loop filter —
+reproduces the exact failure mode: clean divide-by-25 operation through at
+least 800 MHz input clock, and a complete, deterministic `FBCLK` dropout
+(zero rising edges over hundreds of input cycles) at 950 MHz and above. This
+is a real synchronous-counter timing-closure limit of the
+`sky130_fd_sc_hd`-based borrow chain/output register (see that section for
+the full per-frequency table and methodology) — **not** a cold-start reset
+race, not an analog loop-dynamics artifact, and not a measurement-window
+artifact, since the isolated digital testbench has none of those things:
+`RESETB` releases once at the start and the clock runs clean and steady for
+the rest of each run.
+
+This closes item 3's open question ("a fundamental timing limit of the
+chosen standard cells... a bug in the borrow-chain/zero-detect logic, or a
+cold-start reset-release race") with a measured answer: **a fundamental
+timing limit**, somewhere between 800 MHz and 950 MHz input clock — well
+below the ~1.09 GHz ceiling the VCO's own sanity-check table demonstrated
+and below `design/divider/DESIGN.md`'s own original (now-corrected)
+plausibility claim that closure held "comfortably inside" that range.
+
+**What this means for #98's redesign direction.** The divider's ceiling is
+comfortably above the 250 MHz closed-loop lock target itself (demonstrated
+clean through 800 MHz) — a locked loop is not at risk. The risk is entirely
+a **cold-start transient** one: `sim/pll-lock`'s baseline record's dominant
+failure signature (`VCTRL` pinned near a rail, output frequency far above
+250 MHz, `FBCLK` presumably dead) is now explained end-to-end — the VCO's
+very steep, wide-open tuning range (`design/vco/DESIGN.md`: ~145 MHz–
+~1.09 GHz across its own demonstrated `VCTRL` span, far exceeding row 5's
+DRAFT `Kvco` bound) lets an uncontrolled cold-start `VCTRL` reach the
+divider's broken band before the loop has any working feedback to correct
+it, at which point feedback is permanently gone and `VCTRL` has nothing
+pulling it back. Two independent classes of fix follow from this, not yet
+attempted:
+
+1. **Keep the divider as-is; bound the cold-start `VCTRL` excursion**
+   below ~800 MHz-equivalent via the VCO-bias/`Icp`/loop-filter levers issue
+   #98 already scoped (e.g. a charge-pump current or loop-filter time
+   constant that slows or clamps the initial `VCTRL` ramp so the VCO never
+   transits the divider's broken band during acquisition). This does not
+   touch an already-reviewed digital block's standard-cell sizing.
+2. **Fix the divider's own timing closure** (faster-drive-strength cells on
+   the borrow-chain/output-register critical path, a retimed/pipelined
+   counter, or the dual-modulus-prescaler escalation `design/divider/
+   DESIGN.md`'s "Retiming" section already named as a candidate) so the
+   divider tracks the VCO's full demonstrated range regardless of what the
+   loop does during acquisition.
+
+Neither is implemented in this pass — this section is the root-cause finding
+`#100` item 3 asked for, not the redesign itself. `#100`'s remaining scope
+(full 45-point re-run) is only informative **after** one of the two paths
+above is chosen and implemented; re-running the full grid against the
+harness-only defaults change (item 1, landed) without addressing this root
+cause would be expected to reproduce substantially the same failure pattern,
+since the underlying mechanism (cold-start `VCTRL` transiting a digitally-
+broken frequency band) is unaffected by a wider window or a startup nudge.
+
+**A note on per-point cost, measured directly in this pass**: a single
+`sim/pll-lock` point (`tt`/27 °C/1.80 V) run to completion against the new
+100 µs-window/nudge defaults did not finish inside 57 minutes of wall time
+on a heavily contended multi-agent host before being stopped as no longer
+needed (the digital-only diagnostic above had already isolated the real
+defect by then) — consistent with, and considerably more pessimistic than,
+this document's own earlier "25-40 minutes" smoke-test estimate for a 30 µs
+window. A full 45-point re-run at these defaults is realistically a
+multi-hour-to-multi-day serial campaign on a shared host, not a
+single-sitting task; `#100` item 2 should budget accordingly (dedicated/
+batch execution, or parallelized across points, rather than a single
+interactive run).
+
 ## No spec edits
 
 Nothing in `spec/target-spec.md` is edited by this issue. All DRAFT rows
