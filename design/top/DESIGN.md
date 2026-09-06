@@ -258,6 +258,33 @@ table) were run against two of the 45 points to probe this, both at
    VCO frequency well above the 250 MHz target was not completed in this
    pass.
 
+**Update (issue #104): point 4's `FBCLK` dropout has since been
+root-caused.** See `design/divider/DESIGN.md` → "Issue #104: root cause of
+the `FBCLK` dropout at high `CLK` frequency" for the full evidence. Summary,
+so this section is not misread on its own: the dropout is a **setup-time
+(retiming) failure of the divider's own ripple-borrow → zero-detect →
+reload-mux path**, not a flip-flop speed limit, not a Boolean logic bug, and
+not a reset-release race (the last two are ruled out by direct measurement —
+the same netlist divides by exactly 25 at 250–765 MHz at `tt`/27 °C/1.80 V
+and at 1.07 GHz at `ff`/−40 °C/1.98 V, and a five-point sweep of the
+reset-release phase across a full `CLK` period changes nothing at either a
+passing or a failing frequency). The measured maximum correct-division
+frequency is ≈765–780 MHz at `tt`/27 °C/1.80 V and ≈475–500 MHz at
+`ss`/125 °C/1.62 V. Above it, a mistimed borrow drops the counter into a
+short limit cycle in the upper half of the count space (modulo 16 over
+[16, 31] at 1.07 GHz) that never reaches zero, so `ZERO` — and therefore
+`FBCLK` — never asserts again. That is why the lockup is permanent rather
+than transient, and it is one-way: the railed `VCTRL` that pushes the VCO
+past the divider's limit is then sustained by the very loss of feedback it
+caused. Two consequences for this section's conclusion below: (a) the 42
+failing points of `sim/pll-lock/records/20260905-193322-0f1934d.md` cannot be
+read as loop-filter/`Icp` evidence for any point whose VCO transits above
+that limit, because feedback is simply absent there; and (b) the divider is
+*correct at the 250 MHz target at every corner probed*, so this is a
+trap the loop can fall into, not a reason the loop cannot reach its target.
+Fixing it is a divider-retiming follow-up (#107), deliberately not attempted
+in #104 (which was scoped to root-cause only).
+
 **Conclusion**: both of #98's competing hypotheses are real, and — at least
 across these two probed corners — they compound *differently* per corner;
 neither "it's just the window" nor "it's just VCO self-start" is a correct

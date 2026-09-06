@@ -274,6 +274,21 @@ Neither redesign is attempted in this pass; see `design/top/DESIGN.md`'s
 "Known gap" section and issue #100 for how this finding feeds the next
 design decision.
 
+**Update (issue #104): the plausibility argument above has now been measured,
+and it was optimistic.** The text above is left unedited as the authoring-time
+rationale it was; the measured result is in "Issue #104: root cause of the
+`FBCLK` dropout at high `CLK` frequency" at the end of this document. In
+short: the counter does *not* close "comfortably inside the
+few-hundred-MHz-to-~1 GHz range." Measured maximum correct-division
+frequency is **≈765–780 MHz at `tt`/27 °C/1.80 V** and **≈475–500 MHz at
+`ss`/125 °C/1.62 V**, because the limiting path is not the "one `dfrtp_2`
+D-to-Q, through the reload mux and one borrow-chain gate" the paragraph
+above assumed — it is the *full six-deep ripple-borrow chain* into the
+zero-detect and the reload mux, ~1.2 ns of combinational delay at `tt`/27 °C/
+1.80 V. The escalation named in the paragraph above (a prescaler front-end,
+or an equivalent restructuring of the borrow chain) is therefore now an
+open, evidence-backed follow-up rather than a hypothetical one.
+
 ## No spec edits
 
 Nothing in `spec/target-spec.md` is edited by this issue. Row 4
@@ -356,3 +371,262 @@ model`, and `unknown parameter` found none. This is a plumbing
 confirmation the block is now simulatable, not a functional or PVT
 performance claim — that remains #23/the future PVT campaign's job, and
 sits in `sim/`, not here.
+
+## Issue #104: root cause of the `FBCLK` dropout at high `CLK` frequency
+
+`design/top/DESIGN.md`'s "Known gap: closed-loop cold-start convergence
+(issue #98)" section, point 4, recorded that at `tt`/27 °C/1.80 V with the
+loop free-running near ~1.07 GHz, this block's `FBCLK` output "pulses
+exactly once, at reset release, and then never toggles again," and left
+*why* unanswered. Issue #104 answered it by measurement.
+
+**Answer, in one line**: it is a **setup-time (retiming) failure of this
+block's own ripple-borrow → zero-detect → reload-mux combinational path** —
+candidate mechanism 1 of the three #98 named, with an important refinement
+(below) — and the failure is *latching*, because a mistimed borrow drops the
+counter into a short limit cycle in the upper half of the count space that
+can never reach zero, so `ZERO` (and therefore `FBCLK`) never asserts again.
+Candidate mechanisms 2 (a Boolean logic bug in the borrow/zero-detect
+equations) and 3 (a reset-release race) are both **ruled out** by the
+evidence below.
+
+### Status of the evidence below: informal, uncommitted diagnostics
+
+Everything in this section comes from ad hoc ngspice runs in a scratch
+directory — **not** a `sim/` evidence record, and not a claim against any
+`spec/target-spec.md` row. That follows the precedent this repo already
+uses for narrow diagnostic runs (`design/vco/DESIGN.md`'s "informal sanity
+check" table, and `design/top/DESIGN.md`'s own treatment of the #98
+diagnostics) and issue #104's explicit scope, which allows informal
+diagnostics for a root-cause writeup and requires a fresh `sim/pll-lock`
+grid record only if a *fix* is proposed. No fix is proposed here (see "No
+fix proposed in this pass" below), so no new `sim/` record is minted.
+
+Environment for every run below: `ngspice-46`; sky130A via `volare` at
+`open_pdks` `c6d73a35f524070e85faff4a6a9eef49553ebc2b` (the pin in
+`sim/pdk.json`); `sim/spiceinit` copied in as `.spiceinit`; the PDK's
+`libs.tech/combined/sky130.lib.spice` for devices and
+`libs.ref/sky130_fd_sc_hd/spice/sky130_fd_sc_hd.spice` for the standard-cell
+subcircuit bodies — the same two includes `sim/pll-lock`'s own testbench
+uses.
+
+### The two diagnostic testbenches
+
+**(A) Standalone divider, ideal clock.** `divider_intN` instantiated
+instance-for-instance from `netlist/divider_intN.spice`, driven by an
+*ideal* rail-to-rail `pulse` source (20 ps edges, 50 % duty), `NSEL[5:0]` =
+`011000` (24, i.e. N = 25 — the same modulus `sim/pll-lock` straps),
+`RESETB` a `pwl` released at 5 ns, 200 `CLK` cycles simulated. Probed
+`CLK`, `FBCLK`, `Q0`..`Q5`, `BOR2`..`BOR5`, `ZERO` (and `D3`/`D4`/`D5` in
+two dedicated runs). This deliberately removes the VCO, the loop, and any
+interaction with reset-release timing — the clock is a perfect,
+free-running, phase-fixed source.
+
+**(B) Closed loop, `top.sch`.** The committed frozen netlist
+`sim/pll-lock/corners/20260905-193322-0f1934d/tt_27c_1.80v.spice` reused
+verbatim, with only its `.control` block replaced: the harness's own
+documented cold-start nudge (`.ic v(xxxtop.xxvco.ring0)=0`, the
+`measure.ic` field in `sim/harness/measure.py`) plus a 5 µs / 100 ps
+transient, saving the same divider-internal nodes hierarchically
+(`v(xxxtop.xxdiv.q0)` … `v(xxxtop.xxdiv.zero)`). This reproduces #98
+point 4's diagnostic and adds the internal instrumentation it lacked.
+
+### (B) Closed-loop reproduction — where in the chain the toggling stops
+
+The 5 µs run reproduces #98 point 4 exactly and localizes the failure:
+
+| Observable | Value over the 5 µs window |
+|---|---|
+| VCO free-running frequency | 1.073–1.075 GHz, flat for the whole window |
+| `VCTRL` | 1.790 V at 0.2 µs, creeping to 1.798 V at 4.9 µs — railed, never corrected |
+| `FBCLK` | **1 rising edge** (at t ≈ 0.53 ns) and 1 falling edge, then flat for 5373 `CLK` cycles |
+| `Q0` transitions | 5365 (≈ one per `CLK` edge — the LSB is clocking fine) |
+| `Q1` / `Q2` / `Q3` transitions | 2683 / 1342 / 593 |
+| **`Q4` transitions** | **1** |
+| **`Q5` transitions** | **0** |
+| `ZERO` transitions | 1 |
+| sampled count at 0.2 / 0.5 / 1 / 2 / 3 / 4 / 4.9 µs | 17, 22, 21, 27, 24, 22 — **every sample inside [16, 31]** |
+
+So the toggling does not stop at `FBCLK`, and it does not stop at the
+flip-flops: bits 0–3 keep counting at 1.07 GHz for the entire 5 µs. It
+stops at **bit 4**. `Q4` is stuck at 1 and `Q5` at 0, which pins the count
+inside [16, 31]; `ZERO = BOR5 · NQ5` requires `Q4 = 0`, so `ZERO` can never
+assert, so the `FBCLK` output register can never capture a 1 again. The
+single `FBCLK` pulse at t ≈ 0.53 ns is simply the power-up capture of
+`ZERO = 1` from the async-reset all-zero state — which is why the symptom
+reads as "one pulse at reset release, then silence."
+
+Note what this already rules out: the `dfrtp_2` flip-flops themselves clock
+perfectly well at 1.07 GHz (bit 0 toggles 5365 times). Whatever is failing
+is *combinational*, upstream of the higher bits' `D` inputs.
+
+### (A) Ideal-clock frequency sweep at `tt`/27 °C/1.80 V — a hard, graded threshold
+
+Divide ratio inferred from consecutive `FBCLK` rising edges; count sequences
+read by sampling `Q[5:0]` immediately before each `CLK` rising edge.
+
+| `CLK` frequency | Behaviour | Count sequence after the first reload |
+|---|---|---|
+| 250, 400, 500, 600, 700, 720, 750, 765 MHz | **÷25, exact** | 24, 23, …, 1, 0, 24, … |
+| 780 MHz | ÷32 | reload fails: 0 → **31** (should be 24), then a clean 31→0 modulo-32 loop |
+| 800 MHz | ÷32 | same as 780 MHz |
+| 900 MHz | one more pulse, then dead | reload fails harder: 0 → **63**, then traps in a modulo-32 loop over [32, 63] |
+| 1.00 GHz | **dead after the power-up pulse** | 24, 23, …, 17, 16 → **31** (borrow into bit 4 fails), then a modulo-16 loop over [16, 31] |
+| 1.07 GHz | **dead after the power-up pulse** | identical to 1.00 GHz: modulo-16 loop over [16, 31] |
+| 1.20 GHz | **dead after the power-up pulse** | borrow into bit 3 also fails: modulo-8 loop over [24, 31] |
+
+The 1.00/1.07 GHz row is exactly the closed-loop signature in (B): the
+counter reloads 24 correctly, decrements normally down to 16, and then — on
+the one transition that needs the borrow to propagate all the way into bit 4
+(16 → 15) — bit 4 fails to clear, giving 31 instead of 15. From there the
+low four bits keep decrementing to 16, bit 4 fails again, and the counter
+orbits [16, 31] forever. **It never revisits zero, so `FBCLK` is dead
+permanently, not intermittently.**
+
+The degradation is monotone and structural: as the period shrinks, the
+*deepest* borrow that still completes gets shallower — first the reload
+(which needs the full `ZERO` path) fails at 780 MHz, then the borrow into
+bit 4 at 1.00 GHz, then the borrow into bit 3 at 1.20 GHz.
+
+### (A) The same sweep across PVT — a ~2.4× spread, which is the decisive test
+
+Same ideal clock, same `NSEL`, same reset; only the model corner, the
+temperature, and the supply change.
+
+| Corner (process / temp / supply) | Highest frequency measured **÷25 exact** | Lowest frequency measured **wrong** |
+|---|---|---|
+| `ss` / 125 °C / 1.62 V | 475 MHz | 500 MHz (÷32) |
+| `sf` / 27 °C / 1.80 V | 700 MHz | 1.07 GHz (dead) |
+| `fs` / 27 °C / 1.80 V | 700 MHz | 1.07 GHz (dead) |
+| `tt` / 27 °C / 1.80 V | 765 MHz | 780 MHz (÷32) |
+| `ff` / −40 °C / 1.98 V | **1.07 GHz (÷25 exact)** | 1.15 GHz (mixed ÷31/÷64) |
+
+The maximum correct-division frequency moves by roughly **2.4×** between the
+slow and fast PVT extremes, and it moves in the direction gate delay moves.
+At `ff`/−40 °C/1.98 V the *same netlist* divides by exactly 25 at the very
+frequency (1.07 GHz) where `tt`/27 °C/1.80 V is completely dead. That is the
+signature of a timing limit and of nothing else — a Boolean logic error
+would be corner-independent.
+
+### (A) Reset-release phase sweep — mechanism 3 ruled out directly
+
+`RESETB` release swept across a full `CLK` period in five steps
+(0, 0.2, 0.4, 0.6, 0.8 of a period), at both a passing and a failing
+frequency, `tt`/27 °C/1.80 V:
+
+| Reset-release phase | 700 MHz | 1.07 GHz |
+|---|---|---|
+| 0.0 / 0.2 / 0.4 / 0.6 / 0.8 × period | ÷25 exact at every phase | dead at every phase |
+
+There is no phase of reset release at which 1.07 GHz works, and none at
+which 700 MHz fails. A reset-release race would show phase dependence; this
+shows none. (Testbench (A) also has no reset-release *transient* to race
+with in the first place — `RESETB` is an ideal 100 ps `pwl` edge and the
+clock has been running at full amplitude since t = 0.)
+
+### Critical-path delay, measured
+
+Propagation delays from the `CLK` rising edge to each node's own transition,
+`tt`/27 °C/1.80 V. Per-stage breakdown taken from the 250 MHz run (waveform
+sample grid 100 ps, so these are quantized to ±100 ps); the `D`-input
+numbers from dedicated 750/780 MHz runs (sample grid ≈ 33 ps):
+
+| Node | Worst-case `CLK`-rise → node settle |
+|---|---|
+| `Q0` (flip-flop clk→Q) | ≈ 230 ps |
+| `BOR2` | ≈ 500 ps |
+| `BOR3` | ≈ 730 ps |
+| `BOR4` | ≈ 830 ps |
+| `BOR5` | ≈ 1030 ps |
+| `ZERO` | ≈ 1020–1230 ps |
+| `D3` (reload-mux output, bit 3) | ≈ 820 ps |
+| `D4` | ≈ 950 ps |
+| **`D5`** | **≈ 1180 ps** |
+
+`D5` is the critical path, and its structure is exactly the one this
+document's "Per-bit logic" section describes:
+`CLK → Q0 → QINV0 → BORAND2 → BORAND3 → BORAND4 → BORAND5 →`
+(`DECXOR5`, and `ZDET` → the `LDMUX5` select) `→ D5` — one flip-flop
+clk→Q plus **seven** loaded combinational stages. At 765 MHz the period is
+1307 ps, leaving ~125 ps over the measured 1180 ps `D5` settle for the
+`dfrtp_2` setup time; at 780 MHz the period is 1282 ps and the margin is
+gone. The measured pass/fail breakpoint (765 MHz passes, 780 MHz fails)
+sits exactly where that arithmetic puts it, which is the quantitative
+confirmation that the failure is setup-time and not something else wearing
+a timing costume.
+
+### Verdict against #98's three candidate mechanisms
+
+| # | Candidate mechanism | Verdict | Evidence |
+|---|---|---|---|
+| 1 | Standard-cell timing limit at ~1.07 GHz | **Ruled in — with a refinement (below)** | Hard, PVT-graded frequency threshold (475 MHz at `ss`/125 °C/1.62 V → 1.07 GHz at `ff`/−40 °C/1.98 V); measured 1180 ps critical-path delay vs. the 1282 ps period at the breakpoint; failure depth shifts monotonically with period (reload → bit 4 → bit 3) |
+| 2 | Borrow-chain / zero-detect **logic** bug | **Ruled out** | The same netlist divides by exactly **25** at 250–765 MHz at `tt`, at 250–475 MHz at `ss`/125 °C/1.62 V, and at 250 MHz–1.07 GHz at `ff`/−40 °C/1.98 V. A wrong Boolean equation cannot produce the right answer at one frequency/corner and the wrong one at another; and no corner or frequency produces a *wrong but stable* modulus that would indicate a mis-wired borrow tap |
+| 3 | Cold-start reset-release race | **Ruled out** | The dropout reproduces in testbench (A), which has no VCO, no loop, and an ideal clock running at full amplitude from t = 0; and a five-point sweep of the reset-release phase across a full `CLK` period changes nothing at either 700 MHz (always passes) or 1.07 GHz (always fails). The single `FBCLK` pulse at reset release is fully explained as the output register's power-up capture of `ZERO = 1` from the async-reset all-zero state — it is a *correct* pulse, not a symptom |
+
+**The refinement on mechanism 1**: #98 phrased this candidate as "a
+fundamental timing limit of the chosen standard cells
+(`sky130_fd_sc_hd__dfrtp_2`)." That phrasing is not what the evidence
+supports, and the distinction matters for whoever fixes it. The
+**flip-flops are not the limit** — `Q0` toggles cleanly on every one of
+5373 `CLK` edges at 1.07 GHz in the closed-loop run, and at 1.2 GHz in the
+ideal-clock run. What fails is **this design's own combinational depth**:
+an eight-level path (clk→Q plus seven gates) built from the drive-strength-2
+cells this block picked "uniformly … with no fanout/timing analysis
+performed yet" (see "Implementation" above). This is a *retiming* failure of
+the architecture as drawn, not an intrinsic ceiling of the cell library.
+
+### Why this matters to the loop, and why it is a trap rather than a defect at the target
+
+At the 250 MHz design target the divider is correct at **every** corner
+probed (`tt`, `ss`/125 °C/1.62 V, `sf`, `fs`, `ff`/−40 °C/1.98 V). This
+block is not the reason the PLL fails to *reach* 250 MHz.
+
+What it is, is a **one-way trap**. If the loop ever transits above the
+corner's maximum correct-division frequency — which a cold start from a
+railed `VCTRL` does routinely — the divider stops producing `FBCLK`
+entirely. The PFD/charge pump then has no feedback edge at all, `VCTRL`
+keeps integrating toward the rail, the VCO stays fast, and nothing can ever
+bring the loop back down: the condition that broke the divider is the
+condition the divider's failure now sustains. That is the mechanism behind
+#98 point 4's "genuine loss-of-feedback lockup, not a slow convergence," and
+it is why widening `tran_stop` cannot rescue that corner. The margin is
+thinnest exactly where it hurts most: at `ss`/125 °C/1.62 V the trap closes
+at ~500 MHz, only ~2× above the 250 MHz target.
+
+### No fix proposed in this pass
+
+Per issue #104's own scope rule, a fix belongs in this issue's PR only if
+the root cause is candidate mechanism 2 (a small, well-scoped logic bug).
+It is not — it is mechanism 1, a retiming failure — so no schematic change
+is made here and no new `sim/pll-lock` record is minted. The retiming work
+is filed as a follow-up, **issue #107**. Candidate escalations, for that
+issue to choose between and verify, all of which are larger than "a small,
+well-understood change to the borrow-chain/zero-detect logic":
+
+- **Flatten the borrow chain** (carry-lookahead-style: compute `BOR3`/`BOR5`
+  from a wider AND rather than rippling through every intermediate),
+  trading gate count for depth.
+- **Pipeline / pre-compute `ZERO`** so the reload decision is registered a
+  cycle early (e.g. detect "count == 1" combinationally at the same depth
+  the current design detects "count == 0", and register it), removing the
+  zero-detect and the mux select from the critical path entirely.
+- **Raise drive strength** on the borrow chain (`_2` → `_4`) — the cheapest
+  change, but it buys a percentage, not an architecture, and would still
+  leave a hard threshold somewhere.
+- **A dual-modulus prescaler front-end**, the escalation the "Retiming /
+  top-frequency target" section above already named as the natural one.
+
+Whichever is chosen, `CLAUDE.md`'s append-only evidence rule applies: it
+needs a fresh full `sim/pll-lock` grid record before any claim that it
+works. A useful cheap acceptance check for that work, derived from this
+pass, is the ideal-clock sweep in testbench (A): the fix should move the
+maximum correct-division frequency at `ss`/125 °C/1.62 V comfortably above
+the VCO's own top free-running frequency, so that no reachable VCO state
+can kill the feedback path.
+
+### No spec edits from this investigation
+
+Nothing in `spec/target-spec.md` is edited or ratified by issue #104. Row 4
+(multiplication ratio) and row 2 (output band) stay DRAFT. The measured
+maximum-division-frequency numbers above are diagnostic evidence about the
+current schematic, not a specification of what the divider shall do.
