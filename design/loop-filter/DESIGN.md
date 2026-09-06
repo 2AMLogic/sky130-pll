@@ -359,6 +359,74 @@ impedance, `UP`/`DN` mismatch, dead-zone behaviour, the VCO control node's
 own input capacitance, or the sampled nature of a real phase detector. Read
 the record's own limitations section before citing it further.
 
+## Cold-start acquisition time: measured, and why `Icp` is not a lever (issue #98)
+
+Issue #98 scoped "`Icp` / loop-filter re-tuning aimed specifically at
+cold-start settling time" as a candidate fix for the closed-loop PLL's
+cold-start lock failures. Working from this block's own sizing derivation
+above, that direction is a dead end, and it is worth recording why so the
+next reader does not re-attempt it.
+
+During cold-start acquisition the divider's `FBCLK` is absent (or far slower
+than `REF`), so the PFD holds `UP` asserted and the pump sources a
+near-constant current into this filter. Measured directly against
+`design/pfd-cp/`'s block, driven open-loop with `DIV` strapped to `GND` and
+the `CP` node clamped by a DC source (informal ngspice probe for #98, not a
+`sim/` evidence record — same convention as `design/vco/DESIGN.md`'s own
+sanity-check table):
+
+- **7.05 µA at `tt`/27 °C/1.80 V**, essentially flat across the pump's
+  compliance range (7.048 / 7.040 / 7.032 / 7.019 / 6.945 µA at `V(CP)` =
+  0.1 / 0.4 / 0.7 / 0.9 / 1.2 V).
+- **4.91 – 7.50 µA across PVT extremes** (4.91 at `ss`/−40 °C/1.62 V, 6.50
+  at `ss`/125 °C/1.62 V, 7.08 at `fs`/−40 °C/1.98 V, 7.50 at `ff`/−40 °C/
+  1.98 V) — a 1.53x spread, notably tighter than the 2.53x `Kvco` spread
+  this block's sizing has to absorb.
+
+Two things worth flagging from that: the delivered cold-start current is
+**~30 % below the 10 µA design point** in "Design-point inputs" above (the
+sizing target is a nominal in-lock pulse current, not the sustained
+open-`UP` current the pump actually delivers during acquisition), and it is
+close enough to constant over the control range that the acquisition ramp is
+essentially linear.
+
+Against this block's `C1 + C2 + C3` = 221.25 pF (all three are effectively
+in parallel on the ~10 µs acquisition timescale — `R1·C1` = 1.09 µs,
+`R3·C3` = 34 ns), that gives `dVCTRL/dt` = 22.2 – 33.9 mV/µs, so charging
+`VCTRL` from a power-on 0 V to the ~0.87 – 0.92 V the VCO needs for the
+250 MHz closed-loop target takes **26 – 41 µs** — a hard floor on cold-start
+lock time, against `spec/target-spec.md` row 8's DRAFT `< 100 µs`. That is
+also the measured form of the mechanism #81 hypothesized: this block's #95
+re-size (`C1` 53.25 pF → 207.6 pF) multiplied that floor by ~3.7x.
+
+**Why raising `Icp` does not help.** Substituting this block's own step-1
+formula, `C1 = Icp·Kv·sec(φm)/(2π·N·ωc²)` with `Kv = 2π·Kvco`:
+
+```
+t_ramp = V_op · C1 / Icp = V_op · Kvco · sec(φm) / (N · ωc²)
+```
+
+`Icp` cancels exactly. Raising the charge-pump current shortens the ramp
+only if the filter is *not* re-sized — i.e. only by moving the loop
+bandwidth and phase margin off their targets. Hold rows 6 and 7 fixed and
+`C1` scales with `Icp` by construction, leaving cold-start acquisition time
+unchanged. The same cancellation makes `R1`/`C1`/`C2`/`R3`/`C3` non-levers
+individually: they are outputs of `(Icp, Kvco, N, f_c, φm)`, not free
+parameters.
+
+What is left is `Kvco` (linear), `ωc` (quadratic, but row 6 caps it and the
+realized worst-corner crossover already sits ~8 % under that ceiling) and
+`N` (linear). This is the same conclusion "Choosing a single `Kvco` for a
+fixed filter" above reaches from the loop-gain-spread direction — *"a 2.53x
+uncontrolled loop-gain spread is the root cause, not the filter's sizing,
+and the levers that actually fix it are outside this block"* — arrived at
+independently from the settling-time direction. `design/top/DESIGN.md`'s
+"What a cold-start settling-time fix would actually have to target (#98)"
+section carries the full analysis, including the per-corner capture-window
+table that a `Kvco` re-derivation would be sized against.
+
+No component value in this block is changed by that finding.
+
 ## Vctrl headroom analysis (row 13's owed headroom analysis, first pass)
 
 `DR-001` explicitly hands the charge pump and loop filter a headroom
