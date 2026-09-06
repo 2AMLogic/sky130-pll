@@ -173,6 +173,34 @@ issue's acceptance criteria required that, and forcing it here without
 simulation evidence would be exactly the kind of unverified claim
 `CLAUDE.md` rules out ("no claim without a testbench").
 
+## Update (issue #98): `Kvco` is now the binding constraint on two other blocks
+
+The "likely levers" named above — longer tail-device `L`, source
+degeneration, a narrower usable `VCTRL` range — have since acquired two
+concrete, measured reasons to be exercised, both outside this block:
+
+1. **Cold-start acquisition time.** `design/loop-filter/DESIGN.md`'s
+   "Cold-start acquisition time: measured, and why `Icp` is not a lever"
+   section shows the closed loop's cold-start ramp time reduces to
+   `t_ramp = V_op · Kvco · sec(φm) / (N · ωc²)` — `Icp` and the individual
+   filter component values cancel out entirely, leaving `Kvco` as the only
+   lever with real headroom.
+2. **Capture window against the divider's ceiling.** `design/divider/
+   DESIGN.md` measures `divider_intN` clean through 800 MHz and dead at
+   950 MHz. Because this ring's tuning slope is so steep, the `VCTRL`
+   interval between the 250 MHz lock point and the 800 MHz cliff is as
+   narrow as **0.222 V** (`ff`/−40 °C/1.98 V) — about 6.5 µs of cold-start
+   ramp for the loop to capture in before its feedback path dies
+   irrecoverably. A gentler tuning slope widens that window directly. The
+   per-corner table is in `design/top/DESIGN.md`'s "What a cold-start
+   settling-time fix would actually have to target (#98)" section.
+
+Neither is acted on here — a re-size needs its own `sim/vco` re-run plus the
+closed-loop `sim/pll-lock` re-run tracked in #103 to be argued against, and
+`sim/vco/records/20260904-163130-f3ae976.md` (45 points, measured
+692–1751 MHz/V) is the committed evidence any such re-derivation starts
+from, not the informal table above.
+
 ## No spec edits
 
 Nothing in `spec/target-spec.md` is edited by this issue. Rows 2 (output

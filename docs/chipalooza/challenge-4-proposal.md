@@ -104,7 +104,7 @@ states plainly that none exists yet.
 | 5 | Kvco | ≤ TBD bound (not the ported 150 MHz/V) | DRAFT | `sim/loop-ac` measures loop gain including Kvco; loop-filter re-sized against a *measured* Kvco (issue #92/#95) | **Unmet** — no ratified bound |
 | 6 | Loop bandwidth | f_c < f_ref/10 | DRAFT | `sim/loop-ac` open-loop AC sweep | **Unmet** — not ratified; latest closed-loop lock evidence (below) shows this is not yet closed satisfactorily |
 | 7 | Phase margin | ≥ 45° | DRAFT | `sim/loop-ac` | **Unmet** — not ratified |
-| 8 | Lock time | < 100 µs | DRAFT | `sim/pll-lock` (see [Sign-off status](#sign-off-status): 3 of 45 PVT points in the current record lock, at 1.38–1.71 µs) | **Unmet** |
+| 8 | Lock time | < 100 µs | DRAFT | `sim/pll-lock` — but see the [Sign-off status](#sign-off-status) correction (issue #98): that record's transients did not start from a cold start, so its "3 of 45 points lock at 1.38–1.71 µs" is an operating-point artifact, not lock evidence. No valid cold-start record exists yet (#103) | **Unmet** |
 | 9 | Period jitter | ≤ 1.0% RMS, conditional on ripple limit | DRAFT | no record | **Unmet / unmeasured** |
 | 10 | Reference spur | ≤ −55 dBc (candidate) | DRAFT | no record | **Unmet / unmeasured** |
 | 11 | Integrated RMS jitter / phase noise | not spec'd (deliberate) | DRAFT | n/a by design | **N/A** (deliberately unspecified, per gf180-pll precedent) |
@@ -210,6 +210,29 @@ acceptance criteria:
     See issue #98 for the follow-up cold-start settling-time design work
     this record's finding motivates (distinct from #92/#95's already-landed
     open-loop-margin work).
+
+    **Correction (2026-09-06, issue #98).** The paragraph above is left
+    unedited per this repo's append-only convention, but its *interpretation*
+    of that record does not survive a later finding and should not be read as
+    written. `sim/pll-lock`'s transients were starting not from a power-on
+    cold start but from ngspice's transient operating point, which for this
+    closed loop places `VCTRL` anywhere on the supply rail as a function of
+    PVT corner (measured: 1.9 µV at `ff`/−40 °C/1.80 V through 1.800 V at
+    `fs`/125 °C/1.80 V). Cross-referenced against the committed open-loop VCO
+    record, that accounts for essentially every verdict in the record cited
+    above — the "no oscillation" points started at `VCTRL` ≈ 0 with a window
+    far too short to ramp anywhere, the runaway points started already past
+    the divider's measured 800 MHz ceiling, and all three "locks" started
+    with `VCTRL` already inside the loop's pull-in range of the 250 MHz
+    control voltage. **The 3-of-45 and 1-of-45 lock counts, and the
+    "which points lock changed almost completely between records"
+    fragility narrative built on them, are artifacts of the operating-point
+    solver rather than measurements of this PLL's cold-start behavior.** Row
+    8's status is unchanged — still **Unmet**, and now with no committed
+    cold-start evidence at all until the re-run tracked in #103 lands. See
+    `spec/decision-records/DR-005-pll-lock-cold-start-initial-conditions.md`
+    and `design/top/DESIGN.md`'s "The campaign was not measuring a cold start
+    at all (issue #98)" section.
   - **Post-layout simulation**: does not exist. No post-layout (parasitic-
     extracted) netlist or PVT campaign is recorded under `sim/` for this
     design.

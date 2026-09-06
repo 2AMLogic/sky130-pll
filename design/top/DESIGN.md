@@ -415,6 +415,255 @@ single-sitting task; `#100` item 2 should budget accordingly (dedicated/
 batch execution, or parallelized across points, rather than a single
 interactive run).
 
+### The campaign was not measuring a cold start at all (issue #98)
+
+Everything above — including this section's own two-corner diagnostics, and
+`DR-004`'s startup-nudge/window reasoning — assumed that `sim/pll-lock`'s
+transients begin at a power-on state. They do not, and that assumption is
+now measured to be false.
+
+`sim/harness/measure.py`'s `build_control_block` emits `tran <step> <stop>`
+with no `uic`, so every point starts from ngspice's **transient operating
+point**. For this closed loop that operating point is not a cold start: in
+DC the ring sits at its metastable midrail equilibrium, so `CLK` is static,
+the divider's `FBCLK` never toggles, the PFD's `UP`/`DN` are static, and the
+charge pump's output node settles wherever the static leakage balance puts
+it with only the (DC-open) loop-filter capacitors attached. Measured over
+fifteen PVT points, the `VCTRL` every transient has actually been starting
+from ranges across **the entire supply rail** — 1.9 µV at `ff`/−40 °C/
+1.80 V, 0.900 V at `ss`/−40 °C/1.80 V, 1.601 V at `ss`/27 °C/1.98 V,
+1.800 V at `fs`/125 °C/1.80 V — as a function of PVT corner, and it moves
+when an unrelated node's `.ic` card is added.
+
+Cross-referencing those starting voltages against the committed open-loop
+VCO record (`sim/vco/records/20260904-163130-f3ae976.md`) accounts for
+essentially every verdict in the current committed closed-loop baseline:
+the "no oscillation" points are the ones whose operating point put `VCTRL`
+at ~0 V (a genuine cold start, but with a then-3 µs window far too short to
+ramp anywhere); the high-frequency "no lock" points started above the
+divider's 800 MHz ceiling with the feedback path already dead, and their
+reported final-window frequencies match the open-loop record's frequency at
+that same control voltage to within a few percent; and **all three
+"locks" started with `VCTRL` already inside the loop's pull-in range of that
+corner's own 250 MHz control voltage** — the loop was initialized
+approximately locked, and the reported 1.38–1.71 µs "time-to-lock" is the
+lock detector's settle-plus-hold latency, not an acquisition transient.
+
+This also explains the pattern issue #98 flagged as suspicious — that the
+locking-corner set changed almost completely between records rather than
+growing outward. What is fragile to small parameter shifts is not the loop's
+cold-start trajectory; it is the DC operating-point solution, which has no
+physical meaning here.
+
+**Fix, landed with this section**: `sim/pll-lock/testbench/tb.json`'s
+`measure.ic` now also pins the loop filter's three storage nodes discharged
+— `v(xxxtop.vctrl)=0`, `v(xxxtop.cp)=0`, `v(xxxtop.xxlf.z1)=0` (`C1`'s
+internal node; `C1` is 20x `C2` and 64x `C3`, so initializing only the
+output node would leave the dominant capacitor arbitrarily charged).
+Verified: t = 0 `VCTRL` is then exactly 0.000 V at all six corners re-probed,
+the same corners that previously started between 0.900 V and 1.800 V. Full
+argument, evidence tables and rejected alternatives (including why `uic` is
+the wrong tool for this manifest):
+`spec/decision-records/DR-005-pll-lock-cold-start-initial-conditions.md`.
+
+**Consequence for the existing records.** Per `CLAUDE.md`'s append-only
+rule the four committed `sim/pll-lock` records stay exactly as they are, and
+this section does not supersede them — but their per-point verdicts are not
+cold-start lock measurements, and the "1 of 45" / "3 of 45" lock counts
+cited by issue #98, by `docs/chipalooza/challenge-4-proposal.md` § 6 and by
+this document's own text above should be read as artifacts of the
+operating-point solver until the re-run tracked in #103 lands.
+
+### What a cold-start settling-time fix would actually have to target (#98)
+
+With the initialization defect understood, the cold-start acquisition
+problem can be stated quantitatively for the first time. Three measured
+inputs, all from committed evidence or from informal probes described below:
+
+1. **Cold-start charge-pump current.** During acquisition the divider's
+   `FBCLK` is absent or far slower than `REF`, so the PFD holds `UP`
+   asserted and the pump sources a near-constant current. Measured by
+   driving `design/pfd-cp/`'s `pfd_cp` block open-loop (`REF` at the
+   testbench's own 10 MHz stimulus, `DIV` strapped to `GND`, the `CP` node
+   clamped by a DC source, averaged over 800 ns): **7.05 µA at `tt`/27 °C/
+   1.80 V**, essentially flat in the pump's output-voltage compliance range
+   (7.048 / 7.040 / 7.032 / 7.019 / 6.945 µA at `V(CP)` = 0.1 / 0.4 / 0.7 /
+   0.9 / 1.2 V). Across PVT extremes: 4.91 µA (`ss`/−40 °C/1.62 V),
+   6.50 µA (`ss`/125 °C/1.62 V), 7.08 µA (`fs`/−40 °C/1.98 V), 7.50 µA
+   (`ff`/−40 °C/1.98 V) — a 1.53x spread, far tighter than the VCO's own
+   2.53x `Kvco` spread. Note this is meaningfully below the 10 µA design
+   point `design/loop-filter/DESIGN.md` sizes against.
+2. **Loop-filter charge store.** `C1 + C2 + C3` = 207.6 + 10.42 + 3.23 =
+   **221.25 pF** (`design/loop-filter/DESIGN.md`'s component table). On the
+   ~10 µs timescale of acquisition all three are effectively in parallel
+   (`R1·C1` = 1.09 µs, `R3·C3` = 34 ns, both short against it).
+3. **Where the VCO's frequency lands per control voltage**, per corner —
+   the committed 45-point open-loop record
+   `sim/vco/records/20260904-163130-f3ae976.md`.
+
+**The acquisition ramp.** `dVCTRL/dt = Icp/(C1+C2+C3)` = 22.2 mV/µs at the
+slowest measured corner (`ss`/−40 °C/1.62 V) to 33.9 mV/µs at the fastest
+(`ff`/−40 °C/1.98 V). Ramping from 0 V to that corner's own 250 MHz control
+voltage therefore takes:
+
+| PVT point | measured cold-start `Icp` | `dVCTRL/dt` | `VCTRL` at 250 MHz | ramp time |
+|---|---|---|---|---|
+| `ff`/−40 °C/1.98 V | 7.50 µA | 33.9 mV/µs | 0.870 V | 25.7 µs |
+| `tt`/27 °C/1.80 V | 7.05 µA | 31.9 mV/µs | 0.869 V | 27.3 µs |
+| `fs`/−40 °C/1.98 V | 7.08 µA | 32.0 mV/µs | 0.925 V | 28.9 µs |
+| `ss`/125 °C/1.62 V | 6.50 µA | 29.4 mV/µs | 0.873 V | 29.7 µs |
+| `ss`/−40 °C/1.62 V | 4.91 µA | 22.2 mV/µs | 0.914 V | 41.2 µs |
+
+**Confirmed in the closed loop.** Those numbers are built from an open-loop
+pump measurement and a component table, so they were checked against the
+real thing: a 6 µs closed-loop transient of the committed netlist snapshot
+with the corrected initial conditions in place starts at `VCTRL` = 0.0000 V
+and ramps linearly — 0.0517 V at 0.6 µs, 0.1282 V at 3 µs, 0.2237 V at 6 µs
+— i.e. **31.8 mV/µs measured at `tt`/27 °C/1.80 V against 31.9 mV/µs
+predicted**, a 0.3 % agreement between two independent measurements. The
+same run at `sf`/125 °C/1.80 V (the corner whose operating point previously
+started `VCTRL` at 1.790 V) likewise starts at exactly 0.0000 V and ramps at
+37.3 mV/µs. Both runs completed in about 7 minutes of wall time — the ring
+is off for the whole window, so there is no GHz-rate oscillation to resolve,
+which is worth knowing when budgeting the full re-run: a genuine cold-start
+point is cheap for its first ~25 µs and only becomes expensive once the ring
+starts.
+
+A longer single-corner attempt in the same pass — `tt`/27 °C/1.80 V out to
+45 µs, i.e. past the predicted 27.3 µs lock point — reached only ~8 µs of
+simulated time in about an hour of wall clock and was lost before finishing.
+That run shared a heavily contended multi-agent host with up to eight other
+ngspice processes for most of its life, so it is a **contention-inflated
+lower bound on throughput, not a clean per-point cost measurement**; read it
+alongside the 57-minutes-and-unfinished figure recorded above rather than as
+a refinement of it. The actionable form for #103 is the shape rather than
+the number: acquisition is cheap while the ring is off and expensive once it
+starts, so per-point cost is dominated by however much simulated time
+follows the ~25 µs mark, and points should be run with dedicated cores
+rather than packed onto a shared host.
+
+This is a **hard floor** on cold-start lock time — no loop can lock before
+its control node has been charged to the voltage the lock frequency needs.
+It is 26–41 µs, versus `spec/target-spec.md` row 8's DRAFT `< 100 µs`
+budget: the design fits, but with only 2.4x margin at the worst measured
+corner, and the campaign's original 3 µs window was 9–14x too short to have
+ever observed a lock. It also directly quantifies the mechanism #81
+hypothesized: #95's `C1` re-size (53.25 pF → 207.6 pF) multiplied this
+acquisition ramp by ~3.7x.
+
+**The capture window.** The ramp does not stop at 250 MHz — it keeps going
+until the loop captures. `design/divider/DESIGN.md` measures the divider
+clean through 800 MHz and completely dead at 950 MHz, and once `FBCLK` dies
+the loop has no feedback and `VCTRL` runs to the rail irrecoverably. So the
+loop has exactly the `VCTRL` interval between its own 250 MHz point and its
+own 800 MHz point to capture in. Log-interpolating the committed open-loop
+VCO record at all 45 ratified PVT points:
+
+| Corner | T (°C) | VDD (V) | `VCTRL` @ 250 MHz | `VCTRL` @ 800 MHz | capture window ΔV | f at `VCTRL` = VDD* |
+|---|---|---|---|---|---|---|
+| tt | −40 | 1.62 | 0.883 | 1.591 | 0.708 | 807 MHz |
+| tt | −40 | 1.80 | 0.883 | 1.172 | 0.289 | 1182 MHz |
+| tt | −40 | 1.98 | 0.888 | 1.138 | 0.249 | 1608 MHz |
+| tt | 27 | 1.62 | 0.863 | 1.523 | 0.660 | 828 MHz |
+| tt | 27 | 1.80 | 0.869 | 1.198 | 0.329 | 1123 MHz |
+| tt | 27 | 1.98 | 0.881 | 1.168 | 0.287 | 1466 MHz |
+| tt | 125 | 1.62 | 0.849 | 1.599 | 0.750 | 806 MHz |
+| tt | 125 | 1.80 | 0.865 | 1.316 | 0.451 | 1038 MHz |
+| tt | 125 | 1.98 | 0.882 | 1.252 | 0.370 | 1303 MHz |
+| ff | −40 | 1.62 | 0.856 | 1.230 | 0.373 | 931 MHz |
+| ff | −40 | 1.80 | 0.861 | 1.110 | 0.250 | 1366 MHz |
+| ff | −40 | 1.98 | 0.870 | 1.092 | **0.222** | 1814 MHz |
+| ff | 27 | 1.62 | 0.835 | 1.251 | 0.416 | 949 MHz |
+| ff | 27 | 1.80 | 0.848 | 1.140 | 0.293 | 1270 MHz |
+| ff | 27 | 1.98 | 0.863 | 1.128 | 0.264 | 1659 MHz |
+| ff | 125 | 1.62 | 0.826 | 1.344 | 0.518 | 902 MHz |
+| ff | 125 | 1.80 | 0.846 | 1.199 | 0.353 | 1141 MHz |
+| ff | 125 | 1.98 | 0.866 | 1.188 | 0.322 | 1465 MHz |
+| ss | −40 | 1.62 | 0.914 | never within the rail | 0.706 (to the rail) | 695 MHz |
+| ss | −40 | 1.80 | 0.907 | 1.282 | 0.375 | 1035 MHz |
+| ss | −40 | 1.98 | 0.911 | 1.180 | 0.269 | 1429 MHz |
+| ss | 27 | 1.62 | 0.890 | never within the rail | 0.730 (to the rail) | 718 MHz |
+| ss | 27 | 1.80 | 0.891 | 1.344 | 0.453 | 993 MHz |
+| ss | 27 | 1.98 | 0.899 | 1.223 | 0.325 | 1317 MHz |
+| ss | 125 | 1.62 | 0.873 | never within the rail | 0.747 (to the rail) | 719 MHz |
+| ss | 125 | 1.80 | 0.884 | 1.472 | 0.588 | 925 MHz |
+| ss | 125 | 1.98 | 0.898 | 1.337 | 0.439 | 1186 MHz |
+| sf | −40 | 1.62 | 0.855 | never within the rail | 0.765 (to the rail) | 765 MHz |
+| sf | −40 | 1.80 | 0.852 | 1.154 | 0.302 | 1149 MHz |
+| sf | −40 | 1.98 | 0.858 | 1.107 | 0.249 | 1607 MHz |
+| sf | 27 | 1.62 | 0.828 | 1.564 | 0.737 | 815 MHz |
+| sf | 27 | 1.80 | 0.834 | 1.178 | 0.345 | 1124 MHz |
+| sf | 27 | 1.98 | 0.846 | 1.139 | 0.293 | 1469 MHz |
+| sf | 125 | 1.62 | 0.805 | 1.531 | 0.726 | 826 MHz |
+| sf | 125 | 1.80 | 0.824 | 1.258 | 0.434 | 1057 MHz |
+| sf | 125 | 1.98 | 0.845 | 1.194 | 0.349 | 1327 MHz |
+| fs | −40 | 1.62 | 0.916 | 1.506 | 0.591 | 832 MHz |
+| fs | −40 | 1.80 | 0.916 | 1.189 | 0.273 | 1193 MHz |
+| fs | −40 | 1.98 | 0.925 | 1.166 | 0.240 | 1616 MHz |
+| fs | 27 | 1.62 | 0.894 | 1.539 | 0.645 | 825 MHz |
+| fs | 27 | 1.80 | 0.901 | 1.247 | 0.347 | 1115 MHz |
+| fs | 27 | 1.98 | 0.917 | 1.196 | 0.278 | 1477 MHz |
+| fs | 125 | 1.62 | 0.887 | never within the rail | 0.733 (to the rail) | 784 MHz |
+| fs | 125 | 1.80 | 0.900 | 1.370 | 0.470 | 1000 MHz |
+| fs | 125 | 1.98 | 0.922 | 1.313 | 0.390 | 1271 MHz |
+
+*Derivation, so it can be checked or redone: each row log-interpolates that
+PVT point's own six swept `(VCTRL, f)` pairs from
+`sim/vco/records/20260904-163130-f3ae976.md`. Columns marked "never within
+the rail" are corners whose ring does not reach 800 MHz anywhere in the
+supply range — those six points cannot enter the divider's dead band at all,
+and the ΔV shown is the whole remaining rail. The last column extrapolates
+off the record's top swept segment (the sweep stops at `VCTRL` = 1.6 V), so
+it is an estimate, not a measurement. This is arithmetic on committed
+evidence, not a new measurement, and it is not a `sim/` record.
+
+Read against the ramp rates above, the narrowest capture window —
+`ff`/−40 °C/1.98 V, 0.222 V — is **6.5 µs** of cold-start ramp. The widest
+is over 50 µs. At 39 of 45 points the ring would free-run above 800 MHz if
+`VCTRL` ever reached the rail, so at 39 of 45 points a failure to capture
+inside that window is unrecoverable.
+
+**Which design levers actually move this, and which do not.** Working from
+`design/loop-filter/DESIGN.md`'s own sizing derivation, `C1 = Icp·Kv·
+sec(φm)/(2π·N·ωc²)` with `Kv = 2π·Kvco`, so the acquisition ramp time is
+
+```
+t_ramp = V_op · C1 / Icp = V_op · Kvco · sec(φm) / (N · ωc²)
+```
+
+— **`Icp` cancels**. Raising the charge-pump current does not shorten
+cold-start acquisition at all, as long as the loop filter is re-sized to
+hold loop bandwidth and phase margin fixed, because `C1` scales with `Icp`
+by construction. The same cancellation makes the individual loop-filter
+component values non-levers: they are outputs of `(Icp, Kvco, N, f_c, φm)`,
+not free parameters. That rules out two of the three directions issue #98
+named. What is left:
+
+- **`Kvco` (linear).** The only unconstrained lever, and it improves three
+  independent things at once: it shortens the acquisition ramp
+  proportionally, it *widens* the capture window (a gentler tuning slope
+  puts more `VCTRL` between the 250 MHz point and the 800 MHz cliff), and it
+  shrinks the 2.53x loop-gain spread `design/loop-filter/DESIGN.md` is
+  currently paying 3.7x capacitor area to absorb. `spec/target-spec.md`
+  row 5 already carries an instruction to re-derive a `Kvco` bound, and
+  `design/vco/DESIGN.md` already names the sizing levers (longer tail-device
+  `L`, source degeneration, or a narrower usable `VCTRL` range).
+- **`ωc` (quadratic)** — but row 6 caps it at `f_ref/10`, and
+  `design/loop-filter/DESIGN.md`'s worst-corner crossover already sits ~8 %
+  under that ceiling. Essentially no headroom.
+- **`N` (linear)**, and the divider's own timing closure (#107) as an
+  independent way to remove the 800 MHz cliff rather than avoid it.
+
+**Not attempted here, and why.** No sizing change is made in this pass. A
+`Kvco` re-size is a real design change, and this issue's own acceptance
+criteria require any design change to be substantiated by a fresh full
+45-point `sim/pll-lock` re-run — which must in turn run against the
+corrected initialization this section lands, not against the defective one
+every existing record was produced under. The correct order is: land the
+initialization fix (this pass), re-run the grid (#103), then argue a `Kvco`
+target against that record. Sizing a VCO against the existing evidence would
+be tuning against a measurement artifact.
+
 ## No spec edits
 
 Nothing in `spec/target-spec.md` is edited by this issue. All DRAFT rows
