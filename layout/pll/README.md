@@ -97,7 +97,7 @@ Filed after the `klt` pin bump (#46), by the router the bump made usable:
 | Gap | Filed | How this flow copes |
 | --- | --- | --- |
 | ~~`gen-compose`'s route-vs-route collision check misses two same-block self-nets: both compose `routed: true` with no warning, and extraction reads them back as one node~~ **Fixed upstream** (klayout-tools PR #1216, merged as `dd41d23f`) | [klayout-tools#1197](https://github.com/2AMLogic/klayout-tools/issues/1197) (closed) | Issue #17's DRC-motivated pin bump (`klayout-tools==0.4.0`) turned out to be a strict descendant of this fix too — a re-run of this design's routing spot-check confirmed 0 shorted nodes, down from 3. Still ships the unrouted stream regardless (most legs remain undrawn — see the routing-channel gap below), and the routed build stays as a spot-check under `route-spot-check/` |
-| `mos_array` emits one opaque hierarchical cell with no internal routing channel reserved between rows/columns, and `gen-compose` treats every placed block as a solid obstacle with no notion of navigable space inside it — so a pin on any unit device not on the array's outermost reachable row/column is structurally unroutable, for any net, regardless of placement spacing | [klayout-tools#1531](https://github.com/2AMLogic/klayout-tools/issues/1531) (open) | This is the dominant remaining gap for issue #18 — see the routing-channel discussion below (263 of 917 legs at the current measurement). No workaround exists in this flow; closing this issue's LVS acceptance criterion needs this fixed upstream, or a documented narrower partial-progress result in the interim |
+| `mos_array` emits one opaque hierarchical cell with no internal routing channel reserved between rows/columns, and `gen-compose` treats every placed block as a solid obstacle with no notion of navigable space inside it — so a pin on any unit device not on the array's outermost reachable row/column is structurally unroutable, for any net, regardless of placement spacing | [klayout-tools#1531](https://github.com/2AMLogic/klayout-tools/issues/1531) (open) | This is the dominant remaining gap for issue #18 — see the routing-channel discussion below. A same-repo workaround (splitting a group into several separately-composed one-row blocks, when doing so cannot cost a device its common-centroid partner) was tried and measured to have a noise-level effect, not a fix — see "Issue #18's row-channel split" below. Closing this issue's LVS acceptance criterion needs this fixed upstream, or a documented narrower partial-progress result in the interim |
 
 Five further gaps this layout originally hit were **already fixed on the tool's
 `main`** and reached this repo only through the PyPI pin
@@ -205,6 +205,78 @@ klayout-tools#1531 above. The current record's routing spot-check tabulates
 the router's own reason for every leg it declined, and its LVS (spot-check)
 section runs `klt lvs` against that build and records the resulting mismatch
 in full.
+
+### Issue #18's row-channel split
+
+The three floorplan experiments above all vary *how* a single `klt gen
+mos_array` call arranges its own `rows`/`cols`/`topology` — none of them can
+touch #1531 directly, because the gap is that a single call's own interior
+has no channel at all, regardless of shape. The one lever this flow's own
+floorplan requests *do* control is how many devices go into one `klt gen`
+call in the first place: nothing requires an entire matched group to be one
+call. `pll_layout.py` now splits a near-square group into `rows` separate
+one-row `mos_array` calls of `cols` devices each, composed as independent
+blocks — which turns what used to be a zero-width internal row gap into
+`GROUP_SPACING_UM` of real, router-visible space between them, the same kind
+of gap `shelf_pack` already reserves between every other pair of groups.
+
+This is only done when it cannot cost a device its common-centroid partner:
+splitting only pays off when the per-row device count (`cols`) is itself
+even, so every row keeps a valid `common_centroid` pairing on its own
+(`_centroid_order`'s point-reflection still has a mirror within an
+even-length row). On this design that condition holds for exactly the two
+18-device groups (`factor_rows_cols(18) == (3, 6)`, an even `cols`); every
+other matched group either already fits on one row (nothing to split) or has
+an odd `cols` (the four 6-device groups, `factor_rows_cols(6) == (2, 3)`),
+where splitting would silently drop common-centroid matching to plain
+`array` order on a smaller group than the schematic's own count — the same
+regression the `topology` guard above already refuses to make. Reading
+`_mos_array_layout` directly confirms there is no equivalent lever *inside*
+one `klt gen mos_array` call: its complete parameter surface is `w_um` /
+`l_um` / `rows` / `cols` / `dummy` / `flavor` / `topology` / `gate_contact` /
+`finger_topology` / `gate_pad_clearance_um` / `draw_well_tap` /
+`add_guard_ring` / `ring_gap_side` / `ring_gap_um` / `ring_gap_offset_um` /
+`ring_padding_um` — none of it a row/col pitch or channel-width knob — which
+is the concrete basis for #1531's claim that no single call can reserve
+internal channel space at all.
+
+Measured effect (`20260906-195205-4a08c71`, same `klt` 0.4.0 / KLayout
+0.30.12 / `open_pdks c6d73a35` pin as every measurement on this page): 66 of
+926 legs drawn, against 62 of 917 on the unsplit near-square grid — a
+four-leg gain that is noise-level, not a fix.
+
+| | unsplit near-square grid (`20260906-175702-eceaadb`) | row-channel split (`20260906-195205-4a08c71`) |
+| --- | --- | --- |
+| Legs drawn | 62 / 917 | 66 / 926 |
+| own-block-interior (the bucket this change targets) | 263 | 371 |
+| route-vs-route collision (unrelated) | 460 | 354 |
+| unrelated-block bbox (unrelated) | 119 | 127 |
+| `klt lvs` mismatches | 1166 | 1164 |
+| Shorted nodes | 0 | 0 |
+
+The bucket this change specifically targets moved the *wrong* direction (263
+→ 371): splitting two groups changes their own footprints, which reshuffles
+`shelf_pack`'s whole-design placement and therefore which legs the router
+attempts in what order — a change local to two groups redistributes bucket
+membership design-wide rather than only shrinking the bucket it targets.
+Read together with the `rows=1`-for-the-whole-group experiment above (which
+eliminates row-interior burial by construction and *also* measured
+neutral-to-worse), the router's leg-failure reasons do not appear to be
+independently addressable one at a time by floorplan reshaping alone.
+
+This result is shipped anyway — unlike the withdrawn topology/packing
+experiments above — because, unlike those, it costs nothing: no device loses
+its matched partner (the parity guard makes that structurally impossible),
+DRC stays clean, and the device-set cross-check is unaffected. It is a real,
+verified negative result on the one lever this flow's own floorplan requests
+can pull directly against #1531, worth having on record precisely so the
+same idea is not re-spent. Closing this issue's LVS acceptance criterion
+still needs #1531 fixed upstream (or an equivalent capability this flow has
+no other way to reach) — not a floorplan-request change on this side.
+`layout/tests/test_pll_layout_plan.py`'s
+`test_row_channel_groups_reconstruct_their_parent_near_square_grid` asserts
+the parity guard and the split shape, so a future change cannot silently
+widen the split to an odd-`cols` group.
 
 Two capabilities the bump makes available are deliberately **not yet adopted**,
 because adopting either changes drawn geometry and needs its own evidence:

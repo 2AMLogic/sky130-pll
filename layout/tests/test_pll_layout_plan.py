@@ -145,15 +145,23 @@ class PlanCoverageTests(unittest.TestCase):
 
     def test_mos_arrays_are_packed_in_a_near_square_grid(self):
         # issue #18: matched groups use `factor_rows_cols`'s near-square
-        # grid, not a 1xN row. A single-row packing was measured across the
-        # full topology x packing 2x2 (see the comment at the call site in
-        # layout/bin/pll_layout.py) and is neutral-to-worse for routing
-        # coverage in both topology regimes, while spreading a matched
-        # group's devices over the widest possible span -- the very gradient
-        # distance common-centroid ordering exists to cancel.
+        # grid, not a 1xN row. A single-row packing of a *whole* group was
+        # measured across the full topology x packing 2x2 (see the comment
+        # at the call site in layout/bin/pll_layout.py) and is
+        # neutral-to-worse for routing coverage in both topology regimes,
+        # while spreading a matched group's devices over the widest possible
+        # span -- the very gradient distance common-centroid ordering exists
+        # to cancel.
+        #
+        # `row_channel` groups are the one deliberate exception: each is one
+        # row *of* a larger near-square group, split into its own `klt gen`
+        # call so a real routing channel falls where an opaque multi-row
+        # array would leave none (see `test_row_channel_groups_reconstruct_
+        # their_parent_near_square_grid` below for the check that the split
+        # itself is faithful to the near-square shape it came from).
         for block in self.plan["blocks"]:
             for group in block["groups"]:
-                if group["kind"] != "mos_array":
+                if group["kind"] != "mos_array" or group["row_channel"]:
                     continue
                 params = group["params"]
                 self.assertEqual(
@@ -161,6 +169,38 @@ class PlanCoverageTests(unittest.TestCase):
                     pll_layout.factor_rows_cols(group["count"]),
                     group["id"],
                 )
+
+    def test_row_channel_groups_reconstruct_their_parent_near_square_grid(self):
+        # issue #18: a `row_channel` group is one row of a matched group that
+        # `factor_rows_cols` would otherwise have placed in a single opaque
+        # `mos_array` call. Splitting it must not change *what* is drawn --
+        # only how many `klt gen` calls draw it -- so grouping the split rows
+        # back together by their shared (block, flavor, w_um, l_um) must
+        # exactly reconstruct one near-square grid: the same row count
+        # `factor_rows_cols` would pick for the reassembled device count, the
+        # same `cols` on every row, and every row an even, common-centroid
+        # count (the precondition `plan_block` requires before it ever
+        # splits at all -- see its comment).
+        for block in self.plan["blocks"]:
+            families: dict[tuple[str, float, float], list[dict]] = {}
+            for group in block["groups"]:
+                if group["kind"] == "mos_array" and group["row_channel"]:
+                    params = group["params"]
+                    key = (params["flavor"], params["w_um"], params["l_um"])
+                    families.setdefault(key, []).append(group)
+            for key, rows in families.items():
+                total = sum(g["count"] for g in rows)
+                expected_rows, expected_cols = pll_layout.factor_rows_cols(total)
+                self.assertEqual(len(rows), expected_rows, key)
+                for group in rows:
+                    self.assertEqual(group["params"]["rows"], 1, group["id"])
+                    self.assertEqual(
+                        group["params"]["cols"], expected_cols, group["id"]
+                    )
+                    self.assertEqual(group["count"] % 2, 0, group["id"])
+                    self.assertEqual(
+                        group["params"]["topology"], "common_centroid", group["id"]
+                    )
 
     def test_res_arrays_draw_no_dummy_elements(self):
         for block in self.plan["blocks"]:

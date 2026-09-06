@@ -1,0 +1,3308 @@
+{
+  "schema_version": 3,
+  "file": "/Users/rwalters/GitHub/sky130-pll/.loom/worktrees/issue-18/layout/pll/reports/20260906-195205-4a08c71/pll_pfd_cp.gds",
+  "deck": "sky130",
+  "top": "pll_pfd_cp",
+  "dbu_um": 0.001,
+  "netlist_path": "/Users/rwalters/GitHub/sky130-pll/.loom/worktrees/issue-18/layout/pll/reports/20260906-195205-4a08c71/pll_pfd_cp.extract.spice",
+  "netlist_sha256": "8340022982590dba93c11726b1112f8f3b7edc597d5eb5c9c223e5b58a2faf9f",
+  "status": "extracted",
+  "device_count": 60,
+  "net_count": 188,
+  "pin_count": 1,
+  "device_counts": {
+    "nfet": 30,
+    "pfet": 29,
+    "res_xhigh_po": 1
+  },
+  "dummy_devices_dropped": 0,
+  "ignored_layers": [],
+  "device_recognition_only_layers": [
+    {
+      "layer": 66,
+      "datatype": 13,
+      "shapes": 1
+    },
+    {
+      "layer": 79,
+      "datatype": 20,
+      "shapes": 1
+    },
+    {
+      "layer": 94,
+      "datatype": 20,
+      "shapes": 1
+    }
+  ],
+  "device_classes": [
+    "nfet",
+    "pfet",
+    "pnp",
+    "sky130_fd_pr__model__cap_mim",
+    "sky130_fd_pr__model__cap_mim_m4",
+    "resistor"
+  ],
+  "devices": [
+    {
+      "name": "$1",
+      "class": "nfet",
+      "nets": {
+        "s": "\\$39",
+        "g": "\\$1",
+        "d": "\\$40",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 1.0,
+        "as_um2": 0.47,
+        "ad_um2": 0.47,
+        "ps_um": 2.94,
+        "pd_um": 2.94
+      }
+    },
+    {
+      "name": "$10",
+      "class": "nfet",
+      "nets": {
+        "s": "\\$62",
+        "g": "\\$5",
+        "d": "\\$63",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 1.0,
+        "as_um2": 0.47,
+        "ad_um2": 0.47,
+        "ps_um": 2.94,
+        "pd_um": 2.94
+      }
+    },
+    {
+      "name": "$11",
+      "class": "nfet",
+      "nets": {
+        "s": "\\$64",
+        "g": "\\$6",
+        "d": "\\$65",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 1.0,
+        "as_um2": 0.47,
+        "ad_um2": 0.47,
+        "ps_um": 2.94,
+        "pd_um": 2.94
+      }
+    },
+    {
+      "name": "$12",
+      "class": "nfet",
+      "nets": {
+        "s": "\\$66",
+        "g": "\\$67",
+        "d": "\\$68",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 1.0,
+        "as_um2": 0.47,
+        "ad_um2": 0.47,
+        "ps_um": 2.94,
+        "pd_um": 2.94
+      }
+    },
+    {
+      "name": "$13",
+      "class": "nfet",
+      "nets": {
+        "s": "\\$69",
+        "g": "\\$70",
+        "d": "\\$71",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 1.0,
+        "as_um2": 0.47,
+        "ad_um2": 0.47,
+        "ps_um": 2.94,
+        "pd_um": 2.94
+      }
+    },
+    {
+      "name": "$14",
+      "class": "nfet",
+      "nets": {
+        "s": "\\$72",
+        "g": "\\$7",
+        "d": "\\$73",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 1.0,
+        "as_um2": 0.47,
+        "ad_um2": 0.47,
+        "ps_um": 2.94,
+        "pd_um": 2.94
+      }
+    },
+    {
+      "name": "$15",
+      "class": "nfet",
+      "nets": {
+        "s": "\\$74",
+        "g": "\\$8",
+        "d": "\\$75",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 1.0,
+        "as_um2": 0.47,
+        "ad_um2": 0.47,
+        "ps_um": 2.94,
+        "pd_um": 2.94
+      }
+    },
+    {
+      "name": "$16",
+      "class": "nfet",
+      "nets": {
+        "s": "\\$76",
+        "g": "\\$9",
+        "d": "\\$77",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 1.0,
+        "as_um2": 0.47,
+        "ad_um2": 0.47,
+        "ps_um": 2.94,
+        "pd_um": 2.94
+      }
+    },
+    {
+      "name": "$17",
+      "class": "nfet",
+      "nets": {
+        "s": "\\$78",
+        "g": "\\$10",
+        "d": "\\$79",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 1.0,
+        "as_um2": 0.47,
+        "ad_um2": 0.47,
+        "ps_um": 2.94,
+        "pd_um": 2.94
+      }
+    },
+    {
+      "name": "$18",
+      "class": "nfet",
+      "nets": {
+        "s": "\\$80",
+        "g": "\\$81",
+        "d": "\\$82",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 1.0,
+        "as_um2": 0.47,
+        "ad_um2": 0.47,
+        "ps_um": 2.94,
+        "pd_um": 2.94
+      }
+    },
+    {
+      "name": "$19",
+      "class": "nfet",
+      "nets": {
+        "s": "\\$83",
+        "g": "\\$11",
+        "d": "\\$86",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.3,
+        "w_um": 1.0,
+        "as_um2": 0.42,
+        "ad_um2": 0.42,
+        "ps_um": 2.84,
+        "pd_um": 2.84
+      }
+    },
+    {
+      "name": "$2",
+      "class": "nfet",
+      "nets": {
+        "s": "\\$41",
+        "g": "\\$2",
+        "d": "\\$42",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 1.0,
+        "as_um2": 0.47,
+        "ad_um2": 0.47,
+        "ps_um": 2.94,
+        "pd_um": 2.94
+      }
+    },
+    {
+      "name": "$20",
+      "class": "nfet",
+      "nets": {
+        "s": "\\$88",
+        "g": "\\$91",
+        "d": "\\$93",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.3,
+        "w_um": 1.0,
+        "as_um2": 0.42,
+        "ad_um2": 0.42,
+        "ps_um": 2.84,
+        "pd_um": 2.84
+      }
+    },
+    {
+      "name": "$21",
+      "class": "nfet",
+      "nets": {
+        "s": "\\$94",
+        "g": "\\$12",
+        "d": "\\$98",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.3,
+        "w_um": 1.0,
+        "as_um2": 0.42,
+        "ad_um2": 0.42,
+        "ps_um": 2.84,
+        "pd_um": 2.84
+      }
+    },
+    {
+      "name": "$22",
+      "class": "nfet",
+      "nets": {
+        "s": "\\$99",
+        "g": "\\$13",
+        "d": "\\$100",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 1.0,
+        "w_um": 1.0,
+        "as_um2": 0.42,
+        "ad_um2": 0.42,
+        "ps_um": 2.84,
+        "pd_um": 2.84
+      }
+    },
+    {
+      "name": "$23",
+      "class": "nfet",
+      "nets": {
+        "s": "\\$101",
+        "g": "\\$14",
+        "d": "\\$102",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 1.0,
+        "w_um": 1.0,
+        "as_um2": 0.42,
+        "ad_um2": 0.42,
+        "ps_um": 2.84,
+        "pd_um": 2.84
+      }
+    },
+    {
+      "name": "$24",
+      "class": "nfet",
+      "nets": {
+        "s": "\\$103",
+        "g": "\\$15",
+        "d": "\\$104",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 1.0,
+        "w_um": 2.0,
+        "as_um2": 0.84,
+        "ad_um2": 0.84,
+        "ps_um": 4.84,
+        "pd_um": 4.84
+      }
+    },
+    {
+      "name": "$25",
+      "class": "nfet",
+      "nets": {
+        "s": "\\$105",
+        "g": "\\$16",
+        "d": "\\$106",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 1.0,
+        "w_um": 2.0,
+        "as_um2": 0.84,
+        "ad_um2": 0.84,
+        "ps_um": 4.84,
+        "pd_um": 4.84
+      }
+    },
+    {
+      "name": "$26",
+      "class": "nfet",
+      "nets": {
+        "s": "\\$84",
+        "g": "\\$85",
+        "d": "\\$87",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.3,
+        "w_um": 1.0,
+        "as_um2": 0.42,
+        "ad_um2": 0.42,
+        "ps_um": 2.84,
+        "pd_um": 2.84
+      }
+    },
+    {
+      "name": "$27",
+      "class": "nfet",
+      "nets": {
+        "s": "\\$89",
+        "g": "\\$90",
+        "d": "\\$92",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.3,
+        "w_um": 1.0,
+        "as_um2": 0.42,
+        "ad_um2": 0.42,
+        "ps_um": 2.84,
+        "pd_um": 2.84
+      }
+    },
+    {
+      "name": "$28",
+      "class": "nfet",
+      "nets": {
+        "s": "\\$95",
+        "g": "\\$96",
+        "d": "\\$97",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.3,
+        "w_um": 1.0,
+        "as_um2": 0.42,
+        "ad_um2": 0.42,
+        "ps_um": 2.84,
+        "pd_um": 2.84
+      }
+    },
+    {
+      "name": "$29",
+      "class": "nfet",
+      "nets": {
+        "s": "\\$107",
+        "g": "\\$108",
+        "d": "\\$109",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 10.0,
+        "as_um2": 4.7,
+        "ad_um2": 4.7,
+        "ps_um": 20.94,
+        "pd_um": 20.94
+      }
+    },
+    {
+      "name": "$3",
+      "class": "nfet",
+      "nets": {
+        "s": "\\$43",
+        "g": "\\$44",
+        "d": "\\$45",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 1.0,
+        "as_um2": 0.47,
+        "ad_um2": 0.47,
+        "ps_um": 2.94,
+        "pd_um": 2.94
+      }
+    },
+    {
+      "name": "$30",
+      "class": "nfet",
+      "nets": {
+        "s": "\\$110",
+        "g": "\\$17",
+        "d": "\\$111",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 1.0,
+        "w_um": 10.0,
+        "as_um2": 4.2,
+        "ad_um2": 4.2,
+        "ps_um": 20.84,
+        "pd_um": 20.84
+      }
+    },
+    {
+      "name": "$31",
+      "class": "pfet",
+      "nets": {
+        "s": "\\$112",
+        "g": "\\$18",
+        "d": "\\$113",
+        "b": "\\$180"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 2.0,
+        "as_um2": 0.94,
+        "ad_um2": 0.94,
+        "ps_um": 4.94,
+        "pd_um": 4.94
+      }
+    },
+    {
+      "name": "$32",
+      "class": "pfet",
+      "nets": {
+        "s": "\\$114",
+        "g": "\\$115",
+        "d": "\\$116",
+        "b": "\\$180"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 2.0,
+        "as_um2": 0.94,
+        "ad_um2": 0.94,
+        "ps_um": 4.94,
+        "pd_um": 4.94
+      }
+    },
+    {
+      "name": "$33",
+      "class": "pfet",
+      "nets": {
+        "s": "\\$117",
+        "g": "\\$19",
+        "d": "\\$118",
+        "b": "\\$180"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 2.0,
+        "as_um2": 0.94,
+        "ad_um2": 0.94,
+        "ps_um": 4.94,
+        "pd_um": 4.94
+      }
+    },
+    {
+      "name": "$34",
+      "class": "pfet",
+      "nets": {
+        "s": "\\$119",
+        "g": "\\$120",
+        "d": "\\$121",
+        "b": "\\$180"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 2.0,
+        "as_um2": 0.94,
+        "ad_um2": 0.94,
+        "ps_um": 4.94,
+        "pd_um": 4.94
+      }
+    },
+    {
+      "name": "$35",
+      "class": "pfet",
+      "nets": {
+        "s": "\\$122",
+        "g": "\\$123",
+        "d": "\\$124",
+        "b": "\\$180"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 2.0,
+        "as_um2": 0.94,
+        "ad_um2": 0.94,
+        "ps_um": 4.94,
+        "pd_um": 4.94
+      }
+    },
+    {
+      "name": "$36",
+      "class": "pfet",
+      "nets": {
+        "s": "\\$125",
+        "g": "\\$20",
+        "d": "\\$126",
+        "b": "\\$180"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 2.0,
+        "as_um2": 0.94,
+        "ad_um2": 0.94,
+        "ps_um": 4.94,
+        "pd_um": 4.94
+      }
+    },
+    {
+      "name": "$37",
+      "class": "pfet",
+      "nets": {
+        "s": "\\$127",
+        "g": "\\$21",
+        "d": "\\$128",
+        "b": "\\$181"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 2.0,
+        "as_um2": 0.94,
+        "ad_um2": 0.94,
+        "ps_um": 4.94,
+        "pd_um": 4.94
+      }
+    },
+    {
+      "name": "$38",
+      "class": "pfet",
+      "nets": {
+        "s": "\\$129",
+        "g": "\\$22",
+        "d": "\\$130",
+        "b": "\\$181"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 2.0,
+        "as_um2": 0.94,
+        "ad_um2": 0.94,
+        "ps_um": 4.94,
+        "pd_um": 4.94
+      }
+    },
+    {
+      "name": "$39",
+      "class": "pfet",
+      "nets": {
+        "s": "\\$131",
+        "g": "\\$23",
+        "d": "\\$132",
+        "b": "\\$181"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 2.0,
+        "as_um2": 0.94,
+        "ad_um2": 0.94,
+        "ps_um": 4.94,
+        "pd_um": 4.94
+      }
+    },
+    {
+      "name": "$4",
+      "class": "nfet",
+      "nets": {
+        "s": "\\$46",
+        "g": "\\$47",
+        "d": "\\$48",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 1.0,
+        "as_um2": 0.47,
+        "ad_um2": 0.47,
+        "ps_um": 2.94,
+        "pd_um": 2.94
+      }
+    },
+    {
+      "name": "$40",
+      "class": "pfet",
+      "nets": {
+        "s": "\\$133",
+        "g": "\\$24",
+        "d": "\\$134",
+        "b": "\\$181"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 2.0,
+        "as_um2": 0.94,
+        "ad_um2": 0.94,
+        "ps_um": 4.94,
+        "pd_um": 4.94
+      }
+    },
+    {
+      "name": "$41",
+      "class": "pfet",
+      "nets": {
+        "s": "\\$135",
+        "g": "\\$25",
+        "d": "\\$136",
+        "b": "\\$181"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 2.0,
+        "as_um2": 0.94,
+        "ad_um2": 0.94,
+        "ps_um": 4.94,
+        "pd_um": 4.94
+      }
+    },
+    {
+      "name": "$42",
+      "class": "pfet",
+      "nets": {
+        "s": "\\$137",
+        "g": "\\$26",
+        "d": "\\$138",
+        "b": "\\$181"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 2.0,
+        "as_um2": 0.94,
+        "ad_um2": 0.94,
+        "ps_um": 4.94,
+        "pd_um": 4.94
+      }
+    },
+    {
+      "name": "$43",
+      "class": "pfet",
+      "nets": {
+        "s": "\\$139",
+        "g": "\\$27",
+        "d": "\\$140",
+        "b": "\\$182"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 2.0,
+        "as_um2": 0.94,
+        "ad_um2": 0.94,
+        "ps_um": 4.94,
+        "pd_um": 4.94
+      }
+    },
+    {
+      "name": "$44",
+      "class": "pfet",
+      "nets": {
+        "s": "\\$141",
+        "g": "\\$142",
+        "d": "\\$143",
+        "b": "\\$182"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 2.0,
+        "as_um2": 0.94,
+        "ad_um2": 0.94,
+        "ps_um": 4.94,
+        "pd_um": 4.94
+      }
+    },
+    {
+      "name": "$45",
+      "class": "pfet",
+      "nets": {
+        "s": "\\$144",
+        "g": "\\$145",
+        "d": "\\$146",
+        "b": "\\$182"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 2.0,
+        "as_um2": 0.94,
+        "ad_um2": 0.94,
+        "ps_um": 4.94,
+        "pd_um": 4.94
+      }
+    },
+    {
+      "name": "$46",
+      "class": "pfet",
+      "nets": {
+        "s": "\\$147",
+        "g": "\\$28",
+        "d": "\\$148",
+        "b": "\\$182"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 2.0,
+        "as_um2": 0.94,
+        "ad_um2": 0.94,
+        "ps_um": 4.94,
+        "pd_um": 4.94
+      }
+    },
+    {
+      "name": "$47",
+      "class": "pfet",
+      "nets": {
+        "s": "\\$149",
+        "g": "\\$29",
+        "d": "\\$150",
+        "b": "\\$182"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 2.0,
+        "as_um2": 0.94,
+        "ad_um2": 0.94,
+        "ps_um": 4.94,
+        "pd_um": 4.94
+      }
+    },
+    {
+      "name": "$48",
+      "class": "pfet",
+      "nets": {
+        "s": "\\$151",
+        "g": "\\$152",
+        "d": "\\$153",
+        "b": "\\$182"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 2.0,
+        "as_um2": 0.94,
+        "ad_um2": 0.94,
+        "ps_um": 4.94,
+        "pd_um": 4.94
+      }
+    },
+    {
+      "name": "$49",
+      "class": "pfet",
+      "nets": {
+        "s": "\\$154",
+        "g": "\\$30",
+        "d": "\\$158",
+        "b": "\\$183"
+      },
+      "params": {
+        "l_um": 0.3,
+        "w_um": 2.0,
+        "as_um2": 0.84,
+        "ad_um2": 0.84,
+        "ps_um": 4.84,
+        "pd_um": 4.84
+      }
+    },
+    {
+      "name": "$5",
+      "class": "nfet",
+      "nets": {
+        "s": "\\$49",
+        "g": "\\$3",
+        "d": "\\$50",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 1.0,
+        "as_um2": 0.47,
+        "ad_um2": 0.47,
+        "ps_um": 2.94,
+        "pd_um": 2.94
+      }
+    },
+    {
+      "name": "$50",
+      "class": "pfet",
+      "nets": {
+        "s": "\\$159",
+        "g": "\\$31",
+        "d": "\\$163",
+        "b": "\\$183"
+      },
+      "params": {
+        "l_um": 0.3,
+        "w_um": 2.0,
+        "as_um2": 0.84,
+        "ad_um2": 0.84,
+        "ps_um": 4.84,
+        "pd_um": 4.84
+      }
+    },
+    {
+      "name": "$51",
+      "class": "pfet",
+      "nets": {
+        "s": "\\$164",
+        "g": "\\$32",
+        "d": "\\$168",
+        "b": "\\$183"
+      },
+      "params": {
+        "l_um": 0.3,
+        "w_um": 2.0,
+        "as_um2": 0.84,
+        "ad_um2": 0.84,
+        "ps_um": 4.84,
+        "pd_um": 4.84
+      }
+    },
+    {
+      "name": "$52",
+      "class": "pfet",
+      "nets": {
+        "s": "\\$169",
+        "g": "\\$33",
+        "d": "\\$170",
+        "b": "\\$184"
+      },
+      "params": {
+        "l_um": 1.0,
+        "w_um": 2.0,
+        "as_um2": 0.84,
+        "ad_um2": 0.84,
+        "ps_um": 4.84,
+        "pd_um": 4.84
+      }
+    },
+    {
+      "name": "$53",
+      "class": "pfet",
+      "nets": {
+        "s": "\\$171",
+        "g": "\\$34",
+        "d": "\\$172",
+        "b": "\\$184"
+      },
+      "params": {
+        "l_um": 1.0,
+        "w_um": 2.0,
+        "as_um2": 0.84,
+        "ad_um2": 0.84,
+        "ps_um": 4.84,
+        "pd_um": 4.84
+      }
+    },
+    {
+      "name": "$54",
+      "class": "pfet",
+      "nets": {
+        "s": "\\$173",
+        "g": "\\$35",
+        "d": "\\$174",
+        "b": "\\$185"
+      },
+      "params": {
+        "l_um": 1.0,
+        "w_um": 4.0,
+        "as_um2": 1.68,
+        "ad_um2": 1.68,
+        "ps_um": 8.84,
+        "pd_um": 8.84
+      }
+    },
+    {
+      "name": "$55",
+      "class": "pfet",
+      "nets": {
+        "s": "\\$155",
+        "g": "\\$156",
+        "d": "\\$157",
+        "b": "\\$183"
+      },
+      "params": {
+        "l_um": 0.3,
+        "w_um": 2.0,
+        "as_um2": 0.84,
+        "ad_um2": 0.84,
+        "ps_um": 4.84,
+        "pd_um": 4.84
+      }
+    },
+    {
+      "name": "$56",
+      "class": "pfet",
+      "nets": {
+        "s": "\\$160",
+        "g": "\\$161",
+        "d": "\\$162",
+        "b": "\\$183"
+      },
+      "params": {
+        "l_um": 0.3,
+        "w_um": 2.0,
+        "as_um2": 0.84,
+        "ad_um2": 0.84,
+        "ps_um": 4.84,
+        "pd_um": 4.84
+      }
+    },
+    {
+      "name": "$57",
+      "class": "pfet",
+      "nets": {
+        "s": "\\$165",
+        "g": "\\$166",
+        "d": "\\$167",
+        "b": "\\$183"
+      },
+      "params": {
+        "l_um": 0.3,
+        "w_um": 2.0,
+        "as_um2": 0.84,
+        "ad_um2": 0.84,
+        "ps_um": 4.84,
+        "pd_um": 4.84
+      }
+    },
+    {
+      "name": "$58",
+      "class": "pfet",
+      "nets": {
+        "s": "\\$175",
+        "g": "\\$36",
+        "d": "\\$176",
+        "b": "\\$186"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 20.0,
+        "as_um2": 9.4,
+        "ad_um2": 9.4,
+        "ps_um": 40.94,
+        "pd_um": 40.94
+      }
+    },
+    {
+      "name": "$59",
+      "class": "pfet",
+      "nets": {
+        "s": "\\$177",
+        "g": "\\$37",
+        "d": "\\$178",
+        "b": "\\$187"
+      },
+      "params": {
+        "l_um": 1.0,
+        "w_um": 20.0,
+        "as_um2": 8.4,
+        "ad_um2": 8.4,
+        "ps_um": 40.84,
+        "pd_um": 40.84
+      }
+    },
+    {
+      "name": "$6",
+      "class": "nfet",
+      "nets": {
+        "s": "\\$51",
+        "g": "\\$52",
+        "d": "\\$53",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 1.0,
+        "as_um2": 0.47,
+        "ad_um2": 0.47,
+        "ps_um": 2.94,
+        "pd_um": 2.94
+      }
+    },
+    {
+      "name": "$60",
+      "class": "res_xhigh_po",
+      "nets": {
+        "a": "\\$38",
+        "b": "\\$179",
+        "w": "vsubs"
+      },
+      "params": {
+        "r_ohm": 600000.0,
+        "l_um": 300.0,
+        "w_um": 1.0,
+        "area_um2": 300.0,
+        "perimeter_um": 602.0
+      }
+    },
+    {
+      "name": "$7",
+      "class": "nfet",
+      "nets": {
+        "s": "\\$54",
+        "g": "\\$55",
+        "d": "\\$56",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 1.0,
+        "as_um2": 0.47,
+        "ad_um2": 0.47,
+        "ps_um": 2.94,
+        "pd_um": 2.94
+      }
+    },
+    {
+      "name": "$8",
+      "class": "nfet",
+      "nets": {
+        "s": "\\$57",
+        "g": "\\$4",
+        "d": "\\$58",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 1.0,
+        "as_um2": 0.47,
+        "ad_um2": 0.47,
+        "ps_um": 2.94,
+        "pd_um": 2.94
+      }
+    },
+    {
+      "name": "$9",
+      "class": "nfet",
+      "nets": {
+        "s": "\\$59",
+        "g": "\\$60",
+        "d": "\\$61",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.15,
+        "w_um": 1.0,
+        "as_um2": 0.47,
+        "ad_um2": 0.47,
+        "ps_um": 2.94,
+        "pd_um": 2.94
+      }
+    }
+  ],
+  "nets": [
+    {
+      "name": "\\$1",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$10",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$100",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$101",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$102",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$103",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$104",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$105",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$106",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$107",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$108",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$109",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$11",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$110",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$111",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$112",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$113",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$114",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$115",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$116",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$117",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$118",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$119",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$12",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$120",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$121",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$122",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$123",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$124",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$125",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$126",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$127",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$128",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$129",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$13",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$130",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$131",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$132",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$133",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$134",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$135",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$136",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$137",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$138",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$139",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$14",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$140",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$141",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$142",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$143",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$144",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$145",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$146",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$147",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$148",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$149",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$15",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$150",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$151",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$152",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$153",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$154",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$155",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$156",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$157",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$158",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$159",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$16",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$160",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$161",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$162",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$163",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$164",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$165",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$166",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$167",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$168",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$169",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$17",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$170",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$171",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$172",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$173",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$174",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$175",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$176",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$177",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$178",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$179",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$18",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$180",
+      "pin": false,
+      "device_count": 6
+    },
+    {
+      "name": "\\$181",
+      "pin": false,
+      "device_count": 6
+    },
+    {
+      "name": "\\$182",
+      "pin": false,
+      "device_count": 6
+    },
+    {
+      "name": "\\$183",
+      "pin": false,
+      "device_count": 6
+    },
+    {
+      "name": "\\$184",
+      "pin": false,
+      "device_count": 2
+    },
+    {
+      "name": "\\$185",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$186",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$187",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$19",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$2",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$20",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$21",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$22",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$23",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$24",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$25",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$26",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$27",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$28",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$29",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$3",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$30",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$31",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$32",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$33",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$34",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$35",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$36",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$37",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$38",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$39",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$4",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$40",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$41",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$42",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$43",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$44",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$45",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$46",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$47",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$48",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$49",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$5",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$50",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$51",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$52",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$53",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$54",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$55",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$56",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$57",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$58",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$59",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$6",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$60",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$61",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$62",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$63",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$64",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$65",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$66",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$67",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$68",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$69",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$7",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$70",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$71",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$72",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$73",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$74",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$75",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$76",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$77",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$78",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$79",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$8",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$80",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$81",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$82",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$83",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$84",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$85",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$86",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$87",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$88",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$89",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$9",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$90",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$91",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$92",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$93",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$94",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$95",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$96",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$97",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$98",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "\\$99",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "vsubs",
+      "pin": true,
+      "device_count": 31
+    }
+  ],
+  "warnings": [
+    "found 0 pin-name label(s) on any of this deck's label layers (64/5, 66/5, 67/5, 68/5, 69/5, 70/5, 71/5, 72/5) anywhere in 'pll_pfd_cp' -- no net can be named, so 0 top-level pins will be promoted below and `klt lvs` will have no net/device anchor to seed a match against a reference netlist. Compare the layers `klt layers` reports for this GDS against the list above; for a `klt place-and-route` layout in particular, check that request.io.layer_h/layer_v chose a layer this --deck actually scans for pin labels (issue #1385)",
+    "29 PMOS devices tie their body to an anonymous net with no DC bias path -- no drawn (or derivable) well tie connects this PMOS body to a real supply rail on this layout, so it is left floating rather than tied to a real supply rail; resimulating this netlist directly will not reproduce the schematic-level PMOS body bias -- see unbiased_pmos_body_nets[] for the full list. See docs/cli/extract.md's 'Parasitic (RC) extraction' section.",
+    "59 nets connect to exactly one device terminal -- a MOS gate -- and are not a declared pin: these gates have no DC path from anywhere else in the netlist, so they are almost certainly unconnected inputs rather than legitimate floating nodes; resimulating this netlist directly will hit a singular matrix on these nets -- see single_terminal_nets[] for the full list.",
+    "123 nets connect to exactly one device terminal -- source/drain/body/resistor-equivalent, not a gate -- and are not a declared pin; this can be a legitimate single-terminal tie (e.g. an intentionally unterminated dummy's diffusion tie), but confirm these nets have no other intended connectivity -- see single_terminal_nets[] for the full list."
+  ],
+  "black_box_regions": [],
+  "abstracted_cells": [],
+  "unmodelled_poly": [],
+  "merged_net_labels": [],
+  "voltage_domain_warnings": [],
+  "unbiased_pmos_body_nets": [
+    {
+      "device": "$31",
+      "net": "\\$180"
+    },
+    {
+      "device": "$32",
+      "net": "\\$180"
+    },
+    {
+      "device": "$33",
+      "net": "\\$180"
+    },
+    {
+      "device": "$34",
+      "net": "\\$180"
+    },
+    {
+      "device": "$35",
+      "net": "\\$180"
+    },
+    {
+      "device": "$36",
+      "net": "\\$180"
+    },
+    {
+      "device": "$37",
+      "net": "\\$181"
+    },
+    {
+      "device": "$38",
+      "net": "\\$181"
+    },
+    {
+      "device": "$39",
+      "net": "\\$181"
+    },
+    {
+      "device": "$40",
+      "net": "\\$181"
+    },
+    {
+      "device": "$41",
+      "net": "\\$181"
+    },
+    {
+      "device": "$42",
+      "net": "\\$181"
+    },
+    {
+      "device": "$43",
+      "net": "\\$182"
+    },
+    {
+      "device": "$44",
+      "net": "\\$182"
+    },
+    {
+      "device": "$45",
+      "net": "\\$182"
+    },
+    {
+      "device": "$46",
+      "net": "\\$182"
+    },
+    {
+      "device": "$47",
+      "net": "\\$182"
+    },
+    {
+      "device": "$48",
+      "net": "\\$182"
+    },
+    {
+      "device": "$49",
+      "net": "\\$183"
+    },
+    {
+      "device": "$50",
+      "net": "\\$183"
+    },
+    {
+      "device": "$51",
+      "net": "\\$183"
+    },
+    {
+      "device": "$52",
+      "net": "\\$184"
+    },
+    {
+      "device": "$53",
+      "net": "\\$184"
+    },
+    {
+      "device": "$54",
+      "net": "\\$185"
+    },
+    {
+      "device": "$55",
+      "net": "\\$183"
+    },
+    {
+      "device": "$56",
+      "net": "\\$183"
+    },
+    {
+      "device": "$57",
+      "net": "\\$183"
+    },
+    {
+      "device": "$58",
+      "net": "\\$186"
+    },
+    {
+      "device": "$59",
+      "net": "\\$187"
+    }
+  ],
+  "single_terminal_nets": [
+    {
+      "net": "\\$1",
+      "device": "$1",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$10",
+      "device": "$17",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$100",
+      "device": "$22",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$101",
+      "device": "$23",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$102",
+      "device": "$23",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$103",
+      "device": "$24",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$104",
+      "device": "$24",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$105",
+      "device": "$25",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$106",
+      "device": "$25",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$107",
+      "device": "$29",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$108",
+      "device": "$29",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$109",
+      "device": "$29",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$11",
+      "device": "$19",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$110",
+      "device": "$30",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$111",
+      "device": "$30",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$112",
+      "device": "$31",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$113",
+      "device": "$31",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$114",
+      "device": "$32",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$115",
+      "device": "$32",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$116",
+      "device": "$32",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$117",
+      "device": "$33",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$118",
+      "device": "$33",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$119",
+      "device": "$34",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$12",
+      "device": "$21",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$120",
+      "device": "$34",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$121",
+      "device": "$34",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$122",
+      "device": "$35",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$123",
+      "device": "$35",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$124",
+      "device": "$35",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$125",
+      "device": "$36",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$126",
+      "device": "$36",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$127",
+      "device": "$37",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$128",
+      "device": "$37",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$129",
+      "device": "$38",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$13",
+      "device": "$22",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$130",
+      "device": "$38",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$131",
+      "device": "$39",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$132",
+      "device": "$39",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$133",
+      "device": "$40",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$134",
+      "device": "$40",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$135",
+      "device": "$41",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$136",
+      "device": "$41",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$137",
+      "device": "$42",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$138",
+      "device": "$42",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$139",
+      "device": "$43",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$14",
+      "device": "$23",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$140",
+      "device": "$43",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$141",
+      "device": "$44",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$142",
+      "device": "$44",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$143",
+      "device": "$44",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$144",
+      "device": "$45",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$145",
+      "device": "$45",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$146",
+      "device": "$45",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$147",
+      "device": "$46",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$148",
+      "device": "$46",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$149",
+      "device": "$47",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$15",
+      "device": "$24",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$150",
+      "device": "$47",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$151",
+      "device": "$48",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$152",
+      "device": "$48",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$153",
+      "device": "$48",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$154",
+      "device": "$49",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$155",
+      "device": "$55",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$156",
+      "device": "$55",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$157",
+      "device": "$55",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$158",
+      "device": "$49",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$159",
+      "device": "$50",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$16",
+      "device": "$25",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$160",
+      "device": "$56",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$161",
+      "device": "$56",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$162",
+      "device": "$56",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$163",
+      "device": "$50",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$164",
+      "device": "$51",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$165",
+      "device": "$57",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$166",
+      "device": "$57",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$167",
+      "device": "$57",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$168",
+      "device": "$51",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$169",
+      "device": "$52",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$17",
+      "device": "$30",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$170",
+      "device": "$52",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$171",
+      "device": "$53",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$172",
+      "device": "$53",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$173",
+      "device": "$54",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$174",
+      "device": "$54",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$175",
+      "device": "$58",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$176",
+      "device": "$58",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$177",
+      "device": "$59",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$178",
+      "device": "$59",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$179",
+      "device": "$60",
+      "terminal": "b",
+      "terminal_kind": "b"
+    },
+    {
+      "net": "\\$18",
+      "device": "$31",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$185",
+      "device": "$54",
+      "terminal": "b",
+      "terminal_kind": "body"
+    },
+    {
+      "net": "\\$186",
+      "device": "$58",
+      "terminal": "b",
+      "terminal_kind": "body"
+    },
+    {
+      "net": "\\$187",
+      "device": "$59",
+      "terminal": "b",
+      "terminal_kind": "body"
+    },
+    {
+      "net": "\\$19",
+      "device": "$33",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$2",
+      "device": "$2",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$20",
+      "device": "$36",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$21",
+      "device": "$37",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$22",
+      "device": "$38",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$23",
+      "device": "$39",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$24",
+      "device": "$40",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$25",
+      "device": "$41",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$26",
+      "device": "$42",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$27",
+      "device": "$43",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$28",
+      "device": "$46",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$29",
+      "device": "$47",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$3",
+      "device": "$5",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$30",
+      "device": "$49",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$31",
+      "device": "$50",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$32",
+      "device": "$51",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$33",
+      "device": "$52",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$34",
+      "device": "$53",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$35",
+      "device": "$54",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$36",
+      "device": "$58",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$37",
+      "device": "$59",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$38",
+      "device": "$60",
+      "terminal": "a",
+      "terminal_kind": "a"
+    },
+    {
+      "net": "\\$39",
+      "device": "$1",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$4",
+      "device": "$8",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$40",
+      "device": "$1",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$41",
+      "device": "$2",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$42",
+      "device": "$2",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$43",
+      "device": "$3",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$44",
+      "device": "$3",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$45",
+      "device": "$3",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$46",
+      "device": "$4",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$47",
+      "device": "$4",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$48",
+      "device": "$4",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$49",
+      "device": "$5",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$5",
+      "device": "$10",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$50",
+      "device": "$5",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$51",
+      "device": "$6",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$52",
+      "device": "$6",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$53",
+      "device": "$6",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$54",
+      "device": "$7",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$55",
+      "device": "$7",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$56",
+      "device": "$7",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$57",
+      "device": "$8",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$58",
+      "device": "$8",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$59",
+      "device": "$9",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$6",
+      "device": "$11",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$60",
+      "device": "$9",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$61",
+      "device": "$9",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$62",
+      "device": "$10",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$63",
+      "device": "$10",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$64",
+      "device": "$11",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$65",
+      "device": "$11",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$66",
+      "device": "$12",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$67",
+      "device": "$12",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$68",
+      "device": "$12",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$69",
+      "device": "$13",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$7",
+      "device": "$14",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$70",
+      "device": "$13",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$71",
+      "device": "$13",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$72",
+      "device": "$14",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$73",
+      "device": "$14",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$74",
+      "device": "$15",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$75",
+      "device": "$15",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$76",
+      "device": "$16",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$77",
+      "device": "$16",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$78",
+      "device": "$17",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$79",
+      "device": "$17",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$8",
+      "device": "$15",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$80",
+      "device": "$18",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$81",
+      "device": "$18",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$82",
+      "device": "$18",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$83",
+      "device": "$19",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$84",
+      "device": "$26",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$85",
+      "device": "$26",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$86",
+      "device": "$19",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$87",
+      "device": "$26",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$88",
+      "device": "$20",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$89",
+      "device": "$27",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$9",
+      "device": "$16",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$90",
+      "device": "$27",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$91",
+      "device": "$20",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$92",
+      "device": "$27",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$93",
+      "device": "$20",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$94",
+      "device": "$21",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$95",
+      "device": "$28",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$96",
+      "device": "$28",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$97",
+      "device": "$28",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$98",
+      "device": "$21",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$99",
+      "device": "$22",
+      "terminal": "s",
+      "terminal_kind": "source"
+    }
+  ],
+  "dead_metal": [],
+  "matched_device_groups": [],
+  "pdk": null,
+  "provenance": {
+    "klt_version": "0.4.0",
+    "klayout_version": "0.30.12",
+    "pdk": null,
+    "deck": {
+      "name": "sky130",
+      "content_hash": "sha256:5afac7ab8561545859f5e2e74f4621c6ffc052756dc8fe344ea263398e96b240",
+      "released": false
+    },
+    "input": {
+      "content_hash": "sha256:19fa49b8665f393838346c81a29bd12196194cfa00dc93e9a93c0741cb33e925"
+    }
+  },
+  "parasitics": null,
+  "spef_path": null
+}

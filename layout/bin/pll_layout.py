@@ -256,6 +256,92 @@ def factor_rows_cols(count: int) -> tuple[int, int]:
     return rows, count // rows
 
 
+def _mos_array_group(
+    group_id: str,
+    flavor: str,
+    w_um: float,
+    l_um: float,
+    rows: int,
+    cols: int,
+    members: list[dict[str, Any]],
+    *,
+    row_channel: bool = False,
+) -> dict[str, Any]:
+    """One `mos_array` group dict for `rows` x `cols` of `members` (in order).
+
+    Shared by both the single-block and row-split paths in `plan_block` below
+    so the two only differ in what `rows`/`cols`/`members` slice they pass --
+    everything about how a group's own params/members are shaped is written
+    once. `row_channel` is a plan-only marker (never forwarded into `params`,
+    which is passed to `klt gen` verbatim) recording *why* this group is
+    `rows=1`: `True` means it is one row of a larger matched group that was
+    split so `GROUP_SPACING_UM` of real inter-block space falls where an
+    opaque multi-row `mos_array` call would otherwise leave a zero-width
+    internal row gap (issue #18) -- distinct from a group that is `rows=1`
+    simply because `factor_rows_cols` found it has too few devices to need a
+    second row. `layout/tests/test_pll_layout_plan.py` reads this back
+    instead of parsing `id` strings.
+    """
+    count = len(members)
+    return {
+        "id": group_id,
+        "kind": "mos_array",
+        "generator": "mos_array",
+        "row_channel": row_channel,
+        "params": {
+            "w_um": w_um,
+            "l_um": l_um,
+            "rows": rows,
+            "cols": cols,
+            "dummy": 0,
+            "flavor": flavor,
+            # A matched array is only meaningful common-centroid when its
+            # device count is even; an odd count cannot be paired, so it
+            # falls back to plain row-major order. See the row-splitting
+            # comment at this function's call site for why callers only ever
+            # pass an odd count here when the *whole* schematic-declared
+            # group is odd (never as a side effect of splitting an even one).
+            #
+            # `common_centroid` is `klt gen mos_array`'s own documented
+            # default and a real centroid-symmetric visiting order (its
+            # `_centroid_order`): instance 2k is immediately followed by its
+            # point-reflection through the grid center, so a matched pair
+            # lands centroid-symmetrically and a linear process gradient
+            # cancels across it. That is the standard analog matching
+            # technique, and this loop covers every matched group in the
+            # design -- the VCO ring stages, the PFD/CP current mirrors, the
+            # divider transistors.
+            #
+            # Forcing this to a plain "array" measurably improves this
+            # flow's routing spot-check coverage (see `layout/pll/README.md`
+            # for the 2x2 measurement). It is deliberately NOT taken. The
+            # routing spot-check is a diagnostic build -- the stream this
+            # flow actually ships is unrouted -- whereas the
+            # device-to-position assignment this field controls is a
+            # property of the shipped geometry. Trading real device matching
+            # in the shipped layout for a better number in a diagnostic is
+            # exactly the kind of laundering this repo's CLAUDE.md forbids;
+            # the routing gap is recorded as a miss instead.
+            "topology": "common_centroid" if count % 2 == 0 else "array",
+            "gate_contact": True,
+        },
+        "count": count,
+        "members": [
+            {
+                "device": card["name"],
+                "unit": index,
+                # xschem writes a MOS card as `X<name> d g s b <model>`.
+                "ports": {
+                    f"U{index}_D": card["nets"][0],
+                    f"U{index}_G": card["nets"][1],
+                    f"U{index}_S": card["nets"][2],
+                },
+            }
+            for index, card in enumerate(members)
+        ],
+    }
+
+
 def plan_block(block_name: str, cards: list[dict[str, Any]]) -> dict[str, Any]:
     """Group one `.subckt`'s device cards into drawable layout groups."""
     mos: dict[tuple[str, float, float], list[dict[str, Any]]] = {}
@@ -279,119 +365,73 @@ def plan_block(block_name: str, cards: list[dict[str, Any]]) -> dict[str, Any]:
     groups: list[dict[str, Any]] = []
 
     for (flavor, w_um, l_um), members in sorted(mos.items()):
-        # Issue #18: keep `factor_rows_cols`'s near-square grid. A single-row
-        # packing (rows=1, cols=count) was tried here and is *not* adopted --
-        # the measurement below is why, and it is recorded so the same idea
-        # is not re-proposed from the same plausible-sounding reasoning.
+        # Issue #18: `factor_rows_cols`'s near-square grid is the base shape
+        # (kept for the reasons below), but a single opaque `mos_array` call
+        # reserves *no* channel between its own rows -- `gen-compose` sees
+        # one solid bbox regardless of `rows`/`cols`, and `klt gen mos_array`
+        # has no parameter to request internal channel space (confirmed by
+        # reading its implementation directly: `w_um`/`l_um`/`rows`/`cols`/
+        # `dummy`/`flavor`/`topology`/`gate_contact`/`finger_topology`/
+        # `gate_pad_clearance_um`/`draw_well_tap`/`add_guard_ring`/
+        # `ring_gap_side`/`ring_gap_um`/`ring_gap_offset_um`/
+        # `ring_padding_um` is `_mos_array_layout`'s complete parameter set --
+        # none of it a row/col pitch or channel-width knob). That gap is
+        # filed upstream as klayout-tools#1531; there is no workaround
+        # *inside* a single `klt gen` call.
         #
-        # The hypothesis was: `klt gen mos_array` faces every unit's gate
-        # contact toward the array's own +y edge regardless of which internal
-        # row the unit sits on, so in a multi-row grid only the *top* row's
-        # gates fall within `gen-compose`'s router's small edge-margin
-        # allowance and every gate below it is interior by construction.
-        # Forcing rows=1 should therefore put every gate on the one reachable
-        # row. The gate-orientation premise is real; the conclusion did not
-        # survive measurement.
+        # The lever this flow's own floorplan requests *do* control is how
+        # many devices go into one `klt gen` call in the first place --
+        # nothing requires an entire matched group to be one call. Splitting
+        # the near-square grid into `rows` separate one-row `mos_array`
+        # calls of `cols` devices each turns what used to be a zero-width
+        # internal row gap into `GROUP_SPACING_UM` of real, router-visible
+        # space between independently placed blocks -- the same kind of gap
+        # `shelf_pack` already reserves between every other pair of groups.
         #
-        # Full 2x2 on this design's routing spot-check, all four cells on the
-        # same `klt` 0.4.0 / KLayout 0.30.12 / `open_pdks c6d73a35` pin, so
-        # the cells are directly comparable (legs drawn / legs attempted):
+        # This is only done when `cols` is itself even, so every row keeps
+        # its own valid common-centroid pairing (`_centroid_order`'s
+        # point-reflection still has a mirror within that row) -- splitting
+        # never costs a device its matched partner. On this design that is
+        # exactly the two 18-device groups (`factor_rows_cols(18) ==
+        # (3, 6)`, an even `cols`); every other matched group either already
+        # fits on one row (`rows == 1` -- nothing to split) or has an odd
+        # `cols` (the four 6-device groups, `factor_rows_cols(6) ==
+        # (2, 3)`), where splitting would silently drop common-centroid
+        # matching to plain `array` order on a smaller group than the
+        # schematic's own count -- a real analog-matching regression this
+        # flow does not make to chase a routing number, the same principle
+        # `_mos_array_group`'s own `topology` guard already applies. See
+        # `layout/pll/README.md` for the measured effect on this design's
+        # routing spot-check.
         #
-        #   topology \ packing   near-square grid     rows=1
-        #   common_centroid      62 / 917  <- kept    55 / 945
-        #   array (forced)       76 / 862             74 / 827
-        #
-        # Reading the table by column, rows=1 is neutral-to-worse than the
-        # near-square grid in *both* topology regimes (62 -> 55 with centroid
-        # ordering, 76 -> 74 without). Reading it by row, the entire apparent
-        # "single-row packing improves routing coverage" effect an earlier
-        # revision of this code reported (62/917 -> 74/827) was the
-        # confounded diagonal of this table: that revision changed the
-        # packing and *also* dropped `topology` to an unconditional "array",
-        # and the topology change is where the whole gain came from. Packing
-        # and port-numbering topology are indeed independent knobs -- but the
-        # independent effect of the packing knob is ~zero, and the effect of
-        # the topology knob is not something this design may spend (see the
-        # `topology` note below).
-        #
-        # The near-square grid is also the better analog choice on its own
-        # terms: a compact cluster keeps a matched group's devices close
-        # together, whereas a 1xN row spreads them across the full width of
-        # the group, which is exactly the linear-gradient span that
-        # common-centroid ordering exists to cancel.
-        #
-        # The opposite orientation (cols=1: every gate buried, every
-        # source/drain pad reachable) was measured too and is worse still on
-        # this design (40 / 978), so its declared nets lean on gate
-        # connectivity more than on source/drain -- empirically, not by
-        # assumption.
-        #
-        # None of these floorplan choices closes the matched-array-interior
-        # gap PR #67 describes: the dominant leg-failure reason is a pin
-        # buried inside a matched device array's own interior, which needs a
-        # real routing channel *inside* the array -- a capability `klt gen
-        # mos_array` has no parameter to request. That remains open.
+        # A single-row packing of the *whole* group (`rows=1, cols=count`,
+        # one block, not several) was tried earlier and measured
+        # neutral-to-worse (62/917 -> 55/945 with centroid ordering kept) --
+        # see the git history of this comment and `layout/pll/README.md` for
+        # that 2x2. This is a different change: several small one-row blocks
+        # with real spacing between them, not one large one-row block.
         count = len(members)
         rows, cols = factor_rows_cols(count)
         group_id = f"{block_name}_{flavor}_w{_slug(w_um)}_l{_slug(l_um)}"
-        groups.append(
-            {
-                "id": group_id,
-                "kind": "mos_array",
-                "generator": "mos_array",
-                "params": {
-                    "w_um": w_um,
-                    "l_um": l_um,
-                    "rows": rows,
-                    "cols": cols,
-                    "dummy": 0,
-                    "flavor": flavor,
-                    # A matched array is only meaningful common-centroid when
-                    # its device count is even; an odd count cannot be paired,
-                    # so it falls back to plain row-major order.
-                    #
-                    # `common_centroid` is `klt gen mos_array`'s own
-                    # documented default and a real centroid-symmetric
-                    # visiting order (its `_centroid_order`): instance 2k is
-                    # immediately followed by its point-reflection through
-                    # the grid center, so a matched pair lands
-                    # centroid-symmetrically and a linear process gradient
-                    # cancels across it. That is the standard analog matching
-                    # technique, and this loop covers every matched group in
-                    # the design -- the VCO ring stages, the PFD/CP current
-                    # mirrors, the divider transistors.
-                    #
-                    # Forcing this to a plain "array" measurably improves
-                    # this flow's routing spot-check coverage (see the 2x2 in
-                    # the packing comment above: 62 -> 76 legs on the
-                    # near-square grid). It is deliberately NOT taken. The
-                    # routing spot-check is a diagnostic build -- the stream
-                    # this flow actually ships is unrouted -- whereas the
-                    # device-to-position assignment this field controls is a
-                    # property of the shipped geometry. Trading real device
-                    # matching in the shipped layout for a better number in a
-                    # diagnostic is exactly the kind of laundering this
-                    # repo's CLAUDE.md forbids; the routing gap is recorded
-                    # as a miss instead. See `layout/pll/README.md`.
-                    "topology": "common_centroid" if count % 2 == 0 else "array",
-                    "gate_contact": True,
-                },
-                "count": count,
-                "members": [
-                    {
-                        "device": card["name"],
-                        "unit": index,
-                        # xschem writes a MOS card as `X<name> d g s b <model>`.
-                        "ports": {
-                            f"U{index}_D": card["nets"][0],
-                            f"U{index}_G": card["nets"][1],
-                            f"U{index}_S": card["nets"][2],
-                        },
-                    }
-                    for index, card in enumerate(members)
-                ],
-            }
-        )
+        if rows > 1 and cols % 2 == 0:
+            for row in range(rows):
+                chunk = members[row * cols : (row + 1) * cols]
+                groups.append(
+                    _mos_array_group(
+                        f"{group_id}_row{row}",
+                        flavor,
+                        w_um,
+                        l_um,
+                        1,
+                        cols,
+                        chunk,
+                        row_channel=True,
+                    )
+                )
+        else:
+            groups.append(
+                _mos_array_group(group_id, flavor, w_um, l_um, rows, cols, members)
+            )
 
     for (flavor, w_um, l_um), members in sorted(res.items()):
         count = len(members)
