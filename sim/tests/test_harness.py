@@ -238,8 +238,6 @@ class RenderMethodologyTests(unittest.TestCase):
             point=point,
             passed=True,
             reason="ok",
-            log_path=Path("/fake/tt_27c_1.80v.log"),
-            spice_path=Path("/fake/tt_27c_1.80v.spice"),
         )
         kwargs = dict(
             record_id="20260101-000000-abc1234",

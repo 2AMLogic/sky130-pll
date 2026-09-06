@@ -40,8 +40,6 @@ class PointResult:
     point: PvtPoint
     passed: bool
     reason: str
-    log_path: Path
-    spice_path: Path
     # Empty for a plumbing-only manifest (no `measure` block); otherwise one
     # entry per swept operating point of this PVT point -- see
     # sim/harness/measure.py.
@@ -53,8 +51,6 @@ class McTrialResult:
     trial: McTrial
     passed: bool
     reason: str
-    log_path: Path
-    spice_path: Path
 
 
 def netlist_schematic(
@@ -298,7 +294,7 @@ def run_point(
         marker, timeout_s = ac_mod.COMPLETION_MARKER, ac_spec.timeout_s
     else:
         marker, timeout_s = COMPLETION_MARKER, 300
-    passed, reason, log_path, spice_path = _run_ngspice_and_judge(
+    passed, reason, _log_path, _spice_path = _run_ngspice_and_judge(
         pdk,
         spiceinit,
         patched,
@@ -316,8 +312,6 @@ def run_point(
         point=point,
         passed=passed,
         reason=reason,
-        log_path=log_path,
-        spice_path=spice_path,
         measurements=measurements,
     )
 
@@ -401,7 +395,7 @@ def run_mc_trial(
     quantity landed inside a spec limit. See `sim/harness/README.md`.
     """
     patched = patch_netlist_mc(netlist_text, manifest, trial)
-    passed, reason, log_path, spice_path = _run_ngspice_and_judge(
+    passed, reason, _log_path, _spice_path = _run_ngspice_and_judge(
         pdk, spiceinit, patched, trial.corner_id, work_dir
     )
-    return McTrialResult(trial=trial, passed=passed, reason=reason, log_path=log_path, spice_path=spice_path)
+    return McTrialResult(trial=trial, passed=passed, reason=reason)

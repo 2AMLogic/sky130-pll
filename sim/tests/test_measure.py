@@ -355,7 +355,6 @@ class AggregationPolicyTests(unittest.TestCase):
         return measure.Measurement(
             label=label,
             oscillating=oscillating,
-            edge_count=100 if oscillating else 0,
             freq_hz=freq if oscillating else None,
             duty_cycle=0.5 if oscillating else None,
             locked=None,
