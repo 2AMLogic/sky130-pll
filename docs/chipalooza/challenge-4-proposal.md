@@ -104,13 +104,13 @@ states plainly that none exists yet.
 | 5 | Kvco | ≤ TBD bound (not the ported 150 MHz/V) | DRAFT | `sim/loop-ac` measures loop gain including Kvco; loop-filter re-sized against a *measured* Kvco (issue #92/#95) | **Unmet** — no ratified bound |
 | 6 | Loop bandwidth | f_c < f_ref/10 | DRAFT | `sim/loop-ac` open-loop AC sweep | **Unmet** — not ratified; latest closed-loop lock evidence (below) shows this is not yet closed satisfactorily |
 | 7 | Phase margin | ≥ 45° | DRAFT | `sim/loop-ac` | **Unmet** — not ratified |
-| 8 | Lock time | < 100 µs | DRAFT | `sim/pll-lock` (see [Sign-off status](#sign-off-status): only 1 of 45 PVT points in the latest record locks at all, at 1.565 µs) | **Unmet** |
+| 8 | Lock time | < 100 µs | DRAFT | `sim/pll-lock` (see [Sign-off status](#sign-off-status): 3 of 45 PVT points in the current record lock, at 1.38–1.71 µs) | **Unmet** |
 | 9 | Period jitter | ≤ 1.0% RMS, conditional on ripple limit | DRAFT | no record | **Unmet / unmeasured** |
 | 10 | Reference spur | ≤ −55 dBc (candidate) | DRAFT | no record | **Unmet / unmeasured** |
 | 11 | Integrated RMS jitter / phase noise | not spec'd (deliberate) | DRAFT | n/a by design | **N/A** (deliberately unspecified, per gf180-pll precedent) |
 | 12 | Power | budget TBD | DRAFT | no record | **Unmet / unmeasured** |
 | 13 | Supply sensitivity | ripple + Vctrl-excursion budget TBD | DRAFT | no record | **Unmet / unmeasured** |
-| 14 | Output duty cycle | 45–55% | DRAFT | `sim/pll-lock` reports duty at the one locked point (50.2%, within target) | **Partially evidenced, not ratified** |
+| 14 | Output duty cycle | 45–55% | DRAFT | `sim/pll-lock` reports duty at the 3 locked points (49.8–51.3%, within target) | **Partially evidenced, not ratified** |
 | 15 | Output levels/drive | rail-to-rail CMOS | DRAFT | not separately measured; `vco_ring5`'s output buffer sized per `design/vco/DESIGN.md` | **Unmet / unmeasured** |
 | 16 | Lock detector | digital `lock` output | DRAFT | **not implemented** — no `lock` pin exists in `design/top/top.sch` | **Unmet — not implemented** |
 | 17 | Standby / power-down | none in v1 | DRAFT | design choice, not yet ratified | **Unmet** — not ratified |
@@ -170,19 +170,46 @@ acceptance criteria:
 - **AC 3** (post-layout PVT simulation and DRC/LVS-clean GDS in-repo):
   **not met.** Concretely:
   - **Closed-loop lock, pre-layout schematic level**
-    (`sim/pll-lock/records/20260904-163254-f00ce3e.md`, the current record):
-    of the full 45-point ratified PVT grid, only **1 point locks**
-    (`tt`, −40 °C, 1.80 V — locks at 1.565 µs, 249.7 MHz, 50.2% duty). The
-    other 44 points either fail to oscillate, run away to a frequency far
-    from the 250 MHz target and never settle within the 3 µs window, or hit
-    a numerical solver error. This is real, committed, append-only evidence
-    of an open loop-dynamics problem — not yet a design that locks
-    reliably across PVT even before layout parasitics are added. This is
-    consistent with `design/top/DESIGN.md`'s own documented `Icp` /
-    loop-filter / `Kvco` coordination gap, which issues #92–#95 have begun
-    addressing (loop-filter re-sizing against a landed `Icp` and measured
-    `Kvco`) but which the latest PVT-grid record above shows is not yet
-    resolved across the full grid.
+    (`sim/pll-lock/records/20260905-193322-0f1934d.md`, the current record,
+    supersedes `20260904-163254-f00ce3e.md`): re-run of the full 45-point
+    ratified PVT grid against `design/top/top.sch` as it stands after #95's
+    loop-filter re-size (`R1` 21.7 kΩ→5.23 kΩ, `C1` 53.25 pF→207.6 pF,
+    landed 2026-09-04, *after* the superseded record was generated — see
+    issue #81's own timeline). **3 of 45 points now lock** (up from 1 of 45
+    in the superseded record): `ss`/−40 °C/1.80 V (1.711 µs, 248 MHz,
+    50.8% duty), `sf`/−40 °C/1.80 V (1.601 µs, 244 MHz, 51.3% duty), and
+    `fs`/−40 °C/1.62 V (1.38 µs, 245.4 MHz, 49.8% duty). Stated plainly, this
+    is **not an improvement worth calling a fix**: the raw locked-point count
+    went up by two, but the *specific* point that locked before
+    (`tt`/−40 °C/1.80 V) no longer locks in this record — the fresh evidence
+    shows the loop settling within its final window at 212.8 MHz there
+    instead, which the reducer correctly reports as "no lock", not a locked
+    output frequency. Coverage is **still overwhelmingly failing**: 42 of 45
+    points do not lock within the 3 µs window. The failure-mode mix shifted
+    between the two records: "no oscillation" (the ring never starts from
+    the cold-start `VCTRL` initial condition) rose from 22/45 to 29/45
+    points, and points exceeding the manifest's 1800 s per-point ngspice
+    timeout rose from 1/45 to 3/45; against that, points that ran to
+    completion but ran away to a frequency far from 250 MHz without settling
+    fell from 14/45 to 10/45, and points that hit a numerical solver range
+    error **dropped from 7/45 to 0/45**. The plumbing-level pass rate (did
+    ngspice complete the point at all, independent of lock) fell slightly,
+    from 15/45 to 13/45. The pre-issue-filing hypothesis that the larger
+    `C1` might make cold-start convergence *worse* than before is **not
+    cleanly confirmed or refuted** by this mix: raw locked-point count went
+    up (1→3), but so did the "never oscillates at all" failure mode (22→29),
+    which is the specific symptom a slower `Icp/C1` cold-start ramp would be
+    expected to produce. What is unambiguous is that `Icp`/loop-filter/
+    `Kvco` coordination remains unresolved: which PVT points lock changed
+    almost completely between the two records rather than the same point
+    locking more robustly or nearby points joining it, consistent with a
+    loop whose cold-start behavior is fragile to small parameter shifts
+    rather than fundamentally sound. This remains real, committed,
+    append-only evidence of an open loop-dynamics problem — not yet a design
+    that locks reliably across PVT even before layout parasitics are added.
+    See issue #98 for the follow-up cold-start settling-time design work
+    this record's finding motivates (distinct from #92/#95's already-landed
+    open-loop-margin work).
   - **Post-layout simulation**: does not exist. No post-layout (parasitic-
     extracted) netlist or PVT campaign is recorded under `sim/` for this
     design.
