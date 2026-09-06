@@ -1,0 +1,547 @@
+{
+  "schema_version": 1,
+  "file": "/Users/rwalters/GitHub/sky130-pll/.loom/worktrees/issue-18/layout/pll/reports/20260906-195205-4a08c71/pll_divider_intN.gds",
+  "dbu_um": 0.001,
+  "cell_count": 30,
+  "top_cell_count": 1,
+  "cells": [
+    {
+      "name": "divider_intN_XFBFF__sky130_fd_sc_hd__dfxtp_2",
+      "index": 0,
+      "is_top": false,
+      "shapes": 159,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 8.01,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XZDET__sky130_fd_sc_hd__and2_2",
+      "index": 1,
+      "is_top": false,
+      "shapes": 77,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 2.95,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XQINV5__sky130_fd_sc_hd__inv_2",
+      "index": 2,
+      "is_top": false,
+      "shapes": 55,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 1.57,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XBORAND5__sky130_fd_sc_hd__and2_2",
+      "index": 3,
+      "is_top": false,
+      "shapes": 77,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 2.95,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XDECXOR5__sky130_fd_sc_hd__xor2_2",
+      "index": 4,
+      "is_top": false,
+      "shapes": 120,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 6.17,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XLDMUX5__sky130_fd_sc_hd__mux2_2",
+      "index": 5,
+      "is_top": false,
+      "shapes": 98,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 4.33,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XCNT5__sky130_fd_sc_hd__dfrtp_2",
+      "index": 6,
+      "is_top": false,
+      "shapes": 217,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 9.85,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XQINV4__sky130_fd_sc_hd__inv_2",
+      "index": 7,
+      "is_top": false,
+      "shapes": 55,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 1.57,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XBORAND4__sky130_fd_sc_hd__and2_2",
+      "index": 8,
+      "is_top": false,
+      "shapes": 77,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 2.95,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XDECXOR4__sky130_fd_sc_hd__xor2_2",
+      "index": 9,
+      "is_top": false,
+      "shapes": 120,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 6.17,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XLDMUX4__sky130_fd_sc_hd__mux2_2",
+      "index": 10,
+      "is_top": false,
+      "shapes": 98,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 4.33,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XCNT4__sky130_fd_sc_hd__dfrtp_2",
+      "index": 11,
+      "is_top": false,
+      "shapes": 217,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 9.85,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XQINV3__sky130_fd_sc_hd__inv_2",
+      "index": 12,
+      "is_top": false,
+      "shapes": 55,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 1.57,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XBORAND3__sky130_fd_sc_hd__and2_2",
+      "index": 13,
+      "is_top": false,
+      "shapes": 77,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 2.95,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XDECXOR3__sky130_fd_sc_hd__xor2_2",
+      "index": 14,
+      "is_top": false,
+      "shapes": 120,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 6.17,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XLDMUX3__sky130_fd_sc_hd__mux2_2",
+      "index": 15,
+      "is_top": false,
+      "shapes": 98,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 4.33,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XCNT3__sky130_fd_sc_hd__dfrtp_2",
+      "index": 16,
+      "is_top": false,
+      "shapes": 217,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 9.85,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XQINV2__sky130_fd_sc_hd__inv_2",
+      "index": 17,
+      "is_top": false,
+      "shapes": 55,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 1.57,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XBORAND2__sky130_fd_sc_hd__and2_2",
+      "index": 18,
+      "is_top": false,
+      "shapes": 77,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 2.95,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XDECXOR2__sky130_fd_sc_hd__xor2_2",
+      "index": 19,
+      "is_top": false,
+      "shapes": 120,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 6.17,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XLDMUX2__sky130_fd_sc_hd__mux2_2",
+      "index": 20,
+      "is_top": false,
+      "shapes": 98,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 4.33,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XCNT2__sky130_fd_sc_hd__dfrtp_2",
+      "index": 21,
+      "is_top": false,
+      "shapes": 217,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 9.85,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XQINV1__sky130_fd_sc_hd__inv_2",
+      "index": 22,
+      "is_top": false,
+      "shapes": 55,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 1.57,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XDECXOR1__sky130_fd_sc_hd__xor2_2",
+      "index": 23,
+      "is_top": false,
+      "shapes": 120,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 6.17,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XLDMUX1__sky130_fd_sc_hd__mux2_2",
+      "index": 24,
+      "is_top": false,
+      "shapes": 98,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 4.33,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XCNT1__sky130_fd_sc_hd__dfrtp_2",
+      "index": 25,
+      "is_top": false,
+      "shapes": 217,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 9.85,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XQINV0__sky130_fd_sc_hd__inv_2",
+      "index": 26,
+      "is_top": false,
+      "shapes": 55,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 1.57,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XLDMUX0__sky130_fd_sc_hd__mux2_2",
+      "index": 27,
+      "is_top": false,
+      "shapes": 98,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 4.33,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "divider_intN_XCNT0__sky130_fd_sc_hd__dfrtp_2",
+      "index": 28,
+      "is_top": false,
+      "shapes": 217,
+      "instances": 0,
+      "children": [],
+      "parents": [
+        "pll_divider_intN"
+      ],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 9.85,
+        "top": 2.96
+      }
+    },
+    {
+      "name": "pll_divider_intN",
+      "index": 29,
+      "is_top": true,
+      "shapes": 0,
+      "instances": 29,
+      "children": [
+        "divider_intN_XBORAND2__sky130_fd_sc_hd__and2_2",
+        "divider_intN_XBORAND3__sky130_fd_sc_hd__and2_2",
+        "divider_intN_XBORAND4__sky130_fd_sc_hd__and2_2",
+        "divider_intN_XBORAND5__sky130_fd_sc_hd__and2_2",
+        "divider_intN_XCNT0__sky130_fd_sc_hd__dfrtp_2",
+        "divider_intN_XCNT1__sky130_fd_sc_hd__dfrtp_2",
+        "divider_intN_XCNT2__sky130_fd_sc_hd__dfrtp_2",
+        "divider_intN_XCNT3__sky130_fd_sc_hd__dfrtp_2",
+        "divider_intN_XCNT4__sky130_fd_sc_hd__dfrtp_2",
+        "divider_intN_XCNT5__sky130_fd_sc_hd__dfrtp_2",
+        "divider_intN_XDECXOR1__sky130_fd_sc_hd__xor2_2",
+        "divider_intN_XDECXOR2__sky130_fd_sc_hd__xor2_2",
+        "divider_intN_XDECXOR3__sky130_fd_sc_hd__xor2_2",
+        "divider_intN_XDECXOR4__sky130_fd_sc_hd__xor2_2",
+        "divider_intN_XDECXOR5__sky130_fd_sc_hd__xor2_2",
+        "divider_intN_XFBFF__sky130_fd_sc_hd__dfxtp_2",
+        "divider_intN_XLDMUX0__sky130_fd_sc_hd__mux2_2",
+        "divider_intN_XLDMUX1__sky130_fd_sc_hd__mux2_2",
+        "divider_intN_XLDMUX2__sky130_fd_sc_hd__mux2_2",
+        "divider_intN_XLDMUX3__sky130_fd_sc_hd__mux2_2",
+        "divider_intN_XLDMUX4__sky130_fd_sc_hd__mux2_2",
+        "divider_intN_XLDMUX5__sky130_fd_sc_hd__mux2_2",
+        "divider_intN_XQINV0__sky130_fd_sc_hd__inv_2",
+        "divider_intN_XQINV1__sky130_fd_sc_hd__inv_2",
+        "divider_intN_XQINV2__sky130_fd_sc_hd__inv_2",
+        "divider_intN_XQINV3__sky130_fd_sc_hd__inv_2",
+        "divider_intN_XQINV4__sky130_fd_sc_hd__inv_2",
+        "divider_intN_XQINV5__sky130_fd_sc_hd__inv_2",
+        "divider_intN_XZDET__sky130_fd_sc_hd__and2_2"
+      ],
+      "parents": [],
+      "bbox_um": {
+        "left": -0.19,
+        "bottom": -0.24,
+        "right": 142.79,
+        "top": 2.96
+      }
+    }
+  ]
+}

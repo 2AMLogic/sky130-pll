@@ -1,0 +1,99 @@
+{
+  "schema": "klt.gen_compose.request/1",
+  "pdk": {
+    "variant": "sky130A"
+  },
+  "blocks": [
+    {
+      "id": "pll_pfd_cp",
+      "generator_report": {
+        "generator": "gen-compose",
+        "cell_name": "pll_pfd_cp",
+        "gds_path": "pll_pfd_cp.gds",
+        "bbox_um": {
+          "x0": 0.0,
+          "y0": -0.15,
+          "x1": 300.84000000000003,
+          "y1": 26.12
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "pll_loop_filter",
+      "generator_report": {
+        "generator": "gen-compose",
+        "cell_name": "pll_loop_filter",
+        "gds_path": "pll_loop_filter.gds",
+        "bbox_um": {
+          "x0": 0.0,
+          "y0": 0.0,
+          "x1": 188.38,
+          "y1": 209.8
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "pll_vco_ring5",
+      "generator_report": {
+        "generator": "gen-compose",
+        "cell_name": "pll_vco_ring5",
+        "gds_path": "pll_vco_ring5.gds",
+        "bbox_um": {
+          "x0": 0.0,
+          "y0": -0.15,
+          "x1": 40.71,
+          "y1": 16.97
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "pll_divider_intN",
+      "generator_report": {
+        "generator": "gen-compose",
+        "cell_name": "pll_divider_intN",
+        "gds_path": "pll_divider_intN.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 142.79,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    }
+  ],
+  "placement": {
+    "strategy": "explicit",
+    "order": [
+      "pll_pfd_cp",
+      "pll_loop_filter",
+      "pll_vco_ring5",
+      "pll_divider_intN"
+    ],
+    "origins_um": {
+      "pll_pfd_cp": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "pll_loop_filter": {
+        "x": 320.84,
+        "y": 0.0
+      },
+      "pll_vco_ring5": {
+        "x": 529.22,
+        "y": 0.0
+      },
+      "pll_divider_intN": {
+        "x": 0.0,
+        "y": 229.8
+      }
+    }
+  },
+  "options": {
+    "cell_name": "pll_top",
+    "output": "pll_top.gds"
+  }
+}
