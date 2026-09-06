@@ -630,3 +630,192 @@ Nothing in `spec/target-spec.md` is edited or ratified by issue #104. Row 4
 (multiplication ratio) and row 2 (output band) stay DRAFT. The measured
 maximum-division-frequency numbers above are diagnostic evidence about the
 current schematic, not a specification of what the divider shall do.
+
+## Issue #107: retiming attempt -- a real, measured, but partial improvement
+
+Issue #104 (above) named four candidate retiming approaches and asked #107 to
+choose one, justify it, and re-measure. This section records that attempt,
+its result, and why the result is an honest partial improvement rather than
+the durable fix #107's own scope asked for.
+
+### Chosen approach: flatten the borrow chain (candidate 1), evaluated
+### against a naive drive-strength bump (candidate 3)
+
+**Chosen: flatten the ripple-borrow chain.** `BOR3` and `BOR4` (borrow into
+bits 3 and 4) are now each computed by a single wide AND gate
+(`and3_2`/`and4_2`) directly off `NQ0..NQ3`, instead of rippling through one
+`and2_2` per intermediate bit (`BOR2 -> BOR3 -> BOR4`). `ZERO` is
+restructured similarly: instead of `ZERO = BOR5 AND NQ5` (which required
+`BOR5` -- itself the deepest node in the old chain -- to settle first),
+`ZERO` is now `BOR4 AND NQ45`, where `NQ45 = NQ4 AND NQ5` is computed in
+parallel off the bit-4/5 inverters. Both are algebraically identical to the
+original equations (`BOR3 = NQ0*NQ1*NQ2`, `BOR4 = NQ0*NQ1*NQ2*NQ3`,
+`ZERO = NQ0*NQ1*NQ2*NQ3*NQ4*NQ5`), so this is a pure retiming: same Boolean
+function, fewer series gate levels. `BOR5` (still needed for the bit-5
+decrement, `D5 = Q5 XOR BOR5`) is now computed as `BOR4 AND NQ4`, one level
+deeper than `BOR4` -- with `and2_2`/`and3_2`/`and4_2` as the widest AND gates
+`sky130_fd_sc_hd` offers (no `and5`), a depth-3 tree (`NQi` -> `BOR4` ->
+`BOR5`) is the shallowest structure available for a 5-input AND, so this is
+architecturally at or near the floor for this borrow-chain approach.
+
+Net effect on `D5`'s combinational depth (`CLK` -> `Q0` -> `NQ0` -> ... ->
+`D5`, not counting the `dfrtp_2` clk->Q itself): the old design was 7 gate
+levels (`QINV0, BORAND2, BORAND3, BORAND4, BORAND5,` then `DECXOR5` or
+`ZDET`+`LDMUX5` select, whichever was later). The retimed design is 5 levels
+(`QINV0/QINV4/QINV5` in parallel at level 1, `BORAND4` at level 2, `BORAND5`
+at level 3, `DECXOR5` at level 4, `LDMUX5` at level 5) -- `ZERO` now settles
+at level 3 (`BORAND4` and `BORZ45` both at level 2, `ZDET` at level 3), one
+level *before* the `DECXOR5` data path it used to co-determine the critical
+path with, so `ZERO`/`LDMUX5`'s select is no longer the bottleneck at all;
+the bottleneck is now purely the `BOR5`/`DECXOR5` decrement **data** path.
+
+**Evaluated and rejected: uniform drive-strength bump (`_2` -> `_4`).**
+Candidate 3 (#104's "cheapest" option) was tried as a second lever on top of
+the flattened chain: every one of the 30 standard-cell instances in
+`divider_intN.sch` was swapped from its `_2` variant to the PDK's `_4`
+variant (same netlist connectivity, `sky130_fd_sc_hd__and2_2` ->
+`__and2_4`, etc.), netlisted clean, and re-measured with the same
+standalone diagnostic (below). **Result: it made timing worse, not
+better** -- at `tt`/27 °C/1.80 V the `_2` design divides correctly through
+1000 MHz; the otherwise-identical `_4` design fails already at 1000 MHz
+(the same frequency the `_2` design still passes at). This is not a
+netlisting error (pin order and connectivity were checked instance-by-
+instance against the `_2` netlist; only the cell-type suffix differs) --
+it is a real consequence of this circuit's **low fanout**. Every gate in
+this chain drives at most 1-2 downstream gates; a `_4` cell's larger
+output transistors and larger intrinsic self-capacitance cost more
+switching time than they save on an already-light load, so uniformly
+upsizing loses on every stage instead of winning on any of them. This
+matches standard cell-sizing theory (oversizing a lightly loaded stage is a
+net loss) but is worth recording plainly since #104 characterized this
+lever as "the cheapest, buys a percentage" without measuring it -- measured,
+for this circuit, it buys a **negative** percentage. A fanout-aware sizing
+pass (upsize only genuinely high-fanout nodes like `NQ0`, which drives four
+downstream gates; leave or downsize the single-fanout tail stages) might
+still help, but that is a distinct, more fiddly optimization this pass did
+not pursue given the schedule/verification-risk tradeoff the issue asked to
+weigh -- the schematic in this PR keeps the `_2` drive strength throughout
+(the flattening-only design), since it measured strictly better than the
+`_2`+`_4` combination.
+
+**Approaches not chosen.** Candidate 2 (pipeline/pre-compute `ZERO` a cycle
+early) would have helped the *old* design, where the `ZERO`/`LDMUX5`-select
+path was co-critical with the `DECXOR5` data path. It does not help *this*
+design, because flattening `ZERO`'s own path (via `BOR4`/`NQ45`) already
+moved it a level ahead of `DECXOR5` -- registering an already-non-critical
+signal earlier buys nothing. Candidate 4 (dual-modulus prescaler) was not
+attempted in this pass; see "What #107 does not close" below. Neither
+choice is revisited here in code, only in the recommendation for the
+follow-up.
+
+### Standalone diagnostic: same method as #104's testbench (A)
+
+Informal, uncommitted diagnostic -- same status and convention as #104's
+diagnostics above and `design/vco/DESIGN.md`'s "informal sanity check"
+table, not a `sim/` evidence record. `divider_intN` netlisted standalone
+(`netlist/divider_intN.spice`, this PR's retimed version), driven by an
+ideal rail-to-rail `pulse` `CLK` source (~12.5 ps edges), `RESETB` a `pwl`
+released at 5-6 ns, 250 `CLK` cycles simulated per point (long enough for
+roughly 10 divide-by-25 periods), `ngspice-46`, the same `sky130A` PDK
+install and `sky130_fd_sc_hd.spice` include #104 used. `FBCLK` rising edges
+and their spacing are read back from a `wrdata` dump at each point; a point
+is scored **correct** only if it produces the expected edge count for the
+window at a period matching `N / f_CLK` to within 2% (the very first
+inter-edge gap, from reset release to the first steady-state reload, is
+excluded from that check, since reset release is not phase-aligned to an
+`N`-cycle boundary).
+
+**Maximum correct-division frequency, `N = 25`, before vs. after this PR**
+(the "before" column is #104's own table, reproduced from above):
+
+| Corner (process / temp / supply) | Before #107 (exact / wrong) | After #107 (exact / wrong) | VCO top free-running freq. | Clears it? |
+|---|---|---|---|---|
+| `ss` / 125 °C / 1.62 V | 475 MHz / 500 MHz | **650 MHz** / 700 MHz | ~1.09 GHz | **No** |
+| `sf` / 27 °C / 1.80 V | 700 MHz / 1.07 GHz | **950 MHz** / 1.0 GHz | ~1.09 GHz | **No** |
+| `fs` / 27 °C / 1.80 V | 700 MHz / 1.07 GHz | **1.0 GHz** / 1.09 GHz | ~1.09 GHz | **No** (fails at exactly the target) |
+| `tt` / 27 °C / 1.80 V | 765 MHz / 780 MHz | **1.0 GHz** / 1.09 GHz | ~1.09 GHz | **No** (close) |
+| `ff` / −40 °C / 1.98 V | 1.07 GHz / 1.15 GHz | **≥1.3 GHz** / 1.8 GHz | ~1.09 GHz | **Yes** |
+
+Every corner improved by roughly 25-45% (`ss`: +37%, `sf`: +36%, `fs`: +43%,
+`tt`: +31%, `ff`: at least +21%, likely more -- the `ff` ceiling was not
+pinned more precisely than "between 1.3 and 1.8 GHz" since it already clears
+the target comfortably). This is a real, verified improvement, not a
+rounding artifact: the `tt`/780 MHz and `ss`/500 MHz points that were wrong
+before #107 are now measured exact-÷25 with the retimed netlist. But only
+`ff` -- already the fastest, least-marginal corner before this issue -- now
+clears the VCO's own ~1.09 GHz top free-running frequency (`design/vco/
+DESIGN.md`'s sanity-check table). `ss`, `sf`, `fs` and `tt` all still fall
+short, `ss` by the widest margin (650 MHz vs. a 1.09 GHz target -- still
+only a 1.7x margin over the 250 MHz design target, up from #104's ~1.9x-
+at-worst-corner, i.e. barely moved at the corner that matters most).
+
+**Edge cases (test plan spot-check): `N = 4` and `N = 64` at 250 MHz,
+`tt`/27 °C/1.80 V** -- both divide correctly with the retimed netlist
+(`N = 4`: 62 `FBCLK` edges over the window, 16.000 ns period, exact;
+`N = 64`: 4 edges, 256.000 ns period, exact). The retiming only changed how
+the borrow/zero-detect signals are computed, not the reload mux or the
+`NSEL` interface, so this is the expected result -- included here as the
+direct confirmation the test plan asked for, not a surprise.
+
+### What #107 does not close, and why
+
+The scope this issue set for itself -- "the maximum correct-division
+frequency at the worst ratified PVT corner sits comfortably above the VCO's
+own top free-running frequency ... so no reachable VCO state can kill the
+feedback path" -- is **not met** by this schematic change. Recorded here
+honestly, per `CLAUDE.md`'s rule against laundering a miss, rather than
+narrowed after the fact to fit what was achieved:
+
+- The one-way trap #104 described (a cold start that pushes the VCO above
+  the divider's ceiling permanently kills `FBCLK`, which removes negative
+  feedback, which keeps `VCTRL` railed, which keeps the VCO above the
+  ceiling) is **still reachable** at `ss`, `sf`, `fs`, and `tt` -- just at a
+  25-45% higher frequency than before. It is closed only at `ff`.
+- The fundamental obstacle this pass exposed: `BOR5` (needed for the bit-5
+  decrement on every cycle, not only at reload -- see #104's finding that a
+  mid-count borrow failure, not just a reload failure, is what causes the
+  limit-cycle trap) is a 5-input AND of `NQ0..NQ4`. With `sky130_fd_sc_hd`'s
+  widest AND gate being `and4_2`/`and4_4` (no `and5`), a depth-3 tree
+  (inverters -> `and4` -> `and2`) is the shallowest structure available,
+  and this pass already uses it. Going faster than that, for this counter
+  *encoding* (binary, ripple-borrow), needs either faster gates (measured
+  above to be a net loss at this fanout, at least without per-node
+  fanout-aware sizing) or a different encoding entirely.
+- **Recommendation for the follow-up** (not attempted here, to keep this
+  PR's verification/schedule risk bounded as the issue asked): a
+  dual-modulus prescaler front-end (#104/#100's already-named escalation,
+  and `design/divider/DESIGN.md`'s original "Architecture choice" section's
+  candidate that was deferred for being unneeded at v1's target frequency)
+  is the structurally correct fix -- it replaces the long ripple-borrow
+  path with a small, shallow fast counter clocked directly by the VCO, so
+  the *slow*-clocked back-end counter (this design's own borrow chain,
+  unmodified) gets a full divided-down clock period to settle instead of
+  one VCO period. A fanout-aware gate-sizing pass (per the drive-strength
+  finding above) is a smaller, cheaper thing to try first, but is not
+  guaranteed to close a ~1.7x-to-1.09-GHz gap at `ss` on its own.
+
+### No fresh `sim/pll-lock` record minted in this pass
+
+Per `CLAUDE.md`'s append-only rule and this issue's own acceptance
+criteria, a fresh closed-loop `sim/pll-lock` PVT-grid record is required
+**before any claim that the retiming improves closed-loop behaviour**. This
+pass makes no such claim -- the honest result above is that the one-way
+trap is still reachable at 4 of 5 corners, so closed-loop cold-start
+behaviour at those corners is not expected to differ materially from #104's
+own closed-loop reproduction (still a real hazard, just at a higher VCTRL
+excursion threshold). Minting a full-grid closed-loop record was also found
+to be impractical within a single work session at the current manifest's
+cost (`sim/pll-lock/testbench/tb.json`'s `tran_stop = 100us` /
+`timeout_s = 10800`, no per-point parallelism in `sim/harness/runner.py`
+-- an observed ~1.5-2 hours per point, i.e. days for the full 45-point
+grid), independent of anything this issue changed; that cost is the same
+one issue #103 already tracks for a fresh full-grid run against the current
+manifest defaults. The follow-up recommended above should fold in a
+closed-loop re-verification once a durable fix exists, rather than spending
+that multi-hour cost against a design already known (from the standalone
+diagnostic above) to still trip the trap at most corners.
+
+### No spec edits from this issue
+
+Nothing in `spec/target-spec.md` is edited or ratified by issue #107. Row 4
+(multiplication ratio) and row 2 (output band) stay DRAFT.

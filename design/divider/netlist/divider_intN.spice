@@ -1,4 +1,4 @@
-** sch_path: /home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-44/design/divider/divider_intN.sch
+** sch_path: /Users/rwalters/GitHub/sky130-pll/.loom/worktrees/issue-107/design/divider/divider_intN.sch
 **.subckt divider_intN VDD GND CLK RESETB NSEL0 NSEL1 NSEL2 NSEL3 NSEL4 NSEL5 FBCLK
 *.iopin VDD
 *.iopin GND
@@ -26,19 +26,20 @@ XQINV2 Q2 GND GND VDD VDD NQ2 sky130_fd_sc_hd__inv_2
 XCNT3 CLK D3 RESETB GND GND VDD VDD Q3 sky130_fd_sc_hd__dfrtp_2
 XLDMUX3 DDEC3 NSEL3 ZERO GND GND VDD VDD D3 sky130_fd_sc_hd__mux2_2
 XDECXOR3 Q3 BOR3 GND GND VDD VDD DDEC3 sky130_fd_sc_hd__xor2_2
-XBORAND3 BOR2 NQ2 GND GND VDD VDD BOR3 sky130_fd_sc_hd__and2_2
+XBORAND3 NQ0 NQ1 NQ2 GND GND VDD VDD BOR3 sky130_fd_sc_hd__and3_2
 XQINV3 Q3 GND GND VDD VDD NQ3 sky130_fd_sc_hd__inv_2
 XCNT4 CLK D4 RESETB GND GND VDD VDD Q4 sky130_fd_sc_hd__dfrtp_2
 XLDMUX4 DDEC4 NSEL4 ZERO GND GND VDD VDD D4 sky130_fd_sc_hd__mux2_2
 XDECXOR4 Q4 BOR4 GND GND VDD VDD DDEC4 sky130_fd_sc_hd__xor2_2
-XBORAND4 BOR3 NQ3 GND GND VDD VDD BOR4 sky130_fd_sc_hd__and2_2
+XBORAND4 NQ0 NQ1 NQ2 NQ3 GND GND VDD VDD BOR4 sky130_fd_sc_hd__and4_2
 XQINV4 Q4 GND GND VDD VDD NQ4 sky130_fd_sc_hd__inv_2
 XCNT5 CLK D5 RESETB GND GND VDD VDD Q5 sky130_fd_sc_hd__dfrtp_2
 XLDMUX5 DDEC5 NSEL5 ZERO GND GND VDD VDD D5 sky130_fd_sc_hd__mux2_2
 XDECXOR5 Q5 BOR5 GND GND VDD VDD DDEC5 sky130_fd_sc_hd__xor2_2
 XBORAND5 BOR4 NQ4 GND GND VDD VDD BOR5 sky130_fd_sc_hd__and2_2
 XQINV5 Q5 GND GND VDD VDD NQ5 sky130_fd_sc_hd__inv_2
-XZDET BOR5 NQ5 GND GND VDD VDD ZERO sky130_fd_sc_hd__and2_2
+XZDET BOR4 NQ45 GND GND VDD VDD ZERO sky130_fd_sc_hd__and2_2
+XBORZ45 NQ4 NQ5 GND GND VDD VDD NQ45 sky130_fd_sc_hd__and2_2
 XFBFF CLK ZERO GND GND VDD VDD FBCLK sky130_fd_sc_hd__dfxtp_2
 **.ends
 .end
