@@ -194,6 +194,88 @@ once the DRAFT spec rows each block targets are ratified. Nothing in this
 document is a claim against `spec/target-spec.md` — consistent with
 `CLAUDE.md`'s "no claim without a testbench" rule.
 
+## Known gap: closed-loop cold-start convergence (issue #98)
+
+A later campaign than the one above now exists: `sim/pll-lock` (issue #52,
+widened to the full DR-003 45-point PVT grid by #89/#99) is a real, committed
+closed-loop cold-start evidence record against this schematic — the
+statement in "No closed-loop simulation performed" above was accurate for
+issue #28's own authoring-time scope, not for the repository's current
+state. The current record,
+`sim/pll-lock/records/20260905-193322-0f1934d.md` (against `top.sch` at or
+after #95's loop-filter re-size), shows **3 of 45** points locking within
+the manifest's 3 µs transient window; the other 42 fail, split between two
+dominant modes: "no oscillation" (0 rising edges observed) and "no lock
+within window" (the loop free-runs at a frequency far from 250 MHz and
+never satisfies the lock criterion before the transient ends).
+
+Issue #98 asked, before any `Icp`/loop-filter/VCO-bias redesign is
+attempted, whether these failures are a real cold-start convergence problem
+or a `tran_stop` measurement-window artifact (the manifest's 3 µs window is
+far shorter than `spec/target-spec.md` row 8's DRAFT <100 µs lock-time
+budget). A small number of informal, uncommitted single-point diagnostics
+(ad hoc ngspice runs in a scratch directory, not a `sim/` evidence record —
+same convention as `design/vco/DESIGN.md`'s own "informal sanity check"
+table) were run against two of the 45 points to probe this, both at
+`tt`/27 °C and `tt`/125 °C, 1.80 V, both baseline "no oscillation" verdicts:
+
+1. **Re-running the exact committed manifest for `tt`/27 °C/1.80 V**
+   reproduces "no oscillation" in ~2 minutes of wall time (well under the
+   manifest's 1800 s per-point timeout) — this is a fast, clean convergence
+   to a non-oscillating DC operating point, not a slow/stiff simulation
+   that might resolve given more time. This is consistent with SPICE's
+   exact-device-symmetry idealization: an odd-stage ring oscillator with
+   perfectly identical devices and no explicit asymmetry can settle at (and
+   never depart from) a degenerate fixed point that real, mismatched,
+   noisy silicon would not sit at indefinitely — a known simulation
+   artifact for symmetric ring oscillators, though not something this pass
+   fully separates from a genuine silicon startup risk (that needs Monte
+   Carlo mismatch/noise injection, out of this issue's scope).
+2. **Forcing the harness's own documented cold-start nudge**
+   (`measure.ic: ["v(xxxtop.xxvco.ring0)=0"]`, `sim/harness/measure.py`'s
+   already-supported `ic` manifest field) breaks that degeneracy: the VCO
+   free-runs from the start of the transient in both diagnostics below.
+3. **`tt`/125 °C/1.80 V, kicked, `tran_stop` widened to 30 µs**: **locks at
+   26.32 µs**, f_out 251.5 MHz, 50.1% duty — inside the DRAFT <100 µs row-8
+   budget. For this corner, the baseline "no oscillation" verdict was
+   entirely explained by the combination of (1) and the 3 µs window being
+   too short to see the eventual lock — not a real design defect.
+4. **`tt`/27 °C/1.80 V, kicked, a direct 5 µs ngspice transient** (not run
+   through the harness) shows a different, un-window-fixable failure: the
+   VCO free-runs at ~1.07 GHz — near the top of its own informally-measured
+   tuning range (`design/vco/DESIGN.md`'s sanity-check table) — and `VCTRL`
+   creeps monotonically toward `VDD` for the entire window with no sign of
+   correction. Inspecting the divider's `FBCLK` output directly shows it
+   pulses exactly once, at reset release, and then **never toggles again**
+   for the rest of the 5 µs window (~5000 VCO cycles, versus the ~25-cycle
+   period `FBCLK` should show if the divider were counting normally). With
+   `FBCLK` dead, the PFD/charge pump has no negative-feedback signal at all
+   and keeps pumping `VCTRL` toward the rail — a genuine loss-of-feedback
+   lockup, not a slow convergence. No amount of additional simulated time
+   would fix this corner as currently designed; root-causing *why*
+   `divider_intN`'s counter chain (`sky130_fd_sc_hd__dfrtp_2`-based, see
+   `design/divider/DESIGN.md`) stops toggling once driven at a free-running
+   VCO frequency well above the 250 MHz target was not completed in this
+   pass.
+
+**Conclusion**: both of #98's competing hypotheses are real, and — at least
+across these two probed corners — they compound *differently* per corner;
+neither "it's just the window" nor "it's just VCO self-start" is a correct
+blanket explanation. This means the existing `sim/pll-lock` manifest (3 µs
+window, no cold-start nudge) cannot currently distinguish "would lock given
+a fair chance" from "genuinely broken" for most of the 42 failing points —
+attempting an `Icp`/loop-filter/VCO-bias redesign against that evidence risks
+tuning against a measurement artifact rather than the real defect. Widening
+`tran_stop` and adding a committed cold-start nudge to `sim/pll-lock`'s
+manifest, then re-running the full 45-point grid, is a harness-fix
+prerequisite to any such redesign — tracked as a follow-up (#100:
+`sim/pll-lock/testbench/tb.json`, `sim/run_corners.py`), together with
+root-causing the `divider_intN` `FBCLK` dropout above, rather than attempted
+in this pass. This section reflects issue #98's own acceptance criterion
+("determine whether failures are real, artifact, or both") as its complete,
+evidence-based answer for the two corners probed; it is not itself a
+45-point re-run and does not substitute for one.
+
 ## No spec edits
 
 Nothing in `spec/target-spec.md` is edited by this issue. All DRAFT rows
