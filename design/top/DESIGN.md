@@ -487,6 +487,21 @@ voltage therefore takes:
 | `ss`/125 °C/1.62 V | 6.50 µA | 29.4 mV/µs | 0.873 V | 29.7 µs |
 | `ss`/−40 °C/1.62 V | 4.91 µA | 22.2 mV/µs | 0.914 V | 41.2 µs |
 
+**Confirmed in the closed loop.** Those numbers are built from an open-loop
+pump measurement and a component table, so they were checked against the
+real thing: a 6 µs closed-loop transient of the committed netlist snapshot
+with the corrected initial conditions in place starts at `VCTRL` = 0.0000 V
+and ramps linearly — 0.0517 V at 0.6 µs, 0.1282 V at 3 µs, 0.2237 V at 6 µs
+— i.e. **31.8 mV/µs measured at `tt`/27 °C/1.80 V against 31.9 mV/µs
+predicted**, a 0.3 % agreement between two independent measurements. The
+same run at `sf`/125 °C/1.80 V (the corner whose operating point previously
+started `VCTRL` at 1.790 V) likewise starts at exactly 0.0000 V and ramps at
+37.3 mV/µs. Both runs completed in about 7 minutes of wall time — the ring
+is off for the whole window, so there is no GHz-rate oscillation to resolve,
+which is worth knowing when budgeting the full re-run: a genuine cold-start
+point is cheap for its first ~25 µs and only becomes expensive once the ring
+starts.
+
 This is a **hard floor** on cold-start lock time — no loop can lock before
 its control node has been charged to the voltage the lock frequency needs.
 It is 26–41 µs, versus `spec/target-spec.md` row 8's DRAFT `< 100 µs`

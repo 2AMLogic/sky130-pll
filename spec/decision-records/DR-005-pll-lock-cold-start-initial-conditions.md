@@ -145,6 +145,19 @@ t = 0 `VCTRL` is exactly 0.000 V at every probed corner (`sf`/125 °C/1.80 V,
 1.80 V, `fs`/−40 °C/1.62 V) — the same six corners that previously started
 anywhere from 0.900 V to 1.800 V.
 
+Verified further in the closed loop, not just at t = 0: a 6 µs transient of
+the committed netlist snapshot with these cards in place starts at
+`VCTRL` = 0.0000 V and ramps linearly at **31.8 mV/µs** at `tt`/27 °C/
+1.80 V, against **31.9 mV/µs predicted** from the independently measured
+cold-start charge-pump current (7.048 µA) and the filter's 221.25 pF — a
+0.3 % agreement between two measurements that share no inputs. The same run
+at `sf`/125 °C/1.80 V — the corner whose operating point previously placed
+`VCTRL` at 1.790 V, with the ring already free-running above the divider's
+ceiling — now likewise starts at 0.0000 V and ramps at 37.3 mV/µs. The
+acquisition behaviour this campaign exists to measure is therefore present
+and physically sensible under these defaults, and was simply not being
+exercised before.
+
 This is a measurement-methodology change only. It does **not** ratify
 `spec/target-spec.md` row 8 (still DRAFT), and it changes no design file.
 
