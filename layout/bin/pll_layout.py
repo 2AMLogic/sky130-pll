@@ -107,11 +107,10 @@ LI1_MIN_SPACE_UM = 0.17
 #: larger so the plate is fully landed.
 CAP_BOTTOM_MARGIN_UM = 0.2
 
-#: Standard-cell library the divider's cells come from, and its row height /
-#: site width (sky130 high-density library). Cells are placed in one
-#: abutted row on the site grid -- see `plan_block` for why one row.
+#: Standard-cell library the divider's cells come from, and its row height
+#: (sky130 high-density library). Cells are placed in one abutted row on the
+#: site grid -- see `plan_block` for why one row.
 STDCELL_LIB = "sky130_fd_sc_hd"
-STDCELL_SITE_UM = 0.46
 STDCELL_ROW_UM = 2.72
 #: Each library cell's drawn bbox overhangs its logical (site-grid) width by
 #: this much per side -- nwell/pwell overhang shared with the abutting cell.
