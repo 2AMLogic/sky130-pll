@@ -502,6 +502,19 @@ which is worth knowing when budgeting the full re-run: a genuine cold-start
 point is cheap for its first ~25 µs and only becomes expensive once the ring
 starts.
 
+A longer single-corner attempt in the same pass — `tt`/27 °C/1.80 V out to
+45 µs, i.e. past the predicted 27.3 µs lock point — reached only ~8 µs of
+simulated time in about an hour of wall clock and was lost before finishing.
+That run shared a heavily contended multi-agent host with up to eight other
+ngspice processes for most of its life, so it is a **contention-inflated
+lower bound on throughput, not a clean per-point cost measurement**; read it
+alongside the 57-minutes-and-unfinished figure recorded above rather than as
+a refinement of it. The actionable form for #103 is the shape rather than
+the number: acquisition is cheap while the ring is off and expensive once it
+starts, so per-point cost is dominated by however much simulated time
+follows the ~25 µs mark, and points should be run with dedicated cores
+rather than packed onto a shared host.
+
 This is a **hard floor** on cold-start lock time — no loop can lock before
 its control node has been charged to the voltage the lock frequency needs.
 It is 26–41 µs, versus `spec/target-spec.md` row 8's DRAFT `< 100 µs`
