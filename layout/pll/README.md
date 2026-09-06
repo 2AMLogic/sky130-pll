@@ -97,6 +97,7 @@ Filed after the `klt` pin bump (#46), by the router the bump made usable:
 | Gap | Filed | How this flow copes |
 | --- | --- | --- |
 | ~~`gen-compose`'s route-vs-route collision check misses two same-block self-nets: both compose `routed: true` with no warning, and extraction reads them back as one node~~ **Fixed upstream** (klayout-tools PR #1216, merged as `dd41d23f`) | [klayout-tools#1197](https://github.com/2AMLogic/klayout-tools/issues/1197) (closed) | Issue #17's DRC-motivated pin bump (`klayout-tools==0.4.0`) turned out to be a strict descendant of this fix too — a re-run of this design's routing spot-check confirmed 0 shorted nodes, down from 3. Still ships the unrouted stream regardless (most legs remain undrawn — see the routing-channel gap below), and the routed build stays as a spot-check under `route-spot-check/` |
+| `mos_array` emits one opaque hierarchical cell with no internal routing channel reserved between rows/columns, and `gen-compose` treats every placed block as a solid obstacle with no notion of navigable space inside it — so a pin on any unit device not on the array's outermost reachable row/column is structurally unroutable, for any net, regardless of placement spacing | [klayout-tools#1531](https://github.com/2AMLogic/klayout-tools/issues/1531) (open) | This is the dominant remaining gap for issue #18 — see the routing-channel discussion below (263 of 917 legs at the current measurement). No workaround exists in this flow; closing this issue's LVS acceptance criterion needs this fixed upstream, or a documented narrower partial-progress result in the interim |
 
 Five further gaps this layout originally hit were **already fixed on the tool's
 `main`** and reached this repo only through the PyPI pin
@@ -139,7 +140,17 @@ measurement above) — routing that would need an actual channel *inside* the
 array, which is a floorplan redesign, not a spacing tweak (a throwaway
 experiment raising `GROUP_SPACING_UM`/`BLOCK_SPACING_UM` 2.5x barely moved
 the numbers, since that spacing is between *groups*, not between an array's
-own internal rows/columns).
+own internal rows/columns). This is now filed upstream, generically, as
+[klayout-tools#1531](https://github.com/2AMLogic/klayout-tools/issues/1531):
+`mos_array` emits one opaque hierarchical cell with no internal channel
+reserved between rows/columns, and `gen-compose` has no notion of routable
+space *inside* a placed block's own bbox — so any pin not on the array's
+outermost reachable row/column is structurally unroutable regardless of
+placement spacing, independent of the `topology`/packing experiment below.
+Distinct from the already-tracked #1057/#1197 (route-vs-route shorting,
+closed) and #1467 (inter-net track/layer allocation, open) — those are both
+about contention *between* nets; #1531 is about a single generator's own
+emitted geometry making some of its own pins unreachable by any router.
 
 Issue #18 also tried a genuine floorplan change here, and it **did not
 work** — recorded because the reasoning behind it is plausible enough to be
@@ -189,8 +200,8 @@ source/drain pad reachable — was measured too and is worse still on this
 design: 40 of 978 legs; its declared nets lean on gate connectivity more
 than on source/drain, empirically.) None of these floorplan choices closes
 the gap — a genuine per-unit interior routing channel is still needed and is
-not something this flow's floorplan choices alone can supply. The current
-record's routing spot-check tabulates
+not something this flow's floorplan choices alone can supply; see
+klayout-tools#1531 above. The current record's routing spot-check tabulates
 the router's own reason for every leg it declined, and its LVS (spot-check)
 section runs `klt lvs` against that build and records the resulting mismatch
 in full.
