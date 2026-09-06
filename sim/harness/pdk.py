@@ -31,7 +31,6 @@ class ResolvedPdk:
     variant: str
     variant_dir: Path
     ngspice_lib: Path
-    xschem_rc: Path
     process_corners: tuple
     pinned_commit: str
     resolved_commit: str | None
@@ -115,7 +114,6 @@ def resolve(repo_root: Path) -> ResolvedPdk:
         variant=resolved_variant,
         variant_dir=variant_dir,
         ngspice_lib=ngspice_lib,
-        xschem_rc=xschem_rc,
         process_corners=tuple(pdk_json["process_corners"]),
         pinned_commit=pinned_commit,
         resolved_commit=resolved_commit,
