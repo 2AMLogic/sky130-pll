@@ -73,13 +73,6 @@ def sample_response(a: float, f_start=100.0, f_stop=1e8, per_decade=40):
     return freqs, reals, imags
 
 
-def wrdata_text(freqs, reals, imags) -> str:
-    """Render a sampled response the way ngspice's `wrdata` writes AC data."""
-    return "".join(
-        f" {f:.8e} {r:.8e} {i:.8e} \n" for f, r, i in zip(freqs, reals, imags)
-    )
-
-
 def spec(**overrides) -> acmeasure.AcSpec:
     block = {
         "node": "phi",
