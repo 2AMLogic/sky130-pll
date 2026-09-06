@@ -126,12 +126,14 @@ class PlanCoverageTests(unittest.TestCase):
         # PFD/CP current mirrors. An odd count cannot be paired, so it
         # legitimately falls back to plain row-major `array`.
         #
-        # This is deliberately independent of the rows=1 packing asserted
-        # below: `_centroid_order` runs over the whole rows x cols grid,
-        # including the degenerate single-row case, so packing every group
-        # onto one row for routing reach does *not* require giving up the
-        # centroid ordering. Regression guard -- the two were coupled by
-        # accident once.
+        # Forcing this to a plain "array" does measurably improve this flow's
+        # routing spot-check coverage, so the temptation is real and was
+        # acted on once. It is not a trade this design may make: the shipped
+        # stream is unrouted, so the spot-check is a diagnostic while the
+        # device-to-position assignment is a property of the shipped
+        # geometry. This test is the guard that makes dropping it a
+        # deliberate, visible act rather than a silent side effect of an
+        # unrelated floorplan change.
         for block in self.plan["blocks"]:
             for group in block["groups"]:
                 if group["kind"] != "mos_array":
@@ -141,19 +143,24 @@ class PlanCoverageTests(unittest.TestCase):
                     group["params"]["topology"], expected, group["id"]
                 )
 
-    def test_mos_arrays_are_packed_in_a_single_row(self):
-        # issue #18: `klt gen mos_array` faces every unit's gate contact
-        # toward the array's own +y edge regardless of the unit's row, so
-        # only the top row's gates land within `gen-compose`'s router's
-        # edge-margin allowance. rows=1 puts every gate on that one
-        # reachable row -- the measured routing-coverage gain in this PR.
+    def test_mos_arrays_are_packed_in_a_near_square_grid(self):
+        # issue #18: matched groups use `factor_rows_cols`'s near-square
+        # grid, not a 1xN row. A single-row packing was measured across the
+        # full topology x packing 2x2 (see the comment at the call site in
+        # layout/bin/pll_layout.py) and is neutral-to-worse for routing
+        # coverage in both topology regimes, while spreading a matched
+        # group's devices over the widest possible span -- the very gradient
+        # distance common-centroid ordering exists to cancel.
         for block in self.plan["blocks"]:
             for group in block["groups"]:
                 if group["kind"] != "mos_array":
                     continue
                 params = group["params"]
-                self.assertEqual(params["rows"], 1, group["id"])
-                self.assertEqual(params["cols"], group["count"], group["id"])
+                self.assertEqual(
+                    (params["rows"], params["cols"]),
+                    pll_layout.factor_rows_cols(group["count"]),
+                    group["id"],
+                )
 
     def test_res_arrays_draw_no_dummy_elements(self):
         for block in self.plan["blocks"]:

@@ -279,37 +279,60 @@ def plan_block(block_name: str, cards: list[dict[str, Any]]) -> dict[str, Any]:
     groups: list[dict[str, Any]] = []
 
     for (flavor, w_um, l_um), members in sorted(mos.items()):
-        # Issue #18: a single-row layout (rows=1, cols=count), not
-        # `factor_rows_cols`'s near-square grid this used before. `klt gen
-        # mos_array` draws every unit's gate contact facing the array's own
-        # +y edge regardless of which row it is in (verified against the
-        # generator's own port geometry) -- so in a multi-row grid only the
-        # *top* row's gates sit within `gen-compose`'s router's own small
-        # (~0.2um) edge-margin allowance; every gate below the top row is
-        # buried in the array's interior by construction, no matter how much
-        # inter-group spacing (`GROUP_SPACING_UM`) this flow adds, since that
-        # spacing is between *groups*, not between an array's own internal
-        # rows. Forcing rows=1 puts every unit's gate in that one reachable
-        # row. Source/drain pads face left/right instead, so this trades
-        # "some interior columns' S/D pads are unreachable" (already true
-        # before this change, for any column that was not its row's own
-        # edge) for "every unit's gate pad is reachable" -- measured net
-        # gain on this design's routing spot-check (issue #18): legs drawn
-        # 62/917 -> 74/827, LVS mismatches 1166 -> 1155, no new short. The
-        # opposite orientation (cols=1, all gates buried but every S/D
-        # reachable) was measured too and is worse here (40/978 legs,
-        # 1189 mismatches) -- this design's declared nets lean on gate
-        # connectivity more than on S/D, empirically, not by assumption.
-        # This does not close the matched-array-interior gap PR #67 and this
-        # issue's own history describe -- most legs still fail the same way,
-        # just fewer of them -- so `factor_rows_cols` (still exercised by
-        # `layout/tests/test_pll_layout_plan.py`'s `FactorizationTests`) is
-        # left in place rather than deleted: it is generically correct and
-        # may be worth revisiting per-group (e.g. only for arrays whose
-        # members are exclusively self-net-connected to each other) once the
-        # actual channel-routing fix lands.
+        # Issue #18: keep `factor_rows_cols`'s near-square grid. A single-row
+        # packing (rows=1, cols=count) was tried here and is *not* adopted --
+        # the measurement below is why, and it is recorded so the same idea
+        # is not re-proposed from the same plausible-sounding reasoning.
+        #
+        # The hypothesis was: `klt gen mos_array` faces every unit's gate
+        # contact toward the array's own +y edge regardless of which internal
+        # row the unit sits on, so in a multi-row grid only the *top* row's
+        # gates fall within `gen-compose`'s router's small edge-margin
+        # allowance and every gate below it is interior by construction.
+        # Forcing rows=1 should therefore put every gate on the one reachable
+        # row. The gate-orientation premise is real; the conclusion did not
+        # survive measurement.
+        #
+        # Full 2x2 on this design's routing spot-check, all four cells on the
+        # same `klt` 0.4.0 / KLayout 0.30.12 / `open_pdks c6d73a35` pin, so
+        # the cells are directly comparable (legs drawn / legs attempted):
+        #
+        #   topology \ packing   near-square grid     rows=1
+        #   common_centroid      62 / 917  <- kept    55 / 945
+        #   array (forced)       76 / 862             74 / 827
+        #
+        # Reading the table by column, rows=1 is neutral-to-worse than the
+        # near-square grid in *both* topology regimes (62 -> 55 with centroid
+        # ordering, 76 -> 74 without). Reading it by row, the entire apparent
+        # "single-row packing improves routing coverage" effect an earlier
+        # revision of this code reported (62/917 -> 74/827) was the
+        # confounded diagonal of this table: that revision changed the
+        # packing and *also* dropped `topology` to an unconditional "array",
+        # and the topology change is where the whole gain came from. Packing
+        # and port-numbering topology are indeed independent knobs -- but the
+        # independent effect of the packing knob is ~zero, and the effect of
+        # the topology knob is not something this design may spend (see the
+        # `topology` note below).
+        #
+        # The near-square grid is also the better analog choice on its own
+        # terms: a compact cluster keeps a matched group's devices close
+        # together, whereas a 1xN row spreads them across the full width of
+        # the group, which is exactly the linear-gradient span that
+        # common-centroid ordering exists to cancel.
+        #
+        # The opposite orientation (cols=1: every gate buried, every
+        # source/drain pad reachable) was measured too and is worse still on
+        # this design (40 / 978), so its declared nets lean on gate
+        # connectivity more than on source/drain -- empirically, not by
+        # assumption.
+        #
+        # None of these floorplan choices closes the matched-array-interior
+        # gap PR #67 describes: the dominant leg-failure reason is a pin
+        # buried inside a matched device array's own interior, which needs a
+        # real routing channel *inside* the array -- a capability `klt gen
+        # mos_array` has no parameter to request. That remains open.
         count = len(members)
-        rows, cols = 1, count
+        rows, cols = factor_rows_cols(count)
         group_id = f"{block_name}_{flavor}_w{_slug(w_um)}_l{_slug(l_um)}"
         groups.append(
             {
@@ -325,16 +348,31 @@ def plan_block(block_name: str, cards: list[dict[str, Any]]) -> dict[str, Any]:
                     "flavor": flavor,
                     # A matched array is only meaningful common-centroid when
                     # its device count is even; an odd count cannot be paired,
-                    # so it falls back to plain row-major order. This is
-                    # orthogonal to the rows=1 packing above: `klt gen
-                    # mos_array`'s `_centroid_order` computes its
-                    # centroid-symmetric visiting order over the full
-                    # `rows x cols` grid, including the degenerate rows=1
-                    # case, so a single-row array still gets a
-                    # centroid-symmetric *column* order (outer columns
-                    # pairing inward through the array's center). Packing
-                    # placement and port-numbering topology are independent
-                    # knobs; keep the device matching.
+                    # so it falls back to plain row-major order.
+                    #
+                    # `common_centroid` is `klt gen mos_array`'s own
+                    # documented default and a real centroid-symmetric
+                    # visiting order (its `_centroid_order`): instance 2k is
+                    # immediately followed by its point-reflection through
+                    # the grid center, so a matched pair lands
+                    # centroid-symmetrically and a linear process gradient
+                    # cancels across it. That is the standard analog matching
+                    # technique, and this loop covers every matched group in
+                    # the design -- the VCO ring stages, the PFD/CP current
+                    # mirrors, the divider transistors.
+                    #
+                    # Forcing this to a plain "array" measurably improves
+                    # this flow's routing spot-check coverage (see the 2x2 in
+                    # the packing comment above: 62 -> 76 legs on the
+                    # near-square grid). It is deliberately NOT taken. The
+                    # routing spot-check is a diagnostic build -- the stream
+                    # this flow actually ships is unrouted -- whereas the
+                    # device-to-position assignment this field controls is a
+                    # property of the shipped geometry. Trading real device
+                    # matching in the shipped layout for a better number in a
+                    # diagnostic is exactly the kind of laundering this
+                    # repo's CLAUDE.md forbids; the routing gap is recorded
+                    # as a miss instead. See `layout/pll/README.md`.
                     "topology": "common_centroid" if count % 2 == 0 else "array",
                     "gate_contact": True,
                 },
