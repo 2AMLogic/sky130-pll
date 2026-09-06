@@ -323,7 +323,19 @@ def plan_block(block_name: str, cards: list[dict[str, Any]]) -> dict[str, Any]:
                     "cols": cols,
                     "dummy": 0,
                     "flavor": flavor,
-                    "topology": "array",
+                    # A matched array is only meaningful common-centroid when
+                    # its device count is even; an odd count cannot be paired,
+                    # so it falls back to plain row-major order. This is
+                    # orthogonal to the rows=1 packing above: `klt gen
+                    # mos_array`'s `_centroid_order` computes its
+                    # centroid-symmetric visiting order over the full
+                    # `rows x cols` grid, including the degenerate rows=1
+                    # case, so a single-row array still gets a
+                    # centroid-symmetric *column* order (outer columns
+                    # pairing inward through the array's center). Packing
+                    # placement and port-numbering topology are independent
+                    # knobs; keep the device matching.
+                    "topology": "common_centroid" if count % 2 == 0 else "array",
                     "gate_contact": True,
                 },
                 "count": count,

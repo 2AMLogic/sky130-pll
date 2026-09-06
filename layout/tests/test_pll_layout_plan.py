@@ -116,6 +116,45 @@ class PlanCoverageTests(unittest.TestCase):
                     group["params"].get("gate_contact"), group["id"]
                 )
 
+    def test_mos_arrays_keep_common_centroid_device_matching(self):
+        # issue #18 / PR #118 review: every even-count matched group must
+        # keep `klt gen mos_array`'s common-centroid port-numbering topology
+        # (the generator's own documented default) -- a real
+        # centroid-symmetric visiting order that pairs instance 2k with its
+        # point-reflection through the grid center, which is what cancels
+        # process-gradient mismatch across the VCO ring stages and the
+        # PFD/CP current mirrors. An odd count cannot be paired, so it
+        # legitimately falls back to plain row-major `array`.
+        #
+        # This is deliberately independent of the rows=1 packing asserted
+        # below: `_centroid_order` runs over the whole rows x cols grid,
+        # including the degenerate single-row case, so packing every group
+        # onto one row for routing reach does *not* require giving up the
+        # centroid ordering. Regression guard -- the two were coupled by
+        # accident once.
+        for block in self.plan["blocks"]:
+            for group in block["groups"]:
+                if group["kind"] != "mos_array":
+                    continue
+                expected = "common_centroid" if group["count"] % 2 == 0 else "array"
+                self.assertEqual(
+                    group["params"]["topology"], expected, group["id"]
+                )
+
+    def test_mos_arrays_are_packed_in_a_single_row(self):
+        # issue #18: `klt gen mos_array` faces every unit's gate contact
+        # toward the array's own +y edge regardless of the unit's row, so
+        # only the top row's gates land within `gen-compose`'s router's
+        # edge-margin allowance. rows=1 puts every gate on that one
+        # reachable row -- the measured routing-coverage gain in this PR.
+        for block in self.plan["blocks"]:
+            for group in block["groups"]:
+                if group["kind"] != "mos_array":
+                    continue
+                params = group["params"]
+                self.assertEqual(params["rows"], 1, group["id"])
+                self.assertEqual(params["cols"], group["count"], group["id"])
+
     def test_res_arrays_draw_no_dummy_elements(self):
         for block in self.plan["blocks"]:
             for group in block["groups"]:
