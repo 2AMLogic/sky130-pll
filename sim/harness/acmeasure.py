@@ -61,51 +61,26 @@ ratifying -- or as relaxing -- a spec row.
 from __future__ import annotations
 
 import math
-import re
 from dataclasses import dataclass
 
-from .measure import MeasureError, format_hz
+from .measure import MeasureError, format_hz, parse_spice_literal
 
 # Same completion marker discipline as `measure.py`: ngspice prints no
 # "Total analysis time" banner for an analysis driven from a `.control`
 # block, so the block echoes its own marker as its last statement.
 COMPLETION_MARKER = "sim/harness: analysis complete"
 
-_FREQ_RE = re.compile(r"^\s*([+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)\s*([a-zA-Z]*)\s*$")
-_FREQ_SUFFIXES = {
-    "f": 1e-15,
-    "p": 1e-12,
-    "n": 1e-9,
-    "u": 1e-6,
-    "m": 1e-3,
-    "k": 1e3,
-    "meg": 1e6,
-    "g": 1e9,
-    "t": 1e12,
-}
-
 
 def parse_spice_freq(text: str | float | int) -> float:
     """Parse a SPICE frequency literal (`100`, `1k`, `100meg`, `1.5g`).
 
     Same suffix table (and same `m`-is-milli / `meg`-is-1e6 footgun) as
-    `measure.parse_spice_time`, kept separate because a frequency literal is
-    a different manifest field with a different failure message.
+    `measure.parse_spice_time` -- both are thin wrappers around
+    `measure.parse_spice_literal`, which does the actual parsing. The only
+    difference is the domain word ("frequency" vs. "time") substituted into
+    the error message.
     """
-    if isinstance(text, (int, float)):
-        return float(text)
-    m = _FREQ_RE.match(text)
-    if not m:
-        raise MeasureError(f"not a SPICE frequency literal: {text!r}")
-    value, suffix = float(m.group(1)), m.group(2).lower()
-    if not suffix:
-        return value
-    if suffix.startswith("meg"):
-        return value * _FREQ_SUFFIXES["meg"]
-    scale = _FREQ_SUFFIXES.get(suffix[0])
-    if scale is None:
-        raise MeasureError(f"unknown SPICE frequency suffix in {text!r}")
-    return value * scale
+    return parse_spice_literal(text, kind="frequency")
 
 
 @dataclass(frozen=True)

@@ -93,8 +93,14 @@ class MeasureError(ValueError):
     """A malformed `measure` manifest block, or an unusable waveform dump."""
 
 
-def parse_spice_time(text: str | float | int) -> float:
-    """Parse a SPICE time literal (`50p`, `200n`, `40u`, `2ns`, `1meg`).
+def parse_spice_literal(text: str | float | int, *, kind: str = "time") -> float:
+    """Parse a SPICE numeric literal (`50p`, `200n`, `40u`, `2ns`, `1meg`).
+
+    Shared by `parse_spice_time` (time literals) and
+    `sim.harness.acmeasure.parse_spice_freq` (frequency literals) -- the
+    regex, suffix table, and `meg`-is-1e6 footgun are identical for both; the
+    only thing that varies is the domain word (`kind`) substituted into the
+    error message, e.g. "not a SPICE {kind} literal".
 
     SPICE's classic footgun is honored: `m` is milli and `meg` is 1e6. A
     trailing unit letter after the suffix (`ns`, `us`) is ignored, as ngspice
@@ -104,7 +110,7 @@ def parse_spice_time(text: str | float | int) -> float:
         return float(text)
     m = _TIME_RE.match(text)
     if not m:
-        raise MeasureError(f"not a SPICE time literal: {text!r}")
+        raise MeasureError(f"not a SPICE {kind} literal: {text!r}")
     value, suffix = float(m.group(1)), m.group(2).lower()
     if not suffix:
         return value
@@ -112,8 +118,18 @@ def parse_spice_time(text: str | float | int) -> float:
         return value * _SUFFIXES["meg"]
     scale = _SUFFIXES.get(suffix[0])
     if scale is None:
-        raise MeasureError(f"unknown SPICE time suffix in {text!r}")
+        raise MeasureError(f"unknown SPICE {kind} suffix in {text!r}")
     return value * scale
+
+
+def parse_spice_time(text: str | float | int) -> float:
+    """Parse a SPICE time literal (`50p`, `200n`, `40u`, `2ns`, `1meg`).
+
+    SPICE's classic footgun is honored: `m` is milli and `meg` is 1e6. A
+    trailing unit letter after the suffix (`ns`, `us`) is ignored, as ngspice
+    itself ignores it.
+    """
+    return parse_spice_literal(text, kind="time")
 
 
 @dataclass(frozen=True)
