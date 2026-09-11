@@ -1,6 +1,6 @@
 # PLL characterization report
 
-Generated: 2026-09-11T03:33:41Z by `measurements/aggregate.py` -- this file is a **derived rollup**, not append-only evidence itself; re-run the aggregator to refresh it (see `measurements/README.md`).
+Generated: 2026-09-11T13:46:14Z by `measurements/aggregate.py` -- this file is a **derived rollup**, not append-only evidence itself; re-run the aggregator to refresh it (see `measurements/README.md`).
 
 Rolls up every `sim/*/records/*.md` and `layout/*/reports/*/record.md` evidence record into one table, keyed by `spec/target-spec.md` row number. **No row below is a PLL result.** `spec/target-spec.md` has no ratified numeric row yet (row 0, the supply flavor, is the only ratified row -- see `DR-001`, #1), and no evidence record in this repo currently cites a spec row (see `measurements/README.md` for the citation convention a future PLL evidence record uses to appear here). Every row therefore reads "No evidence" until that changes; the evidence this repo does have today is listed in the appendix below, to prove the rollup mechanism itself works, not to claim a PLL result.
 
@@ -13,6 +13,14 @@ Rolls up every `sim/*/records/*.md` and `layout/*/reports/*/record.md` evidence 
 | 2 | Output band | 10 – 200 MHz continuous, **carried from gf180-pll and NOT assumed to hold** | No evidence | -- | -- |
 | 3 | Reference input | 1 – 25 MHz, CMOS square wave, rising-edge triggered, duty 30–70 % | No evidence | -- | -- |
 | 4 | Multiplication ratio | N = 4 – 64, every integer, static configuration | sim/divider (20260910-234943-ec91425) | PASS | `sim/divider/records/20260910-234943-ec91425.md` |
+|  |  |  | sim/divider-n4 (20260911-091838-7d2f839) | PASS | `sim/divider-n4/records/20260911-091838-7d2f839.md` |
+|  |  |  | sim/divider-n5 (20260911-095824-7d2f839) | PASS | `sim/divider-n5/records/20260911-095824-7d2f839.md` |
+|  |  |  | sim/divider-n5 (20260911-100824-7d2f839) | PASS | `sim/divider-n5/records/20260911-100824-7d2f839.md` |
+|  |  |  | sim/divider-n63 (20260911-101042-7d2f839) | PASS | `sim/divider-n63/records/20260911-101042-7d2f839.md` |
+|  |  |  | sim/divider-n63 (20260911-104153-7d2f839) | PASS | `sim/divider-n63/records/20260911-104153-7d2f839.md` |
+|  |  |  | sim/divider-n64 (20260911-074438-073b241) | PASS | `sim/divider-n64/records/20260911-074438-073b241.md` |
+|  |  |  | sim/divider-n64 (20260911-101305-7d2f839) | PASS | `sim/divider-n64/records/20260911-101305-7d2f839.md` |
+|  |  |  | sim/divider-n64 (20260911-104400-7d2f839) | PASS | `sim/divider-n64/records/20260911-104400-7d2f839.md` |
 | 5 | Kvco | ≤ a fixed-filter-compatible bound (gf180-pll used ≤ 150 MHz/V) | No evidence | -- | -- |
 | 6 | Loop bandwidth | f_c well below f_ref, hard ceiling `f_c < f_ref/10` | No evidence | -- | -- |
 | 7 | Phase margin | ≥ 45° everywhere in the contracted space | No evidence | -- | -- |
@@ -51,6 +59,6 @@ Harness-plumbing and other non-PLL-claim evidence discovered by the scan above, 
 
 ## Scan summary
 
-- Evidence records scanned: 26
-- Current (non-superseded): 13
+- Evidence records scanned: 34
+- Current (non-superseded): 21
 - Superseded (excluded from the tables above; still retained, append-only, under `sim/`/`layout/`): 13
