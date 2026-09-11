@@ -1,0 +1,92 @@
+** sch_path: /home/ubuntu/loom-workspaces/sky130-pll/.loom/worktrees/issue-129/sim/divider/testbench/tb_divider.sch
+**.subckt tb_divider
+XXXDIV VDD GND CLK RESETB GND GND GND VDD VDD GND FBCLK divider_intN
+V1 VDD GND 1.62
+V2 CLK GND pulse(0 1.8 0 12.5p 12.5p 442p 909p)
+V3 RESETB GND pwl(0 0 5n 0 6n 1.8)
+**** begin user architecture code
+
+** sky130 PDK model include (tt corner) -- patched per-point by sim/harness
+.lib /home/ubuntu/.volare/sky130A/libs.tech/combined/sky130.lib.spice sf
+** sky130_fd_sc_hd standard-cell subcircuit deck -- design/divider's cells
+** need it; the primitive-device .lib above does not define these subckt
+** bodies. See sim/pll-lock/testbench/tb_pll_lock.sch's identical include.
+.include /home/ubuntu/.volare/sky130A/libs.ref/sky130_fd_sc_hd/spice/sky130_fd_sc_hd.spice
+** No .tran/.print card here on purpose -- sim/harness/measure.py injects
+** the analysis from this manifest's own measure block (transient window,
+** waveform dump, completion marker). See this file's header comment.
+
+**** end user architecture code
+**.ends
+
+* expanding   symbol:  design/divider/divider_intN.sym # of pins=11
+** sym_path: /home/ubuntu/loom-workspaces/sky130-pll/.loom/worktrees/issue-129/design/divider/divider_intN.sym
+** sch_path: /home/ubuntu/loom-workspaces/sky130-pll/.loom/worktrees/issue-129/design/divider/divider_intN.sch
+.subckt divider_intN VDD GND CLK RESETB NSEL0 NSEL1 NSEL2 NSEL3 NSEL4 NSEL5 FBCLK
+*.iopin VDD
+*.iopin GND
+*.ipin CLK
+*.ipin RESETB
+*.ipin NSEL0
+*.ipin NSEL1
+*.ipin NSEL2
+*.ipin NSEL3
+*.ipin NSEL4
+*.ipin NSEL5
+*.opin FBCLK
+XCNT0 PCLK D0 RESETB GND GND VDD VDD Q0 sky130_fd_sc_hd__dfrtp_2
+XLDMUX0 NQ0 L0 ZERO GND GND VDD VDD D0 sky130_fd_sc_hd__mux2_2
+XQINV0 Q0 GND GND VDD VDD NQ0 sky130_fd_sc_hd__inv_2
+XCNT1 PCLK D1 RESETB GND GND VDD VDD Q1 sky130_fd_sc_hd__dfrtp_2
+XLDMUX1 DDEC1 L1 ZERO GND GND VDD VDD D1 sky130_fd_sc_hd__mux2_2
+XDECXOR1 Q1 NQ0 GND GND VDD VDD DDEC1 sky130_fd_sc_hd__xor2_2
+XQINV1 Q1 GND GND VDD VDD NQ1 sky130_fd_sc_hd__inv_2
+XCNT2 PCLK D2 RESETB GND GND VDD VDD Q2 sky130_fd_sc_hd__dfrtp_2
+XLDMUX2 DDEC2 L2 ZERO GND GND VDD VDD D2 sky130_fd_sc_hd__mux2_2
+XDECXOR2 Q2 BOR2 GND GND VDD VDD DDEC2 sky130_fd_sc_hd__xor2_2
+XBORAND2 NQ0 NQ1 GND GND VDD VDD BOR2 sky130_fd_sc_hd__and2_2
+XQINV2 Q2 GND GND VDD VDD NQ2 sky130_fd_sc_hd__inv_2
+XCNT3 PCLK D3 RESETB GND GND VDD VDD Q3 sky130_fd_sc_hd__dfrtp_2
+XLDMUX3 DDEC3 L3 ZERO GND GND VDD VDD D3 sky130_fd_sc_hd__mux2_2
+XDECXOR3 Q3 BOR3 GND GND VDD VDD DDEC3 sky130_fd_sc_hd__xor2_2
+XBORAND3 NQ0 NQ1 NQ2 GND GND VDD VDD BOR3 sky130_fd_sc_hd__and3_2
+XQINV3 Q3 GND GND VDD VDD NQ3 sky130_fd_sc_hd__inv_2
+XCNT4 PCLK D4 RESETB GND GND VDD VDD Q4 sky130_fd_sc_hd__dfrtp_2
+XLDMUX4 DDEC4 L4 ZERO GND GND VDD VDD D4 sky130_fd_sc_hd__mux2_2
+XDECXOR4 Q4 BOR4 GND GND VDD VDD DDEC4 sky130_fd_sc_hd__xor2_2
+XBORAND4 NQ0 NQ1 NQ2 NQ3 GND GND VDD VDD BOR4 sky130_fd_sc_hd__and4_2
+XQINV4 Q4 GND GND VDD VDD NQ4 sky130_fd_sc_hd__inv_2
+XZDET BOR4 NQ4 GND GND VDD VDD ZERO sky130_fd_sc_hd__and2_2
+XPA CLK DPA RESETB GND GND VDD VDD PA sky130_fd_sc_hd__dfrtp_2
+XPANOR PA PB GND GND VDD VDD DPA sky130_fd_sc_hd__nor2_2
+XPB CLK DPB RESETB GND GND VDD VDD PB sky130_fd_sc_hd__dfrtp_2
+XPBAND PA MC GND GND VDD VDD DPB sky130_fd_sc_hd__and2_2
+XPCKINV PA GND GND VDD VDD PCLK sky130_fd_sc_hd__inv_2
+XMCFF PCLK DMC RESETB GND GND VDD VDD MC sky130_fd_sc_hd__dfrtp_2
+XMCAND ODD ZERO GND GND VDD VDD DMC sky130_fd_sc_hd__and2_2
+XFBFF PCLK ZERO GND GND VDD VDD FBCLK sky130_fd_sc_hd__dfxtp_2
+XODD NSEL0 GND GND VDD VDD ODD sky130_fd_sc_hd__inv_2
+XNB2 NSEL0 NSEL1 GND GND VDD VDD NB2 sky130_fd_sc_hd__nor2_2
+XNB3 NSEL0 NSEL1 NSEL2 GND GND VDD VDD NB3 sky130_fd_sc_hd__nor3_2
+XNB4 NSEL0 NSEL1 NSEL2 NSEL3 GND GND VDD VDD NB4 sky130_fd_sc_hd__nor4_2
+XNS4INV NSEL4 GND GND VDD VDD NNSEL4 sky130_fd_sc_hd__inv_2
+XNB5 NB4 NNSEL4 GND GND VDD VDD NB5 sky130_fd_sc_hd__and2_2
+XLDEC0 NSEL1 NSEL0 GND GND VDD VDD L0 sky130_fd_sc_hd__xnor2_2
+XLDEC1 NSEL2 NB2 GND GND VDD VDD L1 sky130_fd_sc_hd__xor2_2
+XLDEC2 NSEL3 NB3 GND GND VDD VDD L2 sky130_fd_sc_hd__xor2_2
+XLDEC3 NSEL4 NB4 GND GND VDD VDD L3 sky130_fd_sc_hd__xor2_2
+XLDEC4 NSEL5 NB5 GND GND VDD VDD L4 sky130_fd_sc_hd__xor2_2
+.ends
+
+.GLOBAL GND
+.temp -40
+.control
+set filetype=ascii
+save v(FBCLK)
+tran 20p 300n
+linearize v(FBCLK)
+wrdata sf_-40c_1.62v-point000.raw v(FBCLK)
+destroy all
+echo "sim/harness: analysis complete"
+.endc
+.end

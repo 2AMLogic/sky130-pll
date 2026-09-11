@@ -1,0 +1,30 @@
+{
+  "schema": "sky130-pll.harness.tb/1",
+  "claim": "does design/divider/divider_intN.sch (the standalone programmable integer-N feedback divider, issue #27, retimed to a dual-modulus /2-/3 prescaler front-end by issue #114) divide a fixed ~1.100 GHz ideal CLK by N=25 (NSEL[5:0]=011000, the same modulus sim/pll-lock straps) cleanly across the full PVT corner matrix, at a CLK frequency at or above the VCO's own characterized top free-running frequency (~1.09 GHz, design/vco/DESIGN.md's sanity-check table / sim/vco/records/) -- the exact band design/divider/DESIGN.md's 'Issue #114' section measured this design to clear at every one of the 45 ratified points (worst case ~1166 MHz at ss/-40 degC/1.62 V), but only as an informal, uncommitted diagnostic until this record. This is a design-input measurement, not a spec/target-spec.md ratification: row 4 (multiplication ratio, N = 4-64) stays DRAFT -- per CLAUDE.md, ratification is a separate decision-record act argued on its own merits. **Spec row(s)**: 4 (DRAFT target N = 4-64, static configuration -- this record supplies evidence toward that row, not a verdict on it).",
+  "schematic": "tb_divider.sch",
+  "corner_pattern": "(\\.lib\\s+\\S*sky130\\.lib\\.spice\\s+)(\\w+)",
+  "supply_pattern": "(V1 VDD GND )([0-9.]+)",
+  "process_corners": ["tt", "ff", "ss", "sf", "fs"],
+  "temps_c": [-40, 27, 125],
+  "supply_nominal": 1.8,
+  "supply_tolerance": 0.1,
+  "measure": {
+    "node": "FBCLK",
+    "tran_step": "20p",
+    "tran_stop": "300n",
+    "timeout_s": 1800,
+    "threshold_frac": 0.5,
+    "hysteresis_frac": 0.15,
+    "settle_from": "0",
+    "min_edges": 4,
+    "lock": {
+      "target_hz": 44004400,
+      "tolerance_frac": 0.02,
+      "window_cycles": 5,
+      "min_hold_cycles": 5
+    },
+    "require_lock": true
+  },
+  "methodology_note": "this testbench's DUT is design/divider/divider_intN.sch driven open-loop (no VCO, PFD/charge pump or loop filter in the path) -- CLK is an ideal rail-to-rail pulse source (12.5 ps edges, 909 ps period = ~1.10011 GHz, 50% duty) instead of the real VCO's output, and NSEL[5:0]=011000 (N=25) is strapped statically via lab_pin ties to VDD/GND, the same convention sim/pll-lock/testbench/tb_pll_lock.sch uses for design/top/top.sch's own NSEL bits. RESETB is released by a pwl at 5-6 ns (design/divider/DESIGN.md's own issue #114 diagnostic method). `measure.lock`'s target_hz (44004400 Hz = f_CLK/N = 1/909p/25) plus a 2% tolerance and a 5-output-period window/hold reproduces design/divider/DESIGN.md's own issue #114 pass criterion ('every steady-state inter-edge gap matches N/f_CLK to within 2%'), applied to FBCLK via the harness's general-purpose sliding-window lock detector instead of a bespoke script -- 'locked' here means 'the divider settled into clean, steady N:1 division and stayed there,' not a PLL frequency-lock claim (there is no loop). `require_lock` is true: unlike sim/pll-lock's closed-loop campaign, a standalone divider that fails to produce a clean N:1 division at this frequency, at this corner, is a genuine harness FAIL, not evidence of a coordination gap elsewhere in an unproven loop -- design/divider/DESIGN.md's own issue #114 measurements already predict every one of these 45 points should pass. process_corners is the ratified rows 19/20 PVT grid (spec/target-spec.md, DR-003, #77) -- the same 5-corner set every other sim/ manifest in this repo declares.",
+  "analysis": "transient, standalone divider (`tran 20p 300n`, injected by sim/harness/measure.py from this manifest's own measure block -- see sim/divider/testbench/tb_divider.sch's header comment for why the schematic itself carries no .tran card). The 300 ns window covers roughly 13 output periods at the target frequency (44.0044 MHz, ~22.7 ns/period) after RESETB releases at 6 ns -- comfortably more than the 11 edges (window_cycles + 1 + min_hold_cycles) the lock criterion needs. Bisecting the divider's own absolute maximum correct-division frequency (rather than checking a single fixed CLK frequency) stays an informal, uncommitted exercise -- sim/harness's own `sweep` mechanism alters a DC source's value (`alter <source> <value>`), not a pulse source's period, so a frequency-bisection campaign is out of this manifest's scope per issue #129; design/divider/DESIGN.md's 'Issue #114' section already carries that informal per-corner bisected-frequency table."
+}

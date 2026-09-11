@@ -1,0 +1,30 @@
+{
+  "schema": "sky130-pll.harness.tb/1",
+  "claim": "does design/divider/divider_intN.sch (the standalone programmable integer-N feedback divider, issue #27, retimed to a dual-modulus /2-/3 prescaler front-end by issue #114) divide a fixed 250 MHz ideal CLK by N=4 (NSEL[5:0]=000011) cleanly across the full PVT corner matrix. N=4 is the DRAFT modulus range's floor (spec/target-spec.md row 4, N = 4-64) and the smallest modulus that takes the divider's *even* decode path (ODD=0, no prescaler period is ever stretched to /3) -- design/divider/DESIGN.md's 'Modulus correctness across the DRAFT range' table spot-checked this informally at two corners; this record covers the full ratified grid. This is a design-input measurement, not a spec/target-spec.md ratification: row 4 stays DRAFT -- per CLAUDE.md, ratification is a separate decision-record act argued on its own merits. **Spec row(s)**: 4 (DRAFT target N = 4-64, static configuration -- this record supplies evidence toward that row, not a verdict on it).",
+  "schematic": "tb_divider_n4.sch",
+  "corner_pattern": "(\\.lib\\s+\\S*sky130\\.lib\\.spice\\s+)(\\w+)",
+  "supply_pattern": "(V1 VDD GND )([0-9.]+)",
+  "process_corners": ["tt", "ff", "ss", "sf", "fs"],
+  "temps_c": [-40, 27, 125],
+  "supply_nominal": 1.8,
+  "supply_tolerance": 0.1,
+  "measure": {
+    "node": "FBCLK",
+    "tran_step": "20p",
+    "tran_stop": "220n",
+    "timeout_s": 1800,
+    "threshold_frac": 0.5,
+    "hysteresis_frac": 0.15,
+    "settle_from": "0",
+    "min_edges": 4,
+    "lock": {
+      "target_hz": 62500000,
+      "tolerance_frac": 0.02,
+      "window_cycles": 5,
+      "min_hold_cycles": 5
+    },
+    "require_lock": true
+  },
+  "methodology_note": "this testbench's DUT is design/divider/divider_intN.sch driven open-loop (no VCO, PFD/charge pump or loop filter in the path) -- CLK is an ideal rail-to-rail pulse source (12.5 ps edges, 4 ns period = 250 MHz, 50% duty, the design's own lock target rather than a top-frequency stress point) instead of the real VCO's output, and NSEL[5:0]=000011 (N=4) is strapped statically via lab_pin ties to VDD/GND, the same convention sim/pll-lock/testbench/tb_pll_lock.sch uses for design/top/top.sch's own NSEL bits. RESETB is released by a pwl at 5-6 ns (design/divider/DESIGN.md's own issue #114 diagnostic method). `measure.lock`'s target_hz (62500000 Hz = f_CLK/N = 250 MHz/4) plus a 2% tolerance and a 5-output-period window/hold reproduces design/divider/DESIGN.md's own issue #114 pass criterion, applied via the harness's general-purpose sliding-window lock detector -- 'locked' here means 'the divider settled into clean, steady N:1 division and stayed there,' not a PLL frequency-lock claim (there is no loop). `require_lock` is true: a standalone divider that fails to produce a clean N:1 division at this frequency, at this corner, is a genuine harness FAIL. process_corners is the ratified rows 19/20 PVT grid (spec/target-spec.md, DR-003, #77) -- the same 5-corner set every other sim/ manifest in this repo declares.",
+  "analysis": "transient, standalone divider (`tran 20p 220n`, injected by sim/harness/measure.py from this manifest's own measure block -- see sim/divider-n4/testbench/tb_divider_n4.sch's header comment for why the schematic itself carries no .tran card). The 220 ns window covers roughly 13 output periods at the target frequency (62.5 MHz, 16 ns/period) after RESETB releases at 6 ns -- comfortably more than the 11 edges (window_cycles + 1 + min_hold_cycles) the lock criterion needs."
+}

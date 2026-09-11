@@ -213,6 +213,132 @@ class PllManifestPatchNetlistTests(unittest.TestCase):
         self.assertTrue(set(self.MANIFEST["process_corners"]).issubset(valid))
 
 
+class DividerManifestPatchNetlistTests(unittest.TestCase):
+    """Exercises the sim/divider experiment's own corner_pattern/supply_pattern
+    (issue #129) against a representative post-xschem-netlist snippet -- same
+    pattern as PllManifestPatchNetlistTests above, loaded from the real
+    committed manifest rather than a hand-copied stand-in. sim/divider's DUT
+    (design/divider/divider_intN.sch) is driven open-loop by an ideal pulse
+    CLK source rather than a real VCO, but the corner/supply substitution
+    machinery it exercises is identical, so this pins the same
+    connectivity/polarity expectations for a manifest whose measure.lock
+    block (not swept sim/vco-style characterization) is the interesting new
+    surface -- covered by MeasureSpec parsing elsewhere in this file's
+    BuildMatrixTests-adjacent coverage and by sim/tests/test_measure.py."""
+
+    MANIFEST = json.loads((SIM_DIR / "divider" / "testbench" / "tb.json").read_text())
+    NETLIST = (
+        "**.subckt tb_divider\n"
+        "XXXDIV VDD GND CLK RESETB GND GND GND VDD VDD GND FBCLK divider_intN\n"
+        "V1 VDD GND 1.8\n"
+        "V2 CLK GND pulse(0 1.8 0 12.5p 12.5p 442p 909p)\n"
+        "V3 RESETB GND pwl(0 0 5n 0 6n 1.8)\n"
+        "**** begin user architecture code\n\n"
+        ".lib /some/path/sky130.lib.spice tt\n"
+        "**** end user architecture code\n"
+        "**.ends\n"
+        ".GLOBAL GND\n"
+        ".end\n"
+    )
+
+    def test_patches_corner_and_supply_preserving_vdd_polarity(self):
+        point = corners.PvtPoint(corner="ss", temp_c=-40.0, supply_v=1.62)
+        patched = runner.patch_netlist(self.NETLIST, self.MANIFEST, point)
+        self.assertIn(".lib /some/path/sky130.lib.spice ss", patched)
+        self.assertIn("V1 VDD GND 1.62", patched)
+        self.assertIn(".temp -40\n.end", patched)
+
+    def test_manifest_process_corners_are_pdk_valid(self):
+        pdk_json = json.loads((REPO_ROOT / "sim" / "pdk.json").read_text())
+        valid = set(pdk_json["process_corners"])
+        self.assertTrue(set(self.MANIFEST["process_corners"]).issubset(valid))
+
+    def test_manifest_declares_a_lock_block_gated_on_require_lock(self):
+        # Unlike sim/pll-lock (require_lock: false -- a closed loop that
+        # never locks is evidence, not a harness bug), a standalone divider
+        # that fails to hold a clean N:1 division at this frequency, at this
+        # corner, is a genuine FAIL (issue #129's own scope).
+        measure = self.MANIFEST["measure"]
+        self.assertIn("lock", measure)
+        self.assertTrue(measure["require_lock"])
+        self.assertEqual(measure["lock"]["target_hz"], 44004400)
+
+
+class DividerFamilySiblingManifestTests(unittest.TestCase):
+    """Same coverage as DividerManifestPatchNetlistTests above, extended to
+    the four sibling standalone-divider campaigns issue #129 also added
+    (`sim/divider-n4`, `sim/divider-n5`, `sim/divider-n63`,
+    `sim/divider-n64`) -- each shares `sim/divider`'s DUT, open-loop method
+    and `corner_pattern`/`supply_pattern`, differing only in `NSEL[5:0]`
+    strap, CLK frequency and the resulting `measure.lock.target_hz`. Loaded
+    from the real committed manifests (not hand-copied stand-ins) so a
+    future edit to any of the five siblings' shared regex fields is checked
+    against an actual patched-netlist expectation, not just the original
+    `sim/divider` one."""
+
+    # (slug, N, expected target_hz = f_CLK/N)
+    SIBLINGS = (
+        ("divider-n4", 4, 62500000),
+        ("divider-n5", 5, 50000000),
+        ("divider-n63", 63, 3968253.97),
+        ("divider-n64", 64, 3906250),
+    )
+
+    NETLIST = (
+        "**.subckt tb_divider\n"
+        "XXXDIV VDD GND CLK RESETB GND GND GND VDD VDD GND FBCLK divider_intN\n"
+        "V1 VDD GND 1.8\n"
+        "V2 CLK GND pulse(0 1.8 0 12.5p 12.5p 1.998n 4n)\n"
+        "V3 RESETB GND pwl(0 0 5n 0 6n 1.8)\n"
+        "**** begin user architecture code\n\n"
+        ".lib /some/path/sky130.lib.spice tt\n"
+        "**** end user architecture code\n"
+        "**.ends\n"
+        ".GLOBAL GND\n"
+        ".end\n"
+    )
+
+    def _manifest(self, slug: str) -> dict:
+        return json.loads((SIM_DIR / slug / "testbench" / "tb.json").read_text())
+
+    def test_every_sibling_manifest_exists_and_patches_cleanly(self):
+        for slug, _n, _target_hz in self.SIBLINGS:
+            with self.subTest(slug=slug):
+                manifest = self._manifest(slug)
+                point = corners.PvtPoint(corner="ss", temp_c=-40.0, supply_v=1.62)
+                patched = runner.patch_netlist(self.NETLIST, manifest, point)
+                self.assertIn(".lib /some/path/sky130.lib.spice ss", patched)
+                self.assertIn("V1 VDD GND 1.62", patched)
+                self.assertIn(".temp -40\n.end", patched)
+
+    def test_every_sibling_manifest_process_corners_are_pdk_valid(self):
+        pdk_json = json.loads((REPO_ROOT / "sim" / "pdk.json").read_text())
+        valid = set(pdk_json["process_corners"])
+        for slug, _n, _target_hz in self.SIBLINGS:
+            with self.subTest(slug=slug):
+                manifest = self._manifest(slug)
+                self.assertTrue(set(manifest["process_corners"]).issubset(valid))
+
+    def test_every_sibling_manifest_requires_lock_at_the_right_target(self):
+        # Pins each sibling's NSEL strap to the modulus its own slug/claim
+        # advertises: a copy-paste error here (e.g. n63's manifest quietly
+        # keeping n64's target_hz) would otherwise silently mislabel which
+        # modulus a passing record is evidence for.
+        for slug, n, target_hz in self.SIBLINGS:
+            with self.subTest(slug=slug):
+                measure = self._manifest(slug)["measure"]
+                self.assertIn("lock", measure)
+                self.assertTrue(measure["require_lock"])
+                self.assertAlmostEqual(measure["lock"]["target_hz"], target_hz, places=2)
+                self.assertIn(f"N={n}", self._manifest(slug)["claim"])
+
+    def test_every_sibling_manifest_cites_spec_row_4(self):
+        for slug, _n, _target_hz in self.SIBLINGS:
+            with self.subTest(slug=slug):
+                claim = self._manifest(slug)["claim"]
+                self.assertIn("**Spec row(s)**: 4", claim)
+
+
 class RenderMethodologyTests(unittest.TestCase):
     """Regression coverage for report.render()/render_mc()'s
     `methodology_note`/`analysis` parameters (issue #23). Before this, the
