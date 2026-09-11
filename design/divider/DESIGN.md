@@ -1216,7 +1216,7 @@ below):
 |---|---|---|---|---|
 | `sim/divider` | N=25 (`011000`), `sim/pll-lock`'s own strap | ~1.10011 GHz (at/above the VCO's ~1.09 GHz top free-running frequency) | full DR-003 45-point grid, **run and committed** | `sim/divider/records/20260910-234943-ec91425.md` (45/45 PASS) |
 | `sim/divider-n4` | N=4 (`000011`), DRAFT range floor, even decode path | 250 MHz (the design's lock target) | full DR-003 45-point grid, **run and committed** (issue #131) | `sim/divider-n4/records/20260911-091838-7d2f839.md` (45/45 PASS) |
-| `sim/divider-n64` | N=64 (`111111`), DRAFT range ceiling, even decode path | 250 MHz | full DR-003 45-point grid intended, accumulated a few points at a time (N=64's long output period makes a full grid impractical in one pass — see the manifest's `methodology_note` and the "Issue #130" section below). **21 of the 45 points covered so far**, across three independent campaigns: the whole `tt` process-corner row (issue #130), `ss`/125 °C's full local supply axis (issue #131) and the whole `ff` process-corner row (issue #130) — between them they include issue #129's two named corners plus the entire `ff` row | `sim/divider-n64/records/20260911-074438-073b241.md` (the full `tt` row, 9/9 PASS), `sim/divider-n64/records/20260911-101305-7d2f839.md` (tt/27 °C/1.80 V, 1/1 PASS — **no new grid point**: an independent re-run of a point the `tt` row above already covers, retained per `sim/README.md`'s append-only rule but not counted as coverage), `sim/divider-n64/records/20260911-104400-7d2f839.md` (ss/125 °C, default supply tolerance, 3/3 PASS — additive), `sim/divider-n64/records/20260911-125347-aa4478c.md` (the full `ff` row, 9/9 PASS — additive). `sf`/`fs` and the rest of the `ss` row (24 points) remain, tracked by issue #130 |
+| `sim/divider-n64` | N=64 (`111111`), DRAFT range ceiling, even decode path | 250 MHz | full DR-003 45-point grid intended, accumulated a few points at a time (N=64's long output period makes a full grid impractical in one pass — see the manifest's `methodology_note` and the "Issue #130" section below). **27 of the 45 points covered so far**, across four independent campaigns: the whole `tt` process-corner row (issue #130), `ss`/125 °C's full local supply axis (issue #131), the whole `ff` process-corner row (issue #130), and the `ss` row's remaining -40 °C/27 °C temperatures (issue #130) — between them they include the full `tt`, `ff` and `ss` rows | `sim/divider-n64/records/20260911-074438-073b241.md` (the full `tt` row, 9/9 PASS), `sim/divider-n64/records/20260911-101305-7d2f839.md` (tt/27 °C/1.80 V, 1/1 PASS — **no new grid point**: an independent re-run of a point the `tt` row above already covers, retained per `sim/README.md`'s append-only rule but not counted as coverage), `sim/divider-n64/records/20260911-104400-7d2f839.md` (ss/125 °C, default supply tolerance, 3/3 PASS — additive), `sim/divider-n64/records/20260911-125347-aa4478c.md` (the full `ff` row, 9/9 PASS — additive), `sim/divider-n64/records/20260911-160518-3b65794.md` (the `ss` row's remaining -40 °C/27 °C temperatures, 6/6 PASS — additive, completes the `ss` row). `sf`/`fs` (18 points) remain, tracked by issue #130 |
 | `sim/divider-n5` | N=5 (`000100`), smallest odd modulus, odd decode path | 250 MHz | the two corners issue #129 named, **run and committed** (issue #131) | `sim/divider-n5/records/20260911-095824-7d2f839.md` (tt/27 °C/1.80 V, 1/1 PASS), `sim/divider-n5/records/20260911-100824-7d2f839.md` (ss/125 °C, default supply tolerance, 3/3 PASS) |
 | `sim/divider-n63` | N=63 (`111110`), largest odd modulus, odd decode path | 250 MHz | the two corners issue #129 named, **run and committed** (issue #131); issue #130 tracks widening it alongside `sim/divider-n64` | `sim/divider-n63/records/20260911-101042-7d2f839.md` (tt/27 °C/1.80 V, 1/1 PASS), `sim/divider-n63/records/20260911-104153-7d2f839.md` (ss/125 °C, default supply tolerance, 3/3 PASS) |
 
@@ -1399,3 +1399,20 @@ The `sf` and `fs` rows, plus the `ss` row's remaining -40 °C/27 °C
 temperatures (24 of 45 points, roughly 6-8 more hours at the rates
 observed so far) remain open work for issue #130, to be run the same way,
 one row (or the remaining points of a row) per pass.
+
+### Third pass: completing the `ss` row (row 3/5)
+
+A third pass completed the `ss` row's remaining two temperatures
+(`python3 sim/run_corners.py divider-n64 --corners ss --temps -40,27
+--supply-tol 0.1 --subset-reason ...`), on the same shared, contended
+host. All 6 points locked cleanly (PASS); see `sim/divider-n64/records/
+20260911-160518-3b65794.md`. Combined with issue #131's `ss`/125 °C subset,
+`sim/divider-n64`'s `ss` row is now complete (9/9), and the manifest's
+running total is **27 of the 45 DR-003 points** (the full `tt`, `ff` and
+`ss` rows). The same pass also attempted the `sf` row; that first attempt
+did not finish within the session (ngspice processes were still mid-transient,
+well short of the 3.2 us window, when the session ended) and produced no
+usable record — per `sim/README.md`'s append-only contract, an incomplete
+run leaves no partial record, only a discarded checkpoint.
+
+The `sf` and `fs` rows (18 of 45 points) remain open work for issue #130.
