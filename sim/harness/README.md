@@ -13,6 +13,7 @@ sim/harness/
   corners.py     build the PVT point matrix from a manifest + CLI overrides
   montecarlo.py  build the Monte Carlo trial matrix from a manifest + CLI overrides
   runner.py      xschem-netlist once, patch per point/trial, run ngspice, judge pass/fail
+  checkpoint.py  crash-safe per-point progress, and the --resume path's guards
   report.py      render the append-only records/<record-id>.md evidence record
   cli.py         argparse glue: --check-env / --print-env / --list / <slug> [--mc]
 ```
@@ -90,7 +91,29 @@ python3 sim/run_corners.py pdk-smoke --no-write   # run, print pass/fail, write 
 python3 sim/run_corners.py pdk-smoke \
   --corners tt --temps 27 --supply-tol 0 \
   --subset-reason "fast selftest pass, not a design claim"
+python3 sim/run_corners.py pdk-smoke --jobs 8            # 8 points at a time
+python3 sim/run_corners.py pdk-smoke --jobs 8 \
+  --resume 20260911-071500-730c24b                       # finish an interrupted run
 ```
+
+### Long campaigns: `--jobs` and `--resume`
+
+`--jobs N`/`-j N` (default `1`) runs `N` PVT points — or `--mc` trials —
+concurrently, each as its own `ngspice -b` process against its own patched
+copy of the netlist. `--resume <record-id>` finishes an interrupted run of
+that record id: each point is checkpointed to
+`sim/<slug>/corners/<record-id>/checkpoint.json` the instant it completes,
+and a resume re-runs only what is missing, refusing outright if the manifest,
+the netlisted DUT, the resolved PDK build, the run mode or the requested
+point list have changed since the checkpoint was written.
+
+Both are execution-model only. The record is still rendered once, from the
+full point list in manifest order, after the last point lands — so a
+parallel or resumed run produces one complete record or none at all, and its
+rows read exactly like a serial run's. Implementation and the reasoning
+behind each guard: `sim/harness/checkpoint.py`'s module docstring and
+`cli._iter_unit_results`. Operator-facing detail: `sim/README.md`'s
+"Interrupted and parallel runs".
 
 Per-point pass/fail is a **plumbing** criterion, not a design measurement:
 ngspice must exit 0, print its analysis-completion marker, and emit no

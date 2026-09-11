@@ -6,6 +6,12 @@ __pycache__/
 # sim/ harness: per-corner ngspice logs under corners/ are committed evidence
 # (append-only record trail, see sim/README.md), so they escape the *.log rule.
 !sim/*/corners/**/*.log
+# ...but the resume checkpoint next to them is transient run state, not
+# evidence: it exists only while a campaign is incomplete (run_corners.py
+# --resume reads it, and deletes it once the record is written), so it must
+# never land in the committed append-only record trail. See sim/README.md's
+# "Interrupted and parallel runs" section.
+sim/*/corners/**/checkpoint.json
 # interactive-xschem scratch: sim/xschemrc's netlist_dir fallback for a GUI
 # session started with no explicit -o (the sim/run_corners.py harness always
 # passes -o sim/<slug>/corners/<record-id>/, so it never writes here).

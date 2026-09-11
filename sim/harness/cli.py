@@ -3,13 +3,16 @@
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
 import contextlib
 import json
 import sys
 import tempfile
+import threading
 from pathlib import Path
 
 from . import acmeasure as ac_mod
+from . import checkpoint as checkpoint_mod
 from . import corners as corners_mod
 from . import measure as measure_mod
 from . import montecarlo as mc_mod
@@ -110,10 +113,123 @@ def _parse_list(value: str | None, cast=str):
     return [cast(v.strip()) for v in value.split(",") if v.strip()]
 
 
+def _iter_unit_results(units, *, jobs: int, run_one, announce):
+    """Yield `(unit, result)` pairs as they finish, at most `jobs` at a time.
+
+    PVT points and Monte Carlo trials are embarrassingly parallel: each one
+    patches its **own** copy of the netlist text, writes its own
+    `<corner-id>.spice`, and runs its own `ngspice -b` process whose only
+    shared state with its siblings is the work directory they each write
+    disjoint, `corner-id`-named files into (see
+    `runner.purge_unit_artifacts`). Nothing is mutated in common, so a worker
+    pool changes only *when* a unit runs, never *what* it measures.
+
+    Threads, not processes: the cost of a unit is one external simulator
+    process, and `subprocess.run` releases the GIL for its whole duration, so
+    a thread pool gets the same parallelism as a process pool without having
+    to make the manifest/PDK/result objects picklable or fork a netlist copy
+    per worker.
+
+    `jobs == 1` runs inline with no pool at all -- the serial path stays
+    exactly the code it was, so the default invocation cannot regress on a
+    threading bug.
+
+    Results are yielded in **completion** order (so the caller can checkpoint
+    a unit the instant it lands); the caller re-orders by the manifest's unit
+    list before rendering, which is what keeps a parallel record's row order
+    identical to a serial one's.
+    """
+    if jobs == 1:
+        for unit in units:
+            announce(unit)
+            yield unit, run_one(unit)
+        return
+
+    def _work(unit):
+        announce(unit)
+        return run_one(unit)
+
+    pool = concurrent.futures.ThreadPoolExecutor(max_workers=jobs, thread_name_prefix="sim-unit")
+    futures = {pool.submit(_work, unit): unit for unit in units}
+    handed_over = set()
+    try:
+        for future in concurrent.futures.as_completed(futures):
+            try:
+                result = future.result()
+            except BaseException:
+                # A failure (or a caller that stops consuming) must not keep
+                # dispatching the rest of the grid: cancel everything not yet
+                # started. Units already *running* cannot be interrupted
+                # (their ngspice processes are external) and are not waited
+                # for -- but units that already finished successfully are
+                # handed over before the failure propagates, so an
+                # interrupted parallel run still checkpoints the work it
+                # genuinely completed instead of throwing it away.
+                pool.shutdown(wait=False, cancel_futures=True)
+                for other in futures:
+                    if other in handed_over or not other.done() or other.cancelled():
+                        continue
+                    if other.exception() is None:
+                        handed_over.add(other)
+                        yield futures[other], other.result()
+                raise
+            handed_over.add(future)
+            yield futures[future], result
+    finally:
+        pool.shutdown(wait=False)
+
+
+def _execution_note(*, segments, jobs: int, unit_noun: str, record_id: str) -> str | None:
+    """The record's `**Execution**` bullet, or None for a plain serial run.
+
+    Provenance a reader of the record cannot otherwise reconstruct: whether
+    the campaign ran as one uninterrupted pass or was resumed across
+    segments, whether points ran concurrently (and how many at a time), and
+    which repo commit each segment ran at. Omitted entirely for the
+    single-segment, `--jobs 1` case so existing records' shape is unchanged.
+    """
+    if len(segments) <= 1 and jobs == 1:
+        return None
+    parts = []
+    for i, seg in enumerate(segments, 1):
+        commit = (seg.get("repo_commit") or "unknown")[:7]
+        parts.append(
+            f"segment {i}: started {seg.get('started_utc', 'unknown')} at commit "
+            f"`{commit}`, `--jobs {seg.get('jobs', 1)}`"
+        )
+    note = (
+        f"run in {len(segments)} segment(s) ({'; '.join(parts)}). "
+        if segments
+        else f"run with `--jobs {jobs}`. "
+    )
+    if len(segments) > 1:
+        note += (
+            f"An interrupted run was resumed with `--resume {record_id}`: "
+            f"{unit_noun} completed in an earlier segment were reloaded verbatim "
+            "from this record's own `corners/<record-id>/checkpoint.json` rather "
+            "than re-simulated. The resume is refused outright unless the "
+            "testbench manifest, the netlisted DUT, the resolved PDK build and "
+            "the requested point/trial list all match the first segment's, so no "
+            "row below comes from a different campaign than any other. "
+        )
+    if max([seg.get("jobs", 1) for seg in segments] or [jobs]) > 1:
+        note += (
+            f"Concurrent execution runs several {unit_noun} at once, each in its "
+            "own ngspice process against its own patched netlist copy (no shared "
+            "mutable state), so verdicts are independent of the order they "
+            "finish in. It does share the host between them: a point already "
+            "close to its manifest's `timeout_s` budget can be pushed past it by "
+            "contention, which is recorded as a failed point exactly as it would "
+            "be in a serial run."
+        )
+    return note.strip()
+
+
 def _run_experiment(
     args: argparse.Namespace,
     *,
     unit_noun: str,
+    mode: str,
     detect_subset,
     override_error: str,
     build_units,
@@ -128,6 +244,8 @@ def _run_experiment(
 
     - `unit_noun`: what to call one item of the matrix/trial list in the
       progress and summary lines (e.g. "points" / "trials").
+    - `mode`: `"pvt"` or `"mc"` -- part of the checkpoint fingerprint, so a
+      `--resume` can never splice Monte Carlo trials into a PVT record.
     - `detect_subset() -> bool`: whether the run's flags narrow the
       manifest's default matrix, derived from `args` alone. Deliberately
       separate from (and evaluated before) `build_units`, so the
@@ -144,9 +262,16 @@ def _run_experiment(
     - `run_unit(pdk, spiceinit, manifest, netlist_text, unit, corners_dir)`:
       runs one point/trial (`runner_mod.run_point` / `run_mc_trial`).
     - `render_record(manifest, slug, record_id, pdk, netlist_snapshot, units,
-      results, subset_reason) -> str`: renders the evidence-record markdown
-      (`report_mod.render` / `render_mc`), with claim/tool-versions/repo-root/
-      supersedes already bound by the caller.
+      results, subset_reason, execution_note) -> str`: renders the
+      evidence-record markdown (`report_mod.render` / `render_mc`), with
+      claim/tool-versions/repo-root/supersedes already bound by the caller.
+
+    Execution model (issue #133): units run `--jobs N` at a time and each
+    completed unit is persisted to a checkpoint beside the record, so an
+    interrupted campaign resumes with `--resume <record-id>` instead of
+    restarting. Both are execution-only: the record is still written in one
+    shot, from the full ordered result list, exactly once -- one complete
+    record, or (if the run stops early) none at all.
     """
     manifest_path = _find_manifest(args.experiment)
     manifest = json.loads(manifest_path.read_text())
@@ -167,6 +292,21 @@ def _run_experiment(
         )
         return 1
 
+    jobs = getattr(args, "jobs", 1)
+    jobs = 1 if jobs is None else int(jobs)
+    if jobs < 1:
+        print("run_corners.py: --jobs must be at least 1", file=sys.stderr)
+        return 1
+    resume_id = getattr(args, "resume", None)
+    if resume_id and not args.write:
+        print(
+            "run_corners.py: --resume needs this record's real "
+            "sim/<slug>/corners/<record-id>/ directory, which --no-write does not "
+            "create -- a run that writes no evidence has nothing to resume",
+            file=sys.stderr,
+        )
+        return 1
+
     is_subset = detect_subset()
     if is_subset and not args.subset_reason and args.write:
         print(override_error, file=sys.stderr)
@@ -182,10 +322,23 @@ def _run_experiment(
     xschemrc = REPO_ROOT / "sim" / "xschemrc"
     spiceinit = REPO_ROOT / "sim" / "spiceinit"
 
-    record_id = report_mod.make_record_id(REPO_ROOT)
+    record_id = resume_id or report_mod.make_record_id(REPO_ROOT)
     exp_dir = manifest_path.parent.parent
     snapshots_dir = exp_dir / "netlist-snapshots"
     records_dir = exp_dir / "records"
+    record_path = records_dir / f"{record_id}.md"
+    if args.write and record_path.exists():
+        # Reachable via `--resume <id>` of an id that already finished (its
+        # checkpoint would be gone, but say so before simulating anything),
+        # and in principle via two runs minting the same record id in the
+        # same second at the same commit.
+        print(
+            f"run_corners.py: {record_path} already exists -- sim/README.md's "
+            "append-only rule forbids overwriting a record; a re-run mints a new "
+            "record id and names this one with --supersedes",
+            file=sys.stderr,
+        )
+        return 1
 
     with _corners_dir(args.write, exp_dir, record_id) as corners_dir:
         print(f"run_corners.py: netlisting {schematic} ...")
@@ -197,16 +350,83 @@ def _run_experiment(
             print(f"run_corners.py: {e}", file=sys.stderr)
             return 1
 
-        results = []
-        for i, unit in enumerate(units, 1):
-            print(f"run_corners.py: [{i}/{len(units)}] {unit.corner_id} ...")
+        # Checkpointing is tied to evidence: a --no-write run produces no
+        # record, so there is nothing for a resume to finish.
+        ckpt = None
+        if args.write:
+            fingerprint = checkpoint_mod.fingerprint(
+                mode=mode, manifest=manifest, netlist_text=netlist_text, pdk=pdk, units=units
+            )
+            ckpt_path = corners_dir / checkpoint_mod.CHECKPOINT_NAME
             try:
-                result = run_unit(pdk, spiceinit, manifest, netlist_text, unit, corners_dir)
-            except runner_mod.NetlistError as e:
-                print(f"run_corners.py: {unit.corner_id}: {e}", file=sys.stderr)
+                if resume_id:
+                    ckpt = checkpoint_mod.resume(
+                        ckpt_path, record_id=record_id, slug=slug, fp=fingerprint
+                    )
+                else:
+                    ckpt = checkpoint_mod.start(
+                        ckpt_path, record_id=record_id, slug=slug, fp=fingerprint
+                    )
+            except checkpoint_mod.CheckpointError as e:
+                print(f"run_corners.py: {e}", file=sys.stderr)
                 return 1
-            results.append(result)
-            print(f"  {'PASS' if result.passed else 'FAIL'}: {result.reason}")
+            ckpt.begin_segment(jobs=jobs, repo_commit=report_mod.git_info(REPO_ROOT)["sha"])
+            print(
+                f"run_corners.py: record id {record_id} -- an interrupted run can be "
+                f"resumed with --resume {record_id}"
+            )
+
+        collected = dict(ckpt.results) if ckpt is not None else {}
+        pending = [u for u in units if u.corner_id not in collected]
+        if collected:
+            print(
+                f"run_corners.py: resuming {record_id}: {len(collected)}/{len(units)} "
+                f"{unit_noun} already complete, running the remaining {len(pending)}"
+            )
+
+        position = {u.corner_id: i for i, u in enumerate(units, 1)}
+        console = threading.Lock()
+
+        def announce(unit):
+            with console:
+                print(f"run_corners.py: [{position[unit.corner_id]}/{len(units)}] {unit.corner_id} ...", flush=True)
+
+        def run_one(unit):
+            try:
+                return run_unit(pdk, spiceinit, manifest, netlist_text, unit, corners_dir)
+            except runner_mod.NetlistError as e:
+                # Keep today's "<corner-id>: <error>" wording even when the
+                # failure surfaces from a worker thread.
+                raise runner_mod.NetlistError(f"{unit.corner_id}: {e}") from e
+
+        try:
+            for unit, result in _iter_unit_results(
+                pending, jobs=jobs, run_one=run_one, announce=announce
+            ):
+                collected[unit.corner_id] = result
+                if ckpt is not None:
+                    ckpt.record(unit.corner_id, result)
+                with console:
+                    print(
+                        f"  {unit.corner_id}: {'PASS' if result.passed else 'FAIL'}: {result.reason}",
+                        flush=True,
+                    )
+        except runner_mod.NetlistError as e:
+            print(f"run_corners.py: {e}", file=sys.stderr)
+            return 1
+
+        missing = [u.corner_id for u in units if u.corner_id not in collected]
+        if missing:
+            print(
+                "run_corners.py: internal error -- no result for "
+                f"{', '.join(missing)}; refusing to write a record",
+                file=sys.stderr,
+            )
+            return 1
+        # Record row order is the manifest's unit order, never completion
+        # order, so a `--jobs N` run's record reads exactly like a serial
+        # run's.
+        results = [collected[u.corner_id] for u in units]
 
         failed = [r for r in results if not r.passed]
 
@@ -226,10 +446,19 @@ def _run_experiment(
                 units=units,
                 results=results,
                 subset_reason=subset_reason,
+                execution_note=_execution_note(
+                    segments=ckpt.segments if ckpt is not None else [],
+                    jobs=jobs,
+                    unit_noun=unit_noun,
+                    record_id=record_id,
+                ),
             )
-            record_path = records_dir / f"{record_id}.md"
             record_path.write_text(record_md)
             print(f"run_corners.py: wrote {record_path}")
+            # Only now, with the record on disk, is the campaign finished --
+            # so a surviving checkpoint always means "interrupted, no record".
+            if ckpt is not None:
+                ckpt.discard()
         else:
             print("run_corners.py: --no-write -- no evidence record written")
 
@@ -266,7 +495,9 @@ def cmd_run(args: argparse.Namespace) -> int:
             supply_tol_override=args.supply_tol,
         )
 
-    def render_record(*, manifest, slug, record_id, pdk, netlist_snapshot, units, results, subset_reason):
+    def render_record(
+        *, manifest, slug, record_id, pdk, netlist_snapshot, units, results, subset_reason, execution_note
+    ):
         return report_mod.render(
             spec=measure_mod.MeasureSpec.from_manifest(manifest),
             ac_spec=ac_mod.AcSpec.from_manifest(manifest),
@@ -282,6 +513,7 @@ def cmd_run(args: argparse.Namespace) -> int:
             points=units,
             results=results,
             subset_reason=subset_reason,
+            execution_note=execution_note,
             supersedes=args.supersedes,
             methodology_note=manifest.get(
                 "methodology_note", "(no methodology_note stated in manifest)"
@@ -292,6 +524,7 @@ def cmd_run(args: argparse.Namespace) -> int:
     return _run_experiment(
         args,
         unit_noun="points",
+        mode="pvt",
         detect_subset=detect_subset,
         override_error=(
             "run_corners.py: a corner/temp/supply override needs --subset-reason "
@@ -338,7 +571,9 @@ def cmd_run_mc(args: argparse.Namespace) -> int:
             process_override=args.mc_process,
         )
 
-    def render_record(*, manifest, slug, record_id, pdk, netlist_snapshot, units, results, subset_reason):
+    def render_record(
+        *, manifest, slug, record_id, pdk, netlist_snapshot, units, results, subset_reason, execution_note
+    ):
         mc_cfg = manifest.get("monte_carlo", {})
         claim = mc_cfg.get("claim", manifest.get("claim", "(no claim stated in manifest)"))
         methodology_note = mc_cfg.get(
@@ -359,6 +594,7 @@ def cmd_run_mc(args: argparse.Namespace) -> int:
             trials=units,
             results=results,
             subset_reason=subset_reason,
+            execution_note=execution_note,
             supersedes=args.supersedes,
             methodology_note=methodology_note,
             analysis=analysis,
@@ -367,6 +603,7 @@ def cmd_run_mc(args: argparse.Namespace) -> int:
     return _run_experiment(
         args,
         unit_noun="trials",
+        mode="mc",
         detect_subset=detect_subset,
         override_error=(
             "run_corners.py: an --mc-* override needs --subset-reason to be "
@@ -391,6 +628,32 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--subset-reason", help="required with any override, recorded in the evidence record")
     p.add_argument("--allow-pdk-mismatch", action="store_true", help="run even if the resolved PDK commit != sim/pdk.json's pin")
     p.add_argument("--supersedes", help="record-id this run's record supersedes")
+    p.add_argument(
+        "-j",
+        "--jobs",
+        type=int,
+        default=1,
+        metavar="N",
+        help=(
+            "run N PVT points (or Monte Carlo trials) concurrently, each in its own "
+            "ngspice process; default 1 (serial, today's behaviour). Points are "
+            "independent, so this only changes wall-clock time -- but it does share "
+            "the host, so keep N at or below the free core count: contention can "
+            "push a point past its manifest's own timeout_s budget"
+        ),
+    )
+    p.add_argument(
+        "--resume",
+        metavar="RECORD_ID",
+        help=(
+            "resume the interrupted evidence run with this record id instead of "
+            "starting a new one: points already recorded in "
+            "sim/<slug>/corners/<RECORD_ID>/checkpoint.json are reloaded, the rest "
+            "are run, and the record is written once the grid is complete. Refused "
+            "if the manifest, DUT netlist, PDK build or requested point list have "
+            "changed since the checkpoint was written"
+        ),
+    )
     p.add_argument(
         "--mc",
         action="store_true",

@@ -10,8 +10,11 @@ still driving real per-corner ngspice runs.
 
 from __future__ import annotations
 
+import contextlib
+import os
 import re
 import subprocess
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -191,6 +194,51 @@ def patch_netlist_mc(netlist_text: str, manifest: dict, trial: McTrial) -> str:
     return text
 
 
+def _write_atomic(path: Path, text: str) -> None:
+    """Write `text` to `path` via a sibling temp file plus `os.replace`.
+
+    Load-bearing for the `.spiceinit` below once units may run concurrently
+    (`run_corners.py --jobs N`): every unit shares one work directory and
+    writes the same `.spiceinit` content into it, so a plain truncate-then-
+    write can be observed half-written by another unit's ngspice starting at
+    that instant. An atomic rename means a reader sees either the previous
+    complete file or the new complete file.
+    """
+    fd, tmp = tempfile.mkstemp(dir=str(path.parent), prefix=f".{path.name}-", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w") as fh:
+            fh.write(text)
+        os.replace(tmp, path)
+    except BaseException:
+        with contextlib.suppress(OSError):
+            os.unlink(tmp)
+        raise
+
+
+def purge_unit_artifacts(work_dir: Path, corner_id: str) -> None:
+    """Delete any files a previous attempt at this unit left behind.
+
+    Every artifact of a unit is named after its own `corner_id` -- the
+    patched netlist (`<corner-id>.spice`), the ngspice log
+    (`<corner-id>.log`) and each waveform dump (`<corner-id>-<node>.dat`) --
+    so this only ever touches the one unit's files, never a sibling's.
+
+    Why it exists: a run that is killed mid-unit, then resumed
+    (`--resume <record-id>`), re-runs that unit. If the re-run times out
+    *before* ngspice writes its dumps, the reducer would otherwise read the
+    **previous** attempt's stale dump and attribute its measurements to the
+    new run. Starting each attempt from a clean slate makes "no dump" mean no
+    dump.
+    """
+    if not work_dir.is_dir():
+        return
+    for pattern in (f"{corner_id}.*", f"{corner_id}-*"):
+        for path in sorted(work_dir.glob(pattern)):
+            if path.is_file():
+                with contextlib.suppress(OSError):
+                    path.unlink()
+
+
 def _run_ngspice_and_judge(
     pdk: ResolvedPdk,
     spiceinit: Path,
@@ -208,12 +256,15 @@ def _run_ngspice_and_judge(
     `patch_netlist_mc`) differs.
     """
     work_dir.mkdir(parents=True, exist_ok=True)
+    # Start this unit from a clean slate: a resumed or retried unit must never
+    # be able to read a previous attempt's waveform dump back (see
+    # purge_unit_artifacts).
+    purge_unit_artifacts(work_dir, corner_id)
     spice_path = work_dir / f"{corner_id}.spice"
     log_path = work_dir / f"{corner_id}.log"
     spice_path.write_text(patched)
 
-    spiceinit_dst = work_dir / ".spiceinit"
-    spiceinit_dst.write_text(spiceinit.read_text())
+    _write_atomic(work_dir / ".spiceinit", spiceinit.read_text())
 
     try:
         proc = subprocess.run(
