@@ -1216,7 +1216,7 @@ below):
 |---|---|---|---|---|
 | `sim/divider` | N=25 (`011000`), `sim/pll-lock`'s own strap | ~1.10011 GHz (at/above the VCO's ~1.09 GHz top free-running frequency) | full DR-003 45-point grid, **run and committed** | `sim/divider/records/20260910-234943-ec91425.md` (45/45 PASS) |
 | `sim/divider-n4` | N=4 (`000011`), DRAFT range floor, even decode path | 250 MHz (the design's lock target) | full DR-003 45-point grid, **run and committed** (issue #131) | `sim/divider-n4/records/20260911-091838-7d2f839.md` (45/45 PASS) |
-| `sim/divider-n64` | N=64 (`111111`), DRAFT range ceiling, even decode path | 250 MHz | full DR-003 45-point grid intended, accumulated a few points at a time (N=64's long output period makes a full grid impractical in one pass — see the manifest's `methodology_note` and the "Issue #130" section below). **27 of the 45 points covered so far**, across four independent campaigns: the whole `tt` process-corner row (issue #130), `ss`/125 °C's full local supply axis (issue #131), the whole `ff` process-corner row (issue #130), and the `ss` row's remaining -40 °C/27 °C temperatures (issue #130) — between them they include the full `tt`, `ff` and `ss` rows | `sim/divider-n64/records/20260911-074438-073b241.md` (the full `tt` row, 9/9 PASS), `sim/divider-n64/records/20260911-101305-7d2f839.md` (tt/27 °C/1.80 V, 1/1 PASS — **no new grid point**: an independent re-run of a point the `tt` row above already covers, retained per `sim/README.md`'s append-only rule but not counted as coverage), `sim/divider-n64/records/20260911-104400-7d2f839.md` (ss/125 °C, default supply tolerance, 3/3 PASS — additive), `sim/divider-n64/records/20260911-125347-aa4478c.md` (the full `ff` row, 9/9 PASS — additive), `sim/divider-n64/records/20260911-160518-3b65794.md` (the `ss` row's remaining -40 °C/27 °C temperatures, 6/6 PASS — additive, completes the `ss` row). `sf`/`fs` (18 points) remain, tracked by issue #130 |
+| `sim/divider-n64` | N=64 (`111111`), DRAFT range ceiling, even decode path | 250 MHz | full DR-003 45-point grid, accumulated one process-corner row at a time (N=64's long output period makes a full grid impractical in one pass — see the manifest's `methodology_note` and the "Issue #130" section below). **Complete: all 45 points covered, 45/45 PASS**, across six independent campaigns whose union is exactly the DR-003 grid | `sim/divider-n64/records/20260911-074438-073b241.md` (the full `tt` row, 9/9 PASS), `sim/divider-n64/records/20260911-101305-7d2f839.md` (tt/27 °C/1.80 V, 1/1 PASS — **no new grid point**: an independent re-run of a point the `tt` row above already covers, retained per `sim/README.md`'s append-only rule but not counted as coverage), `sim/divider-n64/records/20260911-104400-7d2f839.md` (ss/125 °C, default supply tolerance, 3/3 PASS — additive), `sim/divider-n64/records/20260911-125347-aa4478c.md` (the full `ff` row, 9/9 PASS — additive), `sim/divider-n64/records/20260911-160518-3b65794.md` (the `ss` row's remaining -40 °C/27 °C temperatures, 6/6 PASS — additive, completes the `ss` row), `sim/divider-n64/records/20260911-171337-fbf217b.md` (the full `sf` row, 9/9 PASS — additive), `sim/divider-n64/records/20260911-180406-071a336.md` (the full `fs` row, 9/9 PASS — additive, completes the grid) |
 | `sim/divider-n5` | N=5 (`000100`), smallest odd modulus, odd decode path | 250 MHz | the two corners issue #129 named, **run and committed** (issue #131) | `sim/divider-n5/records/20260911-095824-7d2f839.md` (tt/27 °C/1.80 V, 1/1 PASS), `sim/divider-n5/records/20260911-100824-7d2f839.md` (ss/125 °C, default supply tolerance, 3/3 PASS) |
 | `sim/divider-n63` | N=63 (`111110`), largest odd modulus, odd decode path | 250 MHz | the two corners issue #129 named, **run and committed** (issue #131); issue #130 tracks widening it alongside `sim/divider-n64` | `sim/divider-n63/records/20260911-101042-7d2f839.md` (tt/27 °C/1.80 V, 1/1 PASS), `sim/divider-n63/records/20260911-104153-7d2f839.md` (ss/125 °C, default supply tolerance, 3/3 PASS) |
 
@@ -1288,9 +1288,9 @@ What the overlap does change is the arithmetic: **`sim/divider-n64`'s union
 coverage is 12 distinct points of the 45-point grid** (the 9-point `tt` row
 plus the 3-point ss/125 °C supply axis), not 13, and the "Issue #129" table
 above is written that way deliberately so the duplicated point is never
-double-counted. The remaining 33 points (`ff`, `sf`, `fs`, and the `ss`
-row's -40 °C/27 °C temperatures) stay open work under issue #130 — see the
-"Issue #130" section below.
+double-counted. The 33 points still open at that moment (`ff`, `sf`, `fs`, and the `ss`
+row's -40 °C/27 °C temperatures) were carried by issue #130
+and have all since been run — see the "Issue #130" section below.
 
 Issue #130 also separately tracks widening `sim/divider-n63` to the full
 grid; `sim/divider-n63` has no such overlap — issue #131's two records are
@@ -1314,11 +1314,15 @@ it stays DRAFT, and ratification remains a separate decision-record act.
 It only replaces "testbench only, no record yet" with committed `sim/`
 evidence for all five standalone-divider campaigns issue #129 designed.
 
-## Issue #130: completing `sim/divider-n64`'s full 45-point grid — in progress, one process-corner row per pass
+## Issue #130: completing `sim/divider-n64`'s full 45-point grid — complete, one process-corner row per pass
 
 Issue #130 tracks widening `sim/divider-n64` (and, if convenient, `sim/
 divider-n63`) from a small documented subset to the full DR-003 45-point
-grid. The estimate that motivated the "one row at a time" approach was
+grid. **`sim/divider-n64`'s half of that is now done: 45/45 points, all
+PASS** — see "Fourth and fifth passes" at the end of this section for the
+completion. The subsections below are kept in pass order, as the running
+record of what each pass measured and cost; read them as history, not as a
+statement of what is still open. The estimate that motivated the "one row at a time" approach was
 `sim/divider-n64/testbench/tb.json`'s own `methodology_note`: ~0.89 s of
 ngspice wall-clock time per simulated nanosecond measured while building
 that manifest, which at N=64's 3.2 us transient window works out to
@@ -1415,4 +1419,65 @@ well short of the 3.2 us window, when the session ended) and produced no
 usable record — per `sim/README.md`'s append-only contract, an incomplete
 run leaves no partial record, only a discarded checkpoint.
 
-The `sf` and `fs` rows (18 of 45 points) remain open work for issue #130.
+That left the `sf` and `fs` rows (18 of 45 points) open at the end of the
+third pass.
+
+### Fourth and fifth passes: the `sf` and `fs` rows (rows 4/5 and 5/5) — grid complete
+
+A fourth pass ran the `sf` row and a fifth ran the `fs` row, both as
+`python3 sim/run_corners.py divider-n64 --corners <row> -j 9
+--subset-reason ...`, on the same shared host. **All 18 points PASS**, with
+the same clean lock every earlier row shows (3.906 MHz = 250 MHz/64, 3.1 %
+duty):
+
+| Row | Record | Points | Wall-clock |
+|---|---|---|---|
+| `sf` | `sim/divider-n64/records/20260911-171337-fbf217b.md` | 9/9 PASS | ~48m31s (17:13:39Z → 18:02:10Z) |
+| `fs` | `sim/divider-n64/records/20260911-180406-071a336.md` | 9/9 PASS | ~45m11s (18:04:07Z → 18:49:18Z) |
+
+Two points of note in the `sf` row's numbers, neither a correctness
+concern: time-to-lock is 268.4-268.8 ns at most points — one full output
+period, the reload cycle the divider needs before its first settled
+period — but three `sf` points (27 °C/1.62 V, 27 °C/1.80 V, 125 °C/
+1.98 V) lock at ~12.5 ns and one (`sf`/27 °C/1.98 V) at ~570 ps. That is
+the same bimodality the `tt` row already recorded (its 27 °C/1.80 V point
+locks at 12.53 ns): the sliding-window lock detector can latch on the very
+first in-band window when the reset-release transient happens to land the
+first output edges already at the target period, rather than waiting a
+full period. The `sf`/27 °C/1.98 V point's post-lock f_out reads
+3.891 MHz / 3.5 % duty rather than 3.906 MHz / 3.1 % for the same reason —
+its post-lock window includes the partial first period. Every one of these
+is inside the criterion's own ±2 % band, so they are PASSes on the stated
+criterion, not marginal results.
+
+**`--jobs 9` was the decisive change.** The third pass's note above
+records `-j 3` buying nothing on this host; at `-j 9` a 9-point row cost
+~45-48 minutes end to end versus ~3h50m serial (`tt`) and ~2h51m (`ff`) —
+roughly a 4x wall-clock win. Per-process CPU share sat at ~50-56 % of a
+core and the host's load average was ~33 on 28 cores throughout, so the
+host was still contended; it simply had enough spare capacity to schedule
+9 concurrent single-threaded ngspice processes onto, which the `-j 3`
+attempt's host state did not. The general lesson is the one the third pass
+already drew — `--jobs` pays only where there is capacity to schedule onto
+— with the correction that the useful `-j` on a busy-but-not-saturated
+host can be much higher than a cautious `-j 3`.
+
+With these two records `sim/divider-n64`'s union coverage is the **complete
+DR-003 45-point grid, 45/45 PASS**, spread over seven append-only records
+(six independent campaigns plus issue #131's duplicate `tt`/27 °C/1.80 V
+reproduction). Verified by re-parsing every committed record's result
+table: 45 distinct (corner, temperature, supply) triples, no missing point,
+no FAIL row. No consolidating record supersedes the partial ones — each is
+a real run of a real subset, so `sim/README.md`'s append-only rule keeps
+all seven exactly as written, and the union is the claim.
+
+This does not ratify `spec/target-spec.md` row 4 — it stays DRAFT, and
+ratification remains a separate decision-record act argued on its own
+merits. What it does establish is that the full PVT grid, not a subset,
+now stands behind N=64 (the DRAFT range's ceiling and the widest reload
+word the even decode path can be given).
+
+`sim/divider-n63`'s optional widening to its own full grid was not
+attempted and remains the only part of issue #130's scope still open. At
+the rates above it is roughly 5 rows x ~45 min ≈ 4 hours of ngspice
+wall-clock on a comparably-loaded host.
