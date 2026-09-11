@@ -116,6 +116,61 @@ its text becomes part of the record. "The sim was slow" is not a
 justification; "fast selftest pass proving the harness runs, not a design
 claim — see sim/pdk-smoke/records/<id>.md for the full grid" is.
 
+## Interrupted and parallel runs
+
+A campaign's cost is set by its manifest, and some are large: a single
+`sim/pll-lock` point runs a 100 us transient with a 3 h `timeout_s`, so its
+45-point grid is days of wall clock (issue #133). Two execution-model flags
+make such a campaign tractable. Neither changes what a point measures — the
+same manifest, the same netlist, the same per-point criterion, the same
+record schema — they change only *when* points run and *what survives* an
+interruption.
+
+```sh
+# Run 8 points at a time instead of one (one ngspice process each).
+python3 sim/run_corners.py pll-lock --jobs 8
+
+# ...that run was killed at point 31/45. Finish it, don't restart it:
+python3 sim/run_corners.py pll-lock --jobs 8 --resume 20260911-071500-730c24b
+```
+
+- **`--jobs N` / `-j N`** (default `1`, i.e. today's serial behaviour) runs
+  `N` points (or Monte Carlo trials) concurrently. Points are independent:
+  each patches its own copy of the netlisted DUT and runs its own `ngspice
+  -b` process, writing only files named after its own `<corner-id>`. The
+  record's rows stay in the manifest's point order regardless of which point
+  finishes first.
+
+  `N` shares one host. Keep it at or below the free core count: a point
+  already close to its manifest's `timeout_s` budget can be pushed past it by
+  contention, and that is recorded as a failed point exactly as in a serial
+  run. The default stays `1` so no existing invocation changes behaviour.
+
+- **`--resume <record-id>`** finishes an interrupted run instead of
+  restarting it. Every completed point is persisted, the instant it
+  completes, to `corners/<record-id>/checkpoint.json`; a resume reloads those
+  and runs only the points that are missing. The run prints its record id at
+  the start (`record id ... -- an interrupted run can be resumed with
+  --resume ...`) so it is available before the run finishes.
+
+  A resume is **refused** — loudly, with no record written — if the testbench
+  manifest, the netlisted DUT, the resolved PDK build, the run mode or the
+  requested point list differ from what the checkpoint was written against.
+  Splicing two different campaigns into one record is exactly what the
+  append-only rule below exists to prevent, so the harness will not do it
+  even when asked.
+
+The checkpoint is **run state, not evidence**: it is deleted the moment the
+record is written, and it is gitignored (`sim/*/corners/**/checkpoint.json`)
+so it can never land in the committed record trail. A checkpoint that still
+exists therefore means exactly one thing: *that record id's run was
+interrupted and has no record*. Either resume it, or delete it to run that
+record id from scratch.
+
+This preserves the append-only contract in both directions: a run produces
+**one complete record with every requested point, or no record at all** —
+never a record silently missing points, and never one counting a point twice.
+
 ## Monte Carlo evidence
 
 `sim/run_corners.py <slug> --mc` (issue #20) runs a statistical-variation
@@ -193,6 +248,12 @@ written once and never edited or deleted after creation, even to fix a typo.
 A correction is a new record naming the one it supersedes. Only `testbench/`
 and this README are mutable.
 
+One deliberate non-exception: `corners/<record-id>/checkpoint.json` (see
+"Interrupted and parallel runs" above) is transient run state that is
+rewritten as a run progresses and deleted when the record is written. It is
+gitignored and is never part of the committed evidence trail, so the rule
+above — which governs committed evidence — is unaffected.
+
 ## Retention policy
 
 | Artifact | Retained? | Why |
@@ -210,7 +271,11 @@ un-ignores exactly the evidence path:
 *.raw
 *.log
 !sim/*/corners/**/*.log
+sim/*/corners/**/checkpoint.json
 ```
+
+(The last line keeps the transient resume checkpoint out of the committed
+trail — see "Interrupted and parallel runs" above.)
 
 **Nothing is pruned.** Old records stay after they are superseded.
 

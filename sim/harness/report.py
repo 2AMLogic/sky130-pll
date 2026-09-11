@@ -458,6 +458,7 @@ def render(
     ac_spec=None,
     manifest_has_supply: bool = True,
     corner_note: str | None = None,
+    execution_note: str | None = None,
 ) -> str:
     # Only this run's own new artifacts are excluded from the dirty check --
     # an uncommitted edit to the testbench itself still marks the record
@@ -509,6 +510,8 @@ def render(
         a(f"  - Corner-set note: {corner_note}")
     if subset_reason:
         a(f"  - **Subset of the manifest's default grid**: {subset_reason}")
+    if execution_note:
+        a(f"- **Execution**: {execution_note}")
     a("- **Methodology / criteria / limitations**:")
     if spec is not None:
         _render_measurement_criteria(a, spec, methodology_note)
@@ -561,6 +564,7 @@ def render_mc(
     supersedes: str | None,
     methodology_note: str,
     analysis: str,
+    execution_note: str | None = None,
 ) -> str:
     """Render a Monte Carlo evidence record. Same append-only schema and
     directory conventions as `render` (PVT) -- see sim/README.md -- adapted
@@ -611,6 +615,8 @@ def render_mc(
       f"one ngspice `.options seed=<N>` per trial)")
     if subset_reason:
         a(f"  - **Subset/override of the manifest's default `monte_carlo` config**: {subset_reason}")
+    if execution_note:
+        a(f"- **Execution**: {execution_note}")
     a("- **Methodology / criteria / limitations**:")
     a(
         "  - Sampling mechanism: sky130's own `MC_MM_SWITCH` (within-die "
