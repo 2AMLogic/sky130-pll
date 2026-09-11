@@ -1,0 +1,30 @@
+{
+  "schema": "sky130-pll.harness.tb/1",
+  "claim": "does design/divider/divider_intN.sch (the standalone programmable integer-N feedback divider, issue #27, retimed to a dual-modulus /2-/3 prescaler front-end by issue #114) divide a fixed 250 MHz ideal CLK by N=64 (NSEL[5:0]=111111) cleanly. N=64 is the DRAFT modulus range's ceiling (spec/target-spec.md row 4, N = 4-64) and the largest modulus that takes the divider's *even* decode path (ODD=0) -- it also exercises the widest reload word (L=31) and the static NSEL-1 decode's own borrow chain running its full width. This is a design-input measurement, not a spec/target-spec.md ratification: row 4 stays DRAFT -- per CLAUDE.md, ratification is a separate decision-record act argued on its own merits. **Spec row(s)**: 4 (DRAFT target N = 4-64, static configuration -- this record supplies evidence toward that row, not a verdict on it).",
+  "schematic": "tb_divider_n64.sch",
+  "corner_pattern": "(\\.lib\\s+\\S*sky130\\.lib\\.spice\\s+)(\\w+)",
+  "supply_pattern": "(V1 VDD GND )([0-9.]+)",
+  "process_corners": ["tt", "ff", "ss", "sf", "fs"],
+  "temps_c": [-40, 27, 125],
+  "supply_nominal": 1.8,
+  "supply_tolerance": 0.1,
+  "measure": {
+    "node": "FBCLK",
+    "tran_step": "40p",
+    "tran_stop": "3200n",
+    "timeout_s": 5400,
+    "threshold_frac": 0.5,
+    "hysteresis_frac": 0.15,
+    "settle_from": "0",
+    "min_edges": 4,
+    "lock": {
+      "target_hz": 3906250,
+      "tolerance_frac": 0.02,
+      "window_cycles": 5,
+      "min_hold_cycles": 5
+    },
+    "require_lock": true
+  },
+  "methodology_note": "this testbench's DUT is design/divider/divider_intN.sch driven open-loop (no VCO, PFD/charge pump or loop filter in the path) -- CLK is an ideal rail-to-rail pulse source (12.5 ps edges, 4 ns period = 250 MHz, 50% duty, the design's own lock target) instead of the real VCO's output, and NSEL[5:0]=111111 (N=64) is strapped statically via lab_pin ties to VDD/GND. RESETB is released by a pwl at 5-6 ns (design/divider/DESIGN.md's own issue #114 diagnostic method). `measure.lock`'s target_hz (3906250 Hz = f_CLK/N = 250 MHz/64) plus a 2% tolerance and a 5-output-period window/hold reproduces design/divider/DESIGN.md's own issue #114 pass criterion, applied via the harness's general-purpose sliding-window lock detector. `require_lock` is true. process_corners is the ratified rows 19/20 PVT grid (spec/target-spec.md, DR-003, #77) -- this manifest declares the same full 5-corner x 3-temp x 3-supply default grid every other sim/ manifest in this repo declares. **This record does not run that full 45-point grid.** N=64's 256 ns output period (versus N=25's ~22.7 ns or N=4's 16 ns) means the lock criterion's required window (11 output periods -- window_cycles + 1 + min_hold_cycles) costs a transient roughly an order of magnitude longer in absolute time, and this harness's standalone-divider cost was measured (while building this manifest) at close to a fixed ~0.89 s of wall-clock ngspice time per simulated nanosecond -- so a 45-point grid at this window length would cost on the order of 35 hours of ngspice wall-clock time, which issue #129's own PR could not absorb. This record instead covers a documented subset -- see the record's own Corner matrix run / subset-reason field -- and issue #130 tracks completing the full grid. This mirrors the precedent design/divider/DESIGN.md's 'Issue #114' section and sim/pll-lock's own early records already set for the identical problem (a full-grid run whose per-point cost made a single-PR full sweep impractical, deferred to a follow-up issue rather than forcing an unbounded compute bill on the PR that found the gap).",
+  "analysis": "transient, standalone divider (`tran 40p 3200n`, injected by sim/harness/measure.py from this manifest's own measure block -- see sim/divider-n64/testbench/tb_divider_n64.sch's header comment for why the schematic itself carries no .tran card). The 3.2 us window covers roughly 12.5 output periods at the target frequency (3.90625 MHz, 256 ns/period) after RESETB releases at 6 ns -- more than the 11 edges (window_cycles + 1 + min_hold_cycles) the lock criterion needs."
+}

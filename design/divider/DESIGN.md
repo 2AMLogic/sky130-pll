@@ -1195,3 +1195,44 @@ maximum-division-frequency figures above are diagnostic evidence about this
 schematic, not a specification of what the divider shall do; the ~1.09 GHz
 they are compared against is `design/vco/DESIGN.md`'s own informal
 sanity-check figure, not a ratified number either.
+
+## Issue #129: the "Issue #114" diagnostics above are now committed `sim/` evidence (partially)
+
+Everything in the "Issue #104" and "Issue #107"/"Issue #114" sections above
+is explicitly informal, uncommitted diagnostic data (each section says so).
+Issue #129 turns the same standalone-divider method into real, committed
+`sim/` evidence, per `sim/README.md`'s schema, and added the manifests and
+schematics for five standalone testbenches sharing one open-loop method
+(`design/divider/divider_intN.sch` alone, an ideal rail-to-rail 12.5 ps-edge
+`pulse` `CLK`, `NSEL[5:0]` strapped statically, `RESETB` released by a `pwl`
+at 5-6 ns — the same setup the "Issue #114" section's own standalone
+diagnostic validated against issue #107's published table). Only the first
+of the five was actually **run** in #129's own PR — the other four hit
+severe, unpredictable compute contention on the shared dispatch host (see
+issue #131) and are tracked there instead of being force-completed (or
+committed as spurious host-timeout FAILs) in #129:
+
+| `sim/` slug | Modulus (`NSEL[5:0]`) | CLK | Corner coverage | Record |
+|---|---|---|---|---|
+| `sim/divider` | N=25 (`011000`), `sim/pll-lock`'s own strap | ~1.10011 GHz (at/above the VCO's ~1.09 GHz top free-running frequency) | full DR-003 45-point grid, **run and committed** | `sim/divider/records/20260910-234943-ec91425.md` (45/45 PASS) |
+| `sim/divider-n4` | N=4 (`000011`), DRAFT range floor, even decode path | 250 MHz (the design's lock target) | full DR-003 45-point grid intended | testbench only, no record yet — issue #131 |
+| `sim/divider-n64` | N=64 (`111111`), DRAFT range ceiling, even decode path | 250 MHz | documented subset intended (N=64's long output period makes a full grid impractical in one pass — see the manifest's `methodology_note`) | testbench only, no record yet — issue #131 (full grid separately tracked by issue #130) |
+| `sim/divider-n5` | N=5 (`000100`), smallest odd modulus, odd decode path | 250 MHz | the two corners issue #129 named (tt/27 °C/1.80 V, ss/125 °C/1.62 V) intended | testbench only, no record yet — issue #131 |
+| `sim/divider-n63` | N=63 (`111110`), largest odd modulus, odd decode path | 250 MHz | the two corners issue #129 named intended | testbench only, no record yet — issue #131 |
+
+`sim/divider`'s record passed the same criterion the "Issue #114" section's
+own standalone diagnostic used — informally, by hand — now applied by
+`sim/harness/measure.py`'s general-purpose sliding-window lock detector: the
+measured `FBCLK` frequency stays within 2% of `f_CLK / N` for at least five
+output periods and holds there through the end of the transient. See
+`sim/README.md`'s divider rows and the record itself for the full
+per-corner table, netlist snapshot hash, and environment provenance. The
+four sibling manifests (`sim/tests/test_harness.py`'s
+`DividerFamilySiblingManifestTests`) are verified to patch and declare their
+`measure.lock` blocks correctly, so issue #131 only has to run them, not
+design them.
+
+This is still not a `spec/target-spec.md` ratification: row 4
+(multiplication ratio) stays DRAFT, and nothing above changes that — it
+replaces an informal claim with a committed one, which is the whole point
+of the `sim/` evidence trail, not a decision-record act.
