@@ -1216,7 +1216,7 @@ committed as spurious host-timeout FAILs) in #129:
 |---|---|---|---|---|
 | `sim/divider` | N=25 (`011000`), `sim/pll-lock`'s own strap | ~1.10011 GHz (at/above the VCO's ~1.09 GHz top free-running frequency) | full DR-003 45-point grid, **run and committed** | `sim/divider/records/20260910-234943-ec91425.md` (45/45 PASS) |
 | `sim/divider-n4` | N=4 (`000011`), DRAFT range floor, even decode path | 250 MHz (the design's lock target) | full DR-003 45-point grid intended | testbench only, no record yet — issue #131 |
-| `sim/divider-n64` | N=64 (`111111`), DRAFT range ceiling, even decode path | 250 MHz | documented subset intended (N=64's long output period makes a full grid impractical in one pass — see the manifest's `methodology_note`) | testbench only, no record yet — issue #131 (full grid separately tracked by issue #130) |
+| `sim/divider-n64` | N=64 (`111111`), DRAFT range ceiling, even decode path | 250 MHz | full DR-003 45-point grid intended, landing one process-corner row at a time (N=64's long output period makes a full grid impractical in one pass — see the manifest's `methodology_note` and the "Issue #130" section below) | `sim/divider-n64/records/20260911-074438-073b241.md` (9/9 PASS — the `tt` row only; `ff`/`ss`/`sf`/`fs` rows remain, tracked by issue #130) |
 | `sim/divider-n5` | N=5 (`000100`), smallest odd modulus, odd decode path | 250 MHz | the two corners issue #129 named (tt/27 °C/1.80 V, ss/125 °C/1.62 V) intended | testbench only, no record yet — issue #131 |
 | `sim/divider-n63` | N=63 (`111110`), largest odd modulus, odd decode path | 250 MHz | the two corners issue #129 named intended | testbench only, no record yet — issue #131 |
 
@@ -1236,3 +1236,56 @@ This is still not a `spec/target-spec.md` ratification: row 4
 (multiplication ratio) stays DRAFT, and nothing above changes that — it
 replaces an informal claim with a committed one, which is the whole point
 of the `sim/` evidence trail, not a decision-record act.
+
+## Issue #130: completing `sim/divider-n64`'s full 45-point grid — in progress, one process-corner row per pass
+
+Issue #130 tracks widening `sim/divider-n64` (and, if convenient, `sim/
+divider-n63`) from a small documented subset to the full DR-003 45-point
+grid. The estimate that motivated the "one row at a time" approach was
+`sim/divider-n64/testbench/tb.json`'s own `methodology_note`: ~0.89 s of
+ngspice wall-clock time per simulated nanosecond measured while building
+that manifest, which at N=64's 3.2 us transient window works out to
+roughly 45-50 minutes per PVT point and on the order of 35 hours for all
+45 points in one pass.
+
+A first pass (`python3 sim/run_corners.py divider-n64 --corners tt --temps
+-40,27,125 --supply-tol 0.1 --subset-reason ...`) measured the real cost on
+the shared dispatch host directly: a single nominal point (`tt`/27 °C/
+1.80 V) took ~29m40s wall-clock, and the full `tt` row (9 points — all 3
+temperatures x all 3 supplies) took ~3h50m wall-clock end to end, all 9/9
+PASS (locked cleanly at every point; see `sim/divider-n64/records/
+20260911-074438-073b241.md`). That per-point cost is close to the
+manifest's own estimate, not the order-of-magnitude-better case the
+manifest's methodology note allowed for — so the remaining four process
+corners (`ff`, `ss`, `sf`, `fs`) still need roughly the same per-row cost
+(~4 hours each, ~16 hours total) and are **not** completed by this pass.
+They remain open work for issue #130 (or a follow-up), to be run the same
+way, one `--corners <corner> --temps -40,27,125 --supply-tol 0.1` row per
+pass, each producing its own committed record (or, once a Doctor/Builder
+pass has landed every row, a final record superseding the partial ones can
+consolidate them — see `sim/README.md`'s `Supersedes` convention).
+
+Issue #136 landed mid-pass (`sim/harness --jobs`/`--resume`, see
+`sim/README.md`'s "Interrupted and parallel runs" section) after the `tt`
+row above was already committed; this pass tried it on the `ss` row
+(`--corners ss --temps -40,27,125 --supply-tol 0.1 -j 3`) to see whether it
+would meaningfully cut the remaining ~16 hours. On this shared host it did
+not: 30+ minutes in, zero of the three concurrently-launched points had
+finished (vs. one point finishing every ~25-30 min serially), consistent
+with the host already running at or past its core count from *other*
+agents' concurrent jobs (`uptime` showed a load average of ~29 on 28 cores
+before this pass's own points were even added) — `--jobs` only buys
+wall-clock speedup when there is spare capacity to schedule onto, and this
+host had none. That attempt was killed with no committed record produced
+(an incomplete `--jobs`/`--resume` run leaves only a gitignored
+`checkpoint.json`, never a partial record — see `sim/README.md`'s
+append-only contract). A future pass on a less-contended host, or at a
+lower `-j`, may still find `--jobs` worthwhile; this pass's finding is
+simply that it was not a win *here*, *now*, so the remaining rows are still
+best planned as one `-j 1` (or a cautiously small `-j`) row per pass.
+
+`sim/divider-n63` was not touched by this pass — it remains "testbench
+only, no record yet" (see `sim/README.md`'s `divider-n63` row) — widening
+it was explicitly optional ("if convenient while touched") in issue #130's
+scope, and this pass's compute budget went entirely to `sim/divider-n64`'s
+first row.
