@@ -203,3 +203,22 @@ concrete step this record hands off is `#100`'s item 2 (a fresh full
 naming `20260905-193322-0f1934d.md` as the record it supersedes) and item 3
 (root-causing the `divider_intN` `FBCLK` dropout), neither of which this
 record itself performs.
+
+**2026-09-11 amendment (issue #103): `measure.timeout_s` `10800` → `43200`.**
+The 10800 s figure above was extrapolated from the 30 µs diagnostic's 25–40
+minutes per point. The first full-grid campaign against this record's
+defaults showed that extrapolation to be short by roughly 2×: with three
+points running concurrently on a shared fleet host, each ngspice run reached
+only ~54 µs of the 100 µs window before the 10800 s budget expired (~18 µs of
+simulated time per wall-clock hour, so ~5.6 h per point, and a separate
+subset run under heavier contention reached ~32 µs). Every one of the first
+six points was recorded as `ngspice exceeded this manifest's 10800 s
+per-point timeout`, and the campaign would have spent ~45 wall-clock hours
+producing 45 such rows. The timeout is a hang guard, not an estimate of
+per-point cost, so it is raised to 43200 s (12 h) — comfortably above the
+slowest legitimate point observed on the busiest host — rather than
+tightened to fit a hoped-for pace. The 100 µs window itself is unchanged; it
+is still row 8's budget. The per-point cost this implies (≈ 45 × 5.6 h,
+divided by however many points run concurrently) is the real cost of this
+campaign and is what `#103` has to schedule around.
+
