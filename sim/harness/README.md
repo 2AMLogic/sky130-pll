@@ -42,7 +42,9 @@ issues once there is a PLL netlist.
   "supply_nominal": 1.8,
   "supply_tolerance": 0.1,
   "methodology_note": "one clause on what this experiment's DUT is (and is not), spliced into the record's per-point criterion line",
-  "analysis": "the ngspice analysis this DUT's schematic runs, e.g. \"DC operating point (`.op`)\" or \"transient (`.tran 50p 200n`)\""
+  "analysis": "the ngspice analysis this DUT's schematic runs, e.g. \"DC operating point (`.op`)\" or \"transient (`.tran 50p 200n`)\"",
+  "executor": "local",
+  "remote": { "spot": true, "max_hourly_cost_usd": 2.0 }
 }
 ```
 
@@ -72,6 +74,11 @@ issues once there is a PLL netlist.
   `--supply-tol`) narrows this for a fast pass, and requires
   `--subset-reason` to be recorded when writing evidence — see
   `sim/README.md`'s subset-justification rule.
+- **`executor`** (optional, default `"local"`) / **`remote`** (optional) —
+  where this experiment's units run, and the portable knobs for the remote
+  backend. `--executor` on the command line overrides the first; everything
+  host- or account-specific for the second comes from the environment, never
+  from this file. See "Where a unit runs" below.
 - **`methodology_note`** / **`analysis`** — free text, spliced verbatim into
   the record's "Methodology / criteria / limitations" line
   (`report.render`/`render_mc`) so that line describes *this* manifest's DUT
@@ -92,6 +99,7 @@ python3 sim/run_corners.py pdk-smoke \
   --corners tt --temps 27 --supply-tol 0 \
   --subset-reason "fast selftest pass, not a design claim"
 python3 sim/run_corners.py pdk-smoke --jobs 8            # 8 points at a time
+python3 sim/run_corners.py pdk-smoke --executor remote --jobs 8  # 8 Spot shards
 python3 sim/run_corners.py pdk-smoke --jobs 8 \
   --resume 20260911-071500-730c24b                       # finish an interrupted run
 ```
@@ -114,6 +122,147 @@ rows read exactly like a serial run's. Implementation and the reasoning
 behind each guard: `sim/harness/checkpoint.py`'s module docstring and
 `cli._iter_unit_results`. Operator-facing detail: `sim/README.md`'s
 "Interrupted and parallel runs".
+
+### Where a unit runs: `--executor {local,remote}`
+
+`--executor` selects the **execution backend** — where each unit's
+`ngspice -b` process actually runs. It is the only thing the flag changes:
+netlist patching, the pass/fail judge, the measurement reducer, and the
+evidence record are identical for every backend.
+
+| Executor | Runs units | Dependencies |
+|---|---|---|
+| `local` (default) | as subprocesses on this host | stdlib only |
+| `remote` | on klayout-tools' Spot fleet, one per-job EC2 instance per shard | `klayout_tools`, an `aws` CLI, a provisioned fleet identity |
+
+```sh
+python3 sim/run_corners.py divider --executor local           # default; today's behaviour
+python3 sim/run_corners.py divider --executor remote --jobs 4 # 4 Spot shards
+```
+
+A manifest may opt in permanently with a top-level `"executor": "remote"`
+key; `--executor` on the command line always wins.
+
+#### The seam
+
+The backend interface is a small ABC in `sim/harness/executor.py`:
+
+```
+ExecutionBackend
+  .stage(units)   -> prepare the whole set (remote: provision + run the fleet)
+  .execute(unit)  -> NgspiceUnit -> NgspiceOutcome (log text + return code)
+  .provenance()   -> what to record about the execution model
+```
+
+`runner.prepare_point` / `prepare_mc_trial` turn a PVT point or Monte Carlo
+trial into an `NgspiceUnit` (patched netlist + completion marker + timeout)
+without running it; `runner.judge` turns an `NgspiceOutcome` back into
+`(passed, reason)`. **`judge` is the single judge for every backend** — it
+reads the collected log text and the unit's return code and nothing else, so
+a unit simulated on a Spot instance is judged by exactly the criterion a
+local unit is. That is the property the seam exists to preserve, and
+`sim/tests/test_executor.py` pins it.
+
+The ABC is deliberately backend-agnostic rather than a `local`/`remote`
+boolean: klayout-tools has since grown a third, `batch` backend
+(2AMLogic/klayout-tools#2080) targeting a batch fleet, and adding it here is
+one more `ExecutionBackend` subclass plus one name in `EXECUTORS` — no call
+site in `cli.py` or `runner.py` changes.
+
+The `local` backend is not merely the default; it is a *different call
+shape*. `cli._run_experiment` invokes `run_point` / `run_mc_trial` with
+exactly the six positional arguments they always took and passes no
+`execute=` keyword at all, so nothing this seam added can be reached by a
+default run. A plain `--executor local` record therefore carries no
+execution-model text it did not carry before this seam existed.
+
+#### What `remote` actually pushes
+
+Per shard, one `klayout_tools.remote_transport.JobDescription`:
+
+- each unit's already-patched `<corner-id>.spice`, with this host's absolute
+  PDK paths re-rooted onto the AMI's own `$PDK_ROOT` (xschem bakes the local
+  model-library path into every netlist, and that path does not exist on the
+  remote box);
+- this repo's `sim/spiceinit`, as the job directory's `.spiceinit`;
+- a generated `run-units.sh` that runs each unit under `timeout <its own
+  timeout_s>`, captures the combined output to `artifacts/<corner-id>.log`
+  and the exit code to `artifacts/<corner-id>.rc`, and moves each
+  `<corner-id>-*` waveform dump into `artifacts/`. The script always exits
+  `0`: a unit that fails is *data for the judge*, never a transport failure.
+
+The shard set runs through `klayout_tools.remote_fleet.run_fleet` (K-host
+launch, fleet cost gate, vCPU quota pre-check, one shard retry, guaranteed
+teardown), and `pull_artifacts` copies each shard's `artifacts/` straight
+into the run's own `sim/<slug>/corners/<record-id>/` directory — so the
+unchanged judge and waveform reducer read `<corner-id>.log` and
+`<corner-id>-*.raw` exactly where a local run would have written them.
+
+`--jobs N` is the shard count (clamped to the unit count: an idle fleet
+member is still billed).
+
+#### Configuration — nothing account-identifying is committed
+
+This repo is public. The manifest's optional `remote` block carries only
+portable knobs (`spot`, `max_hourly_cost_usd`, `max_hosts`, `region`,
+`pdk_root`); everything host- or account-specific comes from the
+environment, and the environment always wins:
+
+| Variable | Meaning |
+|---|---|
+| `SKY130_PLL_REMOTE_REGION` | AWS region holding the baked sim AMI |
+| `SKY130_PLL_REMOTE_KEY_NAME` | EC2 key pair name, e.g. `<your-ec2-keypair-name>` |
+| `SKY130_PLL_REMOTE_SSH_KEY` | matching private key, e.g. `~/.ssh/<your-ec2-keypair-name>.pem` |
+| `SKY130_PLL_REMOTE_AWS_PROFILE` | AWS profile to launch under, e.g. `<aws-profile>` |
+| `SKY130_PLL_REMOTE_LAUNCHER_CIDR` | this host's CIDR, for the SSH ingress rule |
+| `SKY130_PLL_REMOTE_SECURITY_GROUP_ID` | pre-made security group, instead of a CIDR |
+| `SKY130_PLL_REMOTE_SUBNET_ID` | subnet to launch into |
+| `SKY130_PLL_REMOTE_MAX_HOURLY_COST_USD` | fleet-wide hourly cost ceiling |
+| `SKY130_PLL_REMOTE_MAX_HOSTS` | cap on shards regardless of `--jobs` |
+| `SKY130_PLL_REMOTE_SPOT` | `false` to launch on-demand instead of Spot |
+| `SKY130_PLL_REMOTE_PDK_ROOT` | `$PDK_ROOT` on the AMI (default `/opt/pdk`) |
+
+The fleet host inventory that records the real values for a given host is
+`hosts.yml` in the fleet-compute repo — never this repo. The scoped launch
+identity itself is tracked privately as **2AMLogic/2am#934**; until it
+lands, `--executor remote` falls back to `local` on every fleet host, which
+is exactly what the contract below promises.
+
+#### Fallback contract: a remote request never fails a sweep
+
+`--executor remote` degrades to `local` — it does not error — when any of
+these is true:
+
+- `klayout_tools` is not importable here;
+- no region / key pair / SSH key / launcher CIDR is configured;
+- the configured SSH private key file is not present on this host;
+- the configured AWS profile is not declared in this host's AWS config;
+- the `aws` CLI is not on `PATH`;
+- `run_fleet` refuses: `FleetQuotaError` (the vCPU quota pre-check), a cost-gate
+  refusal, a partial-launch failure, or any transport failure;
+- a shard is lost after both of its attempts.
+
+In every case the harness logs **exactly one line**, runs that unit set
+locally, and records `fallback_reason` in the evidence record's
+`**Execution**` segment. The run's exit status and the record's shape are a
+local run's. A lost shard re-runs the whole set locally rather than minting
+a record with a hole in it — correctness over the shards already paid for.
+
+The credential preflight is *existence checks only*: it reads AWS config
+**section headers**, never a key value, and makes no AWS API call. A host
+that was never provisioned for the fleet gets a clean fallback instead of a
+confusing failure deep inside the launcher.
+
+#### What a remote record says
+
+The `**Execution**` bullet gains `executor`, `hosts`, `region`,
+`instance_type`, `spot`, and the launcher's own per-host and fleet hourly
+cost estimates, so a remote campaign's spend is auditable from the record
+alone. A fallback records `executor: local (requested remote)` plus the
+`fallback_reason`. A plain local run records nothing new at all.
+
+Side-by-side local/remote evidence for one slug lives in
+`sim/executor-equivalence/`.
 
 Per-point pass/fail is a **plumbing** criterion, not a design measurement:
 ngspice must exit 0, print its analysis-completion marker, and emit no
