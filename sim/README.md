@@ -160,6 +160,21 @@ python3 sim/run_corners.py pll-lock --jobs 8 --resume 20260911-071500-730c24b
   append-only rule below exists to prevent, so the harness will not do it
   even when asked.
 
+- **`--executor {local,remote}`** (default `local`, i.e. today's behaviour)
+  selects *where* each point's `ngspice -b` process runs: on this host, or
+  on klayout-tools' Spot fleet (`--jobs N` becomes the shard count). Like
+  the two flags above it is execution-model only — the netlist, the
+  per-point criterion, the measurement reducer and the record schema are the
+  same code either way, and a `local` record is byte-for-byte the record it
+  would have been before the seam existed.
+
+  A remote request that this host cannot honour (no cloud credentials, a
+  quota or cost-gate refusal, a lost shard) **falls back to local** with one
+  logged line and a `fallback_reason` recorded in the evidence, rather than
+  failing the campaign. Full contract, configuration and the reasoning:
+  `sim/harness/README.md` → "Where a unit runs"; the committed side-by-side
+  local/remote comparison lives in `sim/executor-equivalence/`.
+
 The checkpoint is **run state, not evidence**: it is deleted the moment the
 record is written, and it is gitignored (`sim/*/corners/**/checkpoint.json`)
 so it can never land in the committed record trail. A checkpoint that still
