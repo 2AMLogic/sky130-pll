@@ -19,6 +19,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from . import acmeasure as ac_mod
+from . import executor as executor_mod
 from . import measure as measure_mod
 from .corners import PvtPoint
 from .montecarlo import McTrial
@@ -239,30 +240,28 @@ def purge_unit_artifacts(work_dir: Path, corner_id: str) -> None:
                     path.unlink()
 
 
-def _run_ngspice_and_judge(
+def run_ngspice_locally(
+    unit: executor_mod.NgspiceUnit,
+    *,
     pdk: ResolvedPdk,
     spiceinit: Path,
-    patched: str,
-    corner_id: str,
-    work_dir: Path,
-    completion_marker: str = COMPLETION_MARKER,
-    timeout_s: int = 300,
-) -> tuple[bool, str, Path, Path]:
-    """Write `patched` + a per-run `.spiceinit`, execute ngspice batch mode,
-    and apply the shared plumbing pass/fail criterion. Returns (passed,
-    reason, log_path, spice_path); shared by `run_point` and `run_mc_trial`
-    since the run-and-judge step is identical for a PVT point and an MC
-    trial -- only how the netlist got patched (`patch_netlist` vs.
-    `patch_netlist_mc`) differs.
+) -> executor_mod.NgspiceOutcome:
+    """Write `unit`'s netlist + a per-run `.spiceinit` and execute ngspice
+    batch mode on **this** host. Verbatim the body this module has always
+    had -- it is now reachable as a backend (`executor.LocalBackend`) so a
+    remote backend can substitute for it without any of the judging,
+    patching or reducing around it changing.
     """
+    work_dir = unit.work_dir
+    corner_id = unit.corner_id
     work_dir.mkdir(parents=True, exist_ok=True)
     # Start this unit from a clean slate: a resumed or retried unit must never
     # be able to read a previous attempt's waveform dump back (see
     # purge_unit_artifacts).
     purge_unit_artifacts(work_dir, corner_id)
-    spice_path = work_dir / f"{corner_id}.spice"
-    log_path = work_dir / f"{corner_id}.log"
-    spice_path.write_text(patched)
+    spice_path = unit.spice_path
+    log_path = unit.log_path
+    spice_path.write_text(unit.netlist_text)
 
     _write_atomic(work_dir / ".spiceinit", spiceinit.read_text())
 
@@ -273,7 +272,7 @@ def _run_ngspice_and_judge(
             text=True,
             cwd=work_dir,
             env=_env_with_pdk(pdk),
-            timeout=timeout_s,
+            timeout=unit.timeout_s,
         )
     except subprocess.TimeoutExpired as e:
         # A lock-capable transient window can legitimately run for many
@@ -298,19 +297,49 @@ def _run_ngspice_and_judge(
 
         log_text = _decode(e.stdout) + _decode(e.stderr)
         log_path.write_text(log_text)
-        return (
-            False,
-            f"ngspice exceeded this manifest's {timeout_s} s per-point timeout",
-            log_path,
-            spice_path,
+        return executor_mod.NgspiceOutcome(
+            corner_id=corner_id,
+            returncode=-1,
+            log_text=log_text,
+            log_path=log_path,
+            spice_path=spice_path,
+            timed_out=True,
         )
 
     log_text = proc.stdout + proc.stderr
     log_path.write_text(log_text)
+    return executor_mod.NgspiceOutcome(
+        corner_id=corner_id,
+        returncode=proc.returncode,
+        log_text=log_text,
+        log_path=log_path,
+        spice_path=spice_path,
+    )
 
+
+def judge(
+    outcome: executor_mod.NgspiceOutcome,
+    completion_marker: str,
+    timeout_s: int,
+) -> tuple[bool, str]:
+    """The harness's plumbing pass/fail criterion, over one unit's log.
+
+    **This is the single judge for every executor.** It reads only the
+    collected log text and the unit's return code -- never how or where
+    ngspice ran -- so a unit executed on a remote Spot instance is judged by
+    exactly the criterion a local unit is: ngspice exited 0, printed the
+    manifest's completion marker, and emitted no `Error:` line.
+    """
+    if outcome.timed_out:
+        return (
+            False,
+            f"ngspice exceeded this manifest's {timeout_s} s per-point timeout",
+        )
+
+    log_text = outcome.log_text
     error_lines = [ln for ln in log_text.splitlines() if ERROR_LINE_RE.match(ln)]
     completed = completion_marker in log_text
-    passed = proc.returncode == 0 and completed and not error_lines
+    passed = outcome.returncode == 0 and completed and not error_lines
 
     if not passed:
         if error_lines:
@@ -318,21 +347,60 @@ def _run_ngspice_and_judge(
         elif not completed:
             reason = f"ngspice did not print {completion_marker!r} (run did not finish)"
         else:
-            reason = f"ngspice exited {proc.returncode}"
+            reason = f"ngspice exited {outcome.returncode}"
     else:
         reason = "ok"
 
-    return passed, reason, log_path, spice_path
+    return passed, reason
 
 
-def run_point(
+def _run_ngspice_and_judge(
     pdk: ResolvedPdk,
     spiceinit: Path,
-    manifest: dict,
-    netlist_text: str,
-    point: PvtPoint,
+    patched: str,
+    corner_id: str,
     work_dir: Path,
-) -> PointResult:
+    completion_marker: str = COMPLETION_MARKER,
+    timeout_s: int = 300,
+    execute=None,
+) -> tuple[bool, str, Path, Path]:
+    """Execute one unit through `execute` (the local backend by default) and
+    apply the shared plumbing pass/fail criterion. Returns (passed, reason,
+    log_path, spice_path); shared by `run_point` and `run_mc_trial` since
+    the run-and-judge step is identical for a PVT point and an MC trial --
+    only how the netlist got patched (`patch_netlist` vs.
+    `patch_netlist_mc`) differs.
+
+    `execute` is the executor seam (issue #146): a callable taking an
+    `executor.NgspiceUnit` and returning an `executor.NgspiceOutcome`.
+    `None` means "run it here", which is byte-for-byte what this function
+    always did. Whatever ran it, `judge` below is the same code.
+    """
+    work_dir.mkdir(parents=True, exist_ok=True)
+    unit = executor_mod.NgspiceUnit(
+        corner_id=corner_id,
+        netlist_text=patched,
+        work_dir=work_dir,
+        completion_marker=completion_marker,
+        timeout_s=timeout_s,
+    )
+    if execute is None:
+        execute = executor_mod.LocalBackend(pdk=pdk, spiceinit=spiceinit).execute
+    outcome = execute(unit)
+    passed, reason = judge(outcome, completion_marker, timeout_s)
+    return passed, reason, outcome.log_path, outcome.spice_path
+
+
+def prepare_point(
+    manifest: dict, netlist_text: str, point: PvtPoint, work_dir: Path
+) -> executor_mod.NgspiceUnit:
+    """The patch-and-budget half of `run_point`, as data.
+
+    Pure: given the same netlist text, manifest and point it always produces
+    the same unit. That is what lets an executor stage the whole unit set up
+    front (`executor.RemoteBackend.stage`) while `run_point` still derives
+    the identical unit per point when it judges the result.
+    """
     spec = measure_mod.MeasureSpec.from_manifest(manifest)
     ac_spec = ac_mod.AcSpec.from_manifest(manifest) if spec is None else None
     prefix = f"{point.corner_id}-"
@@ -345,14 +413,50 @@ def run_point(
         marker, timeout_s = ac_mod.COMPLETION_MARKER, ac_spec.timeout_s
     else:
         marker, timeout_s = COMPLETION_MARKER, 300
+    return executor_mod.NgspiceUnit(
+        corner_id=point.corner_id,
+        netlist_text=patched,
+        work_dir=work_dir,
+        completion_marker=marker,
+        timeout_s=timeout_s,
+    )
+
+
+def prepare_mc_trial(
+    manifest: dict, netlist_text: str, trial: McTrial, work_dir: Path
+) -> executor_mod.NgspiceUnit:
+    """`prepare_point`'s Monte Carlo twin -- same contract, `patch_netlist_mc`."""
+    return executor_mod.NgspiceUnit(
+        corner_id=trial.corner_id,
+        netlist_text=patch_netlist_mc(netlist_text, manifest, trial),
+        work_dir=work_dir,
+        completion_marker=COMPLETION_MARKER,
+        timeout_s=300,
+    )
+
+
+def run_point(
+    pdk: ResolvedPdk,
+    spiceinit: Path,
+    manifest: dict,
+    netlist_text: str,
+    point: PvtPoint,
+    work_dir: Path,
+    execute=None,
+) -> PointResult:
+    spec = measure_mod.MeasureSpec.from_manifest(manifest)
+    ac_spec = ac_mod.AcSpec.from_manifest(manifest) if spec is None else None
+    prefix = f"{point.corner_id}-"
+    unit = prepare_point(manifest, netlist_text, point, work_dir)
     passed, reason, _log_path, _spice_path = _run_ngspice_and_judge(
         pdk,
         spiceinit,
-        patched,
+        unit.netlist_text,
         point.corner_id,
         work_dir,
-        completion_marker=marker,
-        timeout_s=timeout_s,
+        completion_marker=unit.completion_marker,
+        timeout_s=unit.timeout_s,
+        execute=execute,
     )
     measurements: tuple = ()
     if passed and spec is not None:
@@ -436,6 +540,7 @@ def run_mc_trial(
     netlist_text: str,
     trial: McTrial,
     work_dir: Path,
+    execute=None,
 ) -> McTrialResult:
     """Same run-and-judge shape as `run_point`, for one Monte Carlo trial.
 
@@ -445,8 +550,15 @@ def run_mc_trial(
     sampling mechanism runs to completion, not that any particular circuit
     quantity landed inside a spec limit. See `sim/harness/README.md`.
     """
-    patched = patch_netlist_mc(netlist_text, manifest, trial)
+    unit = prepare_mc_trial(manifest, netlist_text, trial, work_dir)
     passed, reason, _log_path, _spice_path = _run_ngspice_and_judge(
-        pdk, spiceinit, patched, trial.corner_id, work_dir
+        pdk,
+        spiceinit,
+        unit.netlist_text,
+        trial.corner_id,
+        work_dir,
+        completion_marker=unit.completion_marker,
+        timeout_s=unit.timeout_s,
+        execute=execute,
     )
     return McTrialResult(trial=trial, passed=passed, reason=reason)

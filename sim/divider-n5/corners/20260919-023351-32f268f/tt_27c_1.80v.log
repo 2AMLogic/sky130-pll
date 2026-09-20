@@ -1,0 +1,101 @@
+
+Note: Compatibility modes selected: hs a
+
+
+Circuit: ** sch_path: /users/rwalters/github/sky130-pll/.loom/worktrees/issue-146/sim/divider-n5/testbench/tb_divider_n5.sch
+
+option SCALE: Scale is set to 1e-06 for instance and model parameters
+option SCALE: Scale is set to 1e-06 for instance and model parameters
+option SCALE: Scale is set to 1e-06 for instance and model parameters
+option SCALE: Scale is set to 1e-06 for instance and model parameters
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using KLU as Direct Linear Solver
+ Reference value :  0.00000e+00
+ Reference value :  3.09962e-09
+ Reference value :  6.37963e-09
+ Reference value :  9.67962e-09
+ Reference value :  1.26396e-08
+ Reference value :  1.58196e-08
+ Reference value :  1.88196e-08
+ Reference value :  2.16796e-08
+ Reference value :  2.47396e-08
+ Reference value :  2.80134e-08
+ Reference value :  3.11996e-08
+ Reference value :  3.40596e-08
+ Reference value :  3.72596e-08
+ Reference value :  4.03396e-08
+ Reference value :  4.32196e-08
+ Reference value :  4.63196e-08
+ Reference value :  4.96196e-08
+ Reference value :  5.25996e-08
+ Reference value :  5.57796e-08
+ Reference value :  5.87596e-08
+ Reference value :  6.15996e-08
+ Reference value :  6.46596e-08
+ Reference value :  6.80037e-08
+ Reference value :  7.11196e-08
+ Reference value :  7.40134e-08
+ Reference value :  7.71596e-08
+ Reference value :  8.01996e-08
+ Reference value :  8.26196e-08
+ Reference value :  8.59173e-08
+ Reference value :  8.90196e-08
+ Reference value :  9.21796e-08
+ Reference value :  9.51596e-08
+ Reference value :  9.81596e-08
+ Reference value :  1.01100e-07
+ Reference value :  1.04120e-07
+ Reference value :  1.07400e-07
+ Reference value :  1.10480e-07
+ Reference value :  1.13517e-07
+ Reference value :  1.16600e-07
+ Reference value :  1.19980e-07
+ Reference value :  1.22620e-07
+ Reference value :  1.25960e-07
+ Reference value :  1.29080e-07
+ Reference value :  1.32240e-07
+ Reference value :  1.35280e-07
+ Reference value :  1.38340e-07
+ Reference value :  1.41260e-07
+ Reference value :  1.44340e-07
+ Reference value :  1.47780e-07
+ Reference value :  1.50900e-07
+ Reference value :  1.53940e-07
+ Reference value :  1.57000e-07
+ Reference value :  1.60140e-07
+ Reference value :  1.62980e-07
+ Reference value :  1.66120e-07
+ Reference value :  1.69460e-07
+ Reference value :  1.72520e-07
+ Reference value :  1.75680e-07
+ Reference value :  1.78720e-07
+ Reference value :  1.81620e-07
+ Reference value :  1.84680e-07
+ Reference value :  1.88008e-07
+ Reference value :  1.91180e-07
+ Reference value :  1.94040e-07
+ Reference value :  1.97260e-07
+ Reference value :  2.00380e-07
+ Reference value :  2.03320e-07
+ Reference value :  2.06460e-07
+ Reference value :  2.09820e-07
+ Reference value :  2.12780e-07
+ Reference value :  2.16000e-07
+ Reference value :  2.19060e-07
+ Reference value :  2.21960e-07
+ Reference value :  2.25060e-07
+ Reference value :  2.28280e-07
+ Reference value :  2.31620e-07
+ Reference value :  2.34440e-07
+ Reference value :  2.37600e-07
+ Reference value :  2.40560e-07
+ Reference value :  2.43560e-07
+ Reference value :  2.46700e-07
+ Reference value :  2.50008e-07
+ Reference value :  2.52957e-07
+ Reference value :  2.56100e-07
+ Reference value :  2.59320e-07
+No. of Data Rows : 14043
+sim/harness: analysis complete
+Note: Simulation executed from .control section 

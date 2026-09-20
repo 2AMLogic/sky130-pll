@@ -14,6 +14,7 @@ from pathlib import Path
 from . import acmeasure as ac_mod
 from . import checkpoint as checkpoint_mod
 from . import corners as corners_mod
+from . import executor as executor_mod
 from . import measure as measure_mod
 from . import montecarlo as mc_mod
 from . import pdk as pdk_mod
@@ -179,16 +180,62 @@ def _iter_unit_results(units, *, jobs: int, run_one, announce):
         pool.shutdown(wait=False)
 
 
-def _execution_note(*, segments, jobs: int, unit_noun: str, record_id: str) -> str | None:
+def _executor_note(provenance: dict | None) -> str | None:
+    """The executor half of the `**Execution**` bullet (issue #146).
+
+    `None` for a plain `--executor local` run -- that is deliberate, and is
+    what keeps such a record byte-for-byte identical to every record minted
+    before this seam existed. A run that *asked* for `remote` always says
+    so, whether it got it or fell back.
+    """
+    if not provenance:
+        return None
+    requested = provenance.get("requested", "local")
+    executor = provenance.get("executor", "local")
+    fallback = provenance.get("fallback_reason")
+    if fallback:
+        return (
+            f"executor: `{executor}` (requested `{requested}`). This host could "
+            f"not dispatch remotely, so every unit ran locally instead -- "
+            f"fallback_reason: {fallback}. A fallback changes only *where* "
+            "ngspice ran: the pass/fail criterion, the measurement reducer and "
+            "this record's own shape are the local ones, unchanged."
+        )
+    if executor != "remote":
+        return f"executor: `{executor}`."
+    cost = provenance.get("estimated_fleet_hourly_cost_usd")
+    per_host = provenance.get("estimated_hourly_cost_usd")
+    return (
+        f"executor: `remote` (klayout-tools Spot fleet), "
+        f"hosts: {provenance.get('hosts')}, "
+        f"region: `{provenance.get('region')}`, "
+        f"instance_type: `{provenance.get('instance_type')}`, "
+        f"spot: `{str(provenance.get('spot')).lower()}`, "
+        f"estimated_hourly_cost_usd (per host): "
+        f"{'unknown' if per_host is None else per_host}, "
+        f"estimated_fleet_hourly_cost_usd: "
+        f"{'unknown' if cost is None else cost}. "
+        "Each unit ran as its own `ngspice -b` process on a per-job EC2 "
+        "instance against the same patched netlist a local run would have "
+        "simulated (only this host's absolute PDK paths are re-rooted onto the "
+        "AMI's own `$PDK_ROOT`); the collected log is then judged by exactly "
+        "the criterion a local unit is judged by."
+    )
+
+
+def _execution_note(
+    *, segments, jobs: int, unit_noun: str, record_id: str, executor_note: str | None = None
+) -> str | None:
     """The record's `**Execution**` bullet, or None for a plain serial run.
 
     Provenance a reader of the record cannot otherwise reconstruct: whether
     the campaign ran as one uninterrupted pass or was resumed across
-    segments, whether points ran concurrently (and how many at a time), and
-    which repo commit each segment ran at. Omitted entirely for the
-    single-segment, `--jobs 1` case so existing records' shape is unchanged.
+    segments, whether points ran concurrently (and how many at a time),
+    which repo commit each segment ran at, and (issue #146) which executor
+    actually ran the units. Omitted entirely for the single-segment,
+    `--jobs 1`, plain-local case so existing records' shape is unchanged.
     """
-    if len(segments) <= 1 and jobs == 1:
+    if len(segments) <= 1 and jobs == 1 and executor_note is None:
         return None
     parts = []
     for i, seg in enumerate(segments, 1):
@@ -222,6 +269,8 @@ def _execution_note(*, segments, jobs: int, unit_noun: str, record_id: str) -> s
             "contention, which is recorded as a failed point exactly as it would "
             "be in a serial run."
         )
+    if executor_note:
+        note += executor_note + " "
     return note.strip()
 
 
@@ -234,6 +283,7 @@ def _run_experiment(
     override_error: str,
     build_units,
     run_unit,
+    prepare_unit,
     render_record,
 ) -> int:
     """Shared shape behind `cmd_run` and `cmd_run_mc`: manifest load, PDK
@@ -260,7 +310,12 @@ def _run_experiment(
       May raise `corners_mod.CornerError` / `mc_mod.McConfigError`, which are
       reported and turned into exit 1.
     - `run_unit(pdk, spiceinit, manifest, netlist_text, unit, corners_dir)`:
-      runs one point/trial (`runner_mod.run_point` / `run_mc_trial`).
+      runs one point/trial (`runner_mod.run_point` / `run_mc_trial`). A
+      non-`local` executor adds an `execute=` keyword; the `local` path is
+      called with exactly the six positional arguments it always was.
+    - `prepare_unit(manifest, netlist_text, unit, corners_dir)`: builds one
+      `executor.NgspiceUnit` without running it (`runner_mod.prepare_point` /
+      `prepare_mc_trial`), so a batch executor can stage the whole set.
     - `render_record(manifest, slug, record_id, pdk, netlist_snapshot, units,
       results, subset_reason, execution_note) -> str`: renders the
       evidence-record markdown (`report_mod.render` / `render_mc`), with
@@ -296,6 +351,17 @@ def _run_experiment(
     jobs = 1 if jobs is None else int(jobs)
     if jobs < 1:
         print("run_corners.py: --jobs must be at least 1", file=sys.stderr)
+        return 1
+    executor_name = executor_mod.resolve_name(
+        getattr(args, "executor", None), manifest
+    )
+    if executor_name not in executor_mod.EXECUTORS:
+        print(
+            f"run_corners.py: unknown executor {executor_name!r} -- choose one "
+            f"of {', '.join(executor_mod.EXECUTORS)} (via --executor or the "
+            "manifest's `executor` key)",
+            file=sys.stderr,
+        )
         return 1
     resume_id = getattr(args, "resume", None)
     if resume_id and not args.write:
@@ -391,9 +457,42 @@ def _run_experiment(
             with console:
                 print(f"run_corners.py: [{position[unit.corner_id]}/{len(units)}] {unit.corner_id} ...", flush=True)
 
+        # The executor seam (issue #146). `local` is deliberately not just
+        # the default but a *different call shape*: it invokes `run_unit`
+        # with exactly the arguments it always took, so today's path cannot
+        # regress on anything this seam added. Every other backend stages
+        # the whole pending set first (provisioning is per-campaign, not
+        # per-unit) and then hands each unit's collected outcome back
+        # through `execute=`.
+        backend = executor_mod.build(
+            executor_name,
+            pdk=pdk,
+            spiceinit=spiceinit,
+            jobs=jobs,
+            manifest=manifest,
+            log=print,
+        )
+        execute_kwargs: dict = {}
+        if executor_name != executor_mod.DEFAULT_EXECUTOR:
+            backend = backend.stage(
+                [
+                    prepare_unit(manifest, netlist_text, unit, corners_dir)
+                    for unit in pending
+                ]
+            )
+            execute_kwargs = {"execute": backend.execute}
+
         def run_one(unit):
             try:
-                return run_unit(pdk, spiceinit, manifest, netlist_text, unit, corners_dir)
+                return run_unit(
+                    pdk,
+                    spiceinit,
+                    manifest,
+                    netlist_text,
+                    unit,
+                    corners_dir,
+                    **execute_kwargs,
+                )
             except runner_mod.NetlistError as e:
                 # Keep today's "<corner-id>: <error>" wording even when the
                 # failure surfaces from a worker thread.
@@ -451,6 +550,7 @@ def _run_experiment(
                     jobs=jobs,
                     unit_noun=unit_noun,
                     record_id=record_id,
+                    executor_note=_executor_note(backend.provenance()),
                 ),
             )
             record_path.write_text(record_md)
@@ -532,6 +632,7 @@ def cmd_run(args: argparse.Namespace) -> int:
         ),
         build_units=build_units,
         run_unit=runner_mod.run_point,
+        prepare_unit=runner_mod.prepare_point,
         render_record=render_record,
     )
 
@@ -611,6 +712,7 @@ def cmd_run_mc(args: argparse.Namespace) -> int:
         ),
         build_units=build_units,
         run_unit=runner_mod.run_mc_trial,
+        prepare_unit=runner_mod.prepare_mc_trial,
         render_record=render_record,
     )
 
@@ -640,6 +742,21 @@ def build_parser() -> argparse.ArgumentParser:
             "independent, so this only changes wall-clock time -- but it does share "
             "the host, so keep N at or below the free core count: contention can "
             "push a point past its manifest's own timeout_s budget"
+        ),
+    )
+    p.add_argument(
+        "--executor",
+        choices=executor_mod.EXECUTORS,
+        default=None,
+        help=(
+            "where each unit's ngspice process runs: `local` (default -- this "
+            "host, today's behaviour, stdlib-only) or `remote` (klayout-tools' "
+            "Spot fleet, one per-job EC2 instance per shard; `--jobs N` becomes "
+            "the shard count). A manifest may opt in permanently with an "
+            "`\"executor\"` key, which this flag overrides. `remote` degrades to "
+            "`local` -- with one logged line and a `fallback_reason` in the "
+            "record -- on any host that is not provisioned for the fleet; see "
+            "sim/harness/README.md"
         ),
     )
     p.add_argument(
