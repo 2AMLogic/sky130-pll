@@ -434,6 +434,21 @@ def _aws_on_path(present: bool = True):
 # --------------------------------------------------------------------------- #
 
 
+def _without_wall_clock(record_text: str) -> str:
+    """Drop the one line that is a wall clock, not a property of the run.
+
+    `report.render` stamps `**Timestamp / author**` with the second the
+    record was written, so two runs that straddle a second boundary differ
+    there and nowhere else. Comparing around it is the point: what must be
+    identical is everything the *executor* could have influenced.
+    """
+    return "\n".join(
+        line
+        for line in record_text.splitlines()
+        if not line.startswith("- **Timestamp / author**:")
+    )
+
+
 class LocalExecutorUnchangedTests(unittest.TestCase):
     def test_default_and_explicit_local_produce_identical_records(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -445,8 +460,13 @@ class LocalExecutorUnchangedTests(unittest.TestCase):
             self.assertEqual(rc_default, 0)
             self.assertEqual(rc_explicit, rc_default)
             self.assertEqual(
-                default.record_path.read_text(), explicit.record_path.read_text()
+                _without_wall_clock(default.record_path.read_text()),
+                _without_wall_clock(explicit.record_path.read_text()),
             )
+            # ...and the dropped line is genuinely the *only* difference the
+            # two runs are allowed to have.
+            for record in (default.record_path, explicit.record_path):
+                self.assertIn("- **Timestamp / author**:", record.read_text())
 
     def test_local_record_carries_no_execution_segment_at_all(self):
         with tempfile.TemporaryDirectory() as tmp:
