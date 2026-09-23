@@ -200,15 +200,22 @@ seed, verdict, detail) and the campaign's sampling configuration (base
 corner, temperature, supply, which switches were on, trial count and seed
 range) in place of the PVT per-point matrix.
 
-**This capability is scoped to the harness/methodology, not a PLL claim.**
-`spec/target-spec.md`'s statistical-shaped rows (period jitter row 9,
-reference spur row 10, supply sensitivity row 13) are DRAFT/unratified, and
-there is no PLL netlist yet — an `--mc` record produced today (e.g.
+**This capability is scoped to the harness/methodology, not a PLL claim.** An
+`--mc` record produced by a manifest that measures nothing (e.g.
 `pdk-smoke`'s) is a harness plumbing check ("does the sky130 statistical-
 sampling mechanism run this DUT to completion, seed by seed, with each seed
-producing a distinct draw?"), not a statistical-spec measurement. The first
-real PLL statistical-row record is a follow-up issue, once #14 (the PLL
-design) exists and a targeted row is ratified.
+producing a distinct draw?"), not a statistical-spec measurement.
+
+Of `spec/target-spec.md`'s statistical-shaped rows, **row 9 (period jitter) is
+now RATIFIED** (`DR-006`, #151) — ≤ 1.0 % of the output period, RMS, at `CLK`
+in lock — while reference spur (row 10) and supply sensitivity (row 13) remain
+DRAFT. Row 9's extractor exists as of #158 (`measure.period_jitter`, wired in
+through the manifest's `measure.jitter` block — see `sim/harness/README.md`),
+so the statistical axis that row is owed is now a campaign away rather than a
+missing capability. **No such record exists yet**: the extractor landing is not
+a measurement, and nothing in `sim/*/records/` reports a jitter number. The
+deterministic axis (the ratified rows 19 × 20 × 1 PVT grid) and the statistical
+axis (`--mc` local-mismatch draws at the nominal point) are both still owed.
 
 ## Summary record format
 

@@ -66,6 +66,71 @@ def square_wave(
     return times, values
 
 
+def wave_from_periods(
+    periods,
+    *,
+    step_s: float,
+    edge_s: float,
+    duty: float = 0.5,
+    v_low: float = 0.0,
+    v_high: float = 1.8,
+    t0_s: float = 0.0,
+):
+    """A sampled trapezoidal clock whose k-th cycle has period `periods[k]`.
+
+    The companion to `square_wave` for jitter work: instead of one fixed
+    frequency it takes an explicit period sequence, so a trace can carry a
+    *known* injected period modulation and the extractor can be checked
+    against an analytically-computed answer rather than against itself.
+
+    Each transition is a linear ramp of width `edge_s`, so the reducer's
+    linear interpolation of the 50 % crossing recovers the injected edge time
+    exactly (up to float rounding) instead of being quantized to `step_s`.
+    The k-th rising edge's 50 % crossing sits at
+    `t0_s + sum(periods[:k]) + edge_s / 2`, a constant offset that cancels out
+    of every period difference.
+    """
+    starts, t = [], t0_s
+    for p in periods:
+        starts.append(t)
+        t += p
+    total_s = t
+    times, values = [], []
+    n = int(total_s / step_s) + 1
+    k = 0
+    for i in range(n):
+        ti = i * step_s
+        if ti < t0_s:
+            times.append(ti)
+            values.append(v_low)
+            continue
+        while k + 1 < len(starts) and ti >= starts[k + 1]:
+            k += 1
+        phase = ti - starts[k]
+        period = periods[k]
+        high_s = duty * period
+        if phase < edge_s:
+            v = v_low + (v_high - v_low) * (phase / edge_s)
+        elif phase < high_s:
+            v = v_high
+        elif phase < high_s + edge_s:
+            v = v_high - (v_high - v_low) * ((phase - high_s) / edge_s)
+        else:
+            v = v_low
+        times.append(ti)
+        values.append(v)
+    return times, values
+
+
+def edges_from_periods(periods, t0_s: float = 0.0):
+    """Rising-edge times for a cycle sequence with the given periods."""
+    edges, t = [t0_s], t0_s
+    for p in periods:
+        t += p
+        edges.append(t)
+    return edges
+
+
 class TimeSuffixTests(unittest.TestCase):
     def test_spice_suffixes(self):
         self.assertAlmostEqual(measure.parse_spice_time("50p"), 50e-12)
@@ -264,6 +329,96 @@ class LockDetectionTests(unittest.TestCase):
         self.assertIsNone(t_lock)
 
 
+class PeriodJitterTests(unittest.TestCase):
+    """`spec/target-spec.md` row 9, RATIFIED by DR-006: the standard deviation
+    of the measured period over a population of consecutive post-lock output
+    cycles, divided by that population's mean period.
+
+    Every case below injects a period modulation whose RMS-over-mean is known
+    *analytically*, so the extractor is checked against ground truth rather
+    than against its own output on a previous run.
+    """
+
+    T0 = 4e-9  # 250 MHz
+
+    def test_a_perfectly_uniform_edge_train_has_zero_jitter(self):
+        edges = edges_from_periods([self.T0] * 200)
+        frac, n_cycles = measure.period_jitter(edges)
+        self.assertEqual(n_cycles, 200)
+        self.assertAlmostEqual(frac, 0.0, places=12)
+
+    def test_alternating_period_modulation_recovers_its_own_amplitude(self):
+        # T_k alternates T0*(1+a), T0*(1-a) over an even number of cycles, so
+        # the population mean is exactly T0 and the population standard
+        # deviation is exactly T0*a -- the jitter is therefore exactly `a`.
+        a = 0.02
+        periods = [self.T0 * (1 + a), self.T0 * (1 - a)] * 100
+        frac, n_cycles = measure.period_jitter(edges_from_periods(periods))
+        self.assertEqual(n_cycles, 200)
+        self.assertAlmostEqual(frac, a, places=12)
+
+    def test_sinusoidal_period_modulation_matches_a_over_root_two(self):
+        # T_k = T0*(1 + a*sin(2*pi*k/M)) over an integer number of modulation
+        # cycles: the mean of sin over whole cycles is 0 and the mean of sin^2
+        # is exactly 1/2, so the population standard deviation is T0*a/sqrt(2)
+        # and the mean period is exactly T0. The jitter is therefore a/sqrt(2)
+        # -- a different, independent analytic answer from the square-wave
+        # case above, which pins that the extractor is computing an RMS rather
+        # than a peak-to-peak or a mean-absolute deviation.
+        a, m_cycle, n_modulation_cycles = 0.03, 8, 25
+        periods = [
+            self.T0 * (1 + a * math.sin(2 * math.pi * k / m_cycle))
+            for k in range(m_cycle * n_modulation_cycles)
+        ]
+        frac, n_cycles = measure.period_jitter(edges_from_periods(periods))
+        self.assertEqual(n_cycles, 200)
+        self.assertAlmostEqual(frac, a / math.sqrt(2.0), places=12)
+
+    def test_the_population_starts_after_the_lock_instant(self):
+        # 200 cycles at 150 MHz (nowhere near the 250 MHz target) followed by
+        # 400 clean +/-0.5 % cycles. The whole-trace jitter is enormous; the
+        # post-lock jitter is exactly the 0.5 % that was injected after lock.
+        # The window start comes from `lock_time`, not from a second "has it
+        # settled" rule invented here.
+        a = 0.005
+        periods = [1.0 / 150e6] * 200 + [
+            self.T0 * (1 + a), self.T0 * (1 - a)
+        ] * 200
+        edges = edges_from_periods(periods)
+        lock_spec = measure.LockSpec(
+            target_hz=250e6, tolerance_frac=0.05, window_cycles=10, min_hold_cycles=20
+        )
+        locked, t_lock = measure.lock_time(edges, lock_spec)
+        self.assertTrue(locked)
+        self.assertAlmostEqual(t_lock, edges[200], places=15)
+
+        whole, _ = measure.period_jitter(edges)
+        self.assertGreater(whole, 0.10)
+
+        frac, n_cycles = measure.period_jitter(edges, t_from=t_lock)
+        self.assertEqual(n_cycles, 400)
+        self.assertAlmostEqual(frac, a, places=12)
+
+    def test_a_population_of_fewer_than_two_cycles_reports_no_number(self):
+        # Two edges is one period, which has no deviation to speak of; one
+        # edge is no period at all. Neither may be reported as "zero jitter".
+        frac, n_cycles = measure.period_jitter([1e-9, 5e-9])
+        self.assertIsNone(frac)
+        self.assertEqual(n_cycles, 1)
+        frac, n_cycles = measure.period_jitter([1e-9])
+        self.assertIsNone(frac)
+        self.assertEqual(n_cycles, 0)
+        frac, n_cycles = measure.period_jitter([])
+        self.assertIsNone(frac)
+        self.assertEqual(n_cycles, 0)
+
+    def test_t_from_past_the_end_of_the_trace_does_not_throw(self):
+        edges = edges_from_periods([self.T0] * 50)
+        frac, n_cycles = measure.period_jitter(edges, t_from=1.0)
+        self.assertIsNone(frac)
+        self.assertEqual(n_cycles, 0)
+
+
 class MeasureTraceTests(unittest.TestCase):
     OSC_SPEC = measure.MeasureSpec(
         node="clk",
@@ -343,6 +498,298 @@ class MeasureTraceTests(unittest.TestCase):
         m = measure.measure_trace(times, values, self.OSC_SPEC, supply_v=1.62)
         self.assertTrue(m.oscillating)
         self.assertAlmostEqual(m.freq_hz, 500e6, delta=500e6 * 2e-3)
+
+
+class JitterMeasureTraceTests(unittest.TestCase):
+    """End-to-end through `measure_trace`: a sampled trapezoidal trace in,
+    a row-9 number out. Unlike `PeriodJitterTests` these go through the real
+    threshold-crossing extraction, so they also pin that the jitter figure is
+    derived from the *same* interpolated edge list as frequency and duty and
+    not from a second pass over the raw samples."""
+
+    T0 = 4e-9  # 250 MHz
+    LOCK = measure.LockSpec(
+        target_hz=250e6, tolerance_frac=0.05, window_cycles=10, min_hold_cycles=20
+    )
+
+    @classmethod
+    def _spec(cls, jitter, *, lock=True, settle_s=0.0):
+        return measure.MeasureSpec(
+            node="clk",
+            tran_step="100p",
+            tran_stop="2u",
+            threshold_frac=0.5,
+            hysteresis_frac=0.15,
+            settle_from_s=settle_s,
+            min_edges=50,
+            timeout_s=600,
+            lock=cls.LOCK if lock else None,
+            jitter=jitter,
+        )
+
+    @classmethod
+    def _jittered_trace(cls, amplitude, n_cycles=400):
+        periods = [
+            cls.T0 * (1 + amplitude if k % 2 == 0 else 1 - amplitude)
+            for k in range(n_cycles)
+        ]
+        return wave_from_periods(periods, step_s=100e-12, edge_s=800e-12)
+
+    # A trace whose jitter *differs by two orders of magnitude* either side of
+    # the lock instant: 200 acquisition cycles far off target (150 MHz, then a
+    # step to 250 MHz -- an enormous cycle-to-cycle spread when the whole trace
+    # is taken as one population) followed by 400 clean +/-0.5 % cycles. Every
+    # other fixture here (`_jittered_trace`) carries the *same* modulation
+    # before and after lock, which makes the pre-lock and post-lock windows
+    # indistinguishable and so cannot pin which one `measure_trace` actually
+    # used. This one can.
+    CHIRP_AMPLITUDE = 0.005
+    CHIRP_CYCLES = 200
+    CHIRP_PERIOD_S = 1.0 / 150e6
+
+    @classmethod
+    def _chirp_then_clean_trace(cls, clean_cycles=400):
+        a = cls.CHIRP_AMPLITUDE
+        periods = [cls.CHIRP_PERIOD_S] * cls.CHIRP_CYCLES + [
+            cls.T0 * (1 + a if k % 2 == 0 else 1 - a) for k in range(clean_cycles)
+        ]
+        # The 200th rising edge is the first one at the target frequency, and
+        # is where `lock_time`'s sliding window first comes in band.
+        t_lock_expected = cls.CHIRP_PERIOD_S * cls.CHIRP_CYCLES
+        times, values = wave_from_periods(periods, step_s=100e-12, edge_s=800e-12)
+        return times, values, t_lock_expected
+
+    def test_a_locked_trace_reports_the_injected_period_modulation(self):
+        times, values = self._jittered_trace(0.005)
+        spec = self._spec(measure.JitterSpec(max_frac=0.01, min_cycles=20))
+        m = measure.measure_trace(times, values, spec, supply_v=1.8)
+        self.assertTrue(m.locked)
+        # +/-0.5 % alternating periods: RMS/mean is 0.005 by construction.
+        self.assertAlmostEqual(m.period_jitter_frac, 0.005, delta=1e-4)
+        self.assertGreater(m.jitter_cycles, 300)
+        self.assertIn("period jitter 0.500% RMS", m.note)
+        self.assertNotIn("misses", m.note)
+        passed, reason = measure.aggregate([m], spec)
+        self.assertTrue(passed)
+
+    def test_a_trace_over_the_stated_bound_is_flagged_and_fails_the_fold(self):
+        times, values = self._jittered_trace(0.02)
+        spec = self._spec(measure.JitterSpec(max_frac=0.01, min_cycles=20))
+        m = measure.measure_trace(times, values, spec, supply_v=1.8)
+        self.assertTrue(m.locked)
+        self.assertAlmostEqual(m.period_jitter_frac, 0.02, delta=1e-4)
+        self.assertIn("misses", m.note)
+        passed, reason = measure.aggregate([m], spec)
+        self.assertFalse(passed)
+        self.assertIn("period-jitter bound of 1%", reason)
+
+    def test_a_manifest_without_a_jitter_block_measures_no_jitter(self):
+        # The whole feature is opt-in: an existing campaign's manifest is
+        # unaffected, and nothing appears in its note.
+        times, values = self._jittered_trace(0.02)
+        spec = self._spec(None)
+        m = measure.measure_trace(times, values, spec, supply_v=1.8)
+        self.assertTrue(m.locked)
+        self.assertIsNone(m.period_jitter_frac)
+        self.assertIsNone(m.jitter_cycles)
+        self.assertNotIn("jitter", m.note)
+
+    def test_a_point_that_never_locked_is_attributed_no_jitter(self):
+        # Row 9 is stated "in lock". A loop stuck 40 % low has a perfectly
+        # computable cycle-to-cycle spread, and reporting it as this row's
+        # quantity would be exactly the "present the last simulated value as
+        # the measurement" failure the lock criterion already rules out.
+        times, values = square_wave(freq_hz=150e6, duration_s=2e-6, step_s=200e-12)
+        spec = self._spec(measure.JitterSpec(max_frac=0.01, min_cycles=20))
+        m = measure.measure_trace(times, values, spec, supply_v=1.8)
+        self.assertFalse(m.locked)
+        self.assertIsNone(m.period_jitter_frac)
+        self.assertIn("No period jitter is attributed", m.note)
+
+    def test_too_small_a_post_lock_population_reports_no_number(self):
+        times, values = self._jittered_trace(0.005)
+        spec = self._spec(measure.JitterSpec(max_frac=0.01, min_cycles=5000))
+        m = measure.measure_trace(times, values, spec, supply_v=1.8)
+        self.assertTrue(m.locked)
+        self.assertIsNone(m.period_jitter_frac)
+        self.assertGreater(m.jitter_cycles, 300)
+        self.assertIn("**not measured**", m.note)
+        # Gating on a bound the campaign could not measure is not a PASS.
+        passed, reason = measure.aggregate([m], spec)
+        self.assertFalse(passed)
+        self.assertIn("produced no jitter number", reason)
+
+    def test_a_free_running_manifest_measures_from_settle_instead(self):
+        # No `lock` block: the population starts at `settle_from`, the same
+        # instant frequency and duty are already taken over.
+        times, values = self._jittered_trace(0.01)
+        spec = self._spec(measure.JitterSpec(min_cycles=20), lock=False)
+        m = measure.measure_trace(times, values, spec, supply_v=1.8)
+        self.assertIsNone(m.locked)
+        self.assertAlmostEqual(m.period_jitter_frac, 0.01, delta=1e-4)
+        self.assertIn("period jitter 1.000% RMS", m.note)
+
+    def test_a_non_monotonic_population_is_declined_for_its_own_reason(self):
+        # `period_jitter` declines for two distinct reasons -- too small a
+        # population, and a population whose mean period is non-positive --
+        # and the note must name the one that actually applied. Only a
+        # non-monotonic edge list reaches the second (`edge_times` never
+        # emits one), but when it is reached the population here is ample, so
+        # blaming the population size would name the wrong cause.
+        spec = self._spec(measure.JitterSpec(max_frac=0.01, min_cycles=2))
+        frac, n_cycles, clause = measure._measure_jitter(
+            [0.0, 4e-9, -8e-9, -4e-9], spec, t_from=None
+        )
+        self.assertIsNone(frac)
+        self.assertEqual(n_cycles, 3)
+        self.assertIn("non-positive mean period", clause)
+        self.assertNotIn("fewer than", clause)
+
+    def test_measure_trace_starts_the_locked_population_at_the_lock_instant(self):
+        # The acceptance criterion for row 9 is that the population starts
+        # *after the loop is in lock*, reusing `lock_time`'s instant. The
+        # `PeriodJitterTests` case of the same name pins `period_jitter`'s
+        # `t_from` parameter directly; this one pins what `measure_trace`
+        # itself passes, which is the thing the record's row-9 figure comes
+        # from. It is written so that substituting any other plausible window
+        # start -- `settle_from` (0 here), `None`, the start of the trace --
+        # fails it: the acquisition transient's spread is >20x the post-lock
+        # one, not a delta a tolerance could absorb.
+        times, values, t_lock_expected = self._chirp_then_clean_trace()
+        spec = self._spec(measure.JitterSpec(max_frac=0.01, min_cycles=20))
+        m = measure.measure_trace(times, values, spec, supply_v=1.8)
+
+        self.assertTrue(m.locked)
+        self.assertAlmostEqual(m.lock_time_s, t_lock_expected, delta=self.T0)
+
+        # What the whole trace would have reported, had the population started
+        # at `settle_from`/the start of the trace instead of at `t_lock`.
+        rising, _ = measure.edge_times(times, values, 0.9, 0.15 * 1.8)
+        whole_trace, _ = measure.period_jitter(rising, t_from=spec.settle_from_s)
+        self.assertGreater(whole_trace, 0.10)
+
+        # What `measure_trace` actually reported: the post-lock amplitude.
+        self.assertAlmostEqual(
+            m.period_jitter_frac, self.CHIRP_AMPLITUDE, delta=1e-4
+        )
+        self.assertLess(m.period_jitter_frac, whole_trace / 20)
+        self.assertEqual(m.jitter_cycles, len(rising) - 1 - self.CHIRP_CYCLES)
+        self.assertIn("period jitter 0.500% RMS", m.note)
+        self.assertNotIn("misses", m.note)
+        passed, _ = measure.aggregate([m], spec)
+        self.assertTrue(passed)
+
+    def test_measure_trace_starts_the_free_running_population_at_settle(self):
+        # The sibling of the test above for the no-`lock` branch: with a
+        # non-zero `settle_from`, passing `None` (the whole trace) instead of
+        # `settle` would drag the same acquisition transient into the
+        # population. Both branches' window starts are therefore pinned, not
+        # just the row-9 one.
+        times, values, t_lock_expected = self._chirp_then_clean_trace()
+        settle_s = t_lock_expected + 5e-9  # just inside the clean section
+        spec = self._spec(
+            measure.JitterSpec(max_frac=0.01, min_cycles=20),
+            lock=False,
+            settle_s=settle_s,
+        )
+        m = measure.measure_trace(times, values, spec, supply_v=1.8)
+
+        self.assertIsNone(m.locked)
+        rising, _ = measure.edge_times(times, values, 0.9, 0.15 * 1.8)
+        whole_trace, _ = measure.period_jitter(rising)
+        self.assertGreater(whole_trace, 0.10)
+
+        self.assertAlmostEqual(
+            m.period_jitter_frac, self.CHIRP_AMPLITUDE, delta=1e-4
+        )
+        self.assertLess(m.period_jitter_frac, whole_trace / 20)
+        self.assertIn("period jitter 0.500% RMS", m.note)
+
+
+class JitterAggregationTests(unittest.TestCase):
+    """The row-9 pass/fail *fold* -- what a record's verdict column means when
+    the manifest states a jitter bound."""
+
+    @staticmethod
+    def _m(label, *, frac, cycles=200, locked=True, oscillating=True):
+        return measure.Measurement(
+            label=label,
+            oscillating=oscillating,
+            freq_hz=250e6 if oscillating else None,
+            duty_cycle=0.5 if oscillating else None,
+            locked=locked,
+            lock_time_s=1e-6 if locked else None,
+            final_freq_hz=250e6 if oscillating else None,
+            note="ok",
+            passed=True,
+            period_jitter_frac=frac,
+            jitter_cycles=cycles,
+        )
+
+    @staticmethod
+    def _spec(jitter):
+        return measure.MeasureSpec(
+            node="clk",
+            tran_step="100p",
+            tran_stop="2u",
+            lock=measure.LockSpec(
+                target_hz=250e6, tolerance_frac=0.05, window_cycles=10, min_hold_cycles=20
+            ),
+            jitter=jitter,
+        )
+
+    def test_every_point_inside_the_bound_passes(self):
+        spec = self._spec(measure.JitterSpec(max_frac=0.01))
+        passed, _ = measure.aggregate(
+            [self._m(None, frac=0.004)], spec
+        )
+        self.assertTrue(passed)
+
+    def test_a_point_outside_the_bound_fails_with_the_number_in_the_reason(self):
+        spec = self._spec(measure.JitterSpec(max_frac=0.01))
+        ms = [self._m("tt", frac=0.004), self._m("ss", frac=0.0173)]
+        passed, reason = measure.aggregate(ms, spec)
+        self.assertFalse(passed)
+        self.assertIn("1/2 measurement(s) miss", reason)
+        self.assertIn("ss: period jitter 1.730% RMS", reason)
+
+    def test_a_report_only_manifest_records_the_miss_without_failing(self):
+        # A characterization campaign may want row 9's number recorded
+        # without the verdict column gating on it.
+        spec = self._spec(measure.JitterSpec(max_frac=0.01, gate_on_bound=False))
+        passed, _ = measure.aggregate([self._m(None, frac=0.05)], spec)
+        self.assertTrue(passed)
+
+    def test_a_manifest_that_states_no_bound_never_fails_on_jitter(self):
+        spec = self._spec(measure.JitterSpec())
+        passed, _ = measure.aggregate([self._m(None, frac=0.5)], spec)
+        self.assertTrue(passed)
+
+    def test_a_gated_bound_with_no_number_behind_it_fails(self):
+        spec = self._spec(measure.JitterSpec(max_frac=0.01))
+        passed, reason = measure.aggregate(
+            [self._m("tt", frac=None, cycles=3)], spec
+        )
+        self.assertFalse(passed)
+        self.assertIn("produced no jitter number", reason)
+        self.assertIn("tt: 3 cycle(s)", reason)
+
+    def test_a_point_that_never_locked_is_not_charged_for_missing_jitter(self):
+        # Its own "no lock" record is the finding; failing it a second time
+        # for the jitter number it could not have would double-count it. The
+        # manifest's `require_lock` knob decides whether no-lock fails.
+        spec = self._spec(measure.JitterSpec(max_frac=0.01))
+        passed, _ = measure.aggregate(
+            [self._m("ss", frac=None, cycles=0, locked=False)], spec
+        )
+        self.assertTrue(passed)
+
+    def test_a_dead_point_is_not_charged_for_missing_jitter_either(self):
+        spec = self._spec(measure.JitterSpec(max_frac=0.01))
+        passed, _ = measure.aggregate(
+            [self._m("ss", frac=None, cycles=0, locked=False, oscillating=False)], spec
+        )
+        self.assertTrue(passed)
 
 
 class AggregationPolicyTests(unittest.TestCase):
@@ -450,6 +897,78 @@ class ManifestParsingTests(unittest.TestCase):
         self.assertEqual(spec.sweep[0].source, "V2")
         self.assertEqual(spec.sweep[0].label, "VCTRL=0.800V")
         self.assertIsNone(spec.lock)
+
+    def test_a_manifest_with_no_jitter_block_parses_to_no_jitter_spec(self):
+        spec = measure.MeasureSpec.from_manifest(
+            {"measure": {"node": "clk", "tran_step": "1p", "tran_stop": "1n"}}
+        )
+        self.assertIsNone(spec.jitter)
+
+    def test_parses_a_row_9_jitter_block(self):
+        spec = measure.MeasureSpec.from_manifest(
+            {
+                "measure": {
+                    "node": "CLK",
+                    "tran_step": "200p",
+                    "tran_stop": "100u",
+                    "lock": {
+                        "target_hz": 250e6,
+                        "tolerance_frac": 0.05,
+                        "window_cycles": 20,
+                    },
+                    "jitter": {"max_frac": 0.01, "min_cycles": 200},
+                }
+            }
+        )
+        self.assertAlmostEqual(spec.jitter.max_frac, 0.01)
+        self.assertEqual(spec.jitter.min_cycles, 200)
+        # Row 9 is RATIFIED, so a stated bound gates by default -- unlike the
+        # DRAFT rows 6/7 bounds in `acmeasure.AcSpec`, which do not.
+        self.assertTrue(spec.jitter.gate_on_bound)
+
+    def test_an_empty_jitter_block_reports_without_a_bound(self):
+        spec = measure.MeasureSpec.from_manifest(
+            {
+                "measure": {
+                    "node": "clk",
+                    "tran_step": "1p",
+                    "tran_stop": "1n",
+                    "jitter": {},
+                }
+            }
+        )
+        self.assertIsNotNone(spec.jitter)
+        self.assertIsNone(spec.jitter.max_frac)
+        self.assertEqual(spec.jitter.min_cycles, 20)
+
+    def test_a_bound_written_as_a_percentage_instead_of_a_fraction_is_rejected(self):
+        # Row 9's bound is 1.0 %, i.e. `0.01`. A manifest that writes `1.0`
+        # means 100 % of the output period -- a bound nothing could fail,
+        # which would silently turn a gated campaign into a no-op.
+        with self.assertRaises(measure.MeasureError):
+            measure.MeasureSpec.from_manifest(
+                {
+                    "measure": {
+                        "node": "clk",
+                        "tran_step": "1p",
+                        "tran_stop": "1n",
+                        "jitter": {"max_frac": 1.0},
+                    }
+                }
+            )
+
+    def test_a_jitter_population_smaller_than_two_cycles_is_rejected(self):
+        with self.assertRaises(measure.MeasureError):
+            measure.MeasureSpec.from_manifest(
+                {
+                    "measure": {
+                        "node": "clk",
+                        "tran_step": "1p",
+                        "tran_stop": "1n",
+                        "jitter": {"min_cycles": 1},
+                    }
+                }
+            )
 
     def test_a_lock_block_without_a_target_is_rejected(self):
         with self.assertRaises(measure.MeasureError):
