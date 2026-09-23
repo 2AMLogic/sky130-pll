@@ -36,12 +36,21 @@ reads committed JSON plus its own bundled checklist. The CI `checks` job runs
 rotting — see "Negative controls" below for the four ways it is demonstrated to
 fail rather than rot.
 
-Note the version skew this pin deliberately leaves visible: the **grader** is
-`klt` 0.6.0, while the DRC envelope it grades was produced by `klt` 0.4.0 (the
-pin in `layout/requirements.txt`, which moves on the layout flow's own
-schedule). Both versions are recorded in the report — the grader's as `build`,
-the envelope's inside the citation's own provenance — so the two pins never
-have to be inferred.
+The two pins here remain deliberately **independent**: the **grader** is `klt`
+0.6.0 (pinned in `.github/workflows/ci.yml`), and the DRC envelope it grades is
+produced by whatever `layout/requirements.txt` pins, which moves on the layout
+flow's own schedule. They happen to coincide at 0.6.0 as of issue #157 — that
+is a coincidence of timing, not a coupling, and neither pin may be bumped on
+the assumption the other moved with it. Both versions are recorded in the
+report — the grader's as `build`, the envelope's inside the citation's own
+provenance — so the two pins never have to be inferred.
+
+Note also that the citation's `input_verified` is committed as `null`. That is
+the value every grading context sees except the exact worktree that produced
+the envelope (which is deleted when its PR merges): the layout flow's envelopes
+record a host-specific absolute path, so the grader cannot resolve the artifact
+and correctly declines to claim it re-hashed it. Guard 1 below is what actually
+re-hashes it, by basename, beside the envelope.
 
 ## Block kind: `mixed-signal`, and the partition boundary
 
@@ -80,7 +89,7 @@ as written, so it is stated here rather than borrowed.
 ## The one met row: item 3, and what it does and does not say
 
 Item 3 cites
-`layout/pll/reports/20260906-195205-4a08c71/drc.json` — the DRC envelope of
+`layout/pll/reports/20260923-084911-13ecfe9/drc.json` — the DRC envelope of
 the record `layout/pll/reports/LATEST` currently names — with its input pinned
 to `sha256:939f97e05b9e4a2a0f866a44bb6f758c030cfd611eaa0a567d5dc3002fa68d4c`,
 which is the SHA-256 of `pll_top.gds` committed in that same record directory
@@ -261,7 +270,7 @@ record before this directory was committed:
 | Injected fault | Result |
 | --- | --- |
 | A byte appended to `pll_top.gds` (the artifact moves under the pin) | guard 1 fails: `hashes to sha256:d563871e… but the manifest pins sha256:939f97e0…`, exit 1 |
-| `layout/pll/reports/LATEST` re-pointed at a newer record (the citation is superseded) | guard 2 fails: `cites record 20260906-195205-4a08c71, but … LATEST names 20260907-000000-deadbee`, exit 1 |
+| `layout/pll/reports/LATEST` re-pointed at a newer record (the citation is superseded) | guard 2 fails: `cites record <old id>, but … LATEST names <new id>`, exit 1 — this one is not hypothetical: it is exactly what fired when issue #157's pin bump re-ran the layout flow, and it is why that PR re-points the manifest and re-renders the report |
 | The envelope's own `provenance.input.content_hash` changed (it ran against a different revision than the claim) | `klt signoff` re-grades item 3 `unmet` / `stale_evidence`, `t1_met_count` 2 → 0, the committed report no longer matches, `--check` exits 1 |
 | One field of the committed `tier-report.json` hand-edited | `--check` prints the diff (`"t1_met_count": 99` → `2`) and exits 1 |
 

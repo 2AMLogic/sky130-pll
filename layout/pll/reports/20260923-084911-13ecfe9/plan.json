@@ -1,0 +1,2051 @@
+{
+  "top_subckt": "top",
+  "top_cell_name": "pll_top",
+  "blocks": [
+    {
+      "name": "pfd_cp",
+      "cell_name": "pll_pfd_cp",
+      "device_count": 60,
+      "groups": [
+        {
+          "id": "pfd_cp_nfet_w1_l0p15_row0",
+          "kind": "mos_array",
+          "generator": "mos_array",
+          "row_channel": true,
+          "params": {
+            "w_um": 1.0,
+            "l_um": 0.15,
+            "rows": 1,
+            "cols": 6,
+            "dummy": 0,
+            "flavor": "nfet",
+            "topology": "common_centroid",
+            "gate_contact": true
+          },
+          "count": 6,
+          "members": [
+            {
+              "device": "XRUPNAND_N1",
+              "unit": 0,
+              "ports": {
+                "U0_D": "RUP_NAND",
+                "U0_G": "REF",
+                "U0_S": "RUP_MID"
+              }
+            },
+            {
+              "device": "XRUPNAND_N2",
+              "unit": 1,
+              "ports": {
+                "U1_D": "RUP_MID",
+                "U1_G": "REFD",
+                "U1_S": "GND"
+              }
+            },
+            {
+              "device": "XRUPINV_N",
+              "unit": 2,
+              "ports": {
+                "U2_D": "SETU",
+                "U2_G": "RUP_NAND",
+                "U2_S": "GND"
+              }
+            },
+            {
+              "device": "XRDNNAND_N1",
+              "unit": 3,
+              "ports": {
+                "U3_D": "RDN_NAND",
+                "U3_G": "DIV",
+                "U3_S": "RDN_MID"
+              }
+            },
+            {
+              "device": "XRDNNAND_N2",
+              "unit": 4,
+              "ports": {
+                "U4_D": "RDN_MID",
+                "U4_G": "DIVD",
+                "U4_S": "GND"
+              }
+            },
+            {
+              "device": "XRDNINV_N",
+              "unit": 5,
+              "ports": {
+                "U5_D": "SETD",
+                "U5_G": "RDN_NAND",
+                "U5_S": "GND"
+              }
+            }
+          ]
+        },
+        {
+          "id": "pfd_cp_nfet_w1_l0p15_row1",
+          "kind": "mos_array",
+          "generator": "mos_array",
+          "row_channel": true,
+          "params": {
+            "w_um": 1.0,
+            "l_um": 0.15,
+            "rows": 1,
+            "cols": 6,
+            "dummy": 0,
+            "flavor": "nfet",
+            "topology": "common_centroid",
+            "gate_contact": true
+          },
+          "count": 6,
+          "members": [
+            {
+              "device": "XUPNORA_N1",
+              "unit": 0,
+              "ports": {
+                "U0_D": "UP",
+                "U0_G": "RST",
+                "U0_S": "GND"
+              }
+            },
+            {
+              "device": "XUPNORA_N2",
+              "unit": 1,
+              "ports": {
+                "U1_D": "UP",
+                "U1_G": "UPN",
+                "U1_S": "GND"
+              }
+            },
+            {
+              "device": "XUPNORB_N1",
+              "unit": 2,
+              "ports": {
+                "U2_D": "UPN",
+                "U2_G": "SETU",
+                "U2_S": "GND"
+              }
+            },
+            {
+              "device": "XUPNORB_N2",
+              "unit": 3,
+              "ports": {
+                "U3_D": "UPN",
+                "U3_G": "UP",
+                "U3_S": "GND"
+              }
+            },
+            {
+              "device": "XDNNORA_N1",
+              "unit": 4,
+              "ports": {
+                "U4_D": "DN",
+                "U4_G": "RST",
+                "U4_S": "GND"
+              }
+            },
+            {
+              "device": "XDNNORA_N2",
+              "unit": 5,
+              "ports": {
+                "U5_D": "DN",
+                "U5_G": "DNN",
+                "U5_S": "GND"
+              }
+            }
+          ]
+        },
+        {
+          "id": "pfd_cp_nfet_w1_l0p15_row2",
+          "kind": "mos_array",
+          "generator": "mos_array",
+          "row_channel": true,
+          "params": {
+            "w_um": 1.0,
+            "l_um": 0.15,
+            "rows": 1,
+            "cols": 6,
+            "dummy": 0,
+            "flavor": "nfet",
+            "topology": "common_centroid",
+            "gate_contact": true
+          },
+          "count": 6,
+          "members": [
+            {
+              "device": "XDNNORB_N1",
+              "unit": 0,
+              "ports": {
+                "U0_D": "DNN",
+                "U0_G": "SETD",
+                "U0_S": "GND"
+              }
+            },
+            {
+              "device": "XDNNORB_N2",
+              "unit": 1,
+              "ports": {
+                "U1_D": "DNN",
+                "U1_G": "DN",
+                "U1_S": "GND"
+              }
+            },
+            {
+              "device": "XRSTGNAND_N1",
+              "unit": 2,
+              "ports": {
+                "U2_D": "RSTG_NAND",
+                "U2_G": "UP",
+                "U2_S": "RSTG_MID"
+              }
+            },
+            {
+              "device": "XRSTGNAND_N2",
+              "unit": 3,
+              "ports": {
+                "U3_D": "RSTG_MID",
+                "U3_G": "DN",
+                "U3_S": "GND"
+              }
+            },
+            {
+              "device": "XRSTGINV_N",
+              "unit": 4,
+              "ports": {
+                "U4_D": "RSTPRE",
+                "U4_G": "RSTG_NAND",
+                "U4_S": "GND"
+              }
+            },
+            {
+              "device": "XUPINV_N",
+              "unit": 5,
+              "ports": {
+                "U5_D": "UPB",
+                "U5_G": "UP",
+                "U5_S": "GND"
+              }
+            }
+          ]
+        },
+        {
+          "id": "pfd_cp_nfet_w1_l0p3",
+          "kind": "mos_array",
+          "generator": "mos_array",
+          "row_channel": false,
+          "params": {
+            "w_um": 1.0,
+            "l_um": 0.3,
+            "rows": 2,
+            "cols": 3,
+            "dummy": 0,
+            "flavor": "nfet",
+            "topology": "common_centroid",
+            "gate_contact": true
+          },
+          "count": 6,
+          "members": [
+            {
+              "device": "XREDLY1_N",
+              "unit": 0,
+              "ports": {
+                "U0_D": "REFD1",
+                "U0_G": "REF",
+                "U0_S": "GND"
+              }
+            },
+            {
+              "device": "XREDLY2_N",
+              "unit": 1,
+              "ports": {
+                "U1_D": "REFD2",
+                "U1_G": "REFD1",
+                "U1_S": "GND"
+              }
+            },
+            {
+              "device": "XREDLY3_N",
+              "unit": 2,
+              "ports": {
+                "U2_D": "REFD",
+                "U2_G": "REFD2",
+                "U2_S": "GND"
+              }
+            },
+            {
+              "device": "XDIDLY1_N",
+              "unit": 3,
+              "ports": {
+                "U3_D": "DIVD1",
+                "U3_G": "DIV",
+                "U3_S": "GND"
+              }
+            },
+            {
+              "device": "XDIDLY2_N",
+              "unit": 4,
+              "ports": {
+                "U4_D": "DIVD2",
+                "U4_G": "DIVD1",
+                "U4_S": "GND"
+              }
+            },
+            {
+              "device": "XDIDLY3_N",
+              "unit": 5,
+              "ports": {
+                "U5_D": "DIVD",
+                "U5_G": "DIVD2",
+                "U5_S": "GND"
+              }
+            }
+          ]
+        },
+        {
+          "id": "pfd_cp_nfet_w1_l1",
+          "kind": "mos_array",
+          "generator": "mos_array",
+          "row_channel": false,
+          "params": {
+            "w_um": 1.0,
+            "l_um": 1.0,
+            "rows": 1,
+            "cols": 2,
+            "dummy": 0,
+            "flavor": "nfet",
+            "topology": "common_centroid",
+            "gate_contact": true
+          },
+          "count": 2,
+          "members": [
+            {
+              "device": "XRSTDLY1_N",
+              "unit": 0,
+              "ports": {
+                "U0_D": "RSTD1",
+                "U0_G": "RSTPRE",
+                "U0_S": "GND"
+              }
+            },
+            {
+              "device": "XRSTDLY2_N",
+              "unit": 1,
+              "ports": {
+                "U1_D": "RST",
+                "U1_G": "RSTD1",
+                "U1_S": "GND"
+              }
+            }
+          ]
+        },
+        {
+          "id": "pfd_cp_nfet_w2_l1",
+          "kind": "mos_array",
+          "generator": "mos_array",
+          "row_channel": false,
+          "params": {
+            "w_um": 2.0,
+            "l_um": 1.0,
+            "rows": 1,
+            "cols": 2,
+            "dummy": 0,
+            "flavor": "nfet",
+            "topology": "common_centroid",
+            "gate_contact": true
+          },
+          "count": 2,
+          "members": [
+            {
+              "device": "XMNBIAS",
+              "unit": 0,
+              "ports": {
+                "U0_D": "NB",
+                "U0_G": "NB",
+                "U0_S": "GND"
+              }
+            },
+            {
+              "device": "XMNBIAS2",
+              "unit": 1,
+              "ports": {
+                "U1_D": "PB",
+                "U1_G": "NB",
+                "U1_S": "GND"
+              }
+            }
+          ]
+        },
+        {
+          "id": "pfd_cp_nfet_w10_l0p15",
+          "kind": "mos_array",
+          "generator": "mos_array",
+          "row_channel": false,
+          "params": {
+            "w_um": 10.0,
+            "l_um": 0.15,
+            "rows": 1,
+            "cols": 1,
+            "dummy": 0,
+            "flavor": "nfet",
+            "topology": "array",
+            "gate_contact": true
+          },
+          "count": 1,
+          "members": [
+            {
+              "device": "XMNSW",
+              "unit": 0,
+              "ports": {
+                "U0_D": "CP",
+                "U0_G": "DN",
+                "U0_S": "SN"
+              }
+            }
+          ]
+        },
+        {
+          "id": "pfd_cp_nfet_w10_l1",
+          "kind": "mos_array",
+          "generator": "mos_array",
+          "row_channel": false,
+          "params": {
+            "w_um": 10.0,
+            "l_um": 1.0,
+            "rows": 1,
+            "cols": 1,
+            "dummy": 0,
+            "flavor": "nfet",
+            "topology": "array",
+            "gate_contact": true
+          },
+          "count": 1,
+          "members": [
+            {
+              "device": "XMNCP",
+              "unit": 0,
+              "ports": {
+                "U0_D": "SN",
+                "U0_G": "NB",
+                "U0_S": "GND"
+              }
+            }
+          ]
+        },
+        {
+          "id": "pfd_cp_pfet_w2_l0p15_row0",
+          "kind": "mos_array",
+          "generator": "mos_array",
+          "row_channel": true,
+          "params": {
+            "w_um": 2.0,
+            "l_um": 0.15,
+            "rows": 1,
+            "cols": 6,
+            "dummy": 0,
+            "flavor": "pfet",
+            "topology": "common_centroid",
+            "gate_contact": true
+          },
+          "count": 6,
+          "members": [
+            {
+              "device": "XRUPNAND_P1",
+              "unit": 0,
+              "ports": {
+                "U0_D": "RUP_NAND",
+                "U0_G": "REF",
+                "U0_S": "VDD"
+              }
+            },
+            {
+              "device": "XRUPNAND_P2",
+              "unit": 1,
+              "ports": {
+                "U1_D": "RUP_NAND",
+                "U1_G": "REFD",
+                "U1_S": "VDD"
+              }
+            },
+            {
+              "device": "XRUPINV_P",
+              "unit": 2,
+              "ports": {
+                "U2_D": "SETU",
+                "U2_G": "RUP_NAND",
+                "U2_S": "VDD"
+              }
+            },
+            {
+              "device": "XRDNNAND_P1",
+              "unit": 3,
+              "ports": {
+                "U3_D": "RDN_NAND",
+                "U3_G": "DIV",
+                "U3_S": "VDD"
+              }
+            },
+            {
+              "device": "XRDNNAND_P2",
+              "unit": 4,
+              "ports": {
+                "U4_D": "RDN_NAND",
+                "U4_G": "DIVD",
+                "U4_S": "VDD"
+              }
+            },
+            {
+              "device": "XRDNINV_P",
+              "unit": 5,
+              "ports": {
+                "U5_D": "SETD",
+                "U5_G": "RDN_NAND",
+                "U5_S": "VDD"
+              }
+            }
+          ]
+        },
+        {
+          "id": "pfd_cp_pfet_w2_l0p15_row1",
+          "kind": "mos_array",
+          "generator": "mos_array",
+          "row_channel": true,
+          "params": {
+            "w_um": 2.0,
+            "l_um": 0.15,
+            "rows": 1,
+            "cols": 6,
+            "dummy": 0,
+            "flavor": "pfet",
+            "topology": "common_centroid",
+            "gate_contact": true
+          },
+          "count": 6,
+          "members": [
+            {
+              "device": "XUPNORA_P1",
+              "unit": 0,
+              "ports": {
+                "U0_D": "UPNORA_MID",
+                "U0_G": "RST",
+                "U0_S": "VDD"
+              }
+            },
+            {
+              "device": "XUPNORA_P2",
+              "unit": 1,
+              "ports": {
+                "U1_D": "UP",
+                "U1_G": "UPN",
+                "U1_S": "UPNORA_MID"
+              }
+            },
+            {
+              "device": "XUPNORB_P1",
+              "unit": 2,
+              "ports": {
+                "U2_D": "UPNORB_MID",
+                "U2_G": "SETU",
+                "U2_S": "VDD"
+              }
+            },
+            {
+              "device": "XUPNORB_P2",
+              "unit": 3,
+              "ports": {
+                "U3_D": "UPN",
+                "U3_G": "UP",
+                "U3_S": "UPNORB_MID"
+              }
+            },
+            {
+              "device": "XDNNORA_P1",
+              "unit": 4,
+              "ports": {
+                "U4_D": "DNNORA_MID",
+                "U4_G": "RST",
+                "U4_S": "VDD"
+              }
+            },
+            {
+              "device": "XDNNORA_P2",
+              "unit": 5,
+              "ports": {
+                "U5_D": "DN",
+                "U5_G": "DNN",
+                "U5_S": "DNNORA_MID"
+              }
+            }
+          ]
+        },
+        {
+          "id": "pfd_cp_pfet_w2_l0p15_row2",
+          "kind": "mos_array",
+          "generator": "mos_array",
+          "row_channel": true,
+          "params": {
+            "w_um": 2.0,
+            "l_um": 0.15,
+            "rows": 1,
+            "cols": 6,
+            "dummy": 0,
+            "flavor": "pfet",
+            "topology": "common_centroid",
+            "gate_contact": true
+          },
+          "count": 6,
+          "members": [
+            {
+              "device": "XDNNORB_P1",
+              "unit": 0,
+              "ports": {
+                "U0_D": "DNNORB_MID",
+                "U0_G": "SETD",
+                "U0_S": "VDD"
+              }
+            },
+            {
+              "device": "XDNNORB_P2",
+              "unit": 1,
+              "ports": {
+                "U1_D": "DNN",
+                "U1_G": "DN",
+                "U1_S": "DNNORB_MID"
+              }
+            },
+            {
+              "device": "XRSTGNAND_P1",
+              "unit": 2,
+              "ports": {
+                "U2_D": "RSTG_NAND",
+                "U2_G": "UP",
+                "U2_S": "VDD"
+              }
+            },
+            {
+              "device": "XRSTGNAND_P2",
+              "unit": 3,
+              "ports": {
+                "U3_D": "RSTG_NAND",
+                "U3_G": "DN",
+                "U3_S": "VDD"
+              }
+            },
+            {
+              "device": "XRSTGINV_P",
+              "unit": 4,
+              "ports": {
+                "U4_D": "RSTPRE",
+                "U4_G": "RSTG_NAND",
+                "U4_S": "VDD"
+              }
+            },
+            {
+              "device": "XUPINV_P",
+              "unit": 5,
+              "ports": {
+                "U5_D": "UPB",
+                "U5_G": "UP",
+                "U5_S": "VDD"
+              }
+            }
+          ]
+        },
+        {
+          "id": "pfd_cp_pfet_w2_l0p3",
+          "kind": "mos_array",
+          "generator": "mos_array",
+          "row_channel": false,
+          "params": {
+            "w_um": 2.0,
+            "l_um": 0.3,
+            "rows": 2,
+            "cols": 3,
+            "dummy": 0,
+            "flavor": "pfet",
+            "topology": "common_centroid",
+            "gate_contact": true
+          },
+          "count": 6,
+          "members": [
+            {
+              "device": "XREDLY1_P",
+              "unit": 0,
+              "ports": {
+                "U0_D": "REFD1",
+                "U0_G": "REF",
+                "U0_S": "VDD"
+              }
+            },
+            {
+              "device": "XREDLY2_P",
+              "unit": 1,
+              "ports": {
+                "U1_D": "REFD2",
+                "U1_G": "REFD1",
+                "U1_S": "VDD"
+              }
+            },
+            {
+              "device": "XREDLY3_P",
+              "unit": 2,
+              "ports": {
+                "U2_D": "REFD",
+                "U2_G": "REFD2",
+                "U2_S": "VDD"
+              }
+            },
+            {
+              "device": "XDIDLY1_P",
+              "unit": 3,
+              "ports": {
+                "U3_D": "DIVD1",
+                "U3_G": "DIV",
+                "U3_S": "VDD"
+              }
+            },
+            {
+              "device": "XDIDLY2_P",
+              "unit": 4,
+              "ports": {
+                "U4_D": "DIVD2",
+                "U4_G": "DIVD1",
+                "U4_S": "VDD"
+              }
+            },
+            {
+              "device": "XDIDLY3_P",
+              "unit": 5,
+              "ports": {
+                "U5_D": "DIVD",
+                "U5_G": "DIVD2",
+                "U5_S": "VDD"
+              }
+            }
+          ]
+        },
+        {
+          "id": "pfd_cp_pfet_w2_l1",
+          "kind": "mos_array",
+          "generator": "mos_array",
+          "row_channel": false,
+          "params": {
+            "w_um": 2.0,
+            "l_um": 1.0,
+            "rows": 1,
+            "cols": 2,
+            "dummy": 0,
+            "flavor": "pfet",
+            "topology": "common_centroid",
+            "gate_contact": true
+          },
+          "count": 2,
+          "members": [
+            {
+              "device": "XRSTDLY1_P",
+              "unit": 0,
+              "ports": {
+                "U0_D": "RSTD1",
+                "U0_G": "RSTPRE",
+                "U0_S": "VDD"
+              }
+            },
+            {
+              "device": "XRSTDLY2_P",
+              "unit": 1,
+              "ports": {
+                "U1_D": "RST",
+                "U1_G": "RSTD1",
+                "U1_S": "VDD"
+              }
+            }
+          ]
+        },
+        {
+          "id": "pfd_cp_pfet_w4_l1",
+          "kind": "mos_array",
+          "generator": "mos_array",
+          "row_channel": false,
+          "params": {
+            "w_um": 4.0,
+            "l_um": 1.0,
+            "rows": 1,
+            "cols": 1,
+            "dummy": 0,
+            "flavor": "pfet",
+            "topology": "array",
+            "gate_contact": true
+          },
+          "count": 1,
+          "members": [
+            {
+              "device": "XMPBIAS",
+              "unit": 0,
+              "ports": {
+                "U0_D": "PB",
+                "U0_G": "PB",
+                "U0_S": "VDD"
+              }
+            }
+          ]
+        },
+        {
+          "id": "pfd_cp_pfet_w20_l0p15",
+          "kind": "mos_array",
+          "generator": "mos_array",
+          "row_channel": false,
+          "params": {
+            "w_um": 20.0,
+            "l_um": 0.15,
+            "rows": 1,
+            "cols": 1,
+            "dummy": 0,
+            "flavor": "pfet",
+            "topology": "array",
+            "gate_contact": true
+          },
+          "count": 1,
+          "members": [
+            {
+              "device": "XMPSW",
+              "unit": 0,
+              "ports": {
+                "U0_D": "CP",
+                "U0_G": "UPB",
+                "U0_S": "SP"
+              }
+            }
+          ]
+        },
+        {
+          "id": "pfd_cp_pfet_w20_l1",
+          "kind": "mos_array",
+          "generator": "mos_array",
+          "row_channel": false,
+          "params": {
+            "w_um": 20.0,
+            "l_um": 1.0,
+            "rows": 1,
+            "cols": 1,
+            "dummy": 0,
+            "flavor": "pfet",
+            "topology": "array",
+            "gate_contact": true
+          },
+          "count": 1,
+          "members": [
+            {
+              "device": "XMPCP",
+              "unit": 0,
+              "ports": {
+                "U0_D": "SP",
+                "U0_G": "PB",
+                "U0_S": "VDD"
+              }
+            }
+          ]
+        },
+        {
+          "id": "pfd_cp_resxhigh_w1_l300",
+          "kind": "res_array",
+          "generator": "res_array",
+          "params": {
+            "length_um": 300.0,
+            "width_um": 1.0,
+            "num": 1,
+            "dummy": 0,
+            "rows": 1,
+            "flavor": "xhigh"
+          },
+          "count": 1,
+          "members": [
+            {
+              "device": "XRBIAS",
+              "unit": 0,
+              "ports": {
+                "R0_A": "NB",
+                "R0_B": "VDD"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "loop_filter",
+      "cell_name": "pll_loop_filter",
+      "device_count": 5,
+      "groups": [
+        {
+          "id": "loop_filter_resxhigh_w1_l5",
+          "kind": "res_array",
+          "generator": "res_array",
+          "params": {
+            "length_um": 5.0,
+            "width_um": 1.0,
+            "num": 1,
+            "dummy": 0,
+            "rows": 1,
+            "flavor": "xhigh"
+          },
+          "count": 1,
+          "members": [
+            {
+              "device": "XR3",
+              "unit": 0,
+              "ports": {
+                "R0_A": "VCTRL",
+                "R0_B": "CP"
+              }
+            }
+          ]
+        },
+        {
+          "id": "loop_filter_resxhigh_w1_l10p3",
+          "kind": "res_array",
+          "generator": "res_array",
+          "params": {
+            "length_um": 10.3,
+            "width_um": 1.0,
+            "num": 1,
+            "dummy": 0,
+            "rows": 1,
+            "flavor": "xhigh"
+          },
+          "count": 1,
+          "members": [
+            {
+              "device": "XR1",
+              "unit": 0,
+              "ports": {
+                "R0_A": "Z1",
+                "R0_B": "CP"
+              }
+            }
+          ]
+        },
+        {
+          "id": "loop_filter_XC1",
+          "kind": "mim_cap",
+          "generator": "draw",
+          "params": {
+            "w_um": 163.0,
+            "l_um": 163.0
+          },
+          "count": 1,
+          "members": [
+            {
+              "device": "XC1",
+              "unit": 0,
+              "ports": {
+                "TOP": "Z1",
+                "BOT": "GND"
+              }
+            }
+          ]
+        },
+        {
+          "id": "loop_filter_XC2",
+          "kind": "mim_cap",
+          "generator": "draw",
+          "params": {
+            "w_um": 35.0,
+            "l_um": 35.0
+          },
+          "count": 1,
+          "members": [
+            {
+              "device": "XC2",
+              "unit": 0,
+              "ports": {
+                "TOP": "CP",
+                "BOT": "GND"
+              }
+            }
+          ]
+        },
+        {
+          "id": "loop_filter_XC3",
+          "kind": "mim_cap",
+          "generator": "draw",
+          "params": {
+            "w_um": 42.0,
+            "l_um": 42.0
+          },
+          "count": 1,
+          "members": [
+            {
+              "device": "XC3",
+              "unit": 0,
+              "ports": {
+                "TOP": "VCTRL",
+                "BOT": "GND"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "vco_ring5",
+      "cell_name": "pll_vco_ring5",
+      "device_count": 26,
+      "groups": [
+        {
+          "id": "vco_ring5_nfet_w2_l0p15",
+          "kind": "mos_array",
+          "generator": "mos_array",
+          "row_channel": false,
+          "params": {
+            "w_um": 2.0,
+            "l_um": 0.15,
+            "rows": 2,
+            "cols": 3,
+            "dummy": 0,
+            "flavor": "nfet",
+            "topology": "common_centroid",
+            "gate_contact": true
+          },
+          "count": 6,
+          "members": [
+            {
+              "device": "XMN0",
+              "unit": 0,
+              "ports": {
+                "U0_D": "RING0",
+                "U0_G": "RING4",
+                "U0_S": "SN0"
+              }
+            },
+            {
+              "device": "XMN1",
+              "unit": 1,
+              "ports": {
+                "U1_D": "RING1",
+                "U1_G": "RING0",
+                "U1_S": "SN1"
+              }
+            },
+            {
+              "device": "XMN2",
+              "unit": 2,
+              "ports": {
+                "U2_D": "RING2",
+                "U2_G": "RING1",
+                "U2_S": "SN2"
+              }
+            },
+            {
+              "device": "XMN3",
+              "unit": 3,
+              "ports": {
+                "U3_D": "RING3",
+                "U3_G": "RING2",
+                "U3_S": "SN3"
+              }
+            },
+            {
+              "device": "XMN4",
+              "unit": 4,
+              "ports": {
+                "U4_D": "RING4",
+                "U4_G": "RING3",
+                "U4_S": "SN4"
+              }
+            },
+            {
+              "device": "XMBUFA_N",
+              "unit": 5,
+              "ports": {
+                "U5_D": "BUF1",
+                "U5_G": "RING0",
+                "U5_S": "GND"
+              }
+            }
+          ]
+        },
+        {
+          "id": "vco_ring5_nfet_w2_l0p5",
+          "kind": "mos_array",
+          "generator": "mos_array",
+          "row_channel": false,
+          "params": {
+            "w_um": 2.0,
+            "l_um": 0.5,
+            "rows": 2,
+            "cols": 3,
+            "dummy": 0,
+            "flavor": "nfet",
+            "topology": "common_centroid",
+            "gate_contact": true
+          },
+          "count": 6,
+          "members": [
+            {
+              "device": "XMSN0",
+              "unit": 0,
+              "ports": {
+                "U0_D": "SN0",
+                "U0_G": "VCTRL",
+                "U0_S": "GND"
+              }
+            },
+            {
+              "device": "XMSN1",
+              "unit": 1,
+              "ports": {
+                "U1_D": "SN1",
+                "U1_G": "VCTRL",
+                "U1_S": "GND"
+              }
+            },
+            {
+              "device": "XMSN2",
+              "unit": 2,
+              "ports": {
+                "U2_D": "SN2",
+                "U2_G": "VCTRL",
+                "U2_S": "GND"
+              }
+            },
+            {
+              "device": "XMSN3",
+              "unit": 3,
+              "ports": {
+                "U3_D": "SN3",
+                "U3_G": "VCTRL",
+                "U3_S": "GND"
+              }
+            },
+            {
+              "device": "XMSN4",
+              "unit": 4,
+              "ports": {
+                "U4_D": "SN4",
+                "U4_G": "VCTRL",
+                "U4_S": "GND"
+              }
+            },
+            {
+              "device": "XMBN0",
+              "unit": 5,
+              "ports": {
+                "U5_D": "VBP",
+                "U5_G": "VCTRL",
+                "U5_S": "GND"
+              }
+            }
+          ]
+        },
+        {
+          "id": "vco_ring5_nfet_w8_l0p15",
+          "kind": "mos_array",
+          "generator": "mos_array",
+          "row_channel": false,
+          "params": {
+            "w_um": 8.0,
+            "l_um": 0.15,
+            "rows": 1,
+            "cols": 1,
+            "dummy": 0,
+            "flavor": "nfet",
+            "topology": "array",
+            "gate_contact": true
+          },
+          "count": 1,
+          "members": [
+            {
+              "device": "XMBUFB_N",
+              "unit": 0,
+              "ports": {
+                "U0_D": "CLK",
+                "U0_G": "BUF1",
+                "U0_S": "GND"
+              }
+            }
+          ]
+        },
+        {
+          "id": "vco_ring5_pfet_w4_l0p15",
+          "kind": "mos_array",
+          "generator": "mos_array",
+          "row_channel": false,
+          "params": {
+            "w_um": 4.0,
+            "l_um": 0.15,
+            "rows": 2,
+            "cols": 3,
+            "dummy": 0,
+            "flavor": "pfet",
+            "topology": "common_centroid",
+            "gate_contact": true
+          },
+          "count": 6,
+          "members": [
+            {
+              "device": "XMP0",
+              "unit": 0,
+              "ports": {
+                "U0_D": "RING0",
+                "U0_G": "RING4",
+                "U0_S": "SP0"
+              }
+            },
+            {
+              "device": "XMP1",
+              "unit": 1,
+              "ports": {
+                "U1_D": "RING1",
+                "U1_G": "RING0",
+                "U1_S": "SP1"
+              }
+            },
+            {
+              "device": "XMP2",
+              "unit": 2,
+              "ports": {
+                "U2_D": "RING2",
+                "U2_G": "RING1",
+                "U2_S": "SP2"
+              }
+            },
+            {
+              "device": "XMP3",
+              "unit": 3,
+              "ports": {
+                "U3_D": "RING3",
+                "U3_G": "RING2",
+                "U3_S": "SP3"
+              }
+            },
+            {
+              "device": "XMP4",
+              "unit": 4,
+              "ports": {
+                "U4_D": "RING4",
+                "U4_G": "RING3",
+                "U4_S": "SP4"
+              }
+            },
+            {
+              "device": "XMBUFA_P",
+              "unit": 5,
+              "ports": {
+                "U5_D": "BUF1",
+                "U5_G": "RING0",
+                "U5_S": "VDD"
+              }
+            }
+          ]
+        },
+        {
+          "id": "vco_ring5_pfet_w4_l0p5",
+          "kind": "mos_array",
+          "generator": "mos_array",
+          "row_channel": false,
+          "params": {
+            "w_um": 4.0,
+            "l_um": 0.5,
+            "rows": 2,
+            "cols": 3,
+            "dummy": 0,
+            "flavor": "pfet",
+            "topology": "common_centroid",
+            "gate_contact": true
+          },
+          "count": 6,
+          "members": [
+            {
+              "device": "XMSP0",
+              "unit": 0,
+              "ports": {
+                "U0_D": "SP0",
+                "U0_G": "VBP",
+                "U0_S": "VDD"
+              }
+            },
+            {
+              "device": "XMSP1",
+              "unit": 1,
+              "ports": {
+                "U1_D": "SP1",
+                "U1_G": "VBP",
+                "U1_S": "VDD"
+              }
+            },
+            {
+              "device": "XMSP2",
+              "unit": 2,
+              "ports": {
+                "U2_D": "SP2",
+                "U2_G": "VBP",
+                "U2_S": "VDD"
+              }
+            },
+            {
+              "device": "XMSP3",
+              "unit": 3,
+              "ports": {
+                "U3_D": "SP3",
+                "U3_G": "VBP",
+                "U3_S": "VDD"
+              }
+            },
+            {
+              "device": "XMSP4",
+              "unit": 4,
+              "ports": {
+                "U4_D": "SP4",
+                "U4_G": "VBP",
+                "U4_S": "VDD"
+              }
+            },
+            {
+              "device": "XMBP0",
+              "unit": 5,
+              "ports": {
+                "U5_D": "VBP",
+                "U5_G": "VBP",
+                "U5_S": "VDD"
+              }
+            }
+          ]
+        },
+        {
+          "id": "vco_ring5_pfet_w16_l0p15",
+          "kind": "mos_array",
+          "generator": "mos_array",
+          "row_channel": false,
+          "params": {
+            "w_um": 16.0,
+            "l_um": 0.15,
+            "rows": 1,
+            "cols": 1,
+            "dummy": 0,
+            "flavor": "pfet",
+            "topology": "array",
+            "gate_contact": true
+          },
+          "count": 1,
+          "members": [
+            {
+              "device": "XMBUFB_P",
+              "unit": 0,
+              "ports": {
+                "U0_D": "CLK",
+                "U0_G": "BUF1",
+                "U0_S": "VDD"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "divider_intN",
+      "cell_name": "pll_divider_intN",
+      "device_count": 29,
+      "groups": [
+        {
+          "id": "divider_intN_XCNT0",
+          "kind": "stdcell",
+          "generator": "library",
+          "params": {
+            "cell": "sky130_fd_sc_hd__dfrtp_2"
+          },
+          "count": 1,
+          "members": [
+            {
+              "device": "XCNT0",
+              "unit": 0,
+              "nets": [
+                "CLK",
+                "D0",
+                "RESETB",
+                "GND",
+                "GND",
+                "VDD",
+                "VDD",
+                "Q0"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "divider_intN_XLDMUX0",
+          "kind": "stdcell",
+          "generator": "library",
+          "params": {
+            "cell": "sky130_fd_sc_hd__mux2_2"
+          },
+          "count": 1,
+          "members": [
+            {
+              "device": "XLDMUX0",
+              "unit": 0,
+              "nets": [
+                "NQ0",
+                "NSEL0",
+                "ZERO",
+                "GND",
+                "GND",
+                "VDD",
+                "VDD",
+                "D0"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "divider_intN_XQINV0",
+          "kind": "stdcell",
+          "generator": "library",
+          "params": {
+            "cell": "sky130_fd_sc_hd__inv_2"
+          },
+          "count": 1,
+          "members": [
+            {
+              "device": "XQINV0",
+              "unit": 0,
+              "nets": [
+                "Q0",
+                "GND",
+                "GND",
+                "VDD",
+                "VDD",
+                "NQ0"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "divider_intN_XCNT1",
+          "kind": "stdcell",
+          "generator": "library",
+          "params": {
+            "cell": "sky130_fd_sc_hd__dfrtp_2"
+          },
+          "count": 1,
+          "members": [
+            {
+              "device": "XCNT1",
+              "unit": 0,
+              "nets": [
+                "CLK",
+                "D1",
+                "RESETB",
+                "GND",
+                "GND",
+                "VDD",
+                "VDD",
+                "Q1"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "divider_intN_XLDMUX1",
+          "kind": "stdcell",
+          "generator": "library",
+          "params": {
+            "cell": "sky130_fd_sc_hd__mux2_2"
+          },
+          "count": 1,
+          "members": [
+            {
+              "device": "XLDMUX1",
+              "unit": 0,
+              "nets": [
+                "DDEC1",
+                "NSEL1",
+                "ZERO",
+                "GND",
+                "GND",
+                "VDD",
+                "VDD",
+                "D1"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "divider_intN_XDECXOR1",
+          "kind": "stdcell",
+          "generator": "library",
+          "params": {
+            "cell": "sky130_fd_sc_hd__xor2_2"
+          },
+          "count": 1,
+          "members": [
+            {
+              "device": "XDECXOR1",
+              "unit": 0,
+              "nets": [
+                "Q1",
+                "NQ0",
+                "GND",
+                "GND",
+                "VDD",
+                "VDD",
+                "DDEC1"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "divider_intN_XQINV1",
+          "kind": "stdcell",
+          "generator": "library",
+          "params": {
+            "cell": "sky130_fd_sc_hd__inv_2"
+          },
+          "count": 1,
+          "members": [
+            {
+              "device": "XQINV1",
+              "unit": 0,
+              "nets": [
+                "Q1",
+                "GND",
+                "GND",
+                "VDD",
+                "VDD",
+                "NQ1"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "divider_intN_XCNT2",
+          "kind": "stdcell",
+          "generator": "library",
+          "params": {
+            "cell": "sky130_fd_sc_hd__dfrtp_2"
+          },
+          "count": 1,
+          "members": [
+            {
+              "device": "XCNT2",
+              "unit": 0,
+              "nets": [
+                "CLK",
+                "D2",
+                "RESETB",
+                "GND",
+                "GND",
+                "VDD",
+                "VDD",
+                "Q2"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "divider_intN_XLDMUX2",
+          "kind": "stdcell",
+          "generator": "library",
+          "params": {
+            "cell": "sky130_fd_sc_hd__mux2_2"
+          },
+          "count": 1,
+          "members": [
+            {
+              "device": "XLDMUX2",
+              "unit": 0,
+              "nets": [
+                "DDEC2",
+                "NSEL2",
+                "ZERO",
+                "GND",
+                "GND",
+                "VDD",
+                "VDD",
+                "D2"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "divider_intN_XDECXOR2",
+          "kind": "stdcell",
+          "generator": "library",
+          "params": {
+            "cell": "sky130_fd_sc_hd__xor2_2"
+          },
+          "count": 1,
+          "members": [
+            {
+              "device": "XDECXOR2",
+              "unit": 0,
+              "nets": [
+                "Q2",
+                "BOR2",
+                "GND",
+                "GND",
+                "VDD",
+                "VDD",
+                "DDEC2"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "divider_intN_XBORAND2",
+          "kind": "stdcell",
+          "generator": "library",
+          "params": {
+            "cell": "sky130_fd_sc_hd__and2_2"
+          },
+          "count": 1,
+          "members": [
+            {
+              "device": "XBORAND2",
+              "unit": 0,
+              "nets": [
+                "NQ0",
+                "NQ1",
+                "GND",
+                "GND",
+                "VDD",
+                "VDD",
+                "BOR2"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "divider_intN_XQINV2",
+          "kind": "stdcell",
+          "generator": "library",
+          "params": {
+            "cell": "sky130_fd_sc_hd__inv_2"
+          },
+          "count": 1,
+          "members": [
+            {
+              "device": "XQINV2",
+              "unit": 0,
+              "nets": [
+                "Q2",
+                "GND",
+                "GND",
+                "VDD",
+                "VDD",
+                "NQ2"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "divider_intN_XCNT3",
+          "kind": "stdcell",
+          "generator": "library",
+          "params": {
+            "cell": "sky130_fd_sc_hd__dfrtp_2"
+          },
+          "count": 1,
+          "members": [
+            {
+              "device": "XCNT3",
+              "unit": 0,
+              "nets": [
+                "CLK",
+                "D3",
+                "RESETB",
+                "GND",
+                "GND",
+                "VDD",
+                "VDD",
+                "Q3"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "divider_intN_XLDMUX3",
+          "kind": "stdcell",
+          "generator": "library",
+          "params": {
+            "cell": "sky130_fd_sc_hd__mux2_2"
+          },
+          "count": 1,
+          "members": [
+            {
+              "device": "XLDMUX3",
+              "unit": 0,
+              "nets": [
+                "DDEC3",
+                "NSEL3",
+                "ZERO",
+                "GND",
+                "GND",
+                "VDD",
+                "VDD",
+                "D3"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "divider_intN_XDECXOR3",
+          "kind": "stdcell",
+          "generator": "library",
+          "params": {
+            "cell": "sky130_fd_sc_hd__xor2_2"
+          },
+          "count": 1,
+          "members": [
+            {
+              "device": "XDECXOR3",
+              "unit": 0,
+              "nets": [
+                "Q3",
+                "BOR3",
+                "GND",
+                "GND",
+                "VDD",
+                "VDD",
+                "DDEC3"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "divider_intN_XBORAND3",
+          "kind": "stdcell",
+          "generator": "library",
+          "params": {
+            "cell": "sky130_fd_sc_hd__and2_2"
+          },
+          "count": 1,
+          "members": [
+            {
+              "device": "XBORAND3",
+              "unit": 0,
+              "nets": [
+                "BOR2",
+                "NQ2",
+                "GND",
+                "GND",
+                "VDD",
+                "VDD",
+                "BOR3"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "divider_intN_XQINV3",
+          "kind": "stdcell",
+          "generator": "library",
+          "params": {
+            "cell": "sky130_fd_sc_hd__inv_2"
+          },
+          "count": 1,
+          "members": [
+            {
+              "device": "XQINV3",
+              "unit": 0,
+              "nets": [
+                "Q3",
+                "GND",
+                "GND",
+                "VDD",
+                "VDD",
+                "NQ3"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "divider_intN_XCNT4",
+          "kind": "stdcell",
+          "generator": "library",
+          "params": {
+            "cell": "sky130_fd_sc_hd__dfrtp_2"
+          },
+          "count": 1,
+          "members": [
+            {
+              "device": "XCNT4",
+              "unit": 0,
+              "nets": [
+                "CLK",
+                "D4",
+                "RESETB",
+                "GND",
+                "GND",
+                "VDD",
+                "VDD",
+                "Q4"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "divider_intN_XLDMUX4",
+          "kind": "stdcell",
+          "generator": "library",
+          "params": {
+            "cell": "sky130_fd_sc_hd__mux2_2"
+          },
+          "count": 1,
+          "members": [
+            {
+              "device": "XLDMUX4",
+              "unit": 0,
+              "nets": [
+                "DDEC4",
+                "NSEL4",
+                "ZERO",
+                "GND",
+                "GND",
+                "VDD",
+                "VDD",
+                "D4"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "divider_intN_XDECXOR4",
+          "kind": "stdcell",
+          "generator": "library",
+          "params": {
+            "cell": "sky130_fd_sc_hd__xor2_2"
+          },
+          "count": 1,
+          "members": [
+            {
+              "device": "XDECXOR4",
+              "unit": 0,
+              "nets": [
+                "Q4",
+                "BOR4",
+                "GND",
+                "GND",
+                "VDD",
+                "VDD",
+                "DDEC4"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "divider_intN_XBORAND4",
+          "kind": "stdcell",
+          "generator": "library",
+          "params": {
+            "cell": "sky130_fd_sc_hd__and2_2"
+          },
+          "count": 1,
+          "members": [
+            {
+              "device": "XBORAND4",
+              "unit": 0,
+              "nets": [
+                "BOR3",
+                "NQ3",
+                "GND",
+                "GND",
+                "VDD",
+                "VDD",
+                "BOR4"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "divider_intN_XQINV4",
+          "kind": "stdcell",
+          "generator": "library",
+          "params": {
+            "cell": "sky130_fd_sc_hd__inv_2"
+          },
+          "count": 1,
+          "members": [
+            {
+              "device": "XQINV4",
+              "unit": 0,
+              "nets": [
+                "Q4",
+                "GND",
+                "GND",
+                "VDD",
+                "VDD",
+                "NQ4"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "divider_intN_XCNT5",
+          "kind": "stdcell",
+          "generator": "library",
+          "params": {
+            "cell": "sky130_fd_sc_hd__dfrtp_2"
+          },
+          "count": 1,
+          "members": [
+            {
+              "device": "XCNT5",
+              "unit": 0,
+              "nets": [
+                "CLK",
+                "D5",
+                "RESETB",
+                "GND",
+                "GND",
+                "VDD",
+                "VDD",
+                "Q5"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "divider_intN_XLDMUX5",
+          "kind": "stdcell",
+          "generator": "library",
+          "params": {
+            "cell": "sky130_fd_sc_hd__mux2_2"
+          },
+          "count": 1,
+          "members": [
+            {
+              "device": "XLDMUX5",
+              "unit": 0,
+              "nets": [
+                "DDEC5",
+                "NSEL5",
+                "ZERO",
+                "GND",
+                "GND",
+                "VDD",
+                "VDD",
+                "D5"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "divider_intN_XDECXOR5",
+          "kind": "stdcell",
+          "generator": "library",
+          "params": {
+            "cell": "sky130_fd_sc_hd__xor2_2"
+          },
+          "count": 1,
+          "members": [
+            {
+              "device": "XDECXOR5",
+              "unit": 0,
+              "nets": [
+                "Q5",
+                "BOR5",
+                "GND",
+                "GND",
+                "VDD",
+                "VDD",
+                "DDEC5"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "divider_intN_XBORAND5",
+          "kind": "stdcell",
+          "generator": "library",
+          "params": {
+            "cell": "sky130_fd_sc_hd__and2_2"
+          },
+          "count": 1,
+          "members": [
+            {
+              "device": "XBORAND5",
+              "unit": 0,
+              "nets": [
+                "BOR4",
+                "NQ4",
+                "GND",
+                "GND",
+                "VDD",
+                "VDD",
+                "BOR5"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "divider_intN_XQINV5",
+          "kind": "stdcell",
+          "generator": "library",
+          "params": {
+            "cell": "sky130_fd_sc_hd__inv_2"
+          },
+          "count": 1,
+          "members": [
+            {
+              "device": "XQINV5",
+              "unit": 0,
+              "nets": [
+                "Q5",
+                "GND",
+                "GND",
+                "VDD",
+                "VDD",
+                "NQ5"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "divider_intN_XZDET",
+          "kind": "stdcell",
+          "generator": "library",
+          "params": {
+            "cell": "sky130_fd_sc_hd__and2_2"
+          },
+          "count": 1,
+          "members": [
+            {
+              "device": "XZDET",
+              "unit": 0,
+              "nets": [
+                "BOR5",
+                "NQ5",
+                "GND",
+                "GND",
+                "VDD",
+                "VDD",
+                "ZERO"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "divider_intN_XFBFF",
+          "kind": "stdcell",
+          "generator": "library",
+          "params": {
+            "cell": "sky130_fd_sc_hd__dfxtp_2"
+          },
+          "count": 1,
+          "members": [
+            {
+              "device": "XFBFF",
+              "unit": 0,
+              "nets": [
+                "CLK",
+                "ZERO",
+                "GND",
+                "GND",
+                "VDD",
+                "VDD",
+                "FBCLK"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

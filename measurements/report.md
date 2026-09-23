@@ -1,6 +1,6 @@
 # PLL characterization report
 
-Generated: 2026-09-23T08:02:58Z by `measurements/aggregate.py` -- this file is a **derived rollup**, not append-only evidence itself; re-run the aggregator to refresh it (see `measurements/README.md`).
+Generated: 2026-09-23T08:57:51Z by `measurements/aggregate.py` -- this file is a **derived rollup**, not append-only evidence itself; re-run the aggregator to refresh it (see `measurements/README.md`).
 
 Rolls up every `sim/*/records/*.md` and `layout/*/reports/*/record.md` evidence record into one table, keyed by `spec/target-spec.md` row number. **No row below is a ratified PLL result, and a populated row is not a passing row.** Only rows 0, 1, 19 and 20 of `spec/target-spec.md` are ratified (`DR-001`/`DR-002`/`DR-003`); every numeric row an evidence record appears against is still DRAFT. A record listed against a row is *evidence bearing on that row* -- the measured input a future decision record would argue the row from -- never a verdict on it, and never a substitute for the ratification act itself. Read each record before quoting it: its own `Verdict` column here is the record's overall pass/fail, which for several campaigns means "the harness ran and recorded what happened", including recorded non-lock.
 
@@ -61,14 +61,14 @@ Harness-plumbing evidence, negative controls, and anything whose citation does n
 | sim | pdk-smoke | 20260814-022011-dcd6160 | harness self-test -- proves xschem netlisting + sim/harness PVT-point substitution (process corner, supply, temperature) + ngspice execution work end-to-end ag… | PASS | 27/27 points passed | declares it measures no spec row (declared by `sim/pdk-smoke/testbench/tb.json`; the record itself predates the citation convention and is append-only) | `sim/pdk-smoke/records/20260814-022011-dcd6160.md` |
 | sim | pdk-smoke | 20260817-171010-7823a49 | harness self-test -- proves sim/harness's Monte Carlo trial generation + sky130 MC_MM_SWITCH/MC_PR_SWITCH statistical-sampling patching + ngspice execution wor… | PASS | 10/10 trials passed | declares it measures no spec row (declared by `sim/pdk-smoke/testbench/tb.json`; the record itself predates the citation convention and is append-only) | `sim/pdk-smoke/records/20260817-171010-7823a49.md` |
 | sim | pll | 20260819-123508-fe0e6df | first PLL-specific harness campaign -- proves xschem netlisting + sim/harness PVT-point substitution (process corner, supply, temperature) + ngspice execution… | FAIL | 17/27 points passed | declares it measures no spec row (declared by `sim/pll/testbench/tb.json`; the record itself predates the citation convention and is append-only) | `sim/pll/records/20260819-123508-fe0e6df.md` |
-| layout | pll | 20260906-195205-4a08c71 | Device-level layout of the closed-loop PLL schematic (`design/top/netlist/top.spice`), drawn by `layout/bin/run-pll-layout-flow.sh` (issue #16). Read this file… | PASS | 8/8 checks passed | declares it measures no spec row (declared by `layout/pll/spec-rows.json`; the record itself predates the citation convention and is append-only) | `layout/pll/reports/20260906-195205-4a08c71/record.md` |
-| layout | trivial-cell | 20260905-184511-4285e0a | Trivial-cell proof of the `klt`-driven DRC/LVS flow (issue #2) -- **not** PLL-block layout, which is a later issue's scope (there is no PLL schematic yet). | PASS | 6/6 checks passed | declares it measures no spec row (declared by `layout/trivial-cell/spec-rows.json`; the record itself predates the citation convention and is append-only) | `layout/trivial-cell/reports/20260905-184511-4285e0a/record.md` |
+| layout | pll | 20260923-084911-13ecfe9 | Device-level layout of the closed-loop PLL schematic (`design/top/netlist/top.spice`), drawn by `layout/bin/run-pll-layout-flow.sh` (issue #16). Read this file… | PASS | 8/8 checks passed | declares it measures no spec row (cited by the record itself) | `layout/pll/reports/20260923-084911-13ecfe9/record.md` |
+| layout | trivial-cell | 20260923-084234-13ecfe9 | Trivial-cell proof of the `klt`-driven DRC/LVS flow (issue #2) -- **not** PLL-block layout, which is a later issue's scope (there is no PLL schematic yet). - *… | PASS | 6/6 checks passed | declares it measures no spec row (cited by the record itself) | `layout/trivial-cell/reports/20260923-084234-13ecfe9/record.md` |
 
 ## Scan summary
 
-- Evidence records scanned: 39
+- Evidence records scanned: 41
 - Current (non-superseded): 26
-- Superseded (excluded from the tables above; still retained, append-only, under `sim/`/`layout/`): 13
-- Spec-row citation stated by the record itself: 14
-- Spec-row citation resolved from the experiment's own declaration (`sim/<slug>/testbench/tb.json` / `layout/<block>/spec-rows.json`) because the record predates the convention and is append-only: 12
+- Superseded (excluded from the tables above; still retained, append-only, under `sim/`/`layout/`): 15
+- Spec-row citation stated by the record itself: 16
+- Spec-row citation resolved from the experiment's own declaration (`sim/<slug>/testbench/tb.json` / `layout/<block>/spec-rows.json`) because the record predates the convention and is append-only: 10
 - **Current records with no spec-row declaration at all: 0**

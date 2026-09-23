@@ -114,12 +114,23 @@ python3 "$LAYOUT_DIR/bin/pll_layout.py" \
 # cells are `pll_pfd_cp`/`pll_loop_filter`/...  (see layout/pll/README.md),
 # a naming difference `klt lvs` does not resolve across un-flattened circuit
 # boundaries.
+#
+# `reference.deck` is required here as of `klayout-tools==0.6.0` (issue #157's
+# pin bump). The emitted reference netlist writes MOS lengths/widths as bare
+# numbers (`L=0.3`), and `klt lvs`'s `subckt-call` -> plain-element conversion
+# now refuses to guess whether a unit-less literal is SI metres or already
+# micrometres under an ambient `.option scale=1.0u` -- it errors out and names
+# `reference.deck` as the way to resolve the convention. Naming the same deck
+# the layout side uses is the correct answer, not a workaround: both sides are
+# then read under one stated unit convention instead of two assumed ones. At
+# the previous pin (`0.4.0`) the field was absent and the converter guessed;
+# the refreshed record is what shows whether that guess matched.
 cat > "$SPOT_DIR/lvs.request.json" <<EOF
 {
   "schema": "klt.lvs.request/1",
   "engine": "klayout",
   "layout": { "file": "$TOP_CELL.gds", "deck": "$DECK", "top": "$TOP_CELL" },
-  "reference": { "netlist": "reference.spice", "top": "top", "form": "subckt-call" },
+  "reference": { "netlist": "reference.spice", "top": "top", "form": "subckt-call", "deck": "$DECK" },
   "options": { "flatten_reference": true, "flatten_layout": true }
 }
 EOF

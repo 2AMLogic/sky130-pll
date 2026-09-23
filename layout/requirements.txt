@@ -51,6 +51,52 @@
 #     the bump *picks up*, not what a re-run *proves*; those are checked
 #     separately, per this repo's CLAUDE.md ("no claim without evidence").
 #
+# Bumped again for issue #157 (2026-09-23), staying on a plain PyPI version
+# pin: `klayout-tools==0.6.0`
+# (https://pypi.org/project/klayout-tools/0.6.0/, published 2026-09-22).
+# The trigger was a reproducibility gap rather than a layout defect: the
+# committed `klt erc` supply record (`layout/pll/erc-reports/`, issue #147)
+# could not have been produced by this file's pinned build at all, because
+# `0.4.0`'s `klt erc` has neither the `stackup[0].active_layer` field that
+# `layout/pll/erc-supply-spec.json` requires nor the `provenance` block whose
+# content hashes make a record re-verifiable. `layout/pll/erc-reports/README.md`
+# said so in as many words. A pinned toolchain that cannot regenerate the
+# repository's own evidence is not a pin.
+#
+# `0.6.0` is a strict superset of `0.4.0`, not a rebase onto a different line
+# of history: `gh api .../compare/v0.4.0...v0.6.0` -> `ahead_by: 507,
+# behind_by: 0` (and `v0.5.0...v0.6.0` -> `ahead_by: 271, behind_by: 0`).
+# `0.5.0` was tagged 2026-09-15, which is before all three fixes below landed,
+# so it is NOT a sufficient target -- `0.6.0` (tag `v0.6.0` -> commit
+# `c622e8ad`) is the earliest published release that carries them.
+#
+# What #157's bump picks up, on top of everything #17 already picked up:
+#
+#   * 2AMLogic/klayout-tools#1979 -> fixed by PR #2001, merge commit
+#     `cfec44c1` (merged 2026-09-17; `gh api .../compare/cfec44c1...v0.6.0`
+#     -> `behind_by: 0`). `klt erc`'s antenna check counted tie-cell poly
+#     resistors as gates, producing false antenna-ratio violations. The fix
+#     adds `stackup[0].active_layer`, which makes the antenna denominator
+#     `poly n diff` (real gate-oxide area) instead of raw poly area. This
+#     repo's PLL layout draws poly resistors (`poly.res` 66/13 -- the
+#     loop-filter and PFD/CP xhigh devices), which is exactly the
+#     gate-oxide-free poly that field exists to exclude, and
+#     `layout/pll/erc-supply-spec.json` already declares it.
+#   * 2AMLogic/klayout-tools#1968 -> fixed by PR #1984, merge commit
+#     `f59e869f` (merged 2026-09-17; `behind_by: 0` vs `v0.6.0`). `klt erc`
+#     emitted no `status` and no `provenance` block, so its output could not
+#     be graded.
+#   * 2AMLogic/klayout-tools#2036 -> fixed by PR #2049, merge commit
+#     `471dc9f8` (merged 2026-09-18; `behind_by: 0` vs `v0.6.0`). `klt erc`'s
+#     `provenance` block gained the `content_hash` entries that pin a report
+#     to both of its inputs (the layout AND the spec), which is what makes a
+#     committed record re-verifiable rather than merely present.
+#
+# As with #17's header: this states what the bump *picks up*, not what a
+# re-run *proves*. What the re-runs actually produced is in the refreshed
+# records under `layout/trivial-cell/reports/`, `layout/pll/reports/` and
+# `layout/pll/erc-reports/` -- read those, not this comment, for the verdict.
+#
 # Bump discipline, mirrored from sky130-bandgap and from #46's own commit-pin
 # precedent (still the discipline to follow if a future bump goes back to a
 # git-commit pin instead of a PyPI version): pin explicitly (a commit hash or
@@ -59,11 +105,11 @@
 # layout/bin/run-trivial-cell-flow.sh and layout/bin/run-pll-layout-flow.sh,
 # checking the refreshed records in, as the non-regression proof.
 #
-# `klt --version` reports `0.4.0` at this pin (upstream bumped the package
-# version this time, unlike the #46 commit-pin era where `klt --version`
-# stayed at `0.2.0` across different commits) -- but `layout/bin/setup-venv.sh`
-# still installs with `--force-reinstall` unconditionally, which remains
-# correct and is not a no-op to remove: it is what makes a future pin bump
-# that reuses the same reported version (e.g. a later commit pin) safe again
-# without a separate code change.
-klayout-tools==0.4.0
+# `klt --version` reports `0.6.0` at this pin (upstream has bumped the package
+# version on every release since `0.3.0`, unlike the #46 commit-pin era where
+# `klt --version` stayed at `0.2.0` across different commits) -- but
+# `layout/bin/setup-venv.sh` still installs with `--force-reinstall`
+# unconditionally, which remains correct and is not a no-op to remove: it is
+# what makes a future pin bump that reuses the same reported version (e.g. a
+# later commit pin) safe again without a separate code change.
+klayout-tools==0.6.0

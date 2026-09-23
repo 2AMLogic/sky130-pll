@@ -27,10 +27,16 @@ build used. **Check the hashes before trusting a record**: `klt erc`'s verdict
 depends on two inputs, not one, and a report pinned to only the layout cannot
 be re-verified against the declarations it was actually run with.
 
-The committed records were **not** produced with this repo's pinned `klt`
-(`layout/requirements.txt` → `klayout-tools==0.4.0`), whose `klt erc` predates
-both `stackup[0].active_layer` and the `provenance` block. See the current
-record's "What was run" section.
+The current record **is** produced with this repo's pinned `klt`
+(`layout/requirements.txt` → `klayout-tools==0.6.0`) — issue #157 bumped the
+pin for exactly that reason and re-ran both layout flows plus this run at it.
+The first record (`20260923-062347-b3abad8`) was not: it was made with a
+`0.5.0+g…` build that is not resolvable upstream, and the pin of its day
+(`==0.4.0`) had neither `stackup[0].active_layer` nor the `provenance` block.
+It is kept, unedited, as the superseded record. See the current record's "What
+was run" and "What the pin bump actually changed" sections — including the
+measured `0.4.0`-vs-`0.6.0` antenna difference, which is what the missing
+`active_layer` support was costing.
 
 ## What a clean record here does and does not establish
 
@@ -66,6 +72,9 @@ rules.
 
 ## Records
 
-| Record | Layout record | Verdict on item 11's rules |
-| --- | --- | --- |
-| [`20260923-062347-b3abad8`](20260923-062347-b3abad8/record.md) | `20260906-195205-4a08c71` | one island per declared supply (PASS); no supply short (PASS); `erc.missing_tie` NOT COMPUTED |
+Newest first. `LATEST` names the current one.
+
+| Record | Layout record | `klt` | Verdict on item 11's rules |
+| --- | --- | --- | --- |
+| [`20260923-085051-13ecfe9`](20260923-085051-13ecfe9/record.md) | `20260923-084911-13ecfe9` | `0.6.0` (**the pin**) | one island per declared supply (PASS); no supply short (PASS); `erc.missing_tie` NOT COMPUTED |
+| [`20260923-062347-b3abad8`](20260923-062347-b3abad8/record.md) — superseded | `20260906-195205-4a08c71` (byte-identical stream) | `0.5.0+g2f64ab88bfcc` (not the pin, not resolvable upstream) | same verdict; kept unedited as the record the current one supersedes |
