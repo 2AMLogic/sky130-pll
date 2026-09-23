@@ -99,6 +99,7 @@ design/        xschem schematics/symbols + SPICE netlist snapshots (4 blocks + t
 sim/           PVT corner harness (stood up) + append-only evidence records; no PLL testbench yet
 layout/        klt-driven DRC/LVS flow (stood up, proven on a trivial cell); PLL-block GDS not yet drawn
 measurements/  per-spec-row report aggregator (rolls up sim/+layout/ evidence) + silicon characterization (the latter empty until there is silicon)
+docs/          environment setup, plus docs/t1-gap.md — where each T1 design-evidence item's evidence and tracking issue live
 ```
 
 Start with `spec/target-spec.md` for *what is being targeted and why nothing is
