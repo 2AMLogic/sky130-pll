@@ -247,6 +247,19 @@ def _render_measurement_criteria(a, spec, methodology_note: str) -> None:
         "waveform data as regenerable from the frozen netlist plus the logged "
         "environment."
     )
+    if spec.ripple is not None:
+        a(
+            f"  - Ripple (reported, not gated on): {spec.ripple.summary}. The "
+            "ripple nodes are `linearize`d onto the same "
+            f"{spec.tran_step} grid and dumped alongside the clock, and "
+            "`sim/harness/measure.py`'s `ripple_pp` takes min/max/peak-to-peak "
+            "over the window's samples -- so any excursion narrower than that "
+            "grid step is attenuated by the resampling, and the figure is the "
+            "ripple at that grid's bandwidth. The window is marked **in lock** "
+            "only if the lock criterion above was already met at the window's "
+            "start; otherwise the figure is shown but labelled as not "
+            "ripple-in-lock evidence."
+        )
     a(
         "  - Not measured here: loop bandwidth and phase margin are open-loop "
         "quantities and need their own AC/linearized-model testbench -- see "
@@ -455,6 +468,44 @@ def _render_measured_points_table(a, results, spec) -> None:
             )
 
 
+def _render_ripple_table(a, results, spec) -> None:
+    """Per-point ripple table for a manifest with a `measure.ripple` block.
+
+    One column pair (pp, [min..max]) per ripple node, plus whether the window
+    was in lock -- a ripple figure from a point that never locked is still
+    shown (it is what the rail/control node did), but is explicitly marked as
+    not ripple-in-lock evidence.
+    """
+    nodes = spec.ripple.nodes
+    a("")
+    a(f"- **Ripple** ({spec.ripple.summary}; reported, not gated on):")
+    a("")
+    head = " | ".join(f"v({n}) pp | v({n}) min..max" for n in nodes)
+    a(f"  | Corner | Temp (C) | Supply (V) | Window in lock | {head} |")
+    a("  |---|---|---|---|" + "---|---|" * len(nodes))
+    for r in results:
+        p = r.point
+        m = r.measurements[0] if r.measurements else None
+        by_node = {x.node: x for x in (m.ripple if m else ())}
+        if not by_node:
+            in_lock = "-"
+        else:
+            flag = next(iter(by_node.values())).in_lock
+            in_lock = "n/a" if flag is None else ("yes" if flag else "**no**")
+        cells = []
+        for n in nodes:
+            x = by_node.get(n)
+            if x is None or x.pp is None:
+                cells.append("- | -")
+            else:
+                cells.append(f"{measure_mod.format_v(x.pp)} | {x.v_min:.5g}..{x.v_max:.5g} V")
+        a(
+            f"  | {p.corner} | {p.temp_c:g} | {p.supply_v:.2f} | {in_lock} | "
+            + " | ".join(cells)
+            + " |"
+        )
+
+
 def _render_sweep_tables(a, results, spec) -> None:
     """Full swept-axis measurement table plus a per-point slope summary.
 
@@ -611,6 +662,8 @@ def render(
     a("")
     if spec is not None and not spec.sweep:
         _render_measured_points_table(a, results, spec)
+        if spec.ripple is not None:
+            _render_ripple_table(a, results, spec)
     else:
         a("  | Corner | Temp (C) | Supply (V) | Verdict | Detail |")
         a("  |---|---|---|---|---|")

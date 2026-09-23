@@ -499,12 +499,25 @@ def _reduce_measurements(spec, point: PvtPoint, work_dir: Path, prefix: str):
                 f"ngspice completed but wrote no waveform dump {name!r}",
             )
         try:
-            times, values = measure_mod.parse_wrdata(dump.read_text())
+            extra = None
+            if spec.ripple is not None:
+                # Multi-node dump: column order is `spec.dump_nodes`, whose
+                # first entry is always the measured clock node.
+                nodes = spec.dump_nodes
+                times, columns = measure_mod.parse_wrdata_columns(
+                    dump.read_text(), len(nodes)
+                )
+                values = columns[0]
+                extra = dict(zip(nodes[1:], columns[1:]))
+            else:
+                times, values = measure_mod.parse_wrdata(dump.read_text())
+            measurements.append(
+                measure_mod.measure_trace(
+                    times, values, spec, point.supply_v, label=label, extra=extra
+                )
+            )
         except measure_mod.MeasureError as e:
             return tuple(measurements), False, f"{name}: {e}"
-        measurements.append(
-            measure_mod.measure_trace(times, values, spec, point.supply_v, label=label)
-        )
 
     passed, reason = measure_mod.aggregate(measurements, spec)
     return tuple(measurements), passed, reason

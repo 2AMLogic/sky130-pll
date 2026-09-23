@@ -21,7 +21,11 @@ synthetic traces):
    inside one ngspice invocation, paying the sky130 model-library parse once.
 2. **Reduction** -- `parse_wrdata` -> `edge_times` -> `mean_frequency` /
    `duty_cycle` / `lock_time` / `period_jitter` -> `measure_trace`, which folds
-   those into one `Measurement` per (point, swept value).
+   those into one `Measurement` per (point, swept value). A manifest with a
+   `measure.ripple` block also dumps the named DC-ish nodes
+   (`parse_wrdata_columns`) and reduces each to a peak-to-peak figure over the
+   final settled window of the transient (`ripple_pp`), reported alongside --
+   never gating -- the clock measurement.
 
 ## What "locked" means here
 
@@ -103,7 +107,7 @@ still measures nothing open-loop -- but the deferral is no longer open.
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from statistics import fmean, pstdev
 
 # Echoed by `build_control_block` as the last statement of the injected
@@ -241,6 +245,29 @@ class JitterSpec:
 
 
 @dataclass(frozen=True)
+class RippleSpec:
+    """The optional `measure.ripple` block: which DC-ish nodes to reduce to a
+    peak-to-peak ripple figure, and over how long a settled window.
+
+    The window is the **final** `window_s` of the transient,
+    `[tran_stop - window_s, tran_stop]`. Anchoring it to the end of the run
+    rather than to the measured lock instant is deliberate: the lock
+    criterion is a +/- few-percent frequency band, and a loop that has just
+    entered it is still slewing `VCTRL` towards its final value -- a window
+    starting at the lock instant would fold that residual settling drift into
+    the "ripple" figure. See `ripple_pp`.
+    """
+
+    nodes: tuple
+    window_s: float
+
+    @property
+    def summary(self) -> str:
+        names = ", ".join(f"v({n})" for n in self.nodes)
+        return f"peak-to-peak of {names} over the final {_fmt_s(self.window_s)} of the transient"
+
+
+@dataclass(frozen=True)
 class MeasureSpec:
     """The `measure` block of a `tb.json` manifest, parsed."""
 
@@ -267,10 +294,26 @@ class MeasureSpec:
     # catches the real failure (a corner where nothing oscillates at all).
     min_oscillating_points: int = 0
     extra_nodes: tuple = field(default=())
+    ripple: RippleSpec | None = None
 
     @property
     def tran_stop_s(self) -> float:
         return parse_spice_time(self.tran_stop)
+
+    @property
+    def dump_nodes(self) -> tuple:
+        """Every node this spec dumps, in `wrdata` column order.
+
+        The measured `node` is always first (so `parse_wrdata`'s two-column
+        read of a dump is unchanged), then `extra_nodes`, then any ripple node
+        not already listed. Duplicates are dropped, first occurrence wins.
+        """
+        ordered = []
+        ripple_nodes = self.ripple.nodes if self.ripple else ()
+        for n in (self.node,) + tuple(self.extra_nodes) + tuple(ripple_nodes):
+            if n not in ordered:
+                ordered.append(n)
+        return tuple(ordered)
 
     @classmethod
     def from_manifest(cls, manifest: dict):
@@ -339,6 +382,31 @@ class MeasureSpec:
                 for v in sw["values"]
             )
 
+        ripple = None
+        if "ripple" in block:
+            rp = block["ripple"]
+            missing = [k for k in ("nodes", "window") if k not in rp]
+            if missing:
+                raise MeasureError(
+                    f"manifest `measure.ripple` block is missing {', '.join(missing)}"
+                )
+            nodes = tuple(rp["nodes"])
+            if not nodes:
+                raise MeasureError("manifest `measure.ripple.nodes` is empty")
+            window_s = parse_spice_time(rp["window"])
+            stop_s = parse_spice_time(str(block["tran_stop"]))
+            if not 0.0 < window_s <= stop_s:
+                raise MeasureError(
+                    f"manifest `measure.ripple.window` ({rp['window']!r}) must be "
+                    f"positive and no longer than tran_stop ({block['tran_stop']!r})"
+                )
+            if sweep:
+                # A swept campaign re-runs the transient per swept value; a
+                # per-sweep ripple figure is not something any campaign needs
+                # yet, so refuse it rather than silently reducing only one.
+                raise MeasureError("`measure.ripple` is not supported on a swept manifest")
+            ripple = RippleSpec(nodes=nodes, window_s=window_s)
+
         return cls(
             node=block["node"],
             tran_step=str(block["tran_step"]),
@@ -357,6 +425,7 @@ class MeasureSpec:
             require_oscillation=bool(block.get("require_oscillation", True)),
             min_oscillating_points=int(block.get("min_oscillating_points", 0)),
             extra_nodes=tuple(block.get("extra_nodes", ())),
+            ripple=ripple,
         )
 
 
@@ -383,8 +452,16 @@ def build_control_block(spec: MeasureSpec, prefix: str = "") -> str:
     lines.append(".control")
     lines.append("set filetype=ascii")
     tran = f"tran {spec.tran_step} {spec.tran_stop}" + (" uic" if spec.uic else "")
-    nodes = (spec.node,) + tuple(spec.extra_nodes)
+    nodes = spec.dump_nodes
     vectors = " ".join(f"v({n})" for n in nodes)
+    multi = len(nodes) > 1
+    if multi:
+        # One shared time column instead of ngspice's default (scale, value)
+        # pair per vector, so a multi-node dump reads as `t v1 v2 ...`.
+        # `parse_wrdata_columns` accepts either layout regardless, and a
+        # single-node dump is identical under both, so the single-node
+        # control block is left byte-for-byte as it always was.
+        lines.append("set wr_singlescale")
     # `save` is load-bearing on a long window, not an optimisation: ngspice
     # otherwise retains every node voltage and branch current of the whole
     # hierarchy for every timepoint, and a lock-capable transient across a
@@ -398,7 +475,10 @@ def build_control_block(spec: MeasureSpec, prefix: str = "") -> str:
         if point is not None:
             lines.append(f"alter {point.source} {point.value:g}")
         lines.append(tran)
-        lines.append(f"linearize v({spec.node})")
+        # `linearize` with arguments builds a *new* plot holding only the
+        # vectors it names, and makes that plot current -- so every dumped
+        # vector has to be named here, or `wrdata` below would not find it.
+        lines.append(f"linearize {vectors}" if multi else f"linearize v({spec.node})")
         lines.append(f"wrdata {names[i]} {vectors}")
         # Free the swept point's plot before the next one: a sweep campaign
         # runs every point inside one ngspice invocation, so without this the
@@ -430,6 +510,67 @@ def parse_wrdata(text: str) -> tuple:
     if not times:
         raise MeasureError("waveform dump contained no samples")
     return times, values
+
+
+def parse_wrdata_columns(text: str, n_vectors: int) -> tuple:
+    """Parse a multi-vector ngspice `wrdata` dump into (times, [values, ...]).
+
+    Accepts both layouts ngspice can write for `n_vectors` vectors: the
+    `wr_singlescale` one (`t v1 v2 ... vn`, which `build_control_block` asks
+    for) and the default paired one (`t v1 t v2 ... t vn`). Any row whose
+    column count matches neither is rejected rather than guessed at -- a
+    silently mis-assigned column would attribute one node's waveform to
+    another.
+    """
+    if n_vectors < 1:
+        raise MeasureError("parse_wrdata_columns needs at least one vector")
+    times = []
+    columns = [[] for _ in range(n_vectors)]
+    for line in text.splitlines():
+        parts = line.split()
+        if not parts:
+            continue
+        try:
+            nums = [float(p) for p in parts]
+        except ValueError:
+            continue
+        if len(nums) == n_vectors + 1:
+            row = nums[1:]
+        elif len(nums) == 2 * n_vectors:
+            row = nums[1::2]
+        else:
+            raise MeasureError(
+                f"waveform dump row has {len(nums)} columns; expected "
+                f"{n_vectors + 1} (single scale) or {2 * n_vectors} (paired) "
+                f"for {n_vectors} vector(s)"
+            )
+        times.append(nums[0])
+        for col, v in zip(columns, row):
+            col.append(v)
+    if not times:
+        raise MeasureError("waveform dump contained no samples")
+    return times, columns
+
+
+def ripple_pp(times, values, t_from: float, t_to: float | None = None) -> tuple | None:
+    """(min, max, peak-to-peak) of `values` over samples with
+    `t_from <= t <= t_to` (`t_to=None` means through the end of the trace).
+
+    Returns None when no sample falls inside the window -- never a zero
+    ripple, which would read as a (spuriously perfect) measurement.
+
+    This is a plain extremum statistic over the *samples it is given*: on a
+    dump `linearize`d onto a uniform grid, any excursion narrower than the
+    grid step is attenuated by the resampling, so the result is the ripple
+    as seen at that grid's bandwidth, not an unbounded-bandwidth peak.
+    """
+    window = [
+        v for t, v in zip(times, values) if t >= t_from and (t_to is None or t <= t_to)
+    ]
+    if not window:
+        return None
+    lo, hi = min(window), max(window)
+    return lo, hi, hi - lo
 
 
 def edge_times(times, values, threshold: float, hysteresis: float = 0.0) -> tuple:
@@ -561,6 +702,47 @@ def period_jitter(rising, t_from: float | None = None) -> tuple:
 
 
 @dataclass(frozen=True)
+class RippleResult:
+    """`ripple_pp` over one node's settled window, plus the context a reader
+    needs to know whether it is *ripple-in-lock* evidence at all."""
+
+    node: str
+    t_from_s: float
+    t_to_s: float
+    v_min: float | None
+    v_max: float | None
+    pp: float | None
+    # True: the loop met the lock criterion at or before `t_from_s`, so the
+    # whole window is in lock. False: it did not (never locked, or locked
+    # inside the window). None: the manifest has no lock criterion.
+    in_lock: bool | None
+
+    def describe(self) -> str:
+        if self.pp is None:
+            return f"v({self.node}) ripple -: no samples in window"
+        return (
+            f"v({self.node}) ripple {_fmt_v(self.pp)} pp "
+            f"[{self.v_min:.5g} .. {self.v_max:.5g} V]"
+        )
+
+
+def _fmt_v(value: float | None) -> str:
+    if value is None:
+        return "-"
+    mag = abs(value)
+    if mag >= 1.0:
+        return f"{value:.4g} V"
+    if mag >= 1e-3:
+        return f"{value * 1e3:.4g} mV"
+    return f"{value * 1e6:.4g} uV"
+
+
+def format_v(value: float | None) -> str:
+    """Public voltage formatter, for report.py's ripple table."""
+    return _fmt_v(value)
+
+
+@dataclass(frozen=True)
 class Measurement:
     """One measured operating point of one PVT point."""
 
@@ -581,6 +763,9 @@ class Measurement:
     # can say how much data is behind the figure it prints.
     period_jitter_frac: float | None = None
     jitter_cycles: int | None = None
+    # One `RippleResult` per `measure.ripple` node; empty when the manifest
+    # asks for no ripple reduction.
+    ripple: tuple = ()
 
     def summary(self) -> str:
         """One-line human-readable form, used in the record's result table."""
@@ -655,6 +840,7 @@ def measure_trace(
     spec: MeasureSpec,
     supply_v: float,
     label: str | None = None,
+    extra: dict | None = None,
 ) -> Measurement:
     """Reduce one transient trace to a `Measurement`.
 
@@ -662,7 +848,60 @@ def measure_trace(
     tracks the swept supply instead of being pinned to the nominal rail --
     at the 1.62 V corner a rail-to-rail clock is measured at 0.81 V, not at
     0.90 V.
+
+    `extra` maps each additional dumped node name to its values (sampled on
+    the same `times`); it is only consulted when the manifest carries a
+    `measure.ripple` block. Ripple never changes a point's pass/fail: it is
+    reported alongside the clock measurement, labelled with whether its
+    window was in lock, and gating on it is a decision for whichever
+    decision record eventually cites it.
     """
+    m = _measure_clock(times, values, spec, supply_v, label)
+    if spec.ripple is None:
+        return m
+
+    extra = extra or {}
+    t_to = spec.tran_stop_s
+    t_from = t_to - spec.ripple.window_s
+    if spec.lock is None:
+        in_lock = None
+    else:
+        in_lock = bool(m.locked and m.lock_time_s is not None and m.lock_time_s <= t_from)
+    results = []
+    for node in spec.ripple.nodes:
+        series = values if node == spec.node else extra.get(node)
+        if series is None:
+            raise MeasureError(f"ripple node v({node}) was not in the waveform dump")
+        stat = ripple_pp(times, series, t_from, t_to)
+        lo, hi, pp = stat if stat is not None else (None, None, None)
+        results.append(
+            RippleResult(
+                node=node, t_from_s=t_from, t_to_s=t_to,
+                v_min=lo, v_max=hi, pp=pp, in_lock=in_lock,
+            )
+        )
+    if in_lock is None:
+        context = ""
+    elif in_lock:
+        context = " (in lock)"
+    else:
+        context = " (**NOT in lock** -- not ripple-in-lock evidence)"
+    ripple_note = (
+        f"ripple over [{_fmt_s(t_from)}, {_fmt_s(t_to)}]{context}: "
+        + "; ".join(r.describe() for r in results)
+    )
+    return replace(m, ripple=tuple(results), note=f"{m.note}. {ripple_note}")
+
+
+def _measure_clock(
+    times,
+    values,
+    spec: MeasureSpec,
+    supply_v: float,
+    label: str | None = None,
+) -> Measurement:
+    """The clock half of `measure_trace`: oscillation, frequency, duty and
+    lock, from the measured node's threshold crossings."""
     threshold = spec.threshold_frac * supply_v
     hysteresis = spec.hysteresis_frac * supply_v
     rising, falling = edge_times(times, values, threshold, hysteresis)

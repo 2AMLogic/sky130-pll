@@ -792,6 +792,183 @@ class JitterAggregationTests(unittest.TestCase):
         self.assertTrue(passed)
 
 
+def dc_with_ripple(
+    *,
+    dc_v: float,
+    amp_v: float,
+    freq_hz: float,
+    duration_s: float,
+    step_s: float,
+    kick_until_s: float = 0.0,
+    kick_v: float = 0.0,
+):
+    """A DC level plus a sinusoidal ripple of known amplitude, optionally
+    preceded by a large start-up excursion (`kick_v` added before
+    `kick_until_s`) -- the shape of a control node that slews to its lock
+    value and then sits there, rippling at the reference rate."""
+    times, values = [], []
+    n = int(round(duration_s / step_s)) + 1
+    for i in range(n):
+        t = i * step_s
+        v = dc_v + amp_v * math.sin(2 * math.pi * freq_hz * t)
+        if t < kick_until_s:
+            v += kick_v
+        times.append(t)
+        values.append(v)
+    return times, values
+
+
+class RipplePrimitiveTests(unittest.TestCase):
+    """`ripple_pp` -- min/max/peak-to-peak of a DC-ish node over a settled
+    window, checked against a synthetic waveform whose ripple is known by
+    construction."""
+
+    def test_known_sinusoidal_ripple(self):
+        # 10 mV pp around 1.2 V, 10 MHz, sampled at 200 ps (50 samples/period,
+        # so the sampled extremes land within ~0.2 % of the true peaks).
+        times, values = dc_with_ripple(
+            dc_v=1.2, amp_v=0.005, freq_hz=10e6, duration_s=2e-6, step_s=200e-12
+        )
+        lo, hi, pp = measure.ripple_pp(times, values, t_from=1e-6)
+        self.assertAlmostEqual(lo, 1.195, delta=2e-5)
+        self.assertAlmostEqual(hi, 1.205, delta=2e-5)
+        self.assertAlmostEqual(pp, 0.010, delta=4e-5)
+        self.assertAlmostEqual(pp, hi - lo)
+
+    def test_startup_transient_before_the_window_is_excluded(self):
+        # A 0.5 V start-up excursion before 1 us must not leak into a window
+        # that starts at 1.5 us.
+        times, values = dc_with_ripple(
+            dc_v=1.2, amp_v=0.001, freq_hz=10e6, duration_s=3e-6, step_s=200e-12,
+            kick_until_s=1e-6, kick_v=0.5,
+        )
+        _lo, _hi, pp = measure.ripple_pp(times, values, t_from=1.5e-6)
+        self.assertAlmostEqual(pp, 0.002, delta=2e-5)
+        # ...and the same trace measured from t=0 does see it.
+        _lo, _hi, pp_all = measure.ripple_pp(times, values, t_from=0.0)
+        self.assertGreater(pp_all, 0.5)
+
+    def test_window_upper_bound_is_honoured(self):
+        times = [0.0, 1.0, 2.0, 3.0, 4.0]
+        values = [0.0, 1.0, 3.0, 2.0, 10.0]
+        self.assertEqual(measure.ripple_pp(times, values, 1.0, 3.0), (1.0, 3.0, 2.0))
+        self.assertEqual(measure.ripple_pp(times, values, 1.0), (1.0, 10.0, 9.0))
+
+    def test_a_flat_trace_has_zero_ripple(self):
+        times = [i * 1e-9 for i in range(100)]
+        values = [1.8] * 100
+        self.assertEqual(measure.ripple_pp(times, values, 0.0), (1.8, 1.8, 0.0))
+
+    def test_an_empty_window_is_none_not_zero(self):
+        # Zero would read as a (spuriously perfect) measurement.
+        times = [0.0, 1e-9, 2e-9]
+        values = [1.0, 1.1, 1.2]
+        self.assertIsNone(measure.ripple_pp(times, values, t_from=5e-9))
+
+
+class MultiColumnWrdataTests(unittest.TestCase):
+    def test_single_scale_layout(self):
+        text = " 0 1.8 0.0 1.80\n 1e-10 0.0 0.1 1.79\n"
+        times, cols = measure.parse_wrdata_columns(text, 3)
+        self.assertEqual(times, [0.0, 1e-10])
+        self.assertEqual(cols, [[1.8, 0.0], [0.0, 0.1], [1.80, 1.79]])
+
+    def test_paired_layout(self):
+        text = " 0 1.8 0 0.0\n 1e-10 0.0 1e-10 0.1\n"
+        times, cols = measure.parse_wrdata_columns(text, 2)
+        self.assertEqual(times, [0.0, 1e-10])
+        self.assertEqual(cols, [[1.8, 0.0], [0.0, 0.1]])
+
+    def test_a_row_of_the_wrong_width_is_rejected(self):
+        with self.assertRaises(measure.MeasureError):
+            measure.parse_wrdata_columns(" 0 1 2\n", 3)
+
+    def test_first_column_pair_still_reads_with_the_two_column_parser(self):
+        # The clock node is dumped first, so the unchanged two-column parser
+        # reads it correctly out of a single-scale multi-node dump too.
+        text = " 0 1.8 0.5 1.79\n 1e-10 0.0 0.6 1.78\n"
+        times, values = measure.parse_wrdata(text)
+        self.assertEqual(values, [1.8, 0.0])
+
+    def test_empty_dump_raises(self):
+        with self.assertRaises(measure.MeasureError):
+            measure.parse_wrdata_columns("\n", 2)
+
+
+class RippleMeasureTraceTests(unittest.TestCase):
+    SPEC = measure.MeasureSpec(
+        node="clk",
+        tran_step="200p",
+        tran_stop="3u",
+        min_edges=50,
+        timeout_s=600,
+        lock=measure.LockSpec(
+            target_hz=250e6, tolerance_frac=0.05, window_cycles=10, min_hold_cycles=20
+        ),
+        require_lock=False,
+        ripple=measure.RippleSpec(nodes=("vdd", "vctrl"), window_s=1e-6),
+    )
+
+    def _extra(self, times):
+        _t, vdd = dc_with_ripple(
+            dc_v=1.8, amp_v=0.002, freq_hz=10e6, duration_s=3e-6, step_s=200e-12
+        )
+        _t, vctrl = dc_with_ripple(
+            dc_v=1.1, amp_v=0.0005, freq_hz=10e6, duration_s=3e-6, step_s=200e-12,
+            kick_until_s=0.5e-6, kick_v=-1.0,
+        )
+        self.assertEqual(len(vdd), len(times))
+        return {"vdd": vdd, "vctrl": vctrl}
+
+    def test_locked_trace_reports_in_lock_ripple_per_node(self):
+        times, values = square_wave(freq_hz=250e6, duration_s=3e-6, step_s=200e-12)
+        m = measure.measure_trace(
+            times, values, self.SPEC, supply_v=1.8, extra=self._extra(times)
+        )
+        self.assertTrue(m.locked)
+        self.assertEqual([r.node for r in m.ripple], ["vdd", "vctrl"])
+        vdd, vctrl = m.ripple
+        self.assertTrue(vdd.in_lock)
+        self.assertAlmostEqual(vdd.t_from_s, 2e-6)
+        self.assertAlmostEqual(vdd.t_to_s, 3e-6)
+        self.assertAlmostEqual(vdd.pp, 0.004, delta=2e-5)
+        # The -1 V start-up kick on vctrl is long gone by the window.
+        self.assertAlmostEqual(vctrl.pp, 0.001, delta=1e-5)
+        self.assertIn("(in lock)", m.note)
+        self.assertIn("v(vdd) ripple 4", m.note)
+        self.assertTrue(m.passed)
+
+    def test_unlocked_trace_still_reports_ripple_but_says_it_is_not_in_lock(self):
+        # Stuck 40 % low: never locks. The ripple is still what the node did,
+        # but must be flagged as not ripple-in-lock evidence, and (with
+        # require_lock false) the point still passes -- no lock is evidence.
+        times, values = square_wave(freq_hz=150e6, duration_s=3e-6, step_s=200e-12)
+        m = measure.measure_trace(
+            times, values, self.SPEC, supply_v=1.8, extra=self._extra(times)
+        )
+        self.assertFalse(m.locked)
+        self.assertTrue(all(r.in_lock is False for r in m.ripple))
+        self.assertIn("NOT in lock", m.note)
+        self.assertTrue(m.passed)
+
+    def test_a_missing_ripple_node_is_an_error_not_a_zero(self):
+        times, values = square_wave(freq_hz=250e6, duration_s=3e-6, step_s=200e-12)
+        with self.assertRaises(measure.MeasureError):
+            measure.measure_trace(
+                times, values, self.SPEC, supply_v=1.8, extra={"vdd": values}
+            )
+
+    def test_no_ripple_block_leaves_the_measurement_unchanged(self):
+        spec = measure.MeasureSpec(
+            node="clk", tran_step="200p", tran_stop="3u", min_edges=50, timeout_s=600,
+            lock=self.SPEC.lock,
+        )
+        times, values = square_wave(freq_hz=250e6, duration_s=3e-6, step_s=200e-12)
+        m = measure.measure_trace(times, values, spec, supply_v=1.8)
+        self.assertEqual(m.ripple, ())
+        self.assertNotIn("ripple", m.note)
+
+
 class AggregationPolicyTests(unittest.TestCase):
     """`aggregate` is the pass/fail *policy* -- what a record's verdict column
     actually means. It lives beside the arithmetic so it can be pinned without
@@ -970,6 +1147,46 @@ class ManifestParsingTests(unittest.TestCase):
                 }
             )
 
+    def test_parses_a_ripple_block_and_orders_the_dump_nodes(self):
+        spec = measure.MeasureSpec.from_manifest(
+            {
+                "measure": {
+                    "node": "CLK",
+                    "tran_step": "200p",
+                    "tran_stop": "100u",
+                    "extra_nodes": ["VDD"],
+                    "ripple": {"nodes": ["VDD", "xxxtop.vctrl"], "window": "5u"},
+                }
+            }
+        )
+        self.assertEqual(spec.ripple.nodes, ("VDD", "xxxtop.vctrl"))
+        self.assertAlmostEqual(spec.ripple.window_s, 5e-6)
+        # Clock first, then extra_nodes, then any ripple node not yet listed.
+        self.assertEqual(spec.dump_nodes, ("CLK", "VDD", "xxxtop.vctrl"))
+
+    def test_malformed_ripple_blocks_are_rejected(self):
+        base = {"node": "clk", "tran_step": "1p", "tran_stop": "1u"}
+        bad = (
+            {"nodes": ["vdd"]},  # no window
+            {"window": "100n"},  # no nodes
+            {"nodes": [], "window": "100n"},
+            {"nodes": ["vdd"], "window": "2u"},  # longer than tran_stop
+        )
+        for block in bad:
+            with self.subTest(block=block):
+                with self.assertRaises(measure.MeasureError):
+                    measure.MeasureSpec.from_manifest({"measure": dict(base, ripple=block)})
+        with self.assertRaises(measure.MeasureError):
+            measure.MeasureSpec.from_manifest(
+                {
+                    "measure": dict(
+                        base,
+                        ripple={"nodes": ["vdd"], "window": "100n"},
+                        sweep={"source": "V2", "values": [0.8]},
+                    )
+                }
+            )
+
     def test_a_lock_block_without_a_target_is_rejected(self):
         with self.assertRaises(measure.MeasureError):
             measure.MeasureSpec.from_manifest(
@@ -1026,6 +1243,32 @@ class ControlBlockTests(unittest.TestCase):
         text = measure.build_control_block(spec)
         self.assertIn(".ic v(xxxvco.ring0)=0", text)
         self.assertIn("tran 20p 200n uic", text)
+
+    def test_single_node_block_is_unchanged_by_the_multi_node_support(self):
+        spec = measure.MeasureSpec(
+            node="clk", tran_step="200p", tran_stop="40u", timeout_s=60
+        )
+        text = measure.build_control_block(spec)
+        self.assertNotIn("wr_singlescale", text)
+        self.assertIn("save v(clk)\n", text)
+        self.assertIn("linearize v(clk)\n", text)
+
+    def test_ripple_block_dumps_every_node_on_one_time_column(self):
+        spec = measure.MeasureSpec(
+            node="CLK",
+            tran_step="200p",
+            tran_stop="100u",
+            timeout_s=60,
+            ripple=measure.RippleSpec(nodes=("VDD", "xxxtop.vctrl"), window_s=5e-6),
+        )
+        text = measure.build_control_block(spec)
+        vectors = "v(CLK) v(VDD) v(xxxtop.vctrl)"
+        self.assertIn("set wr_singlescale", text)
+        self.assertIn(f"save {vectors}\n", text)
+        # linearize must name every dumped vector: with arguments it builds a
+        # new plot holding only those, and wrdata reads from that plot.
+        self.assertIn(f"linearize {vectors}\n", text)
+        self.assertIn(f"wrdata point000.raw {vectors}\n", text)
 
     def test_waveform_dumps_use_the_raw_extension_so_they_stay_uncommitted(self):
         # sim/README.md's retention policy keeps waveform dumps out of the
