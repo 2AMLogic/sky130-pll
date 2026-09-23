@@ -1,6 +1,6 @@
 # PLL characterization report
 
-Generated: 2026-09-23T06:51:22Z by `measurements/aggregate.py` -- this file is a **derived rollup**, not append-only evidence itself; re-run the aggregator to refresh it (see `measurements/README.md`).
+Generated: 2026-09-23T08:02:58Z by `measurements/aggregate.py` -- this file is a **derived rollup**, not append-only evidence itself; re-run the aggregator to refresh it (see `measurements/README.md`).
 
 Rolls up every `sim/*/records/*.md` and `layout/*/reports/*/record.md` evidence record into one table, keyed by `spec/target-spec.md` row number. **No row below is a ratified PLL result, and a populated row is not a passing row.** Only rows 0, 1, 19 and 20 of `spec/target-spec.md` are ratified (`DR-001`/`DR-002`/`DR-003`); every numeric row an evidence record appears against is still DRAFT. A record listed against a row is *evidence bearing on that row* -- the measured input a future decision record would argue the row from -- never a verdict on it, and never a substitute for the ratification act itself. Read each record before quoting it: its own `Verdict` column here is the record's overall pass/fail, which for several campaigns means "the harness ran and recorded what happened", including recorded non-lock.
 
@@ -36,11 +36,11 @@ Rolls up every `sim/*/records/*.md` and `layout/*/reports/*/record.md` evidence 
 |  |  |  | sim/pll-lock (20260905-193322-0f1934d) | FAIL | `sim/pll-lock/records/20260905-193322-0f1934d.md` -- rows via `sim/pll-lock/testbench/tb.json` |
 |  |  |  | sim/pll-lock-1mhz (20260904-152129-f00ce3e) | FAIL | `sim/pll-lock-1mhz/records/20260904-152129-f00ce3e.md` -- rows via `sim/pll-lock-1mhz/testbench/tb.json` |
 |  |  |  | sim/pll-lock-25mhz (20260904-152213-f00ce3e) | FAIL | `sim/pll-lock-25mhz/records/20260904-152213-f00ce3e.md` -- rows via `sim/pll-lock-25mhz/testbench/tb.json` |
-| 9 | Period jitter | ≤ 1.0 % of the output period, RMS, conditional on a stated supply-ripple limit | No evidence | -- | -- |
-| 10 | Reference spur | ≤ −55 dBc (candidate) | No evidence | -- | -- |
+| 9 | Period jitter | ≤ 1.0 % of the output period, RMS, at `CLK` in lock, under a **DC-quiet supply** within row 1's ran… | No evidence | -- | -- |
+| 10 | Reference spur | ≤ −55 dBc (candidate) — **DRAFT by explicit decision (DR-006, #151)**, not by omission | No evidence | -- | -- |
 | 11 | Integrated RMS jitter / phase noise | **not spec'd** — derived-only, deliberately visible | No evidence | -- | -- |
 | 12 | Power | a budget at a stated frequency (gf180-pll used < 5 mW at 100 MHz on 3.3 V) | No evidence | -- | -- |
-| 13 | Supply sensitivity | supply-ripple limit + a DC-excursion Vctrl budget | No evidence | -- | -- |
+| 13 | Supply sensitivity | supply-ripple limit + a DC-excursion Vctrl budget — **DRAFT by explicit decision (DR-006, #151)**,… | No evidence | -- | -- |
 | 14 | Output duty cycle | 45 – 55 % at CLK, whole band, all corners | sim/pll-lock (20260904-165409-f3ae976) | FAIL | `sim/pll-lock/records/20260904-165409-f3ae976.md` -- rows via `sim/pll-lock/testbench/tb.json` |
 |  |  |  | sim/pll-lock (20260905-193322-0f1934d) | FAIL | `sim/pll-lock/records/20260905-193322-0f1934d.md` -- rows via `sim/pll-lock/testbench/tb.json` |
 |  |  |  | sim/pll-lock-1mhz (20260904-152129-f00ce3e) | FAIL | `sim/pll-lock-1mhz/records/20260904-152129-f00ce3e.md` -- rows via `sim/pll-lock-1mhz/testbench/tb.json` |
