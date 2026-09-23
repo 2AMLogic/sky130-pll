@@ -82,6 +82,16 @@ The maturity ladder being climbed: spec-ratified → simulation-complete → lay
 DRC/LVS-clean → shuttle seat → measured silicon over temperature. This repo is
 at the bottom of it.
 
+**Where that stands against the T1 evidence checklist is not settled by this
+prose.** `signoff/tier-report.json` is this block's T1 verdict of record:
+machine-rendered by `klt signoff --manifest` from `signoff/block-manifest.json`
+and re-checked in CI on every push, so it cannot go stale silently. Today it
+reads **2 of 22 T1 rows met** (item 3, DRC clean, once per partition) and
+`tier: null`. No file in this repository hand-maintains a parallel met/unmet
+checklist; if a sentence here or anywhere else claims this block does or does
+not clear a T1 item, that report settles it — and `signoff/README.md` states
+what the one met row does and does not say.
+
 ## Private for now
 
 This repository is **private**. It is a design canary that binds under the 2AM
@@ -100,6 +110,7 @@ sim/           PVT corner harness (stood up) + append-only evidence records; no 
 layout/        klt-driven DRC/LVS flow (stood up, proven on a trivial cell); PLL-block GDS not yet drawn
 measurements/  per-spec-row report aggregator (rolls up sim/+layout/ evidence) + silicon characterization (the latter empty until there is silicon)
 docs/          environment setup, plus docs/t1-gap.md — where each T1 design-evidence item's evidence and tracking issue live
+signoff/       block manifest + machine-rendered T1 tier verdict (`klt signoff --manifest`), re-checked in CI
 ```
 
 Start with `spec/target-spec.md` for *what is being targeted and why nothing is
