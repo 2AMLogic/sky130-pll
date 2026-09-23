@@ -389,6 +389,19 @@ class RemoteBackend(ExecutionBackend):
         units = list(units)
         if not units:
             return self
+        # Same "clean slate" guard `run_ngspice_locally` applies on the local
+        # path (`runner.purge_unit_artifacts`) -- but done here, once per
+        # pending unit, *before* `_run_fleet` ever calls `pull_artifacts`.
+        # `pull_artifacts` lands the fleet's own dumps straight into each
+        # unit's `work_dir` (see `_run_fleet`'s `shard_runner`), so purging
+        # has to happen before that pull, never after: a resumed or retried
+        # unit must never let the reducer read a previous attempt's
+        # `<corner-id>-*` waveform dump back, on this path exactly as on the
+        # local one (issue #150).
+        from . import runner as runner_mod  # lazy: runner imports this module
+
+        for unit in units:
+            runner_mod.purge_unit_artifacts(unit.work_dir, unit.corner_id)
         try:
             self._run_fleet(units)
         except RemoteUnavailable as exc:
