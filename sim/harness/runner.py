@@ -230,6 +230,13 @@ def purge_unit_artifacts(work_dir: Path, corner_id: str) -> None:
     **previous** attempt's stale dump and attribute its measurements to the
     new run. Starting each attempt from a clean slate makes "no dump" mean no
     dump.
+
+    Executor-independent by construction (issue #150): called from
+    `run_ngspice_locally` below for the local backend, and from
+    `executor.RemoteBackend.stage` for the remote one -- each backend purges
+    exactly once, before it does anything that could write this unit's
+    artifacts, so every present and future backend inherits the same
+    clean-slate guarantee.
     """
     if not work_dir.is_dir():
         return

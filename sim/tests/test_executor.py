@@ -588,6 +588,34 @@ class RemoteExecutorTests(unittest.TestCase):
             self.assertEqual(len(counts), 3)
             self.assertTrue(all(c >= 1 for c in counts))
 
+    def test_a_stale_dump_is_purged_before_the_pull_lands_new_artifacts(self):
+        """Issue #150: a resumed/retried unit's `work_dir` can still hold a
+        `<corner-id>-*` waveform dump from a previous attempt. The remote
+        path must purge it before `pull_artifacts` runs, exactly like the
+        local path does via `run_ngspice_locally`'s own purge call.
+
+        `_FakeFleet.pull_artifacts` (this file) only ever writes
+        `<corner-id>.log`/`.rc` -- never a `-*.dat` dump -- so if the stale
+        dump is gone after the run, nothing but the purge could have removed
+        it; and if it were still there, the reducer would have silently read
+        a previous attempt's data back.
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            h = _Harness(Path(tmp))
+            corners_dir = h.exp_dir / "corners" / RECORD_ID
+            corners_dir.mkdir(parents=True)
+            stale = corners_dir / "tt_27c_1.80v-v-clk.dat"
+            stale.write_text("stale dump from a previous attempt\n")
+
+            fleet = _FakeFleet()
+            with _fake_klayout_tools(fleet), _aws_on_path():
+                rc, out = h.run(
+                    ["--executor", "remote"], env=_provisioned_env(Path(tmp))
+                )
+            self.assertEqual(rc, 0, out)
+            self.assertIn("pull_artifacts", [c[0] for c in fleet.calls])
+            self.assertFalse(stale.exists())
+
     def test_the_job_description_packages_netlist_spiceinit_and_runner(self):
         with tempfile.TemporaryDirectory() as tmp:
             _h, fleet, rc, out = self._run_remote(tmp=tmp)
