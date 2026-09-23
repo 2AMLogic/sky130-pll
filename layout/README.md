@@ -72,22 +72,29 @@ record's `record.md` **first** — it is the actual pass/fail evidence this
 issue delivers, not this README (see `trivial-cell/reports/LATEST` for its
 id).
 
-## Why `klt`, and why the pin is a git commit
+## Why `klt`, and how it is pinned
 
-`layout/requirements.txt` pins `klt` by **exact git commit**. It pinned the
-PyPI release (`klayout-tools==0.2.0`) from issue #2 through issue #16, and
-moved back to a commit pin in issue #46.
+`layout/requirements.txt` pins `klt` by **exact PyPI version** —
+`klayout-tools==0.6.0` since issue #157. The pin form has moved twice: a plain
+version (`==0.2.0`) from issue #2 through #16, a git-commit pin in issue #46
+while PyPI had published nothing newer, and back to a version pin in issue #17
+once releases resumed. Never a floating `main` or an unpinned release, in any
+era.
 
-**Read [`klt-pin-decision.md`](klt-pin-decision.md) for that decision** — what
-the version pin bought, what it cost, what was measured on each side, and the
-bump discipline that follows from it. In short: PyPI has published nothing
-since `0.2.0`, five of the eight `klt` gaps the PLL layout hit are fixed only
-on the tool's `main`, and two of those five are what made the layout
-unroutable. `requirements.txt`'s own header lists exactly what the current pin
-picks up.
+**Read [`klt-pin-decision.md`](klt-pin-decision.md) for the commit-pin
+decision** — what the version pin bought, what it cost, and what was measured
+on each side. Its premise ("PyPI has published nothing since `0.2.0`") is
+history, not current state: PyPI has released steadily since, which is why the
+pin is a version again. What survives from it unchanged is the bump discipline
+below. `requirements.txt`'s own header lists exactly what the current pin picks
+up, and what each earlier bump picked up before it.
 
 A pin bump is never just a version edit here: it re-runs **both** flows below
-and checks the refreshed records in as the non-regression proof.
+and checks the refreshed records in as the non-regression proof. Issue #157 is
+the worked example of why — that re-run is what caught two upstream behaviour
+changes (`klt lvs` now requiring `reference.deck` to resolve a unit-less
+length, and `klt extract`'s SPICE writer dropping the model name from `C`
+cards) that a version edit alone would have shipped broken.
 
 ## The flow
 

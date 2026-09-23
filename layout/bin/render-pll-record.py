@@ -79,7 +79,9 @@ from render_common import (  # noqa: E402
 
 MOS_CARD_RE = re.compile(r"^M\S+\s+(?:\S+\s+){4}(\S+)\s+L=([\d.eE+-]+)U\s+W=([\d.eE+-]+)U")
 RES_CARD_RE = re.compile(r"^R\S+\s+(?:\S+\s+){3}([\d.eE+-]+)\s+(\S+)")
-CAP_CARD_RE = re.compile(r"^C\S+\s+(?:\S+\s+){2}([\d.eE+-]+)\s+(\S+)")
+# No `C` card regex: the extracted capacitor multiset comes from `klt
+# extract`'s JSON `devices[]`, not from the written deck -- see
+# `extracted_cap_set` for why.
 
 _load = load_json  # local alias, kept short for the calls below
 
@@ -88,11 +90,35 @@ def _close(a: float, b: float) -> bool:
     return math.isclose(a, b, rel_tol=1e-6, abs_tol=1e-15)
 
 
-def extracted_sets(spice: str) -> dict[str, Counter]:
+def extracted_cap_set(extract_json: dict[str, Any]) -> Counter:
+    """The extracted capacitor multiset, read from `klt extract`'s JSON.
+
+    Taken from the structured `devices[]` array rather than from the written
+    SPICE deck's `C` cards, because the deck is not a stable carrier of the
+    device class: at `klayout-tools==0.4.0` a capacitor card ended in its
+    model name (`C$2 \\$6 \\$9 2.4766e-12 sky130_fd_pr__model__cap_mim`), and
+    at `0.6.0` it does not (`C$2 \\$6 \\$9 2.4766e-12`) -- while `M` and `R`
+    cards still carry theirs. Filed upstream under this repo's friction
+    protocol; see issue #157's PR for the filing.
+
+    `devices[]` carries `class` and `params.c_f` at both pins and is `klt
+    extract`'s own JSON contract, so reading the class from there is the
+    stronger assertion, not a relaxed one: the same three MiM devices at the
+    same three capacitances are still being compared against the plan.
+    """
+    cap: Counter = Counter()
+    for device in extract_json.get("devices") or []:
+        farads = (device.get("params") or {}).get("c_f")
+        if farads is None:
+            continue
+        cap[(device.get("class"), float(farads))] += 1
+    return cap
+
+
+def extracted_sets(spice: str, extract_json: dict[str, Any]) -> dict[str, Counter]:
     """Multisets of what `klt extract` read back out of a drawn cell."""
     mos: Counter = Counter()
     res: Counter = Counter()
-    cap: Counter = Counter()
     for line in spice.splitlines():
         match = MOS_CARD_RE.match(line)
         if match:
@@ -103,10 +129,7 @@ def extracted_sets(spice: str) -> dict[str, Counter]:
         if match:
             res[(match.group(2), round(float(match.group(1)), 6))] += 1
             continue
-        match = CAP_CARD_RE.match(line)
-        if match:
-            cap[(match.group(2), float(match.group(1)))] += 1
-    return {"mos": mos, "res": res, "cap": cap}
+    return {"mos": mos, "res": res, "cap": extracted_cap_set(extract_json)}
 
 
 def planned_sets(block: dict[str, Any]) -> dict[str, Counter]:
@@ -141,6 +164,13 @@ def planned_sets(block: dict[str, Any]) -> dict[str, Counter]:
 #: matching substring wins, so order matters. The strings are the router's own
 #: (`legs[].reason` in a compose response), not this script's paraphrase.
 ROUTE_REASON_BUCKETS = (
+    (
+        "comes within",
+        "would come closer to an already-drawn route than the resolved deck's "
+        "own same-layer minimum spacing (the router's spacing-aware collision "
+        "check, new at `klayout-tools==0.6.0` -- it is why the routed "
+        "spot-check's own DRC no longer reports `met1.space.1`)",
+    ),
     (
         "crosses already-routed net",
         "would cross an already-drawn route (the router's own route-vs-route "
@@ -273,7 +303,9 @@ def _check_device_sets(
         if not any(planned.values()):
             continue
         spice_path = out_dir / f"{block['cell_name']}.extract.spice"
-        extracted = extracted_sets(spice_path.read_text())
+        extracted = extracted_sets(
+            spice_path.read_text(), _load(out_dir / f"extract.{block['cell_name']}.json")
+        )
         mos_ok = planned["mos"] == extracted["mos"]
         res_ok = planned["res"] == extracted["res"]
         cap_ok = _cap_sets_match(planned["cap"], extracted["cap"])

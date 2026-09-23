@@ -29,14 +29,14 @@ run anywhere in this repo), so the Digital column's extra requirements —
 | 1 | Design sources | `design/` — four block schematics + `design/top/top.sch`, each with a committed SPICE netlist snapshot (`design/top/netlist/top.spice`) | — | #15 (closed) |
 | 2 | Layout (GDS/OASIS) | `layout/pll/reports/LATEST` → `pll_top.gds`, a device-level floorplan of all four blocks | **Not routed** — no inter-device interconnect is drawn | #16 (closed) |
 | 3 | DRC clean | Same record's `drc.json`: `status: "clean"`, `violation_count: 0`, deck `sky130` | Deck-coverage disclosure not stated in a claim yet | #17 (closed) |
-| 4 | LVS clean | The routing spot-check's `klt lvs` run: `mismatch`, 1164 mismatches (`layout/pll/reports/20260906-195205-4a08c71/record.md`) | A matching LVS compare; blocked behind routing | **#18 (open)** |
+| 4 | LVS clean | Same record's routing spot-check `klt lvs` run (`layout/pll/reports/LATEST` → `route-spot-check/lvs.json`): `mismatch`, 1179 mismatches, 0/90 reference nets matched (474 nets in the layout) | A matching LVS compare; blocked behind routing | **#18 (open)** |
 | 5 | Full corner verification vs. a ratified spec | `sim/` PVT campaigns (`sim/divider-*`, `sim/pll-lock`, `sim/vco`) on the DR-003 corner set | Most `spec/target-spec.md` rows are still unratified, so most claims have no bound target (DR-002) | **#151 (open)**, #19 (closed) |
 | 6 | Monte Carlo / yield | none | The whole methodology | **#20 (open)** |
 | 7 | Post-layout (PEX) | none | Blocked on `klt pex` upstream | **#21 (open)** |
 | 8 | Characterization report | `measurements/` aggregator (#22's tooling) | Zero evidence records carry the **Spec row(s)** citation the aggregator matches on, so the report is empty by construction | **#22 (open)**, **#152 (open)** |
 | 9 | Testbenches shipped | `sim/` testbenches + `sim/README.md`'s cold-start invocation; PDK pinned in `sim/pdk.json` (`open_pdks` `c6d73a3`) | — | #23 (closed) |
 | 10 | Repo hygiene | `README.md`, `spec/target-spec.md`, `LICENSE` (Apache-2.0), `.github/workflows/ci.yml` | `README.md`'s status section is stale — it still describes the repo as pre-layout | — |
-| 11 | **Power delivery (structural)** | `layout/pll/erc-supply-spec.json` + `layout/pll/erc-reports/LATEST`: one electrical island per declared supply, no supply short | Three separate gaps — see below | **#147**, **#156 (open)**, #18 |
+| 11 | **Power delivery (structural)** | `layout/pll/erc-supply-spec.json` + `layout/pll/erc-reports/LATEST`: one electrical island per declared supply, no supply short — produced by this repo's pinned `klt` since #157 | Three separate gaps — see below | **#147**, **#156 (open)**, #18, #157 (closed) |
 
 ## Item 11 in detail
 
@@ -83,11 +83,17 @@ Two of item 11's three rules.
    supply labels and no supply rails at all, because the layout is unrouted.
    Filed as **#156**.
 
-A fourth, narrower gap is reproducibility rather than evidence: the committed
-report was produced with a newer `klt` than
-`layout/requirements.txt`'s pin (`klayout-tools==0.4.0`), whose `klt erc`
-predates both `stackup[0].active_layer` and the `provenance` block. Filed as
-**#157**.
+A fourth gap — reproducibility rather than evidence — is **closed** (issue
+#157, 2026-09-23). The first committed report was produced with a `klt` newer
+than `layout/requirements.txt`'s pin of the day (`klayout-tools==0.4.0`),
+whose `klt erc` predated both `stackup[0].active_layer` and the `provenance`
+block, so it could not be regenerated from the pin. The pin is now
+`klayout-tools==0.6.0`, both layout flows were re-run at it, and the current
+`erc-reports/LATEST` record was produced by the pinned build. The superseded
+record is kept unedited; the current one records the measured
+`0.4.0`-vs-`0.6.0` difference (216 "gates" vs 213 — the old pin counted this
+block's three poly resistors as gates and understated every antenna ratio by
+~2.9×).
 
 ## Keeping this file honest
 
