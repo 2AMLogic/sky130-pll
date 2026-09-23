@@ -98,7 +98,8 @@ def render_provenance(
     a(
         "- PDK pin cross-check: compare `version` above against "
         "`sim/pdk.json`'s `open_pdks_commit` -- this flow does not itself "
-        "enforce the pin, so a mismatch is a manual reproducibility note."
+        "enforce the pin (unlike `sim/harness/pdk.py`), so a mismatch here "
+        "is a manual reproducibility note, not a hard failure."
     )
     a(f"- Repo state: `{sha}` on `{branch}`" + (" (dirty)" if dirty else ""))
     a("")
