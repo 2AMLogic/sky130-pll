@@ -24,6 +24,11 @@ name: CI
 #     workflow -- run it by hand per layout/README.md; its checked-in
 #     `layout/trivial-cell/reports/<record-id>/record.md` is the current
 #     evidence.
+#   - `signoff/run-signoff.sh --check` (this block's T1 tier verdict, re-rendered
+#     from signoff/block-manifest.json and diffed against the committed
+#     signoff/tier-report.json -- see signoff/README.md) -> `checks` job below,
+#     every push/PR. Needs `klt` from PyPI but no PDK, no KLayout binary and no
+#     layout input, so it stays headless like the rest of that job.
 #   - Anything under `sim/<experiment>/records/` is evidence captured by a
 #     human/agent run of the harness, not a repeatable CI check -- re-running
 #     it here would mint a new append-only record on every push, which is not
@@ -63,6 +68,32 @@ jobs:
 
       - name: npm run check:ci
         run: npm run check:ci
+
+      - name: Install klt (klayout-tools) for the signoff tier check
+        # Pinned, for the same reason sim/pdk.json pins the PDK below: an
+        # unpinned klt would re-render signoff/tier-report.json differently the
+        # day upstream changes the checklist or the report shape, failing a PR
+        # that touched nothing related. Bump deliberately, re-render the report
+        # (`bash signoff/run-signoff.sh`), and read the diff.
+        #
+        # This is the pip wheel of https://github.com/2AMLogic/klayout-tools.
+        # The tier-report check below needs no PDK, no KLayout app binary and
+        # no layout input -- it only reads committed JSON plus the checklist
+        # bundled in the wheel. It is deliberately a *different* pin from
+        # layout/requirements.txt's (the flow that produces evidence moves on
+        # its own schedule from the grader that reads it); both versions are
+        # recorded in the report.
+        run: pip install 'klayout-tools==0.6.0'
+
+      - name: signoff/run-signoff.sh --check (T1 tier verdict vs. the committed report)
+        # signoff/tier-report.json is this block's T1 verdict of record --
+        # machine-rendered by `klt signoff --manifest`, never hand-maintained
+        # (see signoff/README.md). Re-rendering it here is what stops it
+        # rotting: an evidence artifact that changed after the manifest pinned
+        # its content_hash, or a cited record superseded by a newer one,
+        # re-grades differently, the committed report stops matching, and this
+        # step fails instead of a stale green row surviving.
+        run: bash signoff/run-signoff.sh --check
 
   pdk-smoke:
     name: PDK-gated harness smoke test (nightly / workflow_dispatch / 'run-pdk-smoke' label)
