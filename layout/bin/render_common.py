@@ -66,3 +66,55 @@ def git_provenance(repo_root: Path, out_dir: Path) -> tuple[str, str, bool]:
         run_git(repo_root, "status", "--porcelain", "--untracked-files=all"), report_rel
     )
     return sha, branch, dirty
+
+
+class SpecRowsError(ValueError):
+    """A block's `spec-rows.json` declaration is missing or malformed."""
+
+
+def spec_rows_line(out_dir: Path) -> str:
+    """Render the `- **Spec row(s)**: ...` line for a layout block's record.
+
+    The declaration lives in `layout/<block>/spec-rows.json`, the layout-tree
+    counterpart of a `sim/<slug>/testbench/tb.json` manifest's `spec_rows`
+    key: the block directory is mutable, while the records under
+    `reports/<record-id>/` are append-only evidence. Emitting the line from
+    here means every record either cites a `spec/target-spec.md` row or says
+    in its own body that it measures none -- by construction, not by an author
+    remembering to add it (issue #152).
+
+    `out_dir` is the run's own `layout/<block>/reports/<record-id>/`
+    directory, so the block directory is two levels up.
+    """
+    block_dir = out_dir.resolve().parent.parent
+    path = block_dir / "spec-rows.json"
+    if not path.is_file():
+        raise SpecRowsError(
+            f"{path} does not exist -- every layout block must declare which "
+            "spec/target-spec.md row(s) its records measure (e.g. "
+            '`{"spec_rows": [18]}`), or declare `"spec_rows": []` with a '
+            '`"spec_rows_note"` saying why it measures none. See '
+            "measurements/README.md's citation convention."
+        )
+    decl = load_json(path)
+    raw = decl.get("spec_rows")
+    if not isinstance(raw, list):
+        raise SpecRowsError(f"{path}: `spec_rows` must be a list of row numbers")
+    rows: list[int] = []
+    for entry in raw:
+        if isinstance(entry, bool) or not isinstance(entry, int) or entry < 0:
+            raise SpecRowsError(
+                f"{path}: `spec_rows` entry {entry!r} is not a non-negative "
+                "spec/target-spec.md row number"
+            )
+        rows.append(entry)
+    note = str(decl.get("spec_rows_note", "") or "").strip()
+    if not rows and not note:
+        raise SpecRowsError(
+            f'{path}: `"spec_rows": []` (this block measures no '
+            "spec/target-spec.md row) needs a `spec_rows_note` saying why -- "
+            "an explicit 'measures none' is a claim and must be argued, not "
+            "left blank"
+        )
+    body = ", ".join(str(n) for n in rows) if rows else "none"
+    return f"{body} -- {note}" if note else body

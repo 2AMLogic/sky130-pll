@@ -1,6 +1,8 @@
 {
   "schema": "sky130-pll.harness.tb/1",
   "claim": "does the closed-loop PLL (design/top/top.sch -- VCO + PFD/charge pump + loop filter + divider, issue #28), driven from a cold start (RESETB power-on, VCTRL starting at whatever the loop filter's own initial condition is) with a 25 MHz reference (spec/target-spec.md row 3's DRAFT high band edge), lock its output to N * Fref = 10 * 25 MHz = 250 MHz within this manifest's transient window -- issue #55's sibling of sim/pll-lock's own 10 MHz-reference campaign, exercising row 3's frequency-range claim at more than the single 10 MHz point sim/pll-lock/testbench/tb_pll_lock.sch drives. This is a design-input record, not a spec claim: row 3 is DRAFT/unratified. 250 MHz is deliberately the same target frequency sim/pll-lock/testbench/tb_pll_lock.sch already targets (N=25 * 10 MHz), so this record is directly comparable to that one -- only the reference frequency (and, by construction, N) changes.",
+  "spec_rows": [3, 8, 14],
+  "spec_rows_note": "spec/target-spec.md row 3 (reference input -- this sibling drives REF at 25 MHz, the DRAFT band's high edge), plus row 8 (lock time) and row 14 (output duty cycle at CLK), the quantities the shared reducer reports per point. Evidence toward all three rows, not a verdict on any of them.",
   "schematic": "tb_pll_lock_25mhz.sch",
   "corner_pattern": "(\\.lib\\s+\\S*sky130\\.lib\\.spice\\s+)(\\w+)",
   "supply_pattern": "(V1 VDD GND )([0-9.]+)",

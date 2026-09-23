@@ -333,6 +333,17 @@ def _run_experiment(
     slug = manifest_path.parent.parent.name
     testbench_dir = manifest_path.parent
 
+    # Fail fast on a missing/malformed `spec_rows` declaration, before the PDK
+    # is resolved or a single point runs: every record this harness mints
+    # carries the `**Spec row(s)**:` citation measurements/aggregate.py matches
+    # on, by construction rather than by an author remembering it (issue #152).
+    mc_section = manifest.get("monte_carlo", {}) if mode == "mc" else None
+    try:
+        report_mod.spec_rows_from_manifest(manifest, section=mc_section)
+    except report_mod.SpecRowsError as e:
+        print(f"run_corners.py: {manifest_path}: {e}", file=sys.stderr)
+        return 1
+
     try:
         pdk = pdk_mod.resolve(REPO_ROOT)
     except pdk_mod.PdkNotFoundError as e:
@@ -606,6 +617,9 @@ def cmd_run(args: argparse.Namespace) -> int:
             record_id=record_id,
             slug=slug,
             claim=manifest.get("claim", "(no claim stated in manifest)"),
+            spec_rows_line=report_mod.format_spec_rows(
+                *report_mod.spec_rows_from_manifest(manifest)
+            ),
             pdk=pdk,
             tool_versions=pdk_mod.tool_versions(),
             repo_root=REPO_ROOT,
@@ -688,6 +702,9 @@ def cmd_run_mc(args: argparse.Namespace) -> int:
             record_id=record_id,
             slug=slug,
             claim=claim,
+            spec_rows_line=report_mod.format_spec_rows(
+                *report_mod.spec_rows_from_manifest(manifest, section=mc_cfg)
+            ),
             pdk=pdk,
             tool_versions=pdk_mod.tool_versions(),
             repo_root=REPO_ROOT,

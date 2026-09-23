@@ -1,6 +1,8 @@
 {
   "schema": "sky130-pll.harness.tb/1",
-  "claim": "does design/divider/divider_intN.sch (the standalone programmable integer-N feedback divider, issue #27, retimed to a dual-modulus /2-/3 prescaler front-end by issue #114) divide a fixed 250 MHz ideal CLK by N=64 (NSEL[5:0]=111111) cleanly. N=64 is the DRAFT modulus range's ceiling (spec/target-spec.md row 4, N = 4-64) and the largest modulus that takes the divider's *even* decode path (ODD=0) -- it also exercises the widest reload word (L=31) and the static NSEL-1 decode's own borrow chain running its full width. This is a design-input measurement, not a spec/target-spec.md ratification: row 4 stays DRAFT -- per CLAUDE.md, ratification is a separate decision-record act argued on its own merits. **Spec row(s)**: 4 (DRAFT target N = 4-64, static configuration -- this record supplies evidence toward that row, not a verdict on it).",
+  "claim": "does design/divider/divider_intN.sch (the standalone programmable integer-N feedback divider, issue #27, retimed to a dual-modulus /2-/3 prescaler front-end by issue #114) divide a fixed 250 MHz ideal CLK by N=64 (NSEL[5:0]=111111) cleanly. N=64 is the DRAFT modulus range's ceiling (spec/target-spec.md row 4, N = 4-64) and the largest modulus that takes the divider's *even* decode path (ODD=0) -- it also exercises the widest reload word (L=31) and the static NSEL-1 decode's own borrow chain running its full width. This is a design-input measurement, not a spec/target-spec.md ratification: row 4 stays DRAFT -- per CLAUDE.md, ratification is a separate decision-record act argued on its own merits.",
+  "spec_rows": [4],
+  "spec_rows_note": "spec/target-spec.md row 4 (multiplication ratio, DRAFT N = 4-64) at the range ceiling, N=64, on the even decode path. Evidence toward the row, not a verdict on it.",
   "schematic": "tb_divider_n64.sch",
   "corner_pattern": "(\\.lib\\s+\\S*sky130\\.lib\\.spice\\s+)(\\w+)",
   "supply_pattern": "(V1 VDD GND )([0-9.]+)",

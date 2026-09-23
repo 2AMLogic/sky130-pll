@@ -1,6 +1,8 @@
 {
   "schema": "sky130-pll.harness.tb/1",
   "claim": "Linearized open-loop AC characterization of the PLL loop dynamics (issue #52): unity-gain crossover frequency (spec/target-spec.md row 6, loop bandwidth) and phase margin (row 7), measured from a real ngspice AC sweep of design/loop-filter/loop_filter.sch's own sky130 R/C network across the DR-003-ratified process-corner and temperature grid, with the charge-pump/VCO/divider contribution applied as a swept scalar loop gain A = Icp*Kvco/N. This is a measured design-input record, not a spec claim: it is the governing evidence for design/loop-filter/DESIGN.md's realized f_c and phase margin, which that file now cites here rather than hand-calculating (issue #92 removed the hand-calculated table the first run of this campaign showed to be optimistic by roughly 8 degrees). It ratifies nothing; per CLAUDE.md ratification is a separate decision-record act argued on its own merits, and the DRAFT row-6/row-7 bounds are reported alongside each measurement rather than gated on.",
+  "spec_rows": [6, 7],
+  "spec_rows_note": "spec/target-spec.md row 6 (loop bandwidth -- the AC sweep's unity-gain crossover frequency f_c) and row 7 (phase margin at that crossover), the two quantities this manifest's own `ac` block measures by name. Both rows are DRAFT; this is the measured design-input evidence a future decision record would argue them from, not a ratification.",
   "schematic": "tb_loop_ac.sch",
   "corner_pattern": "(\\.lib\\s+\\S*sky130\\.lib\\.spice\\s+)(\\w+)",
   "supply_pattern": null,

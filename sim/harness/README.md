@@ -34,6 +34,8 @@ issues once there is a PLL netlist.
 {
   "schema": "sky130-pll.harness.tb/1",
   "claim": "one-sentence statement of what this experiment substantiates",
+  "spec_rows": [6, 7],
+  "spec_rows_note": "why these rows (or, with an empty spec_rows, why none)",
   "schematic": "tb_foo.sch",
   "corner_pattern": "regex, one capture group ending right before the corner token",
   "supply_pattern": "regex, one capture group ending right before the supply value (or null -- see below)",
@@ -48,6 +50,19 @@ issues once there is a PLL netlist.
 }
 ```
 
+- **`spec_rows`** (**required**) — the `spec/target-spec.md` row numbers this
+  experiment measures, e.g. `[6, 7]`. Rendered into every record this
+  manifest mints as `- **Spec row(s)**: 6, 7 -- <spec_rows_note>`, which is
+  the citation `measurements/aggregate.py` rolls the characterization report
+  up on (issue #152 — see `measurements/README.md`). An experiment that
+  measures **no** spec row declares `"spec_rows": []` and must then supply a
+  `spec_rows_note` arguing why: "measures none" is a claim, not a default.
+  `run_corners.py` fails fast on a missing or malformed declaration —
+  before resolving the PDK or simulating a point — rather than minting a
+  record that silently drops out of the report. A `monte_carlo` block may
+  override both keys for `--mc` records (see below). **Citing a row is not
+  claiming it**: every row cited today is DRAFT, and ratification stays a
+  separate decision-record act.
 - **`schematic`** — path relative to the manifest's own `testbench/`
   directory. Netlisted once per run via `xschem -x -n -s -q --rcfile
   sim/xschemrc`; the corner/temperature/supply axes are then applied by
@@ -537,6 +552,10 @@ harness self-test record produced this way.
 - **`claim`** — used instead of the manifest's top-level `claim` for `--mc`
   records, since an MC campaign's claim (what does this trial matrix
   substantiate) is typically distinct from its PVT sibling's.
+- **`spec_rows`** / **`spec_rows_note`** — likewise override the top-level
+  declaration for `--mc` records, for the same reason: a statistical
+  campaign may bear on different `spec/target-spec.md` rows than its PVT
+  sibling. Omit them and the top-level declaration applies unchanged.
 
 `--mc-corner` / `--mc-trials` / `--mc-seed-base` / `--mc-temp` / `--mc-supply`
 / `--mc-mismatch` / `--no-mc-mismatch` / `--mc-process` / `--no-mc-process`

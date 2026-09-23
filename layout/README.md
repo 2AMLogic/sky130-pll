@@ -168,7 +168,9 @@ layout/
   tests/                      # PDK-free unit coverage
   .venv/                      # gitignored -- `klt` install, created by setup-venv.sh
   pll/                        # the PLL layout + its records (see pll/README.md)
+    spec-rows.json                     # which spec/target-spec.md row(s) this block's records measure
   trivial-cell/
+    spec-rows.json                     # ditto -- one per block, mutable, stamped into every record
     reference.spice                    # known-good LVS reference netlist
     reference.broken-device.spice      # LVS negative control 1: device.property corruption
     reference.broken-topology.spice    # LVS negative control 2: net.merged corruption
@@ -188,6 +190,27 @@ layout/
         report.md                  # `klt report --format github-summary` rendering
         record.md                  # human-readable pass/fail summary (read this first)
 ```
+
+### `spec-rows.json` — the block's spec-row citation
+
+Every block with a `reports/` tree carries a `spec-rows.json` naming the
+`spec/target-spec.md` row(s) its records measure:
+
+```json
+{ "schema": "sky130-pll.layout.spec-rows/1", "spec_rows": [], "spec_rows_note": "why none" }
+```
+
+`layout/bin/render_common.py` stamps it into every record it renders as
+`- **Spec row(s)**: <rows | none> -- <note>`, which is the citation
+`measurements/aggregate.py` rolls the characterization report up on (issue
+#152 — see `measurements/README.md`). It is the layout-tree counterpart of a
+`sim/<slug>/testbench/tb.json` manifest's `spec_rows` key, and lives in the
+block directory rather than in a record for the same reason: the block
+directory is mutable, a record is append-only evidence. A block that
+measures **no** spec row declares `"spec_rows": []` and must argue why in
+`spec_rows_note` — a missing or unargued declaration fails the renderer and
+the `measurements/tests/test_spec_row_citations.py` CI check. **Citing a row
+is not claiming it**: every row cited today is DRAFT.
 
 `<record-id>` mirrors `sim/`'s `<YYYYMMDD>-<HHMMSS>-<short-git-sha>` (UTC)
 convention (see `sim/README.md`) so the two evidence trails read the same

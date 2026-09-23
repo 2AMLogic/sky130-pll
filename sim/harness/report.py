@@ -53,12 +53,91 @@ def make_record_id(repo_root: Path) -> str:
     return f"{ts}-{sha}"
 
 
+class SpecRowsError(ValueError):
+    """A manifest's `spec_rows` declaration is missing or malformed.
+
+    Raised before any point is simulated (see `sim/harness/cli.py`) so a
+    forgotten declaration costs a second, not a corner run.
+    """
+
+
+def spec_rows_from_manifest(
+    manifest: dict, *, section: dict | None = None
+) -> tuple[list[int], str]:
+    """Resolve the `(rows, note)` behind a record's `**Spec row(s)**:` line.
+
+    `spec_rows` is a **required** manifest key, not an optional one: the
+    citation convention `measurements/README.md` documents decayed precisely
+    because it depended on an author remembering it per record (issue #152).
+    Making it mandatory at the manifest -- the one mutable file per
+    experiment, per `sim/README.md`'s append-only rule -- means every record
+    this harness ever mints carries the line by construction.
+
+    - `"spec_rows": [6, 7]` -- this experiment measures spec/target-spec.md
+      rows 6 and 7. `spec_rows_note` is optional context.
+    - `"spec_rows": []` -- this experiment deliberately measures **no** spec
+      row (harness plumbing, a negative control, ...). `spec_rows_note` is
+      then **required**: an empty list is an explicit claim and has to say
+      why, so "measures none" is never confusable with "nobody thought about
+      it".
+
+    `section` is an optional per-mode override block (today: the manifest's
+    `monte_carlo` block), consulted only when it carries its own `spec_rows`
+    key -- the same fall-back shape `claim`/`methodology_note`/`analysis`
+    already use in `sim/harness/cli.py`.
+    """
+    source = section if (section and "spec_rows" in section) else manifest
+    if "spec_rows" not in source:
+        raise SpecRowsError(
+            "manifest declares no `spec_rows` -- every testbench must state "
+            "which spec/target-spec.md row(s) it measures (e.g. "
+            '`"spec_rows": [6, 7]`), or declare `"spec_rows": []` with a '
+            '`"spec_rows_note"` saying why it measures none. See '
+            "measurements/README.md's citation convention."
+        )
+    raw = source["spec_rows"]
+    if not isinstance(raw, list):
+        raise SpecRowsError(
+            f"manifest's `spec_rows` must be a list of row numbers, got {type(raw).__name__}"
+        )
+    rows: list[int] = []
+    for entry in raw:
+        if isinstance(entry, bool) or not isinstance(entry, int) or entry < 0:
+            raise SpecRowsError(
+                f"manifest's `spec_rows` entry {entry!r} is not a non-negative "
+                "spec/target-spec.md row number"
+            )
+        rows.append(entry)
+
+    note = str(source.get("spec_rows_note", "") or "").strip()
+    if not rows and not note:
+        raise SpecRowsError(
+            'manifest declares `"spec_rows": []` (this testbench measures no '
+            "spec/target-spec.md row) without a `spec_rows_note` saying why -- "
+            "an explicit 'measures none' is a claim and must be argued, not "
+            "left blank"
+        )
+    return rows, note
+
+
+def format_spec_rows(rows: list[int], note: str) -> str:
+    """Render the value half of the `- **Spec row(s)**: ...` record line.
+
+    The row numbers come first and are comma-separated, so
+    `measurements/aggregate.py`'s `**Spec row(s)**: <digits>` match reads them
+    without having to understand the prose that may follow.
+    """
+    body = ", ".join(str(n) for n in rows) if rows else "none"
+    return f"{body} -- {note}" if note else body
+
+
 def _render_header(
     *,
     lines_append,
     record_id: str,
     slug: str,
     claim: str,
+    spec_rows_line: str,
     pdk: ResolvedPdk,
     tool_versions: dict,
     git: dict,
@@ -72,6 +151,7 @@ def _render_header(
     a("")
     a(f"- **Record ID**: {record_id}")
     a(f"- **Claim**: {claim}")
+    a(f"- **Spec row(s)**: {spec_rows_line}")
     a(
         f"- **Netlist provenance**: schematic (`sim/{slug}/testbench/`), "
         f"frozen at `sim/{slug}/netlist-snapshots/{record_id}.spice`, "
@@ -444,6 +524,7 @@ def render(
     record_id: str,
     slug: str,
     claim: str,
+    spec_rows_line: str,
     pdk: ResolvedPdk,
     tool_versions: dict,
     repo_root: Path,
@@ -483,6 +564,7 @@ def render(
         record_id=record_id,
         slug=slug,
         claim=claim,
+        spec_rows_line=spec_rows_line,
         pdk=pdk,
         tool_versions=tool_versions,
         git=git,
@@ -554,6 +636,7 @@ def render_mc(
     record_id: str,
     slug: str,
     claim: str,
+    spec_rows_line: str,
     pdk: ResolvedPdk,
     tool_versions: dict,
     repo_root: Path,
@@ -600,6 +683,7 @@ def render_mc(
         record_id=record_id,
         slug=slug,
         claim=claim,
+        spec_rows_line=spec_rows_line,
         pdk=pdk,
         tool_versions=tool_versions,
         git=git,
