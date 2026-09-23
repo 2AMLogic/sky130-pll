@@ -346,6 +346,116 @@ class DividerFamilySiblingManifestTests(unittest.TestCase):
                 self.assertNotIn("**Spec row(s)**", manifest["claim"])
 
 
+class LoopRippleManifestTests(unittest.TestCase):
+    """sim/loop-ripple (issue #166): same DUT and DR-005 cold start as
+    sim/pll-lock, but the ideal supply V1 drives an upstream node VSUP
+    through a series RPDN into the DUT's VDD -- so the supply_pattern must
+    patch V1's value on VSUP (not VDD), and must leave the RPDN card alone.
+    Loaded from the real committed manifest."""
+
+    MANIFEST = json.loads((SIM_DIR / "loop-ripple" / "testbench" / "tb.json").read_text())
+    PLL_LOCK = json.loads((SIM_DIR / "pll-lock" / "testbench" / "tb.json").read_text())
+    NETLIST = (
+        "**.subckt tb_loop_ripple\n"
+        "XXXTOP VDD GND REF RESETB GND GND GND VDD VDD GND CLK top\n"
+        "V1 VSUP GND 1.8\n"
+        "RPDN VSUP VDD 1 m=1\n"
+        "V2 REF GND pulse(0 1.8 0 1n 1n 48n 100n)\n"
+        "V3 RESETB GND pwl(0 0 5n 0 6n 1.8)\n"
+        "**** begin user architecture code\n\n"
+        ".lib /some/path/sky130.lib.spice tt\n"
+        "**** end user architecture code\n"
+        "**.ends\n"
+        ".GLOBAL GND\n"
+        ".end\n"
+    )
+
+    def _patched(self):
+        from harness import measure as measure_mod
+
+        spec = measure_mod.MeasureSpec.from_manifest(self.MANIFEST)
+        point = corners.PvtPoint(corner="ss", temp_c=-40.0, supply_v=1.62)
+        return runner.patch_netlist(
+            self.NETLIST, self.MANIFEST, point, spec=spec, prefix=f"{point.corner_id}-"
+        )
+
+    def test_patches_the_upstream_source_not_the_pdn_resistor(self):
+        patched = self._patched()
+        self.assertIn(".lib /some/path/sky130.lib.spice ss", patched)
+        self.assertIn("V1 VSUP GND 1.62", patched)
+        self.assertIn("RPDN VSUP VDD 1 m=1", patched)
+
+    def test_injects_the_dr005_cold_start_and_a_multi_node_dump(self):
+        patched = self._patched()
+        for card in self.PLL_LOCK["measure"]["ic"]:
+            self.assertIn(f".ic {card}", patched)
+        self.assertIn("set wr_singlescale", patched)
+        self.assertIn("wrdata ss_-40c_1.62v-point000.raw v(CLK) v(VDD) v(xxxtop.vctrl)", patched)
+        self.assertIn("tran 200p 100u", patched)
+
+    def test_cold_start_and_lock_criterion_match_sim_pll_lock(self):
+        # Comparable lock column: same ic cards, window and criterion.
+        mine, theirs = self.MANIFEST["measure"], self.PLL_LOCK["measure"]
+        for key in ("ic", "lock", "tran_stop", "tran_step", "require_lock", "node"):
+            self.assertEqual(mine[key], theirs[key], key)
+        self.assertEqual(self.MANIFEST["process_corners"], self.PLL_LOCK["process_corners"])
+        self.assertEqual(self.MANIFEST["spec_rows"], [13])
+
+
+class RenderRippleTableTests(unittest.TestCase):
+    """report.render() emits a per-point ripple table for a manifest with a
+    `measure.ripple` block, marking whether each window was in lock."""
+
+    def test_ripple_table_rows(self):
+        from unittest import mock
+
+        from harness import measure as measure_mod
+
+        spec = measure_mod.MeasureSpec(
+            node="CLK", tran_step="200p", tran_stop="100u", timeout_s=60,
+            lock=measure_mod.LockSpec(
+                target_hz=250e6, tolerance_frac=0.05, window_cycles=20, min_hold_cycles=20
+            ),
+            ripple=measure_mod.RippleSpec(nodes=("VDD", "xxxtop.vctrl"), window_s=5e-6),
+        )
+
+        def meas(in_lock, locked, vdd_pp, vctrl_pp):
+            rip = (
+                measure_mod.RippleResult("VDD", 95e-6, 100e-6, 1.79, 1.79 + vdd_pp, vdd_pp, in_lock),
+                measure_mod.RippleResult("xxxtop.vctrl", 95e-6, 100e-6, 1.1, 1.1 + vctrl_pp, vctrl_pp, in_lock),
+            )
+            return measure_mod.Measurement(
+                label=None, oscillating=True, freq_hz=250e6 if locked else None,
+                duty_cycle=0.5 if locked else None, locked=locked,
+                lock_time_s=30e-6 if locked else None, final_freq_hz=250e6,
+                note="n", passed=True, ripple=rip,
+            )
+
+        p1 = corners.PvtPoint(corner="tt", temp_c=27.0, supply_v=1.8)
+        p2 = corners.PvtPoint(corner="ss", temp_c=-40.0, supply_v=1.62)
+        p3 = corners.PvtPoint(corner="ff", temp_c=125.0, supply_v=1.98)
+        results = [
+            runner.PointResult(point=p1, passed=True, reason="ok", measurements=(meas(True, True, 0.004, 0.001),)),
+            runner.PointResult(point=p2, passed=True, reason="ok", measurements=(meas(False, False, 0.003, 0.02),)),
+            runner.PointResult(point=p3, passed=False, reason="timed out"),
+        ]
+        with mock.patch.object(report, "git_info", return_value={"sha": "abc1234", "dirty": False}):
+            with mock.patch.object(report, "sha256_file", return_value="deadbeef"):
+                text = report.render(
+                    record_id="20260101-000000-abc1234", slug="loop-ripple", claim="c",
+                    spec_rows_line="13 -- x", pdk=RenderMethodologyTests._StubPdk(),
+                    tool_versions={"ngspice": "n", "xschem": "x"}, repo_root=REPO_ROOT,
+                    netlist_snapshot=Path("/fake/netlist.spice"), points=[p1, p2, p3],
+                    results=results, subset_reason=None, supersedes=None,
+                    methodology_note="m", analysis="a", spec=spec,
+                )
+        self.assertIn("- **Ripple** (peak-to-peak of v(VDD), v(xxxtop.vctrl) over the final 5 us", text)
+        self.assertIn("| tt | 27 | 1.80 | yes | 4 mV | 1.79..1.794 V | 1 mV | 1.1..1.101 V |", text)
+        self.assertIn("| ss | -40 | 1.62 | **no** | 3 mV |", text)
+        self.assertIn("| ff | 125 | 1.98 | - | - | - | - | - |", text)
+        self.assertIn("Ripple (reported, not gated on)", text)
+
+
 class RenderMethodologyTests(unittest.TestCase):
     """Regression coverage for report.render()/render_mc()'s
     `methodology_note`/`analysis` parameters (issue #23). Before this, the

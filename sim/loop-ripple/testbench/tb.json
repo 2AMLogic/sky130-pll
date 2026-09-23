@@ -1,0 +1,42 @@
+{
+  "schema": "sky130-pll.harness.tb/1",
+  "claim": "how large is the closed-loop PLL's own self-generated disturbance, in lock, on its shared VDD rail and on its VCO control node VCTRL -- the transient VDD/VCTRL ripple-in-lock measurement spec/decision-records/DR-006-statistical-rows-ratification.md names as the second prerequisite for row 13 Budget 1 (AC supply-ripple limit), and that design/loop-filter/DESIGN.md's row-13 headroom section names as owed. The DUT is design/top/top.sch (VCO + PFD/charge pump + loop filter + divider), driven from the same DR-005 cold start as sim/pll-lock (10 MHz reference, N = 25, 250 MHz target) through a 1 ohm resistive power-delivery stand-in between an ideal source and the block's VDD pin, and each point reports v(VDD) and v(VCTRL) peak-to-peak over the final 5 us of a 100 us transient, labelled with whether the loop was already in lock when that window began, across the DR-003 PVT grid (tt/ff/ss/sf/fs x -40/27/125 degC x 1.62/1.80/1.98 V).",
+  "spec_rows": [13],
+  "spec_rows_note": "spec/target-spec.md row 13 (supply sensitivity), which DR-006 leaves DRAFT -- this campaign is the evidence DR-006's 'What would ratify row 13' item 1 names for Budget 1 (the block's own rail disturbance, which decides whether a shared-rail ripple limit is a self-consistent contract at all), not a verdict on the row. Lock status and time-to-lock are also reported per point, but only as the context that decides whether a ripple window is in lock; sim/pll-lock is the campaign that cites row 8.",
+  "schematic": "tb_loop_ripple.sch",
+  "corner_pattern": "(\\.lib\\s+\\S*sky130\\.lib\\.spice\\s+)(\\w+)",
+  "supply_pattern": "(V1 VSUP GND )([0-9.]+)",
+  "process_corners": ["tt", "ff", "ss", "sf", "fs"],
+  "temps_c": [-40, 27, 125],
+  "supply_nominal": 1.8,
+  "supply_tolerance": 0.1,
+  "measure": {
+    "node": "CLK",
+    "tran_step": "200p",
+    "tran_stop": "100u",
+    "timeout_s": 43200,
+    "threshold_frac": 0.5,
+    "hysteresis_frac": 0.15,
+    "settle_from": "0",
+    "min_edges": 4,
+    "ic": [
+      "v(xxxtop.xxvco.ring0)=0",
+      "v(xxxtop.vctrl)=0",
+      "v(xxxtop.cp)=0",
+      "v(xxxtop.xxlf.z1)=0"
+    ],
+    "lock": {
+      "target_hz": 250000000,
+      "tolerance_frac": 0.05,
+      "window_cycles": 20,
+      "min_hold_cycles": 20
+    },
+    "require_lock": false,
+    "ripple": {
+      "nodes": ["VDD", "xxxtop.vctrl"],
+      "window": "5u"
+    }
+  },
+  "methodology_note": "DUT and cold start are sim/pll-lock's, unchanged: design/top/top.sch strapped N = 25 against a 10 MHz reference, the same power-on RESETB pwl, and the same four DR-005 `measure.ic` cards (ring0 nudge per DR-004; VCTRL, CP and the loop filter's C1 internal node z1 forced discharged -- see spec/decision-records/DR-005-pll-lock-cold-start-initial-conditions.md), the same 100 us window, 43200 s per-point hang guard and sliding-window lock criterion as sim/pll-lock/testbench/tb.json, so this campaign's lock column is directly comparable to that campaign's. `require_lock` is false, per sim/pll-lock's own precedent: a point that never locks is recorded as evidence, not a harness failure. **Supply model (the one testbench difference, and the assumption every VDD number here rests on)**: an ideal source feeding the DUT's VDD directly makes v(VDD) ripple identically zero, so it cannot measure a self-generated rail disturbance at all. tb_loop_ripple.sch instead puts a 1 ohm series resistor (RPDN) between the ideal source (node VSUP, which the harness's supply_pattern patches per point) and the block's VDD pin, with no decoupling capacitance. That makes v(VDD) = V_supply - 1 ohm x I_VDD(t): the VDD ripple figure is numerically the block's own supply-current peak-to-peak in amperes times 1 ohm, and for a different purely resistive PDN it scales linearly with R. It is a conservative stand-in (no on-chip or package decoupling, which a real rail would have and which would attenuate the fast switching content), not a model of any particular package or power grid; the DC drop across RPDN is expected to be millivolt-scale at a milliampere-scale block current -- an expectation, not a measurement; each record's v(VDD) min..max column shows the actual rail level, against row 1's +/-10 % window. **Window**: ripple is the peak-to-peak over the FINAL 5 us of the transient (95-100 us, 50 reference periods), anchored to the end of the run rather than to the lock instant, because the lock criterion is a +/-5 % frequency band and a loop that has just entered it is still settling VCTRL -- a window starting at lock would fold that settling drift into the ripple figure. A window is labelled in lock only if the lock criterion was already met at 95 us. **Bandwidth**: the ripple nodes are `linearize`d onto the 200 ps transient grid before reduction, so excursions narrower than 200 ps (the ring's per-edge crowbar spikes, in particular) are attenuated by the resampling; the VDD figure is the rail disturbance at that grid's bandwidth (up to 2.5 GHz), which is still far wider than DR-006's 100 kHz - 100 MHz Budget 1 band, so it bounds the in-band content from above rather than measuring it. VCTRL sits behind the loop filter's R3/C3 pole, so its sub-200 ps content is expected (not shown) to be negligible. **Cost**: this is sim/pll-lock's DUT and window, so it inherits that campaign's per-point cost (issue #103: ~6.8 wall-clock hours per point at 8 concurrent points on the reference host; see DR-004's status notes) -- a record here may legitimately be a documented `--subset-reason` subset, and a point that times out is not evidence and must not be presented as one.",
+  "analysis": "cold-start transient, closed loop (`tran 200p 100u`, injected by sim/harness/measure.py from this manifest's own measure block -- see sim/loop-ripple/testbench/tb_loop_ripple.sch's header comment for why the schematic itself carries no .tran card), with v(CLK), v(VDD) and v(xxxtop.vctrl) linearized onto the 200 ps grid and dumped on one time column"
+}

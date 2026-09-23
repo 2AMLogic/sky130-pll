@@ -483,6 +483,18 @@ ripple linearly, grows `C1`/area for the same zero placement) or a smaller
 both are straightforward re-derivations from the parameterized equations
 above, not a topology change.
 
+**Status of the owed transient number (issue #166).** The testbench that
+owes it now exists: `sim/loop-ripple/` runs the assembled loop
+(`design/top/top.sch`) from `sim/pll-lock`'s `DR-005` cold start and reduces
+`v(VCTRL)` — and `v(VDD)`, through a 1 Ω resistive supply stand-in, since
+the block shares that rail (row 1) — to a peak-to-peak figure over the final
+5 µs of a 100 µs window, flagged by whether the loop was in lock when that
+window began. **It has not yet produced a record**, so the ~52 mV above is
+still the only number in this section and is still a hand estimate; the gap
+this section names stays open until a `sim/loop-ripple/records/` record
+lands and its numbers replace this paragraph. Nothing here is a measured
+result.
+
 ## Area — a real, documented cost that grew
 
 Total on-chip MiM capacitor area at these component values:
