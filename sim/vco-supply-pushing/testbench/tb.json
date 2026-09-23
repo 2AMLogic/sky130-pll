@@ -1,0 +1,34 @@
+{
+  "schema": "sky130-pll.harness.tb/1",
+  "claim": "VCO frequency-vs-VDD supply-pushing characterization for design/vco/vco_ring5.sch (the standalone current-starved 5-stage ring VCO, issue #24), measured open-loop with VCTRL held FIXED at five operating points (0.8, 0.9, 1.0, 1.2, 1.5 V) spanning the 0.8-1.6 V free-running range sim/vco/records/20260904-163130-f3ae976.md characterizes, while VDD is the swept quantity (spec/target-spec.md row 1's ratified 1.80 V +/- 10 % range: 1.62, 1.80, 1.98 V, applied by the corner runner's own supply axis). It is the sibling of sim/vco: same DUT, same open-loop harness, same reducer, opposite independent variable -- sim/vco sweeps VCTRL at fixed VDD to characterize Kvco (MHz/V); this manifest holds VCTRL fixed and sweeps VDD to characterize fractional-frequency pushing (%/V). Its purpose is the first of the two prerequisites spec/decision-records/DR-006-statistical-rows-ratification.md names for a future ratification of row 13 Budget 1 (the AC supply-ripple limit): a sky130 supply-pushing measurement to replace the 1.67x realized-over-floor ratio DR-006 could only borrow from gf180-pll. It is measured design input, not a spec claim, and it ratifies nothing -- per CLAUDE.md, ratification is a separate decision-record act argued on its own merits, and DR-006 itself is merged and unedited. The PVT grid is the DR-003-ratified sky130 5-corner set (tt/ff/ss/sf/fs x -40/27/125 degC) crossed with row 1's ratified supply range; a given record's own **Corner matrix run** field states whether it covers that full 45-point grid or a declared subset, per sim/README.md's subset-justification rule.",
+  "spec_rows": [13],
+  "spec_rows_note": "spec/target-spec.md row 13 (supply sensitivity). Row 13 is DRAFT *by explicit decision* (DR-006, #151), not by omission, and this manifest does not change that: it measures the quantity DR-006's own Budget 1 discussion is written in -- fractional-frequency pushing of the ring, |df/f| per volt of VDD -- so that a future decision record arguing row 13 has a sky130 number to argue from instead of gf180-pll's borrowed 1.67x realized-over-floor ratio. Row 5 (Kvco) is deliberately NOT cited here: VCTRL is held fixed, so this manifest measures no tuning slope; sim/vco is the record that bears on row 5.",
+  "schematic": "tb_vco_pushing.sch",
+  "corner_pattern": "(\\.lib\\s+\\S*sky130\\.lib\\.spice\\s+)(\\w+)",
+  "supply_pattern": "(V1 VDD GND )([0-9.]+)",
+  "process_corners": ["tt", "ff", "ss", "sf", "fs"],
+  "temps_c": [-40, 27, 125],
+  "supply_nominal": 1.8,
+  "supply_tolerance": 0.1,
+  "measure": {
+    "node": "clk",
+    "tran_step": "50p",
+    "tran_stop": "120n",
+    "settle_from": "60n",
+    "threshold_frac": 0.5,
+    "hysteresis_frac": 0.15,
+    "min_edges": 4,
+    "ic": ["v(xxxvco.ring0)=0"],
+    "uic": true,
+    "require_oscillation": false,
+    "min_oscillating_points": 5,
+    "timeout_s": 7200,
+    "sweep": {
+      "source": "V2",
+      "quantity": "VCTRL",
+      "values": [0.8, 0.9, 1.0, 1.2, 1.5]
+    }
+  },
+  "methodology_note": "this testbench's DUT is design/vco/vco_ring5.sch driven open-loop (no PFD, charge pump, loop filter or divider in the path) -- it characterizes the VCO block alone, exactly as sim/vco does, and says nothing about the assembled loop's in-lock rail rejection, which is a separate transient campaign (issue #166). VCTRL is held FIXED at each of five operating points (0.8, 0.9, 1.0, 1.2, 1.5 V) and the supply is the measured independent variable, supplied by the corner runner's own 1.62/1.80/1.98 V axis: the frequency-vs-VDD pushing figure is therefore a CROSS-POINT derivation over the three supply rows that share a (corner, temperature, VCTRL) triple, not a within-point slope, and the harness's own per-point tuning-summary table (which reports MHz per volt of the swept VCTRL axis) is not that figure -- see sim/vco-supply-pushing/analysis/pushing.py, which derives it from the record's own swept-axis table and appends it to the record at mint time. All five VCTRL values sit inside the free-running span sim/vco/records/20260904-163130-f3ae976.md measured (all 45 of its points oscillated at all six of its swept values), so unlike sim/vco -- a characterization sweep that deliberately runs past the edge of the tuning range, where a dead swept value is data -- a dead swept value here would leave a (corner, temperature, VCTRL) triple with no pushing figure at all: min_oscillating_points is therefore the full 5, and a non-oscillating swept value fails its point. The five values are chosen to resolve the pushing figure as a function of bias rather than report one number smuggled out of a single operating point, because the two mechanisms that set it have OPPOSITE signs and their sum changes sign inside this range. 0.8 V is the bottom of the characterized tuning range, where the starving branch is weakest and closest to the supply-independent-current idealization DR-006's `1/VDD` floor argument assumes; 0.9 V is the operating point nearest the closed-loop target (sim/pll-lock drives N=25 against a 10 MHz reference for 250 MHz, and sim/vco measured 318.1 MHz at tt/27 degC/1.80 V/VCTRL=0.9 V, the characterized point closest to that target); 1.0 V brackets the sign reversal visible in sim/vco's own cross-supply rows; 1.2 V and 1.5 V walk the current-dominated upper half of the usable span. Each swept point is a fresh 120 ns transient started from RING0 forced low with `uic` (the ring's DC equilibrium is the unstable all-stages-at-midrail point), the first 60 ns discarded as startup. Step (50p) and settle (60n) match sim/vco's exactly, so the same steady-state frequency is measured the same way and the two campaigns' shared (corner, temperature, supply, VCTRL) rows are directly comparable as an independent reproduction; tran_stop is 120 ns rather than sim/vco's 200 ns, halving the per-transient cost at no measurement cost (the 60 ns retained window still holds 13+ cycles at the slowest point measured here, versus the 4 edges min_edges requires) -- a record states the cross-check against sim/vco explicitly rather than asserting comparability. The reducer's threshold tracks each point's OWN supply (0.5 * VDD, sim/harness/measure.py), which is load-bearing here in a way it is not for a fixed-rail sweep: a threshold pinned to the nominal rail would fold a supply-dependent measurement artefact straight into the reported %/V. timeout_s is 7200 rather than sim/vco's 3600 because this grid is meant to be run with sim/run_corners.py -j on a shared host, where per-point wall clock stretches with contention. process_corners is the ratified rows 19/20 PVT grid (spec/target-spec.md, DR-003, #77).",
+  "analysis": "transient per swept VCTRL value (`tran 50p 120n uic`, five fixed VCTRL values, one ngspice invocation per PVT point; the supply axis is the corner runner's, one PVT point per supply)"
+}
