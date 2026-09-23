@@ -1,0 +1,120 @@
+
+Note: Compatibility modes selected: hs a
+
+
+Circuit: ** sch_path: /home/ubuntu/github/sky130-pll/.loom/worktrees/issue-165/sim/vco-supply-pushing/testbench/tb_vco_pushing.sch
+
+option SCALE: Scale is set to 1e-06 for instance and model parameters
+option SCALE: Scale is set to 1e-06 for instance and model parameters
+option SCALE: Scale is set to 1e-06 for instance and model parameters
+option SCALE: Scale is set to 1e-06 for instance and model parameters
+Doing analysis at TEMP = 125.000000 and TNOM = 27.000000
+
+Using KLU as Direct Linear Solver
+Operating point simulation skipped by 'uic',
+  now using transient initial conditions.
+ Reference value :  5.00000e-13
+ Reference value :  5.69222e-09
+ Reference value :  5.84222e-09
+ Reference value :  5.99222e-09
+ Reference value :  1.26188e-08
+ Reference value :  1.41188e-08
+ Reference value :  1.42688e-08
+ Reference value :  1.58688e-08
+ Reference value :  1.83074e-08
+ Reference value :  2.14472e-08
+ Reference value :  3.26180e-08
+ Reference value :  3.78640e-08
+ Reference value :  4.99963e-08
+ Reference value :  6.31705e-08
+ Reference value :  7.53590e-08
+ Reference value :  7.79555e-08
+ Reference value :  7.81055e-08
+ Reference value :  7.82555e-08
+ Reference value :  7.98055e-08
+ Reference value :  8.36482e-08
+ Reference value :  8.37982e-08
+ Reference value :  8.48982e-08
+ Reference value :  8.50482e-08
+ Reference value :  9.24797e-08
+ Reference value :  9.96265e-08
+ Reference value :  1.05519e-07
+ Reference value :  1.16151e-07
+No. of Data Rows : 2423
+Doing analysis at TEMP = 125.000000 and TNOM = 27.000000
+
+Using KLU as Direct Linear Solver
+Operating point simulation skipped by 'uic',
+  now using transient initial conditions.
+ Reference value :  8.85062e-10
+ Reference value :  1.13255e-08
+ Reference value :  1.86554e-08
+ Reference value :  2.85090e-08
+ Reference value :  3.11841e-08
+ Reference value :  3.79456e-08
+ Reference value :  4.71409e-08
+ Reference value :  5.62598e-08
+ Reference value :  6.02425e-08
+ Reference value :  6.20176e-08
+ Reference value :  7.42459e-08
+ Reference value :  8.93072e-08
+ Reference value :  9.74683e-08
+ Reference value :  1.05163e-07
+ Reference value :  1.10986e-07
+ Reference value :  1.16738e-07
+No. of Data Rows : 2452
+Doing analysis at TEMP = 125.000000 and TNOM = 27.000000
+
+Using KLU as Direct Linear Solver
+Operating point simulation skipped by 'uic',
+  now using transient initial conditions.
+ Reference value :  5.00000e-13
+ Reference value :  7.70868e-09
+ Reference value :  1.61673e-08
+ Reference value :  2.47810e-08
+ Reference value :  3.11463e-08
+ Reference value :  3.89067e-08
+ Reference value :  4.59132e-08
+ Reference value :  5.26167e-08
+ Reference value :  5.72532e-08
+ Reference value :  6.26631e-08
+ Reference value :  6.95082e-08
+ Reference value :  7.70045e-08
+ Reference value :  8.28027e-08
+ Reference value :  9.17506e-08
+ Reference value :  9.88491e-08
+ Reference value :  1.08236e-07
+ Reference value :  1.11376e-07
+ Reference value :  1.11497e-07
+ Reference value :  1.12826e-07
+ Reference value :  1.19484e-07
+No. of Data Rows : 2655
+Doing analysis at TEMP = 125.000000 and TNOM = 27.000000
+
+Using KLU as Direct Linear Solver
+Operating point simulation skipped by 'uic',
+  now using transient initial conditions.
+ Reference value :  1.49213e-09
+ Reference value :  4.94102e-09
+ Reference value :  1.40522e-08
+ Reference value :  2.25988e-08
+ Reference value :  2.58258e-08
+ Reference value :  3.36023e-08
+ Reference value :  3.77419e-08
+ Reference value :  4.06214e-08
+ Reference value :  4.70785e-08
+ Reference value :  5.48542e-08
+ Reference value :  6.08966e-08
+ Reference value :  6.48552e-08
+ Reference value :  6.82665e-08
+ Reference value :  7.34394e-08
+ Reference value :  7.87447e-08
+ Reference value :  8.40661e-08
+ Reference value :  9.14756e-08
+ Reference value :  9.93209e-08
+ Reference value :  1.03424e-07
+ Reference value :  1.08505e-07
+ Reference value :  1.15223e-07
+No. of Data Rows : 2795
+sim/harness: analysis complete
+Note: Simulation executed from .control section 

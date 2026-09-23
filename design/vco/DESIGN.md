@@ -201,6 +201,75 @@ closed-loop `sim/pll-lock` re-run tracked in #103 to be argued against, and
 692–1751 MHz/V) is the committed evidence any such re-derivation starts
 from, not the informal table above.
 
+## Update (issue #165): supply pushing measured, replacing the borrowed 1.67x ratio
+
+`spec/decision-records/DR-006-statistical-rows-ratification.md` leaves spec
+row 13 (supply sensitivity) DRAFT by explicit decision and names, as the
+first of two prerequisites for a future ratification of its Budget 1 (the AC
+supply-ripple limit), "a VCO supply-pushing campaign on sky130 (frequency vs.
+`VDD` at fixed `VCTRL`, across the ratified PVT grid) to replace the borrowed
+1.67x ratio." That campaign is now run and recorded:
+`sim/vco-supply-pushing/records/20260923-141525-e514bb0.md` (45/45 PASS, the
+full DR-003 5-corner x 3-temperature grid crossed with row 1's ratified
+1.62/1.80/1.98 V supply range), with `VCTRL` held fixed at four operating
+points spanning this block's characterized free-running span (0.8, 0.9, 1.2,
+1.5 V).
+
+**What it measures.** `S`, the fractional-frequency supply-pushing figure
+`(1/f) df/dVDD` in `%/V`, derived (not hand-entered — see
+`sim/vco-supply-pushing/analysis/pushing.py`, a `--check`-verifiable
+derivation appended to the record itself) from the swept-axis table as a
+centred secant across the three supply points sharing a (corner,
+temperature, `VCTRL`) triple. DR-006's structural floor for this topology
+(current-starved single-ended ring, `VDD` doubling as the ring's own
+`V_swing`) is `1/VDD` itself — 55.6 %/V at 1.80 V, scaling with the rail at
+other supply points.
+
+**Result: the sign, not just the magnitude, depends on the `VCTRL` bias
+point.** Across the 60 measured (corner, temperature, `VCTRL`) triples,
+`S_span` (the endpoint-to-endpoint estimator across the full 1.62-1.98 V
+range), grouped by the fixed `VCTRL` point (15 triples each, one per
+corner/temperature combination):
+
+| `VCTRL` (V) | `S_span` range | mean | below DR-006 floor | at/above floor |
+|---|---|---|---|---|
+| 0.8 | -83.9 to -25.6 %/V | -62.0 %/V | 5/15 | 10/15 |
+| 0.9 | -58.9 to +9.9 %/V | -28.6 %/V | 13/15 | 2/15 |
+| 1.2 | +30.3 to +122.7 %/V | +71.9 %/V | 5/15 | 10/15 |
+| 1.5 | +67.4 to +152.8 %/V | +104.5 %/V | 0/15 | 15/15 |
+
+(Full per-triple breakdown: the record's own **Derived supply-pushing
+analysis** table.) The mean is predominantly negative at 0.8 V (frequency
+falls as `VDD` rises), predominantly but not uniformly negative at 0.9 V (two
+of the fifteen -40 °C triples measure a small positive value instead:
+`ss`/-40 °C +1.8 %/V and `sf`/-40 °C +9.9 %/V), and positive at 1.2 V
+and 1.5 V (frequency rises with `VDD`, the more familiar direction for this
+topology) — consistent with the opposite-sign-mechanisms behaviour the
+manifest's own `methodology_note` anticipated when choosing these four bias
+points: at low `VCTRL` the starving branch dominates and a higher `VDD`
+narrows the tail device's effective overdrive (frequency falls), while at
+high `VCTRL` the switching-current mechanism dominates and a higher `VDD`
+speeds up the inverter cores' own charge/discharge current (frequency
+rises) — the two effects trade off across the middle of the tuning range,
+which is also why the below-floor triples cluster at 0.9 V (13/15, closest
+to the crossover) rather than uniformly across the low-`VCTRL` half.
+
+**Against the DR-006 floor**: 37 of the 60 triples measure `|S_span|` at or
+above the `1/VDD` structural floor at their own rail; 23 are below it, spread
+across three of the four `VCTRL` points (5 at 0.8 V, 13 at 0.9 V, 5 at 1.2 V;
+none at 1.5 V, per the table above) rather than confined to the low end. The
+largest magnitude measured is **+152.8 %/V** (`sf`/-40 °C/`VCTRL`=1.5 V, 2.75x
+the floor at that rail); the smallest is **+1.8 %/V** (`ss`/-40 °C/
+`VCTRL`=0.9 V, 0.03x the floor — a near-cancellation point, not a measurement
+error, given the opposite-sign mechanisms above).
+
+**What this is not.** This record is measured design input, not a spec
+claim: it replaces the informal 1.67x ratio DR-006 could only borrow from
+gf180-pll with a real sky130 number, but ratifies nothing — per `CLAUDE.md`,
+ratifying row 13 (or arguing Budget 1 from this data) is a separate decision
+record's job, not this issue's. `spec/decision-records/DR-006-statistical-
+rows-ratification.md` itself is unedited by this update.
+
 ## No spec edits
 
 Nothing in `spec/target-spec.md` is edited by this issue. Rows 2 (output
