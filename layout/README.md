@@ -6,6 +6,7 @@ Two flows live here, both headless and repeatable, both driven by
 | Directory | What it is | Issue |
 | --- | --- | --- |
 | [`pll/`](pll/) | **The PLL layout.** A device-level layout of the closed-loop PLL schematic, drawn from `design/top/netlist/top.spice` — start at `pll/README.md`, then the current record's `record.md` (`pll/reports/LATEST`) | #16 |
+| [`pll/erc-reports/`](pll/erc-reports/) | **`klt erc` supply-spec evidence** against that same layout — the structural power-delivery read T1 item 11 is graded from, driven by [`pll/erc-supply-spec.json`](pll/erc-supply-spec.json) | #147 |
 | `trivial-cell/` | The DRC/LVS flow's own gating proof on a trivial known-good cell, plus its negative controls | #2 |
 
 The PLL layout is a **device-level floorplan**: every device the schematic

@@ -14,6 +14,13 @@ layout/bin/setup-venv.sh            # once, or after bumping requirements.txt
 layout/bin/run-pll-layout-flow.sh   # ~30 s; writes a fresh record
 ```
 
+A second, separately-recorded read of the same layout lives alongside it:
+[`erc-supply-spec.json`](erc-supply-spec.json) and
+[`erc-reports/`](erc-reports/) hold the `klt erc` **supply-spec** evidence
+T1 item 11 (structural power delivery) is graded from — start at
+`erc-reports/README.md`, which states in full what a clean record there does
+and does not establish. Issue #147.
+
 ## What it is
 
 Every device the schematic declares is physically drawn, at the schematic's
