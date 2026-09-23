@@ -139,7 +139,7 @@ Two further disclosures that belong with the claim:
 ## Why every other row is `unmet`
 
 All 20 remaining T1 rows render `reason: "no_evidence"` — the manifest cites
-nothing for them. That single machine code covers four materially different
+nothing for them. That single machine code covers five materially different
 situations, and the difference is the point of this section.
 
 **1. The artifact exists, but not as a `klt` JSON envelope.** The `sim/`
@@ -158,8 +158,7 @@ is no Monte Carlo campaign (item 6, issue #20), no `klt pex` run (item 7,
 issue #21), no aggregated PLL characterization report (item 8, issue #22 —
 `measurements/report.md` exists but rolls up harness-plumbing evidence only,
 not per-spec-row PLL performance, so a `generic` envelope asserting `pass` over
-it would be a false claim), and no `klt erc` supply spec or report (item 11,
-issue #147, this repo's companion item-11 issue). Item 5 additionally needs a
+it would be a false claim). Item 5 additionally needs a
 ratified spec: `spec/target-spec.md` is DRAFT with only row 0 ratified
 (DR-001), so a corner verdict against it is provisional by construction.
 
@@ -177,7 +176,37 @@ turning those into green rows would still mean citing evidence that does not
 support them. A row that goes green for the wrong reason is worse than a red
 one.
 
-**4. The item is a per-partition row whose column this repo cannot produce
+**4. A real, clean `klt` envelope exists — and still does not answer the whole
+item.** Item **11** (power delivery, structural) is the one row where a
+citable envelope already sits in this repo: `layout/pll/erc-supply-spec.json`
+and the `klt erc --format json` report under `layout/pll/erc-reports/LATEST`,
+which reports `status: "clean"`, `erc_finding_count: 0`, pinned by content hash
+to the same `pll_top.gds` item 3 cites. It establishes **two of item 11's three
+rules** — one electrical island per declared supply, and no supply short. The
+third, `erc.missing_tie`, is **not computed**: the spec declares no `ties[]`,
+because declaring one collapses a standard-cell layout into a single island and
+reports a false supply short
+([klayout-tools#2169](https://github.com/2AMLogic/klayout-tools/issues/2169)),
+and `klt erc`'s own contract is that an omitted `ties[]` means the rule never
+runs — so the zero in that report is an absence of evidence, not evidence of
+absence. The declared supplies also cover one block of four: `VPWR`/`VGND` are
+the `sky130_fd_sc_hd` cells' own power pins and come entirely from the
+divider's abutted cell row, while the three custom-drawn analog blocks carry no
+supply labels and no rails at all because the layout is unrouted (issue #156,
+open). Citing that envelope would render item 11 green on two thirds of a
+claim — the same trade §3 declines, so it is declined here too. The full read
+is `docs/t1-gap.md` § "Item 11 in detail"; #147, which asked for the spec and
+the report, is closed because they now exist.
+
+When #156 closes and the tie rule can actually run, item 11 is the next row to
+cite — and citing it is not a one-line manifest edit. Guard 2 below matches
+`layout/<dir>/reports/<record-id>/…` literally; a citation under the sibling
+`layout/pll/erc-reports/…` tree does not match that pattern and would be
+silently skipped, leaving the new citation with no superseded-record check at
+all. Extending the pattern is part of the work of citing item 11, not a
+follow-up to it.
+
+**5. The item is a per-partition row whose column this repo cannot produce
 yet.** The digital partition's items 1, 2, 5 and 11 will be answered by the
 Analog column's artifacts (see "Block kind" above), which do not exist as
 envelopes either — not by RTL-flow artifacts. Nothing is being withheld here
@@ -216,7 +245,11 @@ repo. Both are demonstrated below.
    hash would keep matching, and item 3 (which asks for the **latest** `klt
    drc` report) would stay green against superseded evidence. The guard
    compares every cited `layout/<dir>/reports/<record-id>/…` path against
-   `layout/<dir>/reports/LATEST`.
+   `layout/<dir>/reports/LATEST`. That path shape is matched literally, and a
+   cited path that does not match it is skipped rather than rejected — so a
+   future citation under a differently-named sibling record tree (the live
+   example is `layout/pll/erc-reports/`, item 11's, see §4 above) gets no
+   superseded-record check until the pattern is widened to cover it.
 
 ## Negative controls
 
