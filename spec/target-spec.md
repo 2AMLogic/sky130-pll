@@ -242,8 +242,12 @@ is not delivered by this ratification.
 not a second ratified bound.
 
 **This ratifies a target, not a compliance claim.** No period-jitter
-measurement exists in this repo, and `sim/harness/measure.py` has no
-period-jitter metric yet. With this ring's measured tuning slope
+*measurement* exists in this repo: as of #158 `sim/harness/measure.py` carries
+the extractor (`measure.period_jitter`, reached from a manifest's
+`measure.jitter` block), but no campaign has been run through it — no
+testbench declares that block and no `sim/*/records/` entry reports a jitter
+number. An extractor is a capability, not evidence. With this ring's measured
+tuning slope
 (`Kvco/f_out` = 4.3 – 10.9 per volt), roughly a millivolt of `VCTRL` ripple
 consumes the whole budget — so this is a demanding target for the present
 design, and a campaign that records a miss records it as a miss.
@@ -420,10 +424,13 @@ not results.
 
 **Row 9 (period jitter), specifically.** Now that this row is ratified it is
 owed a campaign, and none exists: no `sim/*/records/` entry reports a jitter
-number, and `sim/harness/measure.py` has no period-jitter metric to produce
-one with (it derives mean frequency, duty cycle and lock time only). What the
-row is owed is the deterministic axis over the ratified rows 19 × 20 × 1 PVT
-grid *and* the statistical axis over a local-mismatch Monte Carlo population
-at the nominal point (`sim/run_corners.py <slug> --mc`). The missing extractor
-is tracked at #158. `DR-006` ratifies the target; it asserts nothing about
-whether the present schematic meets it.
+number, and no testbench manifest declares the `measure.jitter` block that
+would ask for one. The *extractor* is no longer the gap —
+`sim/harness/measure.py` gained the period-jitter metric at #158, alongside
+the mean frequency, duty cycle and lock time it already derived — so what the
+row is owed is now purely campaign work: the deterministic axis over the
+ratified rows 19 × 20 × 1 PVT grid *and* the statistical axis over a
+local-mismatch Monte Carlo population at the nominal point
+(`sim/run_corners.py <slug> --mc`).
+`DR-006` ratifies the target; it asserts nothing about whether the present
+schematic meets it.

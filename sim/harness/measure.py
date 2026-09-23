@@ -623,8 +623,18 @@ def _measure_jitter(rising, spec: MeasureSpec, t_from: float | None) -> tuple:
         return None, None, None
     js = spec.jitter
     frac, n_cycles = period_jitter(rising, t_from=t_from)
+    start = "the start of the trace" if t_from is None else _fmt_s(t_from)
+    if frac is None and n_cycles >= 2:
+        # `period_jitter` declined for its *other* reason: the population's
+        # mean period is non-positive (only a non-monotonic edge list can do
+        # that). There is plenty of data here, so calling this a population
+        # shortfall would name the wrong cause.
+        return None, n_cycles, (
+            f"period jitter **not measured**: the {n_cycles}-cycle population "
+            f"from {start} has a non-positive mean period -- a non-monotonic "
+            f"edge list, not a population this manifest can form a fraction of"
+        )
     if frac is None or n_cycles < js.min_cycles:
-        start = "the start of the trace" if t_from is None else _fmt_s(t_from)
         return None, n_cycles, (
             f"period jitter **not measured**: the population from {start} holds "
             f"{n_cycles} cycle(s), fewer than the {js.min_cycles} this manifest "
@@ -746,6 +756,10 @@ def measure_trace(
     )
     # Row 9's population: the consecutive output cycles after `t_lock`, the
     # same instant the post-lock frequency and duty above are taken from.
+    # `lock_time` ran on `usable` while this filters `rising`, and the two
+    # agree: `t_lock` is an element of `usable`, `usable` is `rising` with
+    # everything before `settle` dropped, and so `t_lock >= settle` -- the
+    # extra pre-settle edges in `rising` are all below `t_from` and drop out.
     jitter_frac, jitter_cycles, jitter_clause = _measure_jitter(
         rising, spec, t_from=t_lock
     )
@@ -822,8 +836,9 @@ def _fold_jitter_bound(measurements, spec: MeasureSpec):
             f"this manifest gates on a period-jitter bound of "
             f"{js.max_frac * 100:g}% of the output period, but "
             f"{len(unmeasured)}/{len(measurements)} measurement(s) produced no "
-            f"jitter number (fewer than the {js.min_cycles} cycles it requires: "
-            f"{detail})"
+            f"jitter number -- either fewer than the {js.min_cycles} cycles it "
+            f"requires, or a population with no usable mean period; each "
+            f"point's own note says which ({detail})"
         )
     return None
 

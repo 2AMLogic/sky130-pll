@@ -513,14 +513,14 @@ class JitterMeasureTraceTests(unittest.TestCase):
     )
 
     @classmethod
-    def _spec(cls, jitter, *, lock=True):
+    def _spec(cls, jitter, *, lock=True, settle_s=0.0):
         return measure.MeasureSpec(
             node="clk",
             tran_step="100p",
             tran_stop="2u",
             threshold_frac=0.5,
             hysteresis_frac=0.15,
-            settle_from_s=0.0,
+            settle_from_s=settle_s,
             min_edges=50,
             timeout_s=600,
             lock=cls.LOCK if lock else None,
@@ -534,6 +534,30 @@ class JitterMeasureTraceTests(unittest.TestCase):
             for k in range(n_cycles)
         ]
         return wave_from_periods(periods, step_s=100e-12, edge_s=800e-12)
+
+    # A trace whose jitter *differs by two orders of magnitude* either side of
+    # the lock instant: 200 acquisition cycles far off target (150 MHz, then a
+    # step to 250 MHz -- an enormous cycle-to-cycle spread when the whole trace
+    # is taken as one population) followed by 400 clean +/-0.5 % cycles. Every
+    # other fixture here (`_jittered_trace`) carries the *same* modulation
+    # before and after lock, which makes the pre-lock and post-lock windows
+    # indistinguishable and so cannot pin which one `measure_trace` actually
+    # used. This one can.
+    CHIRP_AMPLITUDE = 0.005
+    CHIRP_CYCLES = 200
+    CHIRP_PERIOD_S = 1.0 / 150e6
+
+    @classmethod
+    def _chirp_then_clean_trace(cls, clean_cycles=400):
+        a = cls.CHIRP_AMPLITUDE
+        periods = [cls.CHIRP_PERIOD_S] * cls.CHIRP_CYCLES + [
+            cls.T0 * (1 + a if k % 2 == 0 else 1 - a) for k in range(clean_cycles)
+        ]
+        # The 200th rising edge is the first one at the target frequency, and
+        # is where `lock_time`'s sliding window first comes in band.
+        t_lock_expected = cls.CHIRP_PERIOD_S * cls.CHIRP_CYCLES
+        times, values = wave_from_periods(periods, step_s=100e-12, edge_s=800e-12)
+        return times, values, t_lock_expected
 
     def test_a_locked_trace_reports_the_injected_period_modulation(self):
         times, values = self._jittered_trace(0.005)
@@ -604,6 +628,82 @@ class JitterMeasureTraceTests(unittest.TestCase):
         self.assertIsNone(m.locked)
         self.assertAlmostEqual(m.period_jitter_frac, 0.01, delta=1e-4)
         self.assertIn("period jitter 1.000% RMS", m.note)
+
+    def test_a_non_monotonic_population_is_declined_for_its_own_reason(self):
+        # `period_jitter` declines for two distinct reasons -- too small a
+        # population, and a population whose mean period is non-positive --
+        # and the note must name the one that actually applied. Only a
+        # non-monotonic edge list reaches the second (`edge_times` never
+        # emits one), but when it is reached the population here is ample, so
+        # blaming the population size would name the wrong cause.
+        spec = self._spec(measure.JitterSpec(max_frac=0.01, min_cycles=2))
+        frac, n_cycles, clause = measure._measure_jitter(
+            [0.0, 4e-9, -8e-9, -4e-9], spec, t_from=None
+        )
+        self.assertIsNone(frac)
+        self.assertEqual(n_cycles, 3)
+        self.assertIn("non-positive mean period", clause)
+        self.assertNotIn("fewer than", clause)
+
+    def test_measure_trace_starts_the_locked_population_at_the_lock_instant(self):
+        # The acceptance criterion for row 9 is that the population starts
+        # *after the loop is in lock*, reusing `lock_time`'s instant. The
+        # `PeriodJitterTests` case of the same name pins `period_jitter`'s
+        # `t_from` parameter directly; this one pins what `measure_trace`
+        # itself passes, which is the thing the record's row-9 figure comes
+        # from. It is written so that substituting any other plausible window
+        # start -- `settle_from` (0 here), `None`, the start of the trace --
+        # fails it: the acquisition transient's spread is >20x the post-lock
+        # one, not a delta a tolerance could absorb.
+        times, values, t_lock_expected = self._chirp_then_clean_trace()
+        spec = self._spec(measure.JitterSpec(max_frac=0.01, min_cycles=20))
+        m = measure.measure_trace(times, values, spec, supply_v=1.8)
+
+        self.assertTrue(m.locked)
+        self.assertAlmostEqual(m.lock_time_s, t_lock_expected, delta=self.T0)
+
+        # What the whole trace would have reported, had the population started
+        # at `settle_from`/the start of the trace instead of at `t_lock`.
+        rising, _ = measure.edge_times(times, values, 0.9, 0.15 * 1.8)
+        whole_trace, _ = measure.period_jitter(rising, t_from=spec.settle_from_s)
+        self.assertGreater(whole_trace, 0.10)
+
+        # What `measure_trace` actually reported: the post-lock amplitude.
+        self.assertAlmostEqual(
+            m.period_jitter_frac, self.CHIRP_AMPLITUDE, delta=1e-4
+        )
+        self.assertLess(m.period_jitter_frac, whole_trace / 20)
+        self.assertEqual(m.jitter_cycles, len(rising) - 1 - self.CHIRP_CYCLES)
+        self.assertIn("period jitter 0.500% RMS", m.note)
+        self.assertNotIn("misses", m.note)
+        passed, _ = measure.aggregate([m], spec)
+        self.assertTrue(passed)
+
+    def test_measure_trace_starts_the_free_running_population_at_settle(self):
+        # The sibling of the test above for the no-`lock` branch: with a
+        # non-zero `settle_from`, passing `None` (the whole trace) instead of
+        # `settle` would drag the same acquisition transient into the
+        # population. Both branches' window starts are therefore pinned, not
+        # just the row-9 one.
+        times, values, t_lock_expected = self._chirp_then_clean_trace()
+        settle_s = t_lock_expected + 5e-9  # just inside the clean section
+        spec = self._spec(
+            measure.JitterSpec(max_frac=0.01, min_cycles=20),
+            lock=False,
+            settle_s=settle_s,
+        )
+        m = measure.measure_trace(times, values, spec, supply_v=1.8)
+
+        self.assertIsNone(m.locked)
+        rising, _ = measure.edge_times(times, values, 0.9, 0.15 * 1.8)
+        whole_trace, _ = measure.period_jitter(rising)
+        self.assertGreater(whole_trace, 0.10)
+
+        self.assertAlmostEqual(
+            m.period_jitter_frac, self.CHIRP_AMPLITUDE, delta=1e-4
+        )
+        self.assertLess(m.period_jitter_frac, whole_trace / 20)
+        self.assertIn("period jitter 0.500% RMS", m.note)
 
 
 class JitterAggregationTests(unittest.TestCase):
