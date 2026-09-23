@@ -14,19 +14,20 @@ sim/harness/
   montecarlo.py  build the Monte Carlo trial matrix from a manifest + CLI overrides
   runner.py      xschem-netlist once, patch per point/trial, run ngspice, judge pass/fail
   checkpoint.py  crash-safe per-point progress, and the --resume path's guards
+  measure.py     reduce a transient to frequency / duty / lock time / period jitter
+  acmeasure.py   reduce an AC sweep to loop bandwidth / phase margin / gain margin
   report.py      render the append-only records/<record-id>.md evidence record
   cli.py         argparse glue: --check-env / --print-env / --list / <slug> [--mc]
 ```
 
-This is deliberately scoped down from `2AMLogic/gf180-pll`'s own
-`sim/harness/` (source commit `3e3814c11ce6f0781ecfbefb0d109981c4e5eb21`,
-which this package's shape is adapted from per this repo's `CLAUDE.md`
-harness-bootstrap rule): gf180-pll's package carries PLL-specific
-derived-measurement modules (lock detection, jitter reduction, divider-ratio
-checks, ...) because it has a real PLL schematic to measure. sky130-pll does
-not yet — issue #2 stands up the harness plumbing only, unblocked of spec
-ratification (#1). Measurement-specific reduction modules are added by later
-issues once there is a PLL netlist.
+This package's shape is adapted from `2AMLogic/gf180-pll`'s own `sim/harness/`
+(source commit `3e3814c11ce6f0781ecfbefb0d109981c4e5eb21`) per this repo's
+`CLAUDE.md` harness-bootstrap rule. Issue #2 stood up the plumbing half only —
+gf180-pll's PLL-specific derived-measurement modules (lock detection, jitter
+reduction, divider-ratio checks, ...) had no counterpart here while there was
+no PLL netlist to measure. The reduction half has since been filled in against
+this repo's own DUT: `measure.py` (issue #52, period jitter added for the
+ratified row 9 by #158) and `acmeasure.py`.
 
 ## `tb.json` manifest schema
 
@@ -317,6 +318,11 @@ edits:
       "window_cycles": 20,
       "min_hold_cycles": 20
     },
+    "jitter": {
+      "max_frac": 0.01,
+      "min_cycles": 200,
+      "gate_on_bound": true
+    },
     "require_lock": false,
     "sweep": {"source": "V2", "quantity": "VCTRL", "values": [0.6, 0.8, 1.0]},
     "require_oscillation": false,
@@ -355,6 +361,40 @@ edits:
   data ("no lock within this window, at this corner" is itself a finding a
   v1 canary campaign may want to *record*, not paper over — see
   `sim/pll-lock/testbench/tb.json`).
+- **`jitter`** — when present, the reducer additionally extracts
+  `spec/target-spec.md` **row 9 (period jitter)**, which `DR-006` ratified on
+  2026-09-23: the standard deviation of the measured period `T_k` over a
+  population of consecutive output cycles taken after lock, divided by that
+  population's mean period. The population's periods come from the *same*
+  interpolated rising edges frequency and duty are derived from, and its start
+  instant is the record's own `t_lock` (or `settle_from` for a manifest with no
+  `lock` block) — there is deliberately no second lock criterion. Sub-keys:
+  - **`max_frac`** (optional, default none) — the bound, as a **fraction of
+    the output period**. Row 9's ratified 1.0 % is `0.01`; a value outside
+    `(0, 1)` is rejected outright, so `1.0` (the percentage written into the
+    fraction's slot, a bound nothing could fail) cannot silently turn a gated
+    campaign into a no-op. Omit it for a campaign that wants the number
+    recorded with no bound stated against it.
+  - **`min_cycles`** (optional, default `20`) — the smallest population that
+    counts as evidence. A shorter one yields **no jitter number at all**,
+    reported as such, rather than a figure computed from too little data.
+  - **`gate_on_bound`** (optional, default `true`) — whether a stated
+    `max_frac` gates the point's verdict. This defaults *on*, unlike the `ac`
+    block's `gate_on_bounds` below, because row 9 is ratified while rows 6/7
+    are DRAFT: a manifest stating this bound is stating a ratified one, and a
+    point that misses it cannot honestly be folded into a PASS. Set it `false`
+    for a characterization campaign that wants the number reported without
+    gating. Per `CLAUDE.md`, a point that misses is **recorded as a miss** —
+    the bound is never relaxed to make a campaign pass.
+
+  A point that never locked is attributed **no** period jitter (row 9 is
+  stated "in lock", and the final-window cycles are not substituted for a
+  post-lock population), and is not failed a second time for lacking one — its
+  own "no lock" line is the finding, and `require_lock` decides whether that
+  fails the point. `measure.aggregate` folds the bound into the point's
+  `(passed, reason)` verdict: a point over the bound fails naming its own
+  number, and a point that *owed* a jitter figure but produced none fails
+  distinctly (gating on a bound the campaign could not measure is not a PASS).
 - **`sweep`** — when present, one ngspice invocation per PVT point runs
   `len(values)` transients, altering `source`'s DC value between each (e.g.
   a VCO's `VCTRL` bias) and dumping one waveform per swept value. Used by

@@ -20,8 +20,8 @@ synthetic traces):
    `tb_pll.sch`, and a sweep campaign (`sim/vco`) can run every swept point
    inside one ngspice invocation, paying the sky130 model-library parse once.
 2. **Reduction** -- `parse_wrdata` -> `edge_times` -> `mean_frequency` /
-   `duty_cycle` / `lock_time` -> `measure_trace`, which folds those into one
-   `Measurement` per (point, swept value).
+   `duty_cycle` / `lock_time` / `period_jitter` -> `measure_trace`, which folds
+   those into one `Measurement` per (point, swept value).
 
 ## What "locked" means here
 
@@ -42,6 +42,44 @@ loop that first touches the target band one cycle before the transient ends
 would be reported as locked. The "through the end of the simulated window"
 term is what stops a loop that locks and then falls back out from being
 reported as locked at its first excursion into the band.
+
+## What "period jitter" means here
+
+`spec/target-spec.md` row 9 is **RATIFIED** (`DR-006`, #151) and states the
+quantity in percentage form, so this module measures exactly that form and
+nothing else:
+
+> **Period jitter** is the standard deviation of the measured period `T_k`
+> over a population of consecutive output cycles taken after lock, divided by
+> that population's mean period. It is reported as a **fraction** internally
+> (`Measurement.period_jitter_frac`) and rendered as a percentage; any
+> absolute picosecond figure is a derived restatement of it, never the
+> measured quantity.
+
+Three choices that a reader of a record is owed, stated here once:
+
+- **The population is post-lock, and "lock" means this module's one lock
+  criterion.** The population starts at `lock_time`'s `t_lock` when the
+  manifest declares a `lock` block, and at `settle_from` when it does not.
+  There is deliberately no second "has it settled yet" test -- a jitter
+  number whose window was chosen by a different rule than the record's own
+  lock column would not be comparable with it.
+- **The periods come from the same interpolated rising edges everything else
+  here is derived from** (`edge_times`), not from a second pass over the raw
+  trace. `T_k = rising[k+1] - rising[k]`.
+- **The standard deviation is the population one (`N` divisor,
+  `statistics.pstdev`), not the sample estimator (`N-1`).** DR-006 words the
+  spec'd quantity as a deviation "over a population of consecutive output
+  cycles", i.e. over the cycles actually measured, and this reducer reports
+  that literally rather than estimating the deviation of a hypothetical
+  parent process. The two differ by `sqrt(N/(N-1))` -- 0.1 % at the 500-cycle
+  populations a lock campaign produces, but the choice is stated rather than
+  left for a reader to infer from a number.
+
+A population smaller than the manifest's `jitter.min_cycles` yields **no
+jitter number at all**, reported as such -- the same discipline the lock
+criterion applies to a run that never locks (never present a value computed
+from too little data as if it were the measurement).
 
 ## Loop bandwidth / phase margin are deliberately NOT measured here
 
@@ -66,7 +104,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from statistics import fmean
+from statistics import fmean, pstdev
 
 # Echoed by `build_control_block` as the last statement of the injected
 # `.control` section. ngspice does not print its usual "Total analysis time"
@@ -160,6 +198,49 @@ class LockSpec:
 
 
 @dataclass(frozen=True)
+class JitterSpec:
+    """The `measure.jitter` block of a `tb.json` manifest, parsed.
+
+    `max_frac` is the bound as a **fraction of the output period** (`0.01` is
+    `spec/target-spec.md` row 9's ratified 1.0 %), or `None` for a campaign
+    that wants the number recorded without a bound stated against it.
+    """
+
+    max_frac: float | None = None
+    min_cycles: int = 20
+    # Unlike `acmeasure.AcSpec.gate_on_bounds` (default `false`, because rows 6
+    # and 7 are DRAFT and a harness verdict must not read as ratifying one),
+    # this defaults to `true`: row 9 IS ratified, so a manifest that states the
+    # bound at all is stating a ratified one, and a point that misses it cannot
+    # honestly be folded into a PASS. A characterization campaign that wants
+    # the number reported without gating on it says so explicitly.
+    gate_on_bound: bool = True
+
+    @property
+    def summary(self) -> str:
+        population = (
+            f"a population of at least {self.min_cycles} consecutive post-lock "
+            f"output cycles"
+        )
+        if self.max_frac is None:
+            return (
+                f"period jitter -- the standard deviation of the measured period "
+                f"over {population}, divided by that population's mean period -- "
+                f"is reported for each point; this manifest states no bound"
+            )
+        return (
+            f"the standard deviation of the measured period over {population}, "
+            f"divided by that population's mean period, is at most "
+            f"{self.max_frac * 100:g}% "
+            + (
+                "(gated: a point that misses it FAILs)"
+                if self.gate_on_bound
+                else "(reported, but not gated on, for this manifest)"
+            )
+        )
+
+
+@dataclass(frozen=True)
 class MeasureSpec:
     """The `measure` block of a `tb.json` manifest, parsed."""
 
@@ -175,6 +256,7 @@ class MeasureSpec:
     uic: bool = False
     sweep: tuple = ()
     lock: LockSpec | None = None
+    jitter: JitterSpec | None = None
     require_lock: bool = False
     require_oscillation: bool = True
     # For a swept campaign: how many of the swept values must oscillate for
@@ -214,6 +296,33 @@ class MeasureSpec:
                 min_hold_cycles=int(lk.get("min_hold_cycles", lk["window_cycles"])),
             )
 
+        jitter = None
+        if "jitter" in block:
+            jt = block["jitter"]
+            if jt is None:
+                jt = {}
+            if not isinstance(jt, dict):
+                raise MeasureError("manifest `measure.jitter` block must be an object")
+            raw_max = jt.get("max_frac")
+            max_frac = None if raw_max is None else float(raw_max)
+            if max_frac is not None and not 0.0 < max_frac < 1.0:
+                raise MeasureError(
+                    f"manifest `measure.jitter.max_frac` must be a fraction of the "
+                    f"output period in (0, 1) -- got {raw_max!r}; row 9's ratified "
+                    f"1.0 % bound is 0.01, not 1.0"
+                )
+            min_cycles = int(jt.get("min_cycles", 20))
+            if min_cycles < 2:
+                raise MeasureError(
+                    "manifest `measure.jitter.min_cycles` must be at least 2 "
+                    "(a standard deviation needs two periods)"
+                )
+            jitter = JitterSpec(
+                max_frac=max_frac,
+                min_cycles=min_cycles,
+                gate_on_bound=bool(jt.get("gate_on_bound", True)),
+            )
+
         sweep = ()
         if "sweep" in block:
             sw = block["sweep"]
@@ -243,6 +352,7 @@ class MeasureSpec:
             uic=bool(block.get("uic", False)),
             sweep=sweep,
             lock=lock,
+            jitter=jitter,
             require_lock=bool(block.get("require_lock", False)),
             require_oscillation=bool(block.get("require_oscillation", True)),
             min_oscillating_points=int(block.get("min_oscillating_points", 0)),
@@ -419,6 +529,37 @@ def lock_time(rising, spec: LockSpec) -> tuple:
     return True, rising[first]
 
 
+def period_jitter(rising, t_from: float | None = None) -> tuple:
+    """Row 9's quantity. Returns `(jitter_frac, n_cycles)`.
+
+    `jitter_frac` is `pstdev(T_k) / mean(T_k)` over the consecutive cycles
+    `T_k = rising[k+1] - rising[k]` whose *opening* edge is at or after
+    `t_from` -- i.e. the population is the cycles the loop ran through after
+    the caller's chosen start instant, never a cycle straddling it. It is a
+    fraction; the percentage `spec/target-spec.md` row 9 states is
+    `100 * jitter_frac`.
+
+    Callers pass `t_from=t_lock` (see `lock_time`) so the population is the
+    post-lock one row 9 is stated over. This function does not re-derive
+    edges and does not apply a lock criterion of its own -- see this module's
+    docstring, "What period jitter means here".
+
+    `jitter_frac` is `None` (with `n_cycles` still reported) when there are
+    fewer than two periods in the population, or when the population's mean
+    period is non-positive: too little data is reported as too little data,
+    never as a jitter of zero.
+    """
+    edges = [t for t in rising if t_from is None or t >= t_from]
+    periods = [b - a for a, b in zip(edges, edges[1:])]
+    n_cycles = len(periods)
+    if n_cycles < 2:
+        return None, n_cycles
+    mean_period = fmean(periods)
+    if mean_period <= 0:
+        return None, n_cycles
+    return pstdev(periods) / mean_period, n_cycles
+
+
 @dataclass(frozen=True)
 class Measurement:
     """One measured operating point of one PVT point."""
@@ -432,6 +573,14 @@ class Measurement:
     final_freq_hz: float | None
     note: str
     passed: bool
+    # Row 9 (period jitter), as a fraction of the output period -- `None` when
+    # the manifest declares no `jitter` block, when the point never reached a
+    # post-lock window, or when that window held fewer cycles than the
+    # manifest requires. `jitter_cycles` is the population size the number was
+    # computed over (or would have been, when it is too small), so a record
+    # can say how much data is behind the figure it prints.
+    period_jitter_frac: float | None = None
+    jitter_cycles: int | None = None
 
     def summary(self) -> str:
         """One-line human-readable form, used in the record's result table."""
@@ -460,6 +609,34 @@ def _fmt_s(value: float | None) -> str:
     if value < 1e-3:
         return f"{value * 1e6:.4g} us"
     return f"{value * 1e3:.4g} ms"
+
+
+def _measure_jitter(rising, spec: MeasureSpec, t_from: float | None) -> tuple:
+    """Row 9's quantity for one trace: `(frac, n_cycles, note_clause)`.
+
+    `t_from` is the population's start instant -- `t_lock` for a manifest with
+    a `lock` block, `settle_from` for one without. All three results are
+    `None` when the manifest declares no `jitter` block, so a campaign that
+    does not ask for jitter is byte-for-byte unaffected.
+    """
+    if spec.jitter is None:
+        return None, None, None
+    js = spec.jitter
+    frac, n_cycles = period_jitter(rising, t_from=t_from)
+    if frac is None or n_cycles < js.min_cycles:
+        start = "the start of the trace" if t_from is None else _fmt_s(t_from)
+        return None, n_cycles, (
+            f"period jitter **not measured**: the population from {start} holds "
+            f"{n_cycles} cycle(s), fewer than the {js.min_cycles} this manifest "
+            f"requires"
+        )
+    clause = f"period jitter {frac * 100:.3f}% RMS over {n_cycles} cycles"
+    if js.max_frac is not None and frac > js.max_frac:
+        clause += (
+            f" -- **misses** this manifest's stated bound of "
+            f"{js.max_frac * 100:g}% of the output period"
+        )
+    return frac, n_cycles, clause
 
 
 def measure_trace(
@@ -506,6 +683,17 @@ def measure_trace(
         note = f"f_out {_fmt_hz(f)}, duty {d * 100:.1f}%" if d is not None else (
             f"f_out {_fmt_hz(f)}, duty -"
         )
+        # No `lock` block means no lock instant to start the population at, so
+        # `settle_from` is the window start -- the same instant the frequency
+        # and duty above are taken over. A manifest measuring row 9 itself
+        # declares `lock` (the row is stated "in lock"); this branch is for a
+        # free-running campaign that wants the cycle-to-cycle spread of an
+        # oscillator recorded alongside its frequency.
+        jitter_frac, jitter_cycles, jitter_clause = _measure_jitter(
+            rising, spec, t_from=settle
+        )
+        if jitter_clause:
+            note += f", {jitter_clause}"
         return Measurement(
             label=label,
             oscillating=True,
@@ -516,6 +704,8 @@ def measure_trace(
             final_freq_hz=f,
             note=note,
             passed=True,
+            period_jitter_frac=jitter_frac,
+            jitter_cycles=jitter_cycles,
         )
 
     locked, t_lock = lock_time(usable, spec.lock)
@@ -528,6 +718,14 @@ def measure_trace(
             f"{_fmt_hz(final_f)} -- that is the frequency the loop happened to be "
             f"running at when the transient ended, NOT a locked output frequency"
         )
+        if spec.jitter is not None:
+            # Row 9 is stated "in lock". A point that never locked has no
+            # post-lock population, so it gets no jitter number at all --
+            # the final-window cycles are not silently substituted for one.
+            note += (
+                ". No period jitter is attributed to it either: row 9's "
+                "population is a post-lock one, and this point has none"
+            )
         return Measurement(
             label=label,
             oscillating=True,
@@ -546,6 +744,13 @@ def measure_trace(
     note = (
         f"locked at {_fmt_s(t_lock)}; post-lock f_out {_fmt_hz(f)}, duty {duty_txt}"
     )
+    # Row 9's population: the consecutive output cycles after `t_lock`, the
+    # same instant the post-lock frequency and duty above are taken from.
+    jitter_frac, jitter_cycles, jitter_clause = _measure_jitter(
+        rising, spec, t_from=t_lock
+    )
+    if jitter_clause:
+        note += f", {jitter_clause}"
     return Measurement(
         label=label,
         oscillating=True,
@@ -556,7 +761,71 @@ def measure_trace(
         final_freq_hz=final_f,
         note=note,
         passed=True,
+        period_jitter_frac=jitter_frac,
+        jitter_cycles=jitter_cycles,
     )
+
+
+def _jitter_population_owed(m: Measurement) -> bool:
+    """Should this measurement have produced a period-jitter number?
+
+    Yes for a point that oscillated and (where a lock criterion applies) locked
+    -- those are exactly the points row 9 is stated over. A dead point, or one
+    that never locked, is already recorded as such by its own note and is not
+    additionally failed for having no jitter figure.
+    """
+    return m.oscillating and m.locked is not False
+
+
+def _fold_jitter_bound(measurements, spec: MeasureSpec):
+    """The row-9 half of `aggregate`. Returns `(passed, reason)`, or `None`
+    when this manifest states no gated jitter bound and the fold is a no-op.
+
+    Two distinct failures, reported distinctly, because they mean different
+    things to a reader of the record: a point that *missed* a stated bound is
+    a design result, while a point that produced *no* jitter number at all is
+    a campaign that cannot speak to the row -- and neither may be folded into
+    a PASS against a bound the manifest asked to be gated on.
+    """
+    js = spec.jitter
+    if js is None or js.max_frac is None or not js.gate_on_bound:
+        return None
+
+    misses, unmeasured = [], []
+    for m in measurements:
+        if not _jitter_population_owed(m):
+            continue
+        if m.period_jitter_frac is None:
+            unmeasured.append(m)
+        elif m.period_jitter_frac > js.max_frac:
+            misses.append(m)
+
+    def _tag(m: Measurement) -> str:
+        return f"{m.label}: " if m.label else ""
+
+    if misses:
+        detail = "; ".join(
+            f"{_tag(m)}period jitter {m.period_jitter_frac * 100:.3f}% RMS over "
+            f"{m.jitter_cycles} cycles"
+            for m in misses[:3]
+        )
+        return False, (
+            f"{len(misses)}/{len(measurements)} measurement(s) miss this "
+            f"manifest's period-jitter bound of {js.max_frac * 100:g}% of the "
+            f"output period ({detail})"
+        )
+    if unmeasured:
+        detail = "; ".join(
+            f"{_tag(m)}{m.jitter_cycles} cycle(s) in the population" for m in unmeasured[:3]
+        )
+        return False, (
+            f"this manifest gates on a period-jitter bound of "
+            f"{js.max_frac * 100:g}% of the output period, but "
+            f"{len(unmeasured)}/{len(measurements)} measurement(s) produced no "
+            f"jitter number (fewer than the {js.min_cycles} cycles it requires: "
+            f"{detail})"
+        )
+    return None
 
 
 def aggregate(measurements, spec: MeasureSpec) -> tuple:
@@ -565,6 +834,10 @@ def aggregate(measurements, spec: MeasureSpec) -> tuple:
     Kept here rather than in `runner` so the pass/fail *policy* -- which is
     what a record's verdict column means -- is unit-testable without a
     simulator, alongside the arithmetic it judges.
+
+    Three folds, in order: any individually-failed measurement dominates; then
+    a manifest-stated period-jitter bound (`_fold_jitter_bound`, row 9); then
+    the swept-campaign "how many points must oscillate" count.
     """
     if not measurements:
         return False, "no measurements were produced"
@@ -575,6 +848,10 @@ def aggregate(measurements, spec: MeasureSpec) -> tuple:
             (f"{m.label}: {m.note}" if m.label else m.note) for m in failed[:3]
         )
         return False, detail
+
+    jitter_verdict = _fold_jitter_bound(measurements, spec)
+    if jitter_verdict is not None:
+        return jitter_verdict
 
     oscillating = sum(1 for m in measurements if m.oscillating)
     if oscillating < spec.min_oscillating_points:
