@@ -1,8 +1,8 @@
 # PLL target specification
 
-- **Status**: **RATIFIED (rows 0, 1, 19, 20) — row 0 2026-08-13 via `DR-001`
-  in #1; row 1 2026-08-19 via `DR-002` in #19; rows 19 and 20 2026-08-27 via
-  `DR-003` in #77.**
+- **Status**: **RATIFIED (rows 0, 1, 9, 19, 20) — row 0 2026-08-13 via
+  `DR-001` in #1; row 1 2026-08-19 via `DR-002` in #19; rows 19 and 20
+  2026-08-27 via `DR-003` in #77; row 9 2026-09-23 via `DR-006` in #151.**
   The **supply flavor is settled**: the 1.8 V core
   (`nfet_01v8`/`pfet_01v8`). That row is binding, and design/sim/layout work
   may now lock to it. The **supply range is settled**: 1.8 V ± 10 %
@@ -12,6 +12,13 @@
   range is settled**: −40 °C to 125 °C, sampled at −40/27/125 °C. Rows 19 and
   20, crossed with the ratified row 1 supply range, define the PVT grid every
   future per-corner row is verified against once that row is itself ratified.
+  The **period-jitter target is settled**: ≤ 1.0 % of the output period, RMS,
+  at `CLK` in lock, stated under a **DC-quiet supply** anywhere in row 1's
+  range and verified over that PVT grid plus a local-mismatch Monte Carlo
+  population — the first ratified *performance* row. `DR-006` also
+  **explicitly leaves rows 10 (reference spur) and 13 (supply sensitivity)
+  DRAFT**, each for a cited structural reason and each with a stated closure
+  condition, rather than by omission — see those rows' own sections.
   **No other numeric row below is ratified.** Ratifying a row does not ratify
   the rows it merely informs — each remaining row's "what must be settled on
   sky130" column is a committed obligation (re-derive / confirm /
@@ -19,7 +26,8 @@
   must be closed by a sky130 campaign producing evidence; it may not be closed
   by porting the gf180-pll number.
 - **Date**: 2026-08-10 (drafted); 2026-08-13 (row 0 ratified); 2026-08-19
-  (row 1 ratified); 2026-08-27 (rows 19, 20 ratified)
+  (row 1 ratified); 2026-08-27 (rows 19, 20 ratified); 2026-09-23 (row 9
+  ratified; rows 10 and 13 explicitly left DRAFT)
 - **Written by**: scaffold, repo creation
 - **Block class**: integer-N, ring-oscillator phase-locked loop.
 - **Port relationship**: this is the sky130 port of `2AMLogic/gf180-pll`. Its
@@ -35,9 +43,11 @@
 This mirrors the gf180-pll spec structure. Every parameter has a row in the
 [summary table](#summary-table) carrying a **DRAFT target (starting point)**,
 its **source**, the **sky130 open question** that ratification must resolve, and
-a **status** — which for now is uniformly *DRAFT — to be ratified*. Once #1
-ratifies, rows gain the gf180-pll-style corner bindings and measured/derived/
-budget status words, each backed by a `sim/` evidence record.
+a **status** — *DRAFT — to be ratified* for every row that no decision record
+has yet disposed of (see the [summary table](#summary-table) for which rows
+are RATIFIED, and which are DRAFT by an explicit decision). As rows ratify,
+they gain the gf180-pll-style corner bindings and measured/derived/budget
+status words, each backed by a `sim/` evidence record.
 
 **The cardinal rule for this file.** No number below is presented as final.
 Where a value is carried from gf180-pll or a published sky130 reference, it is a
@@ -75,9 +85,11 @@ exists yet. Every value is a target to design toward, not a measurement.
 
 ## Summary table
 
-Rows 0, 1, 19, and 20 are **RATIFIED** (see their own cells below). Every
-other row's status is uniformly **DRAFT — to be ratified** until its own
-decision record closes.
+Rows 0, 1, 9, 19, and 20 are **RATIFIED** (see their own cells below). Rows
+10 and 13 are **DRAFT by an explicit decision** (`DR-006`, #151) — each
+carries a cited reason and a stated closure condition rather than a bare
+DRAFT marker. Every other row's status is uniformly **DRAFT — to be
+ratified** until its own decision record closes.
 
 | # | Parameter | DRAFT target (starting point) | Source | sky130 open question to resolve at ratification |
 |---|---|---|---|---|
@@ -90,11 +102,11 @@ decision record closes.
 | 6 | [Loop bandwidth](#loop-bandwidth) | f_c well below f_ref, hard ceiling `f_c < f_ref/10` | gf180-pll rows 8/8a | the kHz range depends on ratified band + filter; re-derive |
 | 7 | [Phase margin](#phase-margin) | ≥ 45° everywhere in the contracted space | gf180-pll row 8a | port the criterion; re-verify the realized margin on sky130 |
 | 8 | [Lock time](#lock-time) | < 100 µs to a stated lock criterion | gf180-pll row 9 | re-verify; cold-start owed to a testbench, not a budget number |
-| 9 | [Period jitter](#period-jitter) | ≤ 1.0 % of the output period, RMS, conditional on a stated supply-ripple limit | gf180-pll row 5 | re-derive the ripple condition on the sky130 supply |
-| 10 | [Reference spur](#reference-spur) | ≤ −55 dBc (candidate) | gf180-pll row 7 | re-derive from sky130 charge-pump mismatch, not ported |
+| 9 | [Period jitter](#period-jitter) | ≤ 1.0 % of the output period, RMS, at `CLK` in lock, under a **DC-quiet supply** within row 1's range — **RATIFIED 2026-09-23 (DR-006, #151)** | the *percentage* form of gf180-pll row 5 — dimensionless, and therefore the one clause of that row unaffected by the 3.3 V → 1.8 V change `DR-001` ratified; re-argued in `DR-006`, not ported wholesale. gf180-pll's `vdd_vco` ripple *condition* is explicitly **not** ported | **Settled for the DC-quiet supply condition** (ideal DC source at 1.62/1.80/1.98 V, no externally applied AC ripple), verified over the row 19 × 20 × 1 PVT grid plus local-mismatch Monte Carlo. The **ripple-inclusive** form is *not* ratified: row 1 binds a single supply domain, so there is no dedicated VCO rail to port gf180-pll's condition onto — owed at row 13 (`DR-006`) |
+| 10 | [Reference spur](#reference-spur) | ≤ −55 dBc (candidate) — **DRAFT by explicit decision (DR-006, #151)**, not by omission | gf180-pll row 7 | **Deliberately left open.** A dBc figure scales as `20·log₁₀(f_out)` and row 2 is DRAFT, so the target has no binding frequency; and at this ring's `Kvco/f_out` (4.3–10.9 /V vs. gf180-pll's 0.31–0.84 /V) porting −55 dBc would covertly ratify a `Kvco` requirement row 5 has never argued. Closure needs rows 2 and 5 ratified plus a sky130 charge-pump charge-asymmetry / `VCTRL`-ripple measurement (`DR-006`) |
 | 11 | [Integrated RMS jitter / phase noise](#jitter-and-phase-noise) | **not spec'd** — derived-only, deliberately visible | gf180-pll rows 4/6 | confirm the same deliberate omission applies |
 | 12 | [Power](#power) | a budget at a stated frequency (gf180-pll used < 5 mW at 100 MHz on 3.3 V) | gf180-pll row 10 | 1.8 V changes the power story — re-budget; do not port the mW figure |
-| 13 | [Supply sensitivity](#supply-sensitivity) | supply-ripple limit + a DC-excursion Vctrl budget | gf180-pll row 12 | re-derive both budgets on the sky130 supply |
+| 13 | [Supply sensitivity](#supply-sensitivity) | supply-ripple limit + a DC-excursion Vctrl budget — **DRAFT by explicit decision (DR-006, #151)**, not by omission, both budgets | gf180-pll row 12 | **Deliberately left open, per budget.** *AC*: gf180-pll's limit is written against a dedicated `vdd_vco` rail, which ratified row 1 (single supply domain) does not provide — and a shared-rail limit is partly self-imposed, needing a transient measurement that does not exist. *DC*: the budget divides by `Kvco/f_out` (row 5, DRAFT) and by an unmeasured usable `VCTRL` window. `DR-006` records the structural `1/VDD` pushing floor (55.6 %/V at 1.8 V vs. 30.3 %/V at 3.3 V) as the anchor a future derivation starts from |
 | 14 | [Output duty cycle](#output-duty-cycle) | 45 – 55 % at CLK, whole band, all corners | gf180-pll row 13 | port target; owed a measurement |
 | 15 | [Output levels and drive](#output-levels-and-drive) | rail-to-rail CMOS, V_OH ≥ 0.9·VDD / V_OL ≤ 0.1·VDD into a stated load | gf180-pll row 14 | confirm the load and rail for the ratified supply |
 | 16 | [Lock detector](#lock-detector) | digital `lock` output; assert window + hysteresis criteria | gf180-pll row 16 | port the behavioral contract; re-verify the window on sky130 |
@@ -200,15 +212,70 @@ settling and cold-start bring-up are each owed a testbench, not a budget number.
 
 ## Period jitter
 
-**DRAFT — to be ratified.** ≤ 1.0 % of the output period, RMS, **conditional on
-a stated supply-ripple limit** (gf180-pll made the jitter target conditional on
-≤ 20 mV pp VCO-supply ripple). The ripple condition is re-derived on the sky130
-supply, not ported.
+**RATIFIED 2026-09-23** (`DR-006`, ruled via #151). **≤ 1.0 % of the output
+period, RMS**, at `CLK`, in lock.
+
+**The spec'd quantity.** The standard deviation of the measured period `T_k`
+over a population of consecutive output cycles taken after lock, divided by
+that population's mean period, as a percentage. **The percentage form is
+normative**; any absolute picosecond figure (100 ps RMS at 100 MHz, 50 ps at
+200 MHz) is a derived restatement of it, never the spec'd quantity. Stating
+this explicitly closes the 10× drafting ambiguity gf180-pll's own row 5 had
+to resolve after the fact.
+
+**The condition it is stated under.** The bound holds with the supply
+modelled as an **ideal DC source at any point in row 1's ratified range**
+(1.62 / 1.80 / 1.98 V) with **no externally applied AC ripple**, over the
+full PVT grid rows 19 × 20 × 1 define, and over a local-mismatch Monte Carlo
+population at the nominal point (`sim/run_corners.py <slug> --mc`).
+
+gf180-pll makes its own 1 % line conditional on a `vdd_vco` ripple limit
+instead. **That condition is not ported**: ratified row 1 binds a *single*
+supply domain, so this design has no dedicated VCO rail to place such a
+limit on (`DR-006` *Decision* §1). What ports is the part of gf180-pll's
+row 5 that carries no volts — the percentage — exactly the cut `DR-002` made
+when it ported gf180-pll's ± 10 % tolerance while refusing the 3.3 V it was
+attached to. The **ripple-inclusive** form of this row is owed at row 13 and
+is not delivered by this ratification.
+
+**< 0.5 % is retained as an uncommitted stretch** — no evidence either way,
+not a second ratified bound.
+
+**This ratifies a target, not a compliance claim.** No period-jitter
+measurement exists in this repo, and `sim/harness/measure.py` has no
+period-jitter metric yet. With this ring's measured tuning slope
+(`Kvco/f_out` = 4.3 – 10.9 per volt), roughly a millivolt of `VCTRL` ripple
+consumes the whole budget — so this is a demanding target for the present
+design, and a campaign that records a miss records it as a miss.
 
 ## Reference spur
 
-**DRAFT — to be ratified.** ≤ −55 dBc candidate, to be re-derived from sky130
-charge-pump mismatch and leakage, not ported as a number.
+**DRAFT — left open by explicit decision** (`DR-006`, #151), not by
+omission. The ≤ −55 dBc figure stays a **candidate**.
+
+Two structural reasons, either of which alone is disqualifying:
+
+- **No binding frequency.** A spur in dBc scales as `20·log₁₀(f_out)` for a
+  given control-voltage disturbance, and row 2 (output band) is DRAFT.
+  gf180-pll's own measurements flip from pass to fail across a 150 → 200 MHz
+  rescale of 2.5 dB, so this is not a rounding concern.
+- **It would covertly ratify a `Kvco` requirement.** Spur phase deviation
+  scales linearly with `Kvco` at fixed `f_out` and fixed `VCTRL` ripple.
+  gf180-pll's `Kvco/f_out` spans 0.31 – 0.84 per volt; this design's measured
+  692 – 1751 MHz/V against its own 160 MHz design point gives 4.3 – 10.9 per
+  volt — 14 – 31 dB more spur for the same ripple. Part of that is the
+  structural cost `DR-001` already accepted (a ~2.2× narrower control
+  window); the rest is what row 5 owes.
+
+Additionally, the mechanism a sky130 number would have to be *derived* from
+is unmeasured (`design/pfd-cp/DESIGN.md`: "no DC operating-point simulation
+exists for this block"), and this design's deliberately un-cascoded charge
+pump — a 1.8 V headroom choice — has structurally worse `UP`/`DN` matching
+than the topology gf180-pll's number was measured on.
+
+**What would ratify this row**: rows 2 and 5 ratified, plus a sky130
+charge-pump `UP`/`DN` charge-asymmetry measurement and a `VCTRL`-ripple-in-
+lock measurement (or a direct closed-loop sideband measurement).
 
 ## Jitter and phase noise
 
@@ -225,9 +292,50 @@ changes dynamic power materially. Re-budget for sky130 at ratification.
 
 ## Supply sensitivity
 
-**DRAFT — to be ratified.** A supply-ripple limit plus a DC-rail-excursion
-budget stated as consumed Vctrl window (gf180-pll's structure). Both budgets
-re-derived on the sky130 supply.
+**DRAFT — left open by explicit decision** (`DR-006`, #151), not by
+omission. gf180-pll's structure carries two independent budgets; they fail
+ratification for different reasons and are disposed separately.
+
+**Budget 1 (AC) — a supply-ripple limit.** gf180-pll constrains ripple on a
+**dedicated `vdd_vco` rail**. Ratified row 1 binds a *single* supply domain
+with no such rail, so there is no quantity here to port the limit onto. The
+nearest available quantity — ripple on the one shared `VDD` — is partly
+generated by the PLL's own divider and PFD switching, making any candidate
+limit partly a constraint the block imposes on itself; whether such a limit
+is even self-consistent needs a transient measurement of the block's own
+rail disturbance, which does not exist (`design/loop-filter/DESIGN.md`:
+"`sim/loop-ac` … measures nothing about ripple").
+
+*What is recorded instead*, from topology algebra and ratified row 1 alone:
+a current-starved ring runs at `f ≈ I_stage/(n·C_stage·V_swing)` with
+`V_swing` = the supply, so fractional-frequency pushing has a **structural
+floor of `1/VDD`** — **55.6 %/V at 1.8 V against 30.3 %/V at 3.3 V**, i.e.
+this rail is ≥ 1.83× more sensitive *per absolute volt*. That is `DR-001`'s
+"re-derive smaller, not larger" made numeric for the first time. It also
+bounds any future limit from above: allocating half the ratified row-9
+budget to sinusoidal ripple gives `Vpp ≤ 25.4 mV` **at the floor**, so the
+eventual limit is strictly below 25 mV pp. No number is ratified, because
+narrowing 25 mV to a usable figure currently requires importing two
+gf180-pll measurement ratios across a PDK and a supply change.
+
+**Budget 2 (DC) — a rail-excursion `VCTRL` budget.** The required control-
+voltage re-positioning is `(Δf/f) / (Kvco/f_out)`, and row 5 (Kvco) is
+DRAFT — the budget swings more than 10× between this design's measured slope
+and the DRAFT row-5 bound. Its denominator, the usable `VCTRL` window, is
+also unmeasured (`design/pfd-cp/DESIGN.md`'s compliance range is "a
+design-time qualitative note, not a verified operating-point claim").
+
+*What is recorded instead*: at the `1/VDD` floor, a full-range row-1
+excursion (1.62 → 1.98 V) moves the open-loop frequency by **≥ 22 %** — the
+**same** fractional figure as gf180-pll's, because row 1's tolerance is
+relative (± 10 %). The 1.8 V rail's penalty is concentrated in the **AC**
+budget (denominated in absolute millivolts), not the DC one. Do not apply
+the 1.83× factor to Budget 2.
+
+**What would ratify this row**: for Budget 1, a sky130 VCO supply-pushing
+campaign plus a transient `VDD`/`VCTRL` ripple measurement of the assembled
+loop (tracked at #159); for Budget 2, row 5 ratified plus a measured usable
+`VCTRL` window (a charge-pump compliance-range DC measurement).
 
 ## Output duty cycle
 
@@ -309,3 +417,13 @@ Everything. No `sim/` evidence exists yet. On ratification, each row above gains
 the campaign that substantiates it, recorded per the append-only `sim/`
 convention seeded from gf180-pll. Until then, this file is a set of intentions,
 not results.
+
+**Row 9 (period jitter), specifically.** Now that this row is ratified it is
+owed a campaign, and none exists: no `sim/*/records/` entry reports a jitter
+number, and `sim/harness/measure.py` has no period-jitter metric to produce
+one with (it derives mean frequency, duty cycle and lock time only). What the
+row is owed is the deterministic axis over the ratified rows 19 × 20 × 1 PVT
+grid *and* the statistical axis over a local-mismatch Monte Carlo population
+at the nominal point (`sim/run_corners.py <slug> --mc`). The missing extractor
+is tracked at #158. `DR-006` ratifies the target; it asserts nothing about
+whether the present schematic meets it.
