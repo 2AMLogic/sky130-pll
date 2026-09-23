@@ -48,7 +48,12 @@ _BIN_DIR = Path(__file__).resolve().parent
 if str(_BIN_DIR) not in sys.path:
     sys.path.insert(0, str(_BIN_DIR))
 
-from render_common import git_provenance, klt_info, load_json  # noqa: E402
+from render_common import (  # noqa: E402
+    git_provenance,
+    klt_info,
+    load_json,
+    spec_rows_line,
+)
 
 _load = load_json  # local alias, kept short for the calls below
 
@@ -160,6 +165,11 @@ def _render_header(a: Any, args: argparse.Namespace) -> None:
         "**not** PLL-block layout, which is a later issue's scope (there is "
         "no PLL schematic yet)."
     )
+    a("")
+    # Emitted from layout/trivial-cell/spec-rows.json, so every record states
+    # its spec/target-spec.md mapping (or an explicit "measures none") in its
+    # own body -- see render_common.spec_rows_line and measurements/README.md.
+    a(f"- **Spec row(s)**: {spec_rows_line(args.out_dir)}")
     a("")
 
 

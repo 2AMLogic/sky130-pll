@@ -76,6 +76,8 @@ class _StubPdk:
 # is exactly the shared judge's -- no waveform reduction in the way.
 MANIFEST = {
     "claim": "harness executor-seam test fixture -- not a design claim",
+    "spec_rows": [],
+    "spec_rows_note": "none -- a fixture, not a DUT: it measures no spec/target-spec.md parameter.",
     "schematic": "tb_fake.sch",
     "process_corners": ["tt"],
     "temps_c": [27],

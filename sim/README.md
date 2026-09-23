@@ -221,6 +221,17 @@ report.py`) with these mandatory fields:
   `claim` field. Until #1 ratifies the spec, no record here can state a
   `spec/target-spec.md` claim (there is nothing ratified to check against
   yet) — every record's claim is a plumbing or design-input claim.
+- **Spec row(s)** — which `spec/target-spec.md` row(s) this record supplies
+  evidence *toward*, taken from the manifest's own **required** `spec_rows`
+  field, or the literal `none -- <why>` when the experiment measures no spec
+  row (its `spec_rows_note`). This is the citation `measurements/aggregate.py`
+  rolls the characterization report up on; making it a manifest field rather
+  than something an author remembers per record is why it is now present on
+  every record by construction (issue #152 — see `measurements/README.md`).
+  `sim/run_corners.py` refuses to run an experiment whose manifest omits it,
+  before resolving the PDK or simulating a point. **Citing a row is not
+  claiming it**: rows stay DRAFT until a decision record ratifies them, and
+  no record here may state a verdict on a spec row.
 - **Netlist provenance** — schematic path plus the SHA-256 of the frozen
   `netlist-snapshots/<record-id>.spice`.
 - **Environment provenance** — PDK variant + pinned open_pdks hash, model
@@ -262,6 +273,14 @@ edited to add a back-reference — read forward to find what superseded it.
 written once and never edited or deleted after creation, even to fix a typo.
 A correction is a new record naming the one it supersedes. Only `testbench/`
 and this README are mutable.
+
+This is why a record minted before the **Spec row(s)** field existed was not
+retro-fitted with one when issue #152 introduced it: back-filling the
+citation into 20-odd committed records would have been exactly the in-place
+edit this rule forbids. Those records' spec-row mapping lives in their
+experiment's `testbench/tb.json` instead — mutable by the sentence above —
+and `measurements/aggregate.py` resolves it from there, saying so in the
+report. Every record minted from here on carries the field itself.
 
 One deliberate non-exception: `corners/<record-id>/checkpoint.json` (see
 "Interrupted and parallel runs" above) is transient run state that is

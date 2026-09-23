@@ -1,0 +1,5 @@
+{
+  "schema": "sky130-pll.layout.spec-rows/1",
+  "spec_rows": [],
+  "spec_rows_note": "none. This flow draws a device-level, *unrouted* floorplan of design/top/netlist/top.spice and checks it against the schematic's own device set (issue #16) -- every record it mints says so itself under 'What this layout is not': no simulation is run from the layout, so it makes no claim against any spec/target-spec.md row. Area (row 18) is deliberately NOT cited: the placed sizes this record reports are an unrouted floorplan's extent, not a block area, and reporting them against a row whose target is 'a budget, not a result' would read as evidence toward an area number this flow cannot yet support. Revisit this declaration when routing closes (issue #18) and an area result becomes meaningful."
+}

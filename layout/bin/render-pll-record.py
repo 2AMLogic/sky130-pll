@@ -69,7 +69,12 @@ from pll_layout import (  # noqa: E402
     SHEET_RHO_OHM_SQ,
     read_cards,
 )
-from render_common import git_provenance, klt_info, load_json  # noqa: E402
+from render_common import (  # noqa: E402
+    git_provenance,
+    klt_info,
+    load_json,
+    spec_rows_line,
+)
 
 MOS_CARD_RE = re.compile(r"^M\S+\s+(?:\S+\s+){4}(\S+)\s+L=([\d.eE+-]+)U\s+W=([\d.eE+-]+)U")
 RES_CARD_RE = re.compile(r"^R\S+\s+(?:\S+\s+){3}([\d.eE+-]+)\s+(\S+)")
@@ -426,6 +431,11 @@ def _render_header(a: Any, args: argparse.Namespace, netlist_display: str) -> No
         "(issue #16). Read this file first; everything else in this directory "
         "is the raw `klt` evidence it summarises."
     )
+    a("")
+    # Emitted from layout/pll/spec-rows.json, so every record states its
+    # spec/target-spec.md mapping (or an explicit "measures none") in its own
+    # body -- see render_common.spec_rows_line and measurements/README.md.
+    a(f"- **Spec row(s)**: {spec_rows_line(args.out_dir)}")
     a("")
 
 

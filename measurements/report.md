@@ -1,36 +1,50 @@
 # PLL characterization report
 
-Generated: 2026-09-11T13:46:14Z by `measurements/aggregate.py` -- this file is a **derived rollup**, not append-only evidence itself; re-run the aggregator to refresh it (see `measurements/README.md`).
+Generated: 2026-09-23T08:02:58Z by `measurements/aggregate.py` -- this file is a **derived rollup**, not append-only evidence itself; re-run the aggregator to refresh it (see `measurements/README.md`).
 
-Rolls up every `sim/*/records/*.md` and `layout/*/reports/*/record.md` evidence record into one table, keyed by `spec/target-spec.md` row number. **No row below is a PLL result.** `spec/target-spec.md` has no ratified numeric row yet (row 0, the supply flavor, is the only ratified row -- see `DR-001`, #1), and no evidence record in this repo currently cites a spec row (see `measurements/README.md` for the citation convention a future PLL evidence record uses to appear here). Every row therefore reads "No evidence" until that changes; the evidence this repo does have today is listed in the appendix below, to prove the rollup mechanism itself works, not to claim a PLL result.
+Rolls up every `sim/*/records/*.md` and `layout/*/reports/*/record.md` evidence record into one table, keyed by `spec/target-spec.md` row number. **No row below is a ratified PLL result, and a populated row is not a passing row.** Only rows 0, 1, 19 and 20 of `spec/target-spec.md` are ratified (`DR-001`/`DR-002`/`DR-003`); every numeric row an evidence record appears against is still DRAFT. A record listed against a row is *evidence bearing on that row* -- the measured input a future decision record would argue the row from -- never a verdict on it, and never a substitute for the ratification act itself. Read each record before quoting it: its own `Verdict` column here is the record's overall pass/fail, which for several campaigns means "the harness ran and recorded what happened", including recorded non-lock.
 
 ## Per-spec-row summary
 
-| Row | Parameter | DRAFT target (unratified except row 0 -- see spec/target-spec.md) | Evidence | Verdict | Citation |
+| Row | Parameter | DRAFT target (unratified except rows 0/1/19/20 -- see spec/target-spec.md) | Evidence | Verdict | Citation |
 |---|---|---|---|---|---|
 | 0 | Supply flavor | 1.8 V core (`nfet_01v8`/`pfet_01v8`) — **RATIFIED 2026-08-13 (DR-001, #1)** | No evidence | -- | -- |
 | 1 | Supply range | 1.8 V ±10 % (1.62–1.98 V) — **RATIFIED 2026-08-19 (DR-002, #19)** | No evidence | -- | -- |
-| 2 | Output band | 10 – 200 MHz continuous, **carried from gf180-pll and NOT assumed to hold** | No evidence | -- | -- |
-| 3 | Reference input | 1 – 25 MHz, CMOS square wave, rising-edge triggered, duty 30–70 % | No evidence | -- | -- |
+| 2 | Output band | 10 – 200 MHz continuous, **carried from gf180-pll and NOT assumed to hold** | sim/vco (20260819-131741-fe0e6df) | PASS | `sim/vco/records/20260819-131741-fe0e6df.md` -- rows via `sim/vco/testbench/tb.json` |
+|  |  |  | sim/vco (20260904-163130-f3ae976) | PASS | `sim/vco/records/20260904-163130-f3ae976.md` -- rows via `sim/vco/testbench/tb.json` |
+| 3 | Reference input | 1 – 25 MHz, CMOS square wave, rising-edge triggered, duty 30–70 % | sim/pll-lock-1mhz (20260904-152129-f00ce3e) | FAIL | `sim/pll-lock-1mhz/records/20260904-152129-f00ce3e.md` -- rows via `sim/pll-lock-1mhz/testbench/tb.json` |
+|  |  |  | sim/pll-lock-25mhz (20260904-152213-f00ce3e) | FAIL | `sim/pll-lock-25mhz/records/20260904-152213-f00ce3e.md` -- rows via `sim/pll-lock-25mhz/testbench/tb.json` |
 | 4 | Multiplication ratio | N = 4 – 64, every integer, static configuration | sim/divider (20260910-234943-ec91425) | PASS | `sim/divider/records/20260910-234943-ec91425.md` |
 |  |  |  | sim/divider-n4 (20260911-091838-7d2f839) | PASS | `sim/divider-n4/records/20260911-091838-7d2f839.md` |
 |  |  |  | sim/divider-n5 (20260911-095824-7d2f839) | PASS | `sim/divider-n5/records/20260911-095824-7d2f839.md` |
 |  |  |  | sim/divider-n5 (20260911-100824-7d2f839) | PASS | `sim/divider-n5/records/20260911-100824-7d2f839.md` |
+|  |  |  | sim/divider-n5 (20260919-023351-32f268f) | PASS | `sim/divider-n5/records/20260919-023351-32f268f.md` |
 |  |  |  | sim/divider-n63 (20260911-101042-7d2f839) | PASS | `sim/divider-n63/records/20260911-101042-7d2f839.md` |
 |  |  |  | sim/divider-n63 (20260911-104153-7d2f839) | PASS | `sim/divider-n63/records/20260911-104153-7d2f839.md` |
 |  |  |  | sim/divider-n64 (20260911-074438-073b241) | PASS | `sim/divider-n64/records/20260911-074438-073b241.md` |
 |  |  |  | sim/divider-n64 (20260911-101305-7d2f839) | PASS | `sim/divider-n64/records/20260911-101305-7d2f839.md` |
 |  |  |  | sim/divider-n64 (20260911-104400-7d2f839) | PASS | `sim/divider-n64/records/20260911-104400-7d2f839.md` |
-| 5 | Kvco | ≤ a fixed-filter-compatible bound (gf180-pll used ≤ 150 MHz/V) | No evidence | -- | -- |
-| 6 | Loop bandwidth | f_c well below f_ref, hard ceiling `f_c < f_ref/10` | No evidence | -- | -- |
-| 7 | Phase margin | ≥ 45° everywhere in the contracted space | No evidence | -- | -- |
-| 8 | Lock time | < 100 µs to a stated lock criterion | No evidence | -- | -- |
-| 9 | Period jitter | ≤ 1.0 % of the output period, RMS, conditional on a stated supply-ripple limit | No evidence | -- | -- |
-| 10 | Reference spur | ≤ −55 dBc (candidate) | No evidence | -- | -- |
+|  |  |  | sim/divider-n64 (20260911-125347-aa4478c) | PASS | `sim/divider-n64/records/20260911-125347-aa4478c.md` |
+|  |  |  | sim/divider-n64 (20260911-160518-3b65794) | PASS | `sim/divider-n64/records/20260911-160518-3b65794.md` |
+|  |  |  | sim/divider-n64 (20260911-171337-fbf217b) | PASS | `sim/divider-n64/records/20260911-171337-fbf217b.md` |
+|  |  |  | sim/divider-n64 (20260911-180406-071a336) | PASS | `sim/divider-n64/records/20260911-180406-071a336.md` |
+| 5 | Kvco | ≤ a fixed-filter-compatible bound (gf180-pll used ≤ 150 MHz/V) | sim/vco (20260819-131741-fe0e6df) | PASS | `sim/vco/records/20260819-131741-fe0e6df.md` -- rows via `sim/vco/testbench/tb.json` |
+|  |  |  | sim/vco (20260904-163130-f3ae976) | PASS | `sim/vco/records/20260904-163130-f3ae976.md` -- rows via `sim/vco/testbench/tb.json` |
+| 6 | Loop bandwidth | f_c well below f_ref, hard ceiling `f_c < f_ref/10` | sim/loop-ac (20260904-204534-3fcd920) | PASS | `sim/loop-ac/records/20260904-204534-3fcd920.md` -- rows via `sim/loop-ac/testbench/tb.json` |
+| 7 | Phase margin | ≥ 45° everywhere in the contracted space | sim/loop-ac (20260904-204534-3fcd920) | PASS | `sim/loop-ac/records/20260904-204534-3fcd920.md` -- rows via `sim/loop-ac/testbench/tb.json` |
+| 8 | Lock time | < 100 µs to a stated lock criterion | sim/pll-lock (20260904-165409-f3ae976) | FAIL | `sim/pll-lock/records/20260904-165409-f3ae976.md` -- rows via `sim/pll-lock/testbench/tb.json` |
+|  |  |  | sim/pll-lock (20260905-193322-0f1934d) | FAIL | `sim/pll-lock/records/20260905-193322-0f1934d.md` -- rows via `sim/pll-lock/testbench/tb.json` |
+|  |  |  | sim/pll-lock-1mhz (20260904-152129-f00ce3e) | FAIL | `sim/pll-lock-1mhz/records/20260904-152129-f00ce3e.md` -- rows via `sim/pll-lock-1mhz/testbench/tb.json` |
+|  |  |  | sim/pll-lock-25mhz (20260904-152213-f00ce3e) | FAIL | `sim/pll-lock-25mhz/records/20260904-152213-f00ce3e.md` -- rows via `sim/pll-lock-25mhz/testbench/tb.json` |
+| 9 | Period jitter | ≤ 1.0 % of the output period, RMS, at `CLK` in lock, under a **DC-quiet supply** within row 1's ran… | No evidence | -- | -- |
+| 10 | Reference spur | ≤ −55 dBc (candidate) — **DRAFT by explicit decision (DR-006, #151)**, not by omission | No evidence | -- | -- |
 | 11 | Integrated RMS jitter / phase noise | **not spec'd** — derived-only, deliberately visible | No evidence | -- | -- |
 | 12 | Power | a budget at a stated frequency (gf180-pll used < 5 mW at 100 MHz on 3.3 V) | No evidence | -- | -- |
-| 13 | Supply sensitivity | supply-ripple limit + a DC-excursion Vctrl budget | No evidence | -- | -- |
-| 14 | Output duty cycle | 45 – 55 % at CLK, whole band, all corners | No evidence | -- | -- |
+| 13 | Supply sensitivity | supply-ripple limit + a DC-excursion Vctrl budget — **DRAFT by explicit decision (DR-006, #151)**,… | No evidence | -- | -- |
+| 14 | Output duty cycle | 45 – 55 % at CLK, whole band, all corners | sim/pll-lock (20260904-165409-f3ae976) | FAIL | `sim/pll-lock/records/20260904-165409-f3ae976.md` -- rows via `sim/pll-lock/testbench/tb.json` |
+|  |  |  | sim/pll-lock (20260905-193322-0f1934d) | FAIL | `sim/pll-lock/records/20260905-193322-0f1934d.md` -- rows via `sim/pll-lock/testbench/tb.json` |
+|  |  |  | sim/pll-lock-1mhz (20260904-152129-f00ce3e) | FAIL | `sim/pll-lock-1mhz/records/20260904-152129-f00ce3e.md` -- rows via `sim/pll-lock-1mhz/testbench/tb.json` |
+|  |  |  | sim/pll-lock-25mhz (20260904-152213-f00ce3e) | FAIL | `sim/pll-lock-25mhz/records/20260904-152213-f00ce3e.md` -- rows via `sim/pll-lock-25mhz/testbench/tb.json` |
 | 15 | Output levels and drive | rail-to-rail CMOS, V_OH ≥ 0.9·VDD / V_OL ≤ 0.1·VDD into a stated load | No evidence | -- | -- |
 | 16 | Lock detector | digital `lock` output; assert window + hysteresis criteria | No evidence | -- | -- |
 | 17 | Standby / power-down | no power-down mode in v1 (always-on) | No evidence | -- | -- |
@@ -38,27 +52,23 @@ Rolls up every `sim/*/records/*.md` and `layout/*/reports/*/record.md` evidence 
 | 19 | Process corners | sky130's five standard MOS/BJT process corners: `tt`, `ff`, `ss`, `sf`, `fs` — **RATIFIED 2026-08-2… | No evidence | -- | -- |
 | 20 | Operating temperature range | −40 °C to 125 °C, sampled at −40 / 27 / 125 °C — **RATIFIED 2026-08-27 (DR-003, #77)** | No evidence | -- | -- |
 
-## Evidence found, not yet mapped to a spec row
+## Evidence found, not mapped to a spec row
 
-Harness-plumbing and other non-PLL-claim evidence discovered by the scan above, listed here rather than silently dropped -- this is what currently proves the rollup mechanism reads real records correctly.
+Harness-plumbing evidence, negative controls, and anything whose citation does not resolve to a row of `spec/target-spec.md` -- listed here rather than silently dropped. The **Why unmapped** column says which: a record that *declares* it measures no spec row is doing the right thing, while `no spec-row declaration found` or `malformed ...` is a gap to close (see `measurements/README.md`).
 
-| Kind | Block | Record | Claim | Verdict | Detail | Citation |
-|---|---|---|---|---|---|---|
-| sim | loop-ac | 20260904-204534-3fcd920 | Linearized open-loop AC characterization of the PLL loop dynamics (issue #52): unity-gain crossover frequency (spec/target-spec.md row 6, loop bandwidth) and p… | PASS | 21/21 points passed | `sim/loop-ac/records/20260904-204534-3fcd920.md` |
-| sim | pdk-smoke | 20260814-022011-dcd6160 | harness self-test -- proves xschem netlisting + sim/harness PVT-point substitution (process corner, supply, temperature) + ngspice execution work end-to-end ag… | PASS | 27/27 points passed | `sim/pdk-smoke/records/20260814-022011-dcd6160.md` |
-| sim | pdk-smoke | 20260817-171010-7823a49 | harness self-test -- proves sim/harness's Monte Carlo trial generation + sky130 MC_MM_SWITCH/MC_PR_SWITCH statistical-sampling patching + ngspice execution wor… | PASS | 10/10 trials passed | `sim/pdk-smoke/records/20260817-171010-7823a49.md` |
-| sim | pll | 20260819-123508-fe0e6df | first PLL-specific harness campaign -- proves xschem netlisting + sim/harness PVT-point substitution (process corner, supply, temperature) + ngspice execution… | FAIL | 17/27 points passed | `sim/pll/records/20260819-123508-fe0e6df.md` |
-| sim | pll-lock | 20260904-165409-f3ae976 | does the closed-loop PLL (design/top/top.sch -- VCO + PFD/charge pump + loop filter + divider, issue #28), driven from a cold start (RESETB power-on, VCTRL sta… | FAIL | 1/2 points passed | `sim/pll-lock/records/20260904-165409-f3ae976.md` |
-| sim | pll-lock | 20260905-193322-0f1934d | does the closed-loop PLL (design/top/top.sch -- VCO + PFD/charge pump + loop filter + divider, issue #28), driven from a cold start (RESETB power-on, VCTRL sta… | FAIL | 13/45 points passed | `sim/pll-lock/records/20260905-193322-0f1934d.md` |
-| sim | pll-lock-1mhz | 20260904-152129-f00ce3e | does the closed-loop PLL (design/top/top.sch -- VCO + PFD/charge pump + loop filter + divider, issue #28), driven from a cold start (RESETB power-on, VCTRL sta… | FAIL | 0/1 points passed | `sim/pll-lock-1mhz/records/20260904-152129-f00ce3e.md` |
-| sim | pll-lock-25mhz | 20260904-152213-f00ce3e | does the closed-loop PLL (design/top/top.sch -- VCO + PFD/charge pump + loop filter + divider, issue #28), driven from a cold start (RESETB power-on, VCTRL sta… | FAIL | 0/1 points passed | `sim/pll-lock-25mhz/records/20260904-152213-f00ce3e.md` |
-| sim | vco | 20260819-131741-fe0e6df | VCO frequency-vs-VCTRL characterization for design/vco/vco_ring5.sch (the standalone current-starved 5-stage ring VCO, issue #24), measured at six VCTRL points… | PASS | 1/1 points passed | `sim/vco/records/20260819-131741-fe0e6df.md` |
-| sim | vco | 20260904-163130-f3ae976 | VCO frequency-vs-VCTRL characterization for design/vco/vco_ring5.sch (the standalone current-starved 5-stage ring VCO, issue #24), measured at six VCTRL points… | PASS | 45/45 points passed | `sim/vco/records/20260904-163130-f3ae976.md` |
-| layout | pll | 20260906-195205-4a08c71 | Device-level layout of the closed-loop PLL schematic (`design/top/netlist/top.spice`), drawn by `layout/bin/run-pll-layout-flow.sh` (issue #16). Read this file… | PASS | 8/8 checks passed | `layout/pll/reports/20260906-195205-4a08c71/record.md` |
-| layout | trivial-cell | 20260905-184511-4285e0a | Trivial-cell proof of the `klt`-driven DRC/LVS flow (issue #2) -- **not** PLL-block layout, which is a later issue's scope (there is no PLL schematic yet). | PASS | 6/6 checks passed | `layout/trivial-cell/reports/20260905-184511-4285e0a/record.md` |
+| Kind | Block | Record | Claim | Verdict | Detail | Why unmapped | Citation |
+|---|---|---|---|---|---|---|---|
+| sim | pdk-smoke | 20260814-022011-dcd6160 | harness self-test -- proves xschem netlisting + sim/harness PVT-point substitution (process corner, supply, temperature) + ngspice execution work end-to-end ag… | PASS | 27/27 points passed | declares it measures no spec row (declared by `sim/pdk-smoke/testbench/tb.json`; the record itself predates the citation convention and is append-only) | `sim/pdk-smoke/records/20260814-022011-dcd6160.md` |
+| sim | pdk-smoke | 20260817-171010-7823a49 | harness self-test -- proves sim/harness's Monte Carlo trial generation + sky130 MC_MM_SWITCH/MC_PR_SWITCH statistical-sampling patching + ngspice execution wor… | PASS | 10/10 trials passed | declares it measures no spec row (declared by `sim/pdk-smoke/testbench/tb.json`; the record itself predates the citation convention and is append-only) | `sim/pdk-smoke/records/20260817-171010-7823a49.md` |
+| sim | pll | 20260819-123508-fe0e6df | first PLL-specific harness campaign -- proves xschem netlisting + sim/harness PVT-point substitution (process corner, supply, temperature) + ngspice execution… | FAIL | 17/27 points passed | declares it measures no spec row (declared by `sim/pll/testbench/tb.json`; the record itself predates the citation convention and is append-only) | `sim/pll/records/20260819-123508-fe0e6df.md` |
+| layout | pll | 20260906-195205-4a08c71 | Device-level layout of the closed-loop PLL schematic (`design/top/netlist/top.spice`), drawn by `layout/bin/run-pll-layout-flow.sh` (issue #16). Read this file… | PASS | 8/8 checks passed | declares it measures no spec row (declared by `layout/pll/spec-rows.json`; the record itself predates the citation convention and is append-only) | `layout/pll/reports/20260906-195205-4a08c71/record.md` |
+| layout | trivial-cell | 20260905-184511-4285e0a | Trivial-cell proof of the `klt`-driven DRC/LVS flow (issue #2) -- **not** PLL-block layout, which is a later issue's scope (there is no PLL schematic yet). | PASS | 6/6 checks passed | declares it measures no spec row (declared by `layout/trivial-cell/spec-rows.json`; the record itself predates the citation convention and is append-only) | `layout/trivial-cell/reports/20260905-184511-4285e0a/record.md` |
 
 ## Scan summary
 
-- Evidence records scanned: 34
-- Current (non-superseded): 21
+- Evidence records scanned: 39
+- Current (non-superseded): 26
 - Superseded (excluded from the tables above; still retained, append-only, under `sim/`/`layout/`): 13
+- Spec-row citation stated by the record itself: 14
+- Spec-row citation resolved from the experiment's own declaration (`sim/<slug>/testbench/tb.json` / `layout/<block>/spec-rows.json`) because the record predates the convention and is append-only: 12
+- **Current records with no spec-row declaration at all: 0**

@@ -62,6 +62,8 @@ class _StubPdk:
 
 MANIFEST = {
     "claim": "harness execution-model test fixture -- not a design claim",
+    "spec_rows": [],
+    "spec_rows_note": "none -- a fixture, not a DUT: it measures no spec/target-spec.md parameter.",
     "schematic": "tb_fake.sch",
     "process_corners": ["tt", "ss"],
     "temps_c": [-40, 27, 125],

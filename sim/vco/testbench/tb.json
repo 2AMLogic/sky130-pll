@@ -1,6 +1,8 @@
 {
   "schema": "sky130-pll.harness.tb/1",
   "claim": "VCO frequency-vs-VCTRL characterization for design/vco/vco_ring5.sch (the standalone current-starved 5-stage ring VCO, issue #24), measured at six VCTRL points from 0.8 V to 1.6 V, matching design/vco/DESIGN.md's own informal sanity-check table (issue #52). This is a measured design-input record, not a spec claim: it replaces that informal, uncommitted, single-corner sanity check with real committed sim/ evidence, so a future decision record has something citable to argue spec/target-spec.md row 2 (output band) and row 5 (Kvco) from. It ratifies nothing -- per CLAUDE.md, ratification is a separate decision-record act argued on its own merits. The PVT grid this manifest declares is the DR-003-ratified sky130 5-corner set (tt/ff/ss/sf/fs x -40/27/125 degC) crossed with spec/target-spec.md row 1's ratified supply range (1.62/1.80/1.98 V) -- see spec/decision-records/DR-003-corner-and-temperature-scope.md, which supersedes the tt/ss/ff-only convention this manifest originally declared -- a given record's own **Corner matrix run** field states whether it covers that full 45-point grid or a declared subset, per sim/README.md's subset-justification rule.",
+  "spec_rows": [2, 5],
+  "spec_rows_note": "spec/target-spec.md row 2 (output band -- the free-running frequency this sweep reaches at each VCTRL point) and row 5 (Kvco -- the slope that frequency-vs-VCTRL curve defines), the two rows this manifest's own claim names. Both are DRAFT and owed a sky130 re-derivation; this is measured input to that, not a ratification.",
   "schematic": "tb_vco.sch",
   "corner_pattern": "(\\.lib\\s+\\S*sky130\\.lib\\.spice\\s+)(\\w+)",
   "supply_pattern": "(V1 VDD GND )([0-9.]+)",

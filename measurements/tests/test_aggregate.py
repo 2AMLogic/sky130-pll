@@ -7,6 +7,7 @@ rollup logic (issue #22). No PDK, ngspice, xschem, or klt required.
 
 from __future__ import annotations
 
+import json
 import sys
 import tempfile
 import unittest
@@ -184,6 +185,59 @@ class ParseSimRecordTests(unittest.TestCase):
             repo_root, path = self._write(tmp, SIM_RECORD_WITH_SPEC_ROW_FIXTURE)
             rec = aggregate.parse_sim_record(path, repo_root=repo_root)
         self.assertEqual(rec.spec_rows, [1, 2])
+        self.assertEqual(rec.spec_rows_source, aggregate.SOURCE_RECORD)
+
+    def test_record_declaring_none_is_distinguished_from_declaring_nothing(self):
+        declared_none = SIM_RECORD_FIXTURE.replace(
+            "- **Claim**:",
+            "- **Spec row(s)**: none -- harness plumbing only\n- **Claim**:",
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            repo_root, path = self._write(tmp, declared_none)
+            rec = aggregate.parse_sim_record(path, repo_root=repo_root)
+        self.assertEqual(rec.spec_rows, [])
+        self.assertEqual(rec.spec_rows_source, aggregate.SOURCE_RECORD)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            repo_root, path = self._write(tmp, SIM_RECORD_FIXTURE)
+            rec = aggregate.parse_sim_record(path, repo_root=repo_root)
+        self.assertEqual(rec.spec_rows_source, aggregate.SOURCE_UNDECLARED)
+
+    def test_malformed_citation_is_surfaced_not_read_as_no_rows(self):
+        malformed = SIM_RECORD_FIXTURE.replace(
+            "- **Claim**:",
+            "- **Spec row(s)**: TBD once #1 ratifies\n- **Claim**:",
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            repo_root, path = self._write(tmp, malformed)
+            rec = aggregate.parse_sim_record(path, repo_root=repo_root)
+        self.assertEqual(rec.spec_rows, [])
+        self.assertEqual(rec.spec_rows_source, aggregate.SOURCE_MALFORMED)
+
+    def test_manifest_declaration_covers_a_record_that_predates_the_convention(self):
+        # sim/README.md's append-only rule forbids editing an existing record
+        # to add the citation line, so the experiment's own (mutable) manifest
+        # is where the mapping lives for those.
+        with tempfile.TemporaryDirectory() as tmp:
+            repo_root, path = self._write(tmp, SIM_RECORD_FIXTURE)
+            tb = repo_root / "sim" / "pdk-smoke" / "testbench"
+            tb.mkdir(parents=True)
+            (tb / "tb.json").write_text(
+                json.dumps({"spec_rows": [1], "spec_rows_note": "lock time"})
+            )
+            rec = aggregate.parse_sim_record(path, repo_root=repo_root)
+        self.assertEqual(rec.spec_rows, [1])
+        self.assertEqual(rec.spec_rows_source, aggregate.SOURCE_MANIFEST)
+
+    def test_a_records_own_citation_wins_over_the_manifest(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo_root, path = self._write(tmp, SIM_RECORD_WITH_SPEC_ROW_FIXTURE)
+            tb = repo_root / "sim" / "pdk-smoke" / "testbench"
+            tb.mkdir(parents=True)
+            (tb / "tb.json").write_text(json.dumps({"spec_rows": [99]}))
+            rec = aggregate.parse_sim_record(path, repo_root=repo_root)
+        self.assertEqual(rec.spec_rows, [1, 2])
+        self.assertEqual(rec.spec_rows_source, aggregate.SOURCE_RECORD)
 
     def test_supersedes_reference_is_parsed(self):
         text = _sim_supersedes("20260814-022011-dcd6160")
@@ -236,6 +290,18 @@ class ParseLayoutRecordTests(unittest.TestCase):
 
         self.assertEqual(rec.verdict, "FAIL")
         self.assertEqual(rec.detail, "1/2 checks passed")
+
+    def test_block_declaration_covers_a_record_that_predates_the_convention(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo_root, path = self._write(
+                tmp, LAYOUT_RECORD_FIXTURE, "20260814-020940-aa2de71"
+            )
+            (repo_root / "layout" / "trivial-cell" / "spec-rows.json").write_text(
+                json.dumps({"spec_rows": [], "spec_rows_note": "flow proof only"})
+            )
+            rec = aggregate.parse_layout_record(path, repo_root=repo_root)
+        self.assertEqual(rec.spec_rows, [])
+        self.assertEqual(rec.spec_rows_source, aggregate.SOURCE_MANIFEST)
 
 
 class SupersessionTests(unittest.TestCase):

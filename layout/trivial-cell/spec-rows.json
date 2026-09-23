@@ -1,0 +1,5 @@
+{
+  "schema": "sky130-pll.layout.spec-rows/1",
+  "spec_rows": [],
+  "spec_rows_note": "none. This is the trivial-cell proof of the `klt`-driven DRC/LVS flow (issue #2) -- a generated 2x2 mos_array plus its DRC/LVS negative controls, not PLL-block layout. It measures no spec/target-spec.md parameter and is deliberately uncited rather than mapped to a row it does not measure."
+}

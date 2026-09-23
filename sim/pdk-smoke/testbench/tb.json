@@ -1,6 +1,8 @@
 {
   "schema": "sky130-pll.harness.tb/1",
   "claim": "harness self-test -- proves xschem netlisting + sim/harness PVT-point substitution (process corner, supply, temperature) + ngspice execution work end-to-end against the sky130 PDK (issue #2). This is a plumbing claim, not a PLL design claim: this testbench's DUT is a throwaway resistor divider, not the PLL (design/top/top.sch, exercised instead by the sim/pll experiment, issue #23), and the supply value below is an arbitrary smoke-test bias, not the ratified spec supply (pending #1).",
+  "spec_rows": [],
+  "spec_rows_note": "none. This testbench's DUT is a throwaway resistor divider, not the PLL: it proves the netlist -> PVT-substitution -> ngspice -> record loop runs against the sky130 PDK (issue #2) and measures no spec/target-spec.md parameter at all. Deliberately uncited rather than mapped to a row it does not measure.",
   "schematic": "tb_pdk_smoke.sch",
   "corner_pattern": "(\\.lib\\s+\\S*sky130\\.lib\\.spice\\s+)(\\w+)",
   "supply_pattern": "(V1 GND net1 )([0-9.]+)",

@@ -333,10 +333,17 @@ class DividerFamilySiblingManifestTests(unittest.TestCase):
                 self.assertIn(f"N={n}", self._manifest(slug)["claim"])
 
     def test_every_sibling_manifest_cites_spec_row_4(self):
+        # Pinned on the manifest's structured `spec_rows` field, not on a
+        # sentence inside `claim`: the citation used to be hand-written into
+        # the claim prose, which meant a record's rolled-up rows came from
+        # prose the aggregator happened to match first rather than from the
+        # declaration (issue #152). The prose copy is gone; this is the one
+        # source `sim/harness/report.py` stamps into every record.
         for slug, _n, _target_hz in self.SIBLINGS:
             with self.subTest(slug=slug):
-                claim = self._manifest(slug)["claim"]
-                self.assertIn("**Spec row(s)**: 4", claim)
+                manifest = self._manifest(slug)
+                self.assertEqual(manifest["spec_rows"], [4])
+                self.assertNotIn("**Spec row(s)**", manifest["claim"])
 
 
 class RenderMethodologyTests(unittest.TestCase):
@@ -369,6 +376,7 @@ class RenderMethodologyTests(unittest.TestCase):
             record_id="20260101-000000-abc1234",
             slug="pll",
             claim="a claim",
+            spec_rows_line="none -- a fixture",
             pdk=self._StubPdk(),
             tool_versions={"ngspice": "ngspice-47", "xschem": "XSCHEM V3.4.7"},
             repo_root=REPO_ROOT,
@@ -397,6 +405,16 @@ class RenderMethodologyTests(unittest.TestCase):
         text = self._render()
         self.assertNotIn("there is no PLL netlist yet", text)
         self.assertNotIn("DC operating point", text)
+
+    def test_record_states_its_spec_rows(self):
+        # The line measurements/aggregate.py matches on, stamped into every
+        # record by construction (issue #152).
+        text = self._render(spec_rows_line="6, 7 -- loop bandwidth and phase margin")
+        self.assertIn("- **Spec row(s)**: 6, 7 -- loop bandwidth and phase margin", text)
+
+    def test_record_can_state_an_explicit_none(self):
+        text = self._render(spec_rows_line="none -- harness plumbing")
+        self.assertIn("- **Spec row(s)**: none -- harness plumbing", text)
 
 
 class PdkCommitParsingTests(unittest.TestCase):
@@ -532,6 +550,68 @@ class TimeoutDecodingTests(unittest.TestCase):
             text = log_path.read_text()
             self.assertIn("stdout chunk", text)
             self.assertIn("stderr chunk", text)
+
+
+class SpecRowsDeclarationTests(unittest.TestCase):
+    """`spec_rows` is required at the manifest, so every minted record carries
+    the `**Spec row(s)**:` citation `measurements/aggregate.py` matches on
+    (issue #152) -- by construction, not by an author remembering it.
+    """
+
+    def test_missing_declaration_is_an_error_not_a_silent_default(self):
+        with self.assertRaises(report.SpecRowsError) as ctx:
+            report.spec_rows_from_manifest({"claim": "x"})
+        self.assertIn("spec_rows", str(ctx.exception))
+
+    def test_non_list_declaration_is_rejected(self):
+        with self.assertRaises(report.SpecRowsError):
+            report.spec_rows_from_manifest({"spec_rows": "6, 7"})
+
+    def test_non_row_number_entry_is_rejected(self):
+        with self.assertRaises(report.SpecRowsError):
+            report.spec_rows_from_manifest({"spec_rows": ["six"]})
+        with self.assertRaises(report.SpecRowsError):
+            report.spec_rows_from_manifest({"spec_rows": [-1]})
+
+    def test_empty_declaration_without_a_note_is_rejected(self):
+        # "this measures no spec row" is a claim, so it has to be argued.
+        with self.assertRaises(report.SpecRowsError):
+            report.spec_rows_from_manifest({"spec_rows": []})
+
+    def test_empty_declaration_with_a_note_is_accepted(self):
+        rows, note = report.spec_rows_from_manifest(
+            {"spec_rows": [], "spec_rows_note": "plumbing only"}
+        )
+        self.assertEqual(rows, [])
+        self.assertEqual(note, "plumbing only")
+
+    def test_rows_and_optional_note_round_trip(self):
+        rows, note = report.spec_rows_from_manifest({"spec_rows": [6, 7]})
+        self.assertEqual(rows, [6, 7])
+        self.assertEqual(note, "")
+
+    def test_section_override_only_applies_when_it_declares_its_own_rows(self):
+        manifest = {"spec_rows": [6], "spec_rows_note": "base"}
+        self.assertEqual(
+            report.spec_rows_from_manifest(manifest, section={"claim": "mc"})[0], [6]
+        )
+        self.assertEqual(
+            report.spec_rows_from_manifest(manifest, section={"spec_rows": [9, 10]})[0],
+            [9, 10],
+        )
+
+    def test_formatted_line_leads_with_the_row_numbers(self):
+        # The aggregator reads the digits immediately after the colon, so any
+        # prose has to follow them, never precede them.
+        self.assertEqual(report.format_spec_rows([6, 7], ""), "6, 7")
+        self.assertTrue(report.format_spec_rows([6, 7], "why").startswith("6, 7 -- "))
+        self.assertEqual(report.format_spec_rows([], "why"), "none -- why")
+
+    def test_every_checked_in_manifest_declares_spec_rows(self):
+        for tb_json in sorted((SIM_DIR).glob("*/testbench/tb.json")):
+            with self.subTest(manifest=tb_json.name):
+                manifest = json.loads(tb_json.read_text())
+                report.spec_rows_from_manifest(manifest)  # raises if undeclared
 
 
 if __name__ == "__main__":
