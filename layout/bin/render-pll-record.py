@@ -73,6 +73,7 @@ from render_common import (  # noqa: E402
     git_provenance,
     klt_info,
     load_json,
+    render_provenance,
     spec_rows_line,
 )
 
@@ -752,33 +753,6 @@ def _render_flow(a: Any) -> None:
     a("")
 
 
-def _render_provenance(
-    a: Any,
-    args: argparse.Namespace,
-    netlist_display: str,
-    klt_version: str,
-    pdk_info: dict[str, Any],
-    drc: dict[str, Any],
-    sha: str,
-    branch: str,
-    dirty: bool,
-) -> None:
-    a("## Provenance")
-    a("")
-    a(f"- Record ID: `{args.record_id}`")
-    a(f"- Schematic netlist: `{netlist_display}`")
-    a(f"- `klt` version: `{klt_version}` (see `layout/requirements.txt`)")
-    a(f"- KLayout engine version: `{drc.get('provenance', {}).get('klayout_version')}`")
-    a(f"- PDK: `{pdk_info.get('variant')}`, `{pdk_info.get('version')}`")
-    a(
-        "- PDK pin cross-check: compare `version` above against "
-        "`sim/pdk.json`'s `open_pdks_commit` -- this flow does not itself "
-        "enforce the pin, so a mismatch is a manual reproducibility note."
-    )
-    a(f"- Repo state: `{sha}` on `{branch}`" + (" (dirty)" if dirty else ""))
-    a("")
-
-
 def _render_links(a: Any, build: dict[str, Any]) -> None:
     a("## Links")
     a("")
@@ -827,7 +801,10 @@ def main() -> int:
         _render_routing_spotcheck(a, spot, build, drc, extract_top)
     _render_device_set(a, device_rows, out_dir, plan)
     _render_flow(a)
-    _render_provenance(a, args, netlist_display, klt_version, pdk_info, drc, sha, branch, dirty)
+    render_provenance(
+        a, args, klt_version, pdk_info, drc, sha, branch, dirty,
+        netlist_display=netlist_display,
+    )
     _render_links(a, build)
 
     print("\n".join(lines))

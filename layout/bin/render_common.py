@@ -3,7 +3,8 @@
 Factors what `render-record.py` (trivial-cell flow) and `render-pll-record.py`
 (PLL layout flow) both compute independently: the JSON-file load helper, the
 `klt --version` / `klt pdk find` subprocess pair that resolves `klt_version`
-and `pdk_info`, and the git provenance block (sha/branch/dirty).
+and `pdk_info`, the git provenance block (sha/branch/dirty), and the
+rendering of all of that into the record's `## Provenance` section.
 
 Named `render_common.py` (underscore, not hyphen) so it can be imported
 normally -- unlike the two `render-*.py` scripts themselves, which are loaded
@@ -66,6 +67,41 @@ def git_provenance(repo_root: Path, out_dir: Path) -> tuple[str, str, bool]:
         run_git(repo_root, "status", "--porcelain", "--untracked-files=all"), report_rel
     )
     return sha, branch, dirty
+
+
+def render_provenance(
+    a: Any,
+    args: Any,
+    klt_version: str,
+    pdk_info: dict[str, Any],
+    drc: dict[str, Any],
+    sha: str,
+    branch: str,
+    dirty: bool,
+    *,
+    netlist_display: str | None = None,
+) -> None:
+    """Render a record's `## Provenance` section through the line sink `a`.
+
+    `netlist_display` is the repo-relative schematic netlist the layout was
+    derived from; the `Schematic netlist:` line is emitted only when it is
+    given (the PLL flow passes it, the trivial-cell flow has no schematic).
+    """
+    a("## Provenance")
+    a("")
+    a(f"- Record ID: `{args.record_id}`")
+    if netlist_display is not None:
+        a(f"- Schematic netlist: `{netlist_display}`")
+    a(f"- `klt` version: `{klt_version}` (see `layout/requirements.txt`)")
+    a(f"- KLayout engine version: `{drc.get('provenance', {}).get('klayout_version')}`")
+    a(f"- PDK: `{pdk_info.get('variant')}`, `{pdk_info.get('version')}`")
+    a(
+        "- PDK pin cross-check: compare `version` above against "
+        "`sim/pdk.json`'s `open_pdks_commit` -- this flow does not itself "
+        "enforce the pin, so a mismatch is a manual reproducibility note."
+    )
+    a(f"- Repo state: `{sha}` on `{branch}`" + (" (dirty)" if dirty else ""))
+    a("")
 
 
 class SpecRowsError(ValueError):
