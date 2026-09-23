@@ -29,7 +29,7 @@ run anywhere in this repo), so the Digital column's extra requirements —
 | 1 | Design sources | `design/` — four block schematics + `design/top/top.sch`, each with a committed SPICE netlist snapshot (`design/top/netlist/top.spice`) | — | #15 (closed) |
 | 2 | Layout (GDS/OASIS) | `layout/pll/reports/LATEST` → `pll_top.gds`, a device-level floorplan of all four blocks | **Not routed** — no inter-device interconnect is drawn | #16 (closed) |
 | 3 | DRC clean | Same record's `drc.json`: `status: "clean"`, `violation_count: 0`, deck `sky130` | Deck-coverage disclosure not stated in a claim yet | #17 (closed) |
-| 4 | LVS clean | The routing spot-check's `klt lvs` run: `mismatch`, 1164 mismatches (`layout/pll/reports/20260906-195205-4a08c71/record.md`) | A matching LVS compare; blocked behind routing | **#18 (open)** |
+| 4 | LVS clean | Same record's routing spot-check `klt lvs` run (`layout/pll/reports/LATEST` → `route-spot-check/lvs.json`): `mismatch`, 1179 mismatches, 0/90 reference nets matched (474 nets in the layout) | A matching LVS compare; blocked behind routing | **#18 (open)** |
 | 5 | Full corner verification vs. a ratified spec | `sim/` PVT campaigns (`sim/divider-*`, `sim/pll-lock`, `sim/vco`) on the DR-003 corner set | Most `spec/target-spec.md` rows are still unratified, so most claims have no bound target (DR-002) | **#151 (open)**, #19 (closed) |
 | 6 | Monte Carlo / yield | none | The whole methodology | **#20 (open)** |
 | 7 | Post-layout (PEX) | none | Blocked on `klt pex` upstream | **#21 (open)** |

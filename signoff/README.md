@@ -112,25 +112,34 @@ from the cited envelope's own `coverage` block:
   the deck has no rule for: `64/5`, `64/16`, `64/59`, `66/13`, `67/5`,
   `67/16`, `68/5`, `68/16`, `78/44`, `79/20`, `81/4`, `83/44`, `93/44`,
   `94/20`, `95/20`, `122/16`, `236/0`.
-- **`rules_skipped`** (29) — rules the deck carries that this run did not
+- **`rules_skipped`** (35) — rules the deck carries that this run did not
   evaluate, because a layer they read is absent from this stream:
   `capm.enclosing.via3.1`, `capm.separation.via3.1`, `capm2.enclosing.via4.1`,
   `capm2.separation.via4.1`, `capm2.space.1`, `capm2.width.1`,
-  `met1.enclosing.via.1`, `met2.enclosing.via.1`, `met2.enclosing.via2.1`,
-  `met2.space.1`, `met2.width.1`, `met3.enclosing.via2.1`,
-  `met3.enclosing.via3.1`, `met4.enclosing.capm2.1`, `met4.enclosing.via3.1`,
-  `met4.enclosing.via4.1`, `met4.space.1`, `met4.width.1`,
-  `met5.enclosing.via4.1`, `met5.space.1`, `met5.width.1`, `via.space.1`,
+  `met1.enclosing.via.1`, `met2.area.1`, `met2.enclosing.via.1`,
+  `met2.enclosing.via2.1`, `met2.holes_area.1`, `met2.space.1`,
+  `met2.width.1`, `met3.enclosing.via2.1`, `met3.enclosing.via3.1`,
+  `met4.area.1`, `met4.enclosing.capm2.1`, `met4.enclosing.via3.1`,
+  `met4.enclosing.via4.1`, `met4.holes_area.1`, `met4.space.1`,
+  `met4.width.1`, `met5.area.1`, `met5.enclosing.via4.1`,
+  `met5.holes_area.1`, `met5.space.1`, `met5.width.1`, `via.space.1`,
   `via.width.1`, `via2.space.1`, `via2.width.1`, `via3.space.1`,
   `via3.width.1`, `via4.space.1`, `via4.width.1`.
 
 **Read that third list against `layout/pll/README.md`'s "Not routed"**: every
 skipped rule is a via or upper-metal (or MiM-capacitor) rule, and those layers
 are absent precisely because the shipped stream carries no inter-device
-routing. Only 9 of the deck's 17 layers were checked at all. So the honest
+routing. That holds for the six `met2`/`met4`/`met5` `.area.1` /
+`.holes_area.1` entries too: minimum-area and minimum-enclosed-hole-area are
+rules of the `m2`/`m4`/`m5` chapters, all three of which are inside
+`deck_scope` above — they are *not* density-chapter rules, so their presence
+in this list does not contradict the `deck_scope` bullet's exclusion of
+density. They are skipped for the same reason as the rest: no `met2`, `met4`
+or `met5` geometry exists in an unrouted stream to have an area at all.
+Only 9 of the deck's 17 layers were checked at all. So the honest
 reading of this row is: *the composed PLL stream is clean of every rule this
 deck could evaluate on an unrouted layout* — not "this block's finished layout
-is DRC clean". Drawing the routing will re-open 29 rules that have never run
+is DRC clean". Drawing the routing will re-open 35 rules that have never run
 against this design, and the row can legitimately go red when it does. That is
 the expected direction of travel, not a regression to be argued away.
 
