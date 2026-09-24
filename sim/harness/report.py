@@ -468,6 +468,48 @@ def _render_measured_points_table(a, results, spec) -> None:
             )
 
 
+def _render_mc_trials_table(a, results, spec) -> None:
+    """Per-trial result table for a Monte Carlo campaign against a
+    measurement manifest -- `_render_measured_points_table`'s Monte Carlo
+    twin, keyed by (trial, seed) instead of (corner, temp, supply), with a
+    Period jitter column called out explicitly rather than left to the
+    Detail note alone, since row 9 is this campaign's usual reason to exist.
+    """
+    lock_mode = spec.lock is not None
+    jitter_mode = spec.jitter is not None
+    header = ["Trial", "Seed", "Verdict"]
+    if lock_mode:
+        header += ["Locked", "Time-to-lock", "f_out (post-lock)", "Duty"]
+    else:
+        header += ["f_out", "Duty"]
+    if jitter_mode:
+        header.append("Period jitter")
+    header.append("Detail")
+    a("  | " + " | ".join(header) + " |")
+    a("  |" + "---|" * len(header))
+    for r in results:
+        t = r.trial
+        verdict = "PASS" if r.passed else "FAIL"
+        m = r.measurements[0] if r.measurements else None
+        duty = f"{m.duty_cycle * 100:.1f}%" if (m and m.duty_cycle is not None) else "-"
+        row = [str(t.trial), str(t.seed), verdict]
+        if lock_mode:
+            locked = "-" if m is None else ("yes" if m.locked else "**no**")
+            t_lock = measure_mod.format_s(m.lock_time_s) if m else "-"
+            fout = measure_mod.format_hz(m.freq_hz) if m else "-"
+            row += [locked, t_lock, fout, duty]
+        else:
+            fout = measure_mod.format_hz(m.freq_hz) if m else "-"
+            row += [fout, duty]
+        if jitter_mode:
+            if m is None or m.period_jitter_frac is None:
+                row.append("-")
+            else:
+                row.append(f"{m.period_jitter_frac * 100:.3f}% ({m.jitter_cycles} cycles)")
+        row.append(r.reason)
+        a("  | " + " | ".join(row) + " |")
+
+
 def _render_ripple_table(a, results, spec) -> None:
     """Per-point ripple table for a manifest with a `measure.ripple` block.
 
@@ -701,6 +743,7 @@ def render_mc(
     methodology_note: str,
     analysis: str,
     execution_note: str | None = None,
+    spec=None,
 ) -> str:
     """Render a Monte Carlo evidence record. Same append-only schema and
     directory conventions as `render` (PVT) -- see sim/README.md -- adapted
@@ -709,6 +752,14 @@ def render_mc(
     vary only by RNG seed, so the record states that point once instead of
     per row, and states the MC_MM_SWITCH/MC_PR_SWITCH sampling configuration
     that applied to every trial.
+
+    `spec` is the manifest's parsed `measure` block, `None` for a
+    plumbing-only manifest (e.g. `sim/pdk-smoke`'s) -- the same argument
+    `render`'s PVT path takes, threaded through so a statistical campaign
+    against a measurement manifest (e.g. `sim/pll-lock`'s `measure.lock` /
+    `measure.jitter`) states the same per-trial criterion and result columns
+    a PVT record of that manifest would, instead of only the harness-plumbing
+    check every Monte Carlo record used to be limited to.
     """
     # Per-run artifacts for an MC record live under the same sim/<slug>/
     # corners/<record-id>/ tree a PVT record uses (sim/README.md's
@@ -764,22 +815,59 @@ def render_mc(
         "`.options seed=<N>` card -- reproducible per trial, independent "
         "across trials. See `sim/harness/montecarlo.py`'s module docstring."
     )
-    a(
-        "  - Per-trial criterion: ngspice exits 0, prints its analysis-"
-        "completion marker, and emits no `Error:` line. This is a **harness "
-        "plumbing check** (does the sky130 statistical-sampling mechanism "
-        f"run this DUT to completion, seed by seed?), not a statistical-spec "
-        f"measurement -- {methodology_note}"
-    )
+    if spec is None:
+        a(
+            "  - Per-trial criterion: ngspice exits 0, prints its analysis-"
+            "completion marker, and emits no `Error:` line. This is a **harness "
+            "plumbing check** (does the sky130 statistical-sampling mechanism "
+            f"run this DUT to completion, seed by seed?), not a statistical-spec "
+            f"measurement -- {methodology_note}"
+        )
+    else:
+        a(
+            "  - Per-trial criterion, part 1 (plumbing): ngspice exits 0, prints "
+            f"the harness's analysis-completion marker (`{measure_mod.COMPLETION_MARKER}`, "
+            "echoed by the injected `.control` block), and emits no `Error:` "
+            "line -- the same check every other unit in this package uses."
+        )
+        if spec.lock is not None:
+            a(
+                "  - Per-trial criterion, part 2 (measurement): the loop "
+                f"**locks** within the transient window. Lock criterion: "
+                f"{spec.lock.summary}. A trial that never satisfies it is "
+                "reported as **no lock**, exactly as a PVT point would be, "
+                "and (per row 9's own wording) contributes no period-jitter "
+                "figure either -- it is not charged as a jitter failure, "
+                "because a design that has not converged has no post-lock "
+                "population to measure jitter over."
+                + ("" if spec.require_lock else " (Reported, but not gated on, for this manifest.)")
+            )
+        if spec.jitter is not None:
+            a(f"  - Period jitter (row 9): {spec.jitter.summary}.")
+        a(
+            "  - Measurement method: the same manifest-owned `.control` block "
+            "a PVT point's `measure` block injects (`sim/harness/measure.py`'s "
+            "`build_control_block`) is appended after this trial's "
+            "`MC_MM_SWITCH`/`MC_PR_SWITCH`/seed cards, so each trial runs the "
+            "manifest's transient window against its own sampled device draw "
+            "and is reduced by the same threshold-crossing extractor a PVT "
+            "point's dump is. The waveform dumps themselves are **not** "
+            "committed -- `sim/README.md`'s retention policy treats them as "
+            "regenerable from the frozen netlist plus the logged environment."
+        )
+        a(f"  - {methodology_note}")
     a(f"  - Analysis: {analysis}.")
     a("- **Result**:")
     a("")
-    a("  | Trial | Seed | Verdict | Detail |")
-    a("  |---|---|---|---|")
-    for r in results:
-        t = r.trial
-        verdict = "PASS" if r.passed else "FAIL"
-        a(f"  | {t.trial} | {t.seed} | {verdict} | {r.reason} |")
+    if spec is None:
+        a("  | Trial | Seed | Verdict | Detail |")
+        a("  |---|---|---|---|")
+        for r in results:
+            t = r.trial
+            verdict = "PASS" if r.passed else "FAIL"
+            a(f"  | {t.trial} | {t.seed} | {verdict} | {r.reason} |")
+    else:
+        _render_mc_trials_table(a, results, spec)
     a("")
     overall = "PASS" if not failed else "FAIL"
     a(f"  - **Overall: {overall}** ({len(passed)}/{len(results)} trials passed)")

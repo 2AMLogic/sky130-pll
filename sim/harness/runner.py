@@ -55,6 +55,12 @@ class McTrialResult:
     trial: McTrial
     passed: bool
     reason: str
+    # Empty for a manifest with no `measure` block (a plumbing-only Monte
+    # Carlo campaign, e.g. sim/pdk-smoke); one entry otherwise -- see
+    # sim/harness/measure.py. This is what lets a statistical campaign gate
+    # on a manifest-stated bound (e.g. row 9's period-jitter bound) per
+    # trial, the same way `PointResult.measurements` does for a PVT point.
+    measurements: tuple = ()
 
 
 def netlist_schematic(
@@ -164,7 +170,13 @@ def patch_netlist(
     return text
 
 
-def patch_netlist_mc(netlist_text: str, manifest: dict, trial: McTrial) -> str:
+def patch_netlist_mc(
+    netlist_text: str,
+    manifest: dict,
+    trial: McTrial,
+    spec=None,
+    prefix: str = "",
+) -> str:
     """Patch a netlisted DUT for one sky130 Monte Carlo trial.
 
     Reuses the manifest's `corner_pattern`/`supply_pattern` (same as
@@ -178,6 +190,16 @@ def patch_netlist_mc(netlist_text: str, manifest: dict, trial: McTrial) -> str:
     `sim/harness/README.md`'s Monte Carlo section and `montecarlo.py`'s
     module docstring for how this was verified against this repo's sky130
     install.
+
+    `spec` is the manifest's parsed `measure` block (`None` for a
+    plumbing-only manifest, e.g. `sim/pdk-smoke`'s). When present, the same
+    `measure_mod.build_control_block` a PVT point uses (`patch_netlist`
+    above) is appended after the MC sampling cards, so a Monte Carlo trial
+    of a lock-capable DUT (e.g. `sim/pll-lock`, whose schematic carries no
+    `.tran` card at all) runs the manifest-owned transient window and dumps
+    the same waveform a PVT point would -- this is what lets a statistical
+    campaign compute a manifest-stated measurement (e.g. row 9's period
+    jitter) per trial, not just judge whether ngspice finished.
     """
     text = _substitute_corner_and_supply(netlist_text, manifest, trial.lib_corner, trial.supply_v)
 
@@ -191,6 +213,8 @@ def patch_netlist_mc(netlist_text: str, manifest: dict, trial: McTrial) -> str:
         f".options seed={trial.seed}\n"
         f".temp {trial.temp_c:g}\n"
     )
+    if spec is not None:
+        injected += measure_mod.build_control_block(spec, prefix)
     text = _END_CARD_RE.sub(lambda m: f"{injected}{m.group(1)}", text, count=1)
     return text
 
@@ -432,13 +456,27 @@ def prepare_point(
 def prepare_mc_trial(
     manifest: dict, netlist_text: str, trial: McTrial, work_dir: Path
 ) -> executor_mod.NgspiceUnit:
-    """`prepare_point`'s Monte Carlo twin -- same contract, `patch_netlist_mc`."""
+    """`prepare_point`'s Monte Carlo twin -- same contract, `patch_netlist_mc`.
+
+    Parses the manifest's `measure` block exactly as `prepare_point` does, so
+    a `monte_carlo` block layered onto a measurement manifest (e.g.
+    `sim/pll-lock`'s `measure.lock`/`measure.jitter`) drives the same
+    completion marker and per-trial timeout budget a PVT point of that
+    manifest would, instead of the plumbing-only default.
+    """
+    spec = measure_mod.MeasureSpec.from_manifest(manifest)
+    prefix = f"{trial.corner_id}-" if spec is not None else ""
+    patched = patch_netlist_mc(netlist_text, manifest, trial, spec=spec, prefix=prefix)
+    if spec is not None:
+        marker, timeout_s = measure_mod.COMPLETION_MARKER, spec.timeout_s
+    else:
+        marker, timeout_s = COMPLETION_MARKER, 300
     return executor_mod.NgspiceUnit(
         corner_id=trial.corner_id,
-        netlist_text=patch_netlist_mc(netlist_text, manifest, trial),
+        netlist_text=patched,
         work_dir=work_dir,
-        completion_marker=COMPLETION_MARKER,
-        timeout_s=300,
+        completion_marker=marker,
+        timeout_s=timeout_s,
     )
 
 
@@ -467,7 +505,7 @@ def run_point(
     )
     measurements: tuple = ()
     if passed and spec is not None:
-        measurements, passed, reason = _reduce_measurements(spec, point, work_dir, prefix)
+        measurements, passed, reason = _reduce_measurements(spec, point.supply_v, work_dir, prefix)
     elif passed and ac_spec is not None:
         measurements, passed, reason = _reduce_ac_measurements(ac_spec, work_dir, prefix)
     return PointResult(
@@ -478,14 +516,19 @@ def run_point(
     )
 
 
-def _reduce_measurements(spec, point: PvtPoint, work_dir: Path, prefix: str):
-    """Read this point's waveform dumps back and reduce them to measurements.
+def _reduce_measurements(spec, supply_v: float, work_dir: Path, prefix: str):
+    """Read one unit's waveform dumps back and reduce them to measurements.
 
-    Returns (measurements, passed, reason). A point that ngspice completed
+    Returns (measurements, passed, reason). A unit that ngspice completed
     cleanly can still FAIL here -- that is the whole point of the measurement
     layer: "the simulator finished" and "the circuit did what the manifest
     says it must" are different claims, and only the second one is evidence
     for a spec row.
+
+    Takes the unit's own supply voltage directly (not a `PvtPoint`) so this
+    is shared verbatim by `run_point` (a PVT point) and `run_mc_trial` (a
+    Monte Carlo trial, whose `McTrial` carries its own `supply_v` at the same
+    fixed point every trial runs at).
     """
     names = measure_mod.waveform_names(spec, prefix)
     labels = [p.label for p in spec.sweep] or [None]
@@ -513,7 +556,7 @@ def _reduce_measurements(spec, point: PvtPoint, work_dir: Path, prefix: str):
                 times, values = measure_mod.parse_wrdata(dump.read_text())
             measurements.append(
                 measure_mod.measure_trace(
-                    times, values, spec, point.supply_v, label=label, extra=extra
+                    times, values, spec, supply_v, label=label, extra=extra
                 )
             )
         except measure_mod.MeasureError as e:
@@ -564,12 +607,22 @@ def run_mc_trial(
 ) -> McTrialResult:
     """Same run-and-judge shape as `run_point`, for one Monte Carlo trial.
 
-    The pass/fail criterion is the same harness-plumbing check used
-    everywhere else in this package (ngspice exits 0, prints its
-    analysis-completion marker, emits no `Error:` line) -- it proves the
-    sampling mechanism runs to completion, not that any particular circuit
-    quantity landed inside a spec limit. See `sim/harness/README.md`.
+    For a manifest with no `measure` block (e.g. `sim/pdk-smoke`'s), the
+    pass/fail criterion is the harness-plumbing check every other unit in
+    this package uses (ngspice exits 0, prints its analysis-completion
+    marker, emits no `Error:` line) -- it proves the sampling mechanism runs
+    to completion, not that any particular circuit quantity landed inside a
+    spec limit. See `sim/harness/README.md`.
+
+    For a manifest that also declares `measure` (e.g. `sim/pll-lock`'s), a
+    trial that ngspice completes is additionally reduced exactly as a PVT
+    point is (`_reduce_measurements`, shared verbatim) -- so a manifest-stated
+    bound this trial's draw misses (e.g. row 9's period-jitter bound) still
+    fails the trial, and the trial's `measurements` carry the same
+    `Measurement` a PVT point's would (frequency, lock, period jitter, ...).
     """
+    spec = measure_mod.MeasureSpec.from_manifest(manifest)
+    prefix = f"{trial.corner_id}-" if spec is not None else ""
     unit = prepare_mc_trial(manifest, netlist_text, trial, work_dir)
     passed, reason, _log_path, _spice_path = _run_ngspice_and_judge(
         pdk,
@@ -581,4 +634,7 @@ def run_mc_trial(
         timeout_s=unit.timeout_s,
         execute=execute,
     )
-    return McTrialResult(trial=trial, passed=passed, reason=reason)
+    measurements: tuple = ()
+    if passed and spec is not None:
+        measurements, passed, reason = _reduce_measurements(spec, trial.supply_v, work_dir, prefix)
+    return McTrialResult(trial=trial, passed=passed, reason=reason, measurements=measurements)

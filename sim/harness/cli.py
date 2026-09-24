@@ -716,6 +716,7 @@ def cmd_run_mc(args: argparse.Namespace) -> int:
             supersedes=args.supersedes,
             methodology_note=methodology_note,
             analysis=analysis,
+            spec=measure_mod.MeasureSpec.from_manifest(manifest),
         )
 
     return _run_experiment(
