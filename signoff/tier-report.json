@@ -82,7 +82,7 @@
         "kind": "drc",
         "check_status": "clean",
         "content_hash": "sha256:939f97e05b9e4a2a0f866a44bb6f758c030cfd611eaa0a567d5dc3002fa68d4c",
-        "input_verified": true,
+        "input_verified": null,
         "exit_status": 0,
         "coverage": {
           "layers_in_stream_without_rules": [
@@ -179,7 +179,7 @@
         "kind": "drc",
         "check_status": "clean",
         "content_hash": "sha256:939f97e05b9e4a2a0f866a44bb6f758c030cfd611eaa0a567d5dc3002fa68d4c",
-        "input_verified": true,
+        "input_verified": null,
         "exit_status": 0,
         "coverage": {
           "layers_in_stream_without_rules": [
