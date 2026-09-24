@@ -145,10 +145,10 @@ for item, path, pinned in cited:
     # append-only record directory.
     artifact = envelope_path.parent / pathlib.PurePosixPath(named.replace("\\", "/")).name
     if not artifact.is_file():
-        print(
-            f"warning: item {item}: {artifact} not found -- "
-            f"{path}'s pinned content_hash could not be re-hashed",
-            file=sys.stderr,
+        mismatched.append(
+            f"item {item}: {artifact} is missing -- {path}'s pinned content_hash "
+            "cannot be re-verified because the cited artifact is gone, not merely "
+            "changed"
         )
         continue
     actual = "sha256:" + hashlib.sha256(artifact.read_bytes()).hexdigest()

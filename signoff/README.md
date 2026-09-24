@@ -143,6 +143,30 @@ is DRC clean". Drawing the routing will re-open 35 rules that have never run
 against this design, and the row can legitimately go red when it does. That is
 the expected direction of travel, not a regression to be argued away.
 
+This same record already carries evidence for exactly one of those 35 rules,
+and it complicates the forecast rather than simply confirming it. The
+record's own routed spot-check
+(`layout/pll/reports/20260923-084911-13ecfe9/route-spot-check/drc.json`)
+reports `status: "clean"`, zero violations — but not because a full route
+passed `met1.space.1` clean. Per that same record's `record.md` ("Routing
+spot-check"), the router's spacing-aware collision check (new at `klt`
+0.6.0) declined 51 of the 923 undrawn two-pin legs specifically because
+drawing them would violate `met1.space.1`, which is exactly why the rule no
+longer appears in the spot-check's violation list. The zero reflects legs
+the router refused to draw, not legs it drew and that passed, so it does not
+establish that a fully-routed `pll_top` stays clean of `met1.space.1` once
+those legs are actually routed. An earlier, now-superseded record's own
+routed spot-check
+(`layout/pll/reports/20260906-195205-4a08c71/route-spot-check/drc.json`,
+cited by this block-manifest before issue #157's pin bump) shows the failure
+mode directly: `status: "violations"`, `rule_counts: {"met1.space.1": 2}` —
+on a rule that is not in the `rules_skipped` list above, so it was fully
+evaluated against the unrouted stream and passed there, and failed only once
+enough routing existed to trigger it. So the routing caveat above is not only
+a forecast: this design has already tripped it once, and the only reason the
+currently cited record's own spot-check does not show it again is that the
+router declined to draw the legs that would have.
+
 Two further disclosures that belong with the claim:
 
 - The deck is `klt`'s own curated `sky130` deck, pinned by content hash
@@ -250,7 +274,11 @@ repo. Both are demonstrated below.
    pinned hash is only ever compared to another claim. An edit to the committed
    `pll_top.gds` would then leave the envelope claiming the old hash, the pin
    matching it, and the row green. The guard resolves the artifact by basename
-   beside the envelope in its own record directory and hashes it for real. The
+   beside the envelope in its own record directory and hashes it for real. If
+   the artifact cannot be found there at all — deleted, not merely edited —
+   that is a failure too, not a warning: an unreadable pin is exactly as
+   unverified as a missing re-hash, and the guard fails loudly rather than
+   silently declining to check (issue #163; see negative control 5 below). The
    tool gap is tracked upstream as
    [klayout-tools#2340](https://github.com/2AMLogic/klayout-tools/issues/2340)
    (cross-confirmed from this repo, per `CLAUDE.md`'s friction protocol); this
@@ -273,8 +301,9 @@ repo. Both are demonstrated below.
 
 A gate that cannot fail is not a gate — the same discipline
 `layout/trivial-cell/`'s injected-defect fixtures apply to the DRC/LVS flow.
-All four properties were demonstrated against a scratch copy of the cited
-record before this directory was committed:
+All five properties were demonstrated against a scratch copy of the cited
+record — the first four before this directory was committed, and the fifth
+(the missing-artifact case, issue #163) once it was found:
 
 | Injected fault | Result |
 | --- | --- |
@@ -282,6 +311,7 @@ record before this directory was committed:
 | `layout/pll/reports/LATEST` re-pointed at a newer record (the citation is superseded) | guard 2 fails: `cites record <old id>, but … LATEST names <new id>`, exit 1 — this one is not hypothetical: it is exactly what fired when issue #157's pin bump re-ran the layout flow, and it is why that PR re-points the manifest and re-renders the report |
 | The envelope's own `provenance.input.content_hash` changed (it ran against a different revision than the claim) | `klt signoff` re-grades item 3 `unmet` / `stale_evidence`, `t1_met_count` 2 → 0, the committed report no longer matches, `--check` exits 1 |
 | One field of the committed `tier-report.json` hand-edited | `--check` prints the diff (`"t1_met_count": 99` → `2`) and exits 1 |
+| `pll_top.gds` deleted outright (not edited — the cited artifact is simply gone) | guard 1 fails: `layout/pll/reports/<record>/pll_top.gds is missing -- layout/pll/reports/<record>/drc.json's pinned content_hash cannot be re-verified because the cited artifact is gone, not merely changed`, exit 1. This is the one case guard 1 used to let through (issue #163): re-run against the pre-fix script with the identical scratch record, `rm pll_top.gds` printed only `warning: … not found` and `--check` still reported `signoff/tier-report.json is current.` and exited 0 — the exact false-pass the fix above closes. |
 
 ## Why the checklist is not vendored here
 
