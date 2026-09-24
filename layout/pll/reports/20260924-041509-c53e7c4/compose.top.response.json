@@ -1,0 +1,117 @@
+{
+  "schema_version": 1,
+  "generator": "gen-compose",
+  "cell_name": "pll_top",
+  "gds_path": "pll_top.gds",
+  "pdk": {
+    "name": "sky130A",
+    "variant": "sky130A",
+    "version": "open_pdks f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+  },
+  "dbu_um": 0.001,
+  "bbox_um": {
+    "x0": -0.19,
+    "y0": -0.15,
+    "x1": 569.9300000000001,
+    "y1": 232.76000000000002
+  },
+  "ports": [],
+  "blocks": [
+    {
+      "id": "pll_pfd_cp",
+      "source": "generator_report",
+      "generator": "gen-compose",
+      "cell_name": "pll_pfd_cp",
+      "source_path": "pll_pfd_cp.gds",
+      "source_digest": "sha256:dc184f26598f0f30ceccecacd8f9b05d1e27a4a3a0edf4634dd1d77de22c8c25",
+      "offset_um": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "bbox_um": {
+        "x0": 0.0,
+        "y0": -0.15,
+        "x1": 300.84000000000003,
+        "y1": 26.12
+      },
+      "orientation": "none"
+    },
+    {
+      "id": "pll_loop_filter",
+      "source": "generator_report",
+      "generator": "gen-compose",
+      "cell_name": "pll_loop_filter",
+      "source_path": "pll_loop_filter.gds",
+      "source_digest": "sha256:e001adbf7e90a502b0fa1784826952efc85bef2b1dc917d54d6e6a77ab1917e1",
+      "offset_um": {
+        "x": 320.84,
+        "y": 0.0
+      },
+      "bbox_um": {
+        "x0": 320.84,
+        "y0": 0.0,
+        "x1": 509.21999999999997,
+        "y1": 209.8
+      },
+      "orientation": "none"
+    },
+    {
+      "id": "pll_vco_ring5",
+      "source": "generator_report",
+      "generator": "gen-compose",
+      "cell_name": "pll_vco_ring5",
+      "source_path": "pll_vco_ring5.gds",
+      "source_digest": "sha256:72b40a79265c7a18ebb8b9cabed72c89f97d43ead5ac66f69c7afeab88c99591",
+      "offset_um": {
+        "x": 529.22,
+        "y": 0.0
+      },
+      "bbox_um": {
+        "x0": 529.22,
+        "y0": -0.15,
+        "x1": 569.9300000000001,
+        "y1": 16.97
+      },
+      "orientation": "none"
+    },
+    {
+      "id": "pll_divider_intN",
+      "source": "generator_report",
+      "generator": "gen-compose",
+      "cell_name": "pll_divider_intN",
+      "source_path": "pll_divider_intN.gds",
+      "source_digest": "sha256:02929ab3df24677ebb9fe1016559af4e89d0ac0d5affd28681eb53badcd7e620",
+      "offset_um": {
+        "x": 0.0,
+        "y": 229.8
+      },
+      "bbox_um": {
+        "x0": -0.19,
+        "y0": 229.56,
+        "x1": 142.79,
+        "y1": 232.76000000000002
+      },
+      "orientation": "none"
+    }
+  ],
+  "nets": [],
+  "pins": [],
+  "unrouted_nets": [],
+  "drc_hints": {
+    "min_spacing_um": null,
+    "matched_groups": [],
+    "notes": []
+  },
+  "warnings": [],
+  "provenance": {
+    "klt_version": "0.6.0",
+    "klayout_version": "0.30.10",
+    "pdk": {
+      "name": "sky130A",
+      "source": "search root: ~/.ciel",
+      "version": "open_pdks f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+    },
+    "deck": null,
+    "input": null
+  }
+}

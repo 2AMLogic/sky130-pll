@@ -75,7 +75,9 @@ id).
 ## Why `klt`, and how it is pinned
 
 `layout/requirements.txt` pins `klt` by **exact PyPI version** —
-`klayout-tools==0.6.0` since issue #157. The pin form has moved twice: a plain
+`klayout-tools==0.6.0` since issue #157 — and, since issue #167, pins the
+`klayout` engine it runs on the same way (`klayout==0.30.10`). The pin form
+has moved twice: a plain
 version (`==0.2.0`) from issue #2 through #16, a git-commit pin in issue #46
 while PyPI had published nothing newer, and back to a version pin in issue #17
 once releases resumed. Never a floating `main` or an unpinned release, in any
@@ -95,6 +97,21 @@ the worked example of why — that re-run is what caught two upstream behaviour
 changes (`klt lvs` now requiring `reference.deck` to resolve a unit-less
 length, and `klt extract`'s SPICE writer dropping the model name from `C`
 cards) that a version edit alone would have shipped broken.
+
+`requirements.txt` also pins the `klayout` Python engine `klt` runs on
+explicitly (`klayout==0.30.10`, since issue #167) — before that it was an
+unpinned transitive dependency of `klayout-tools`, so a cold
+`layout/bin/setup-venv.sh` install resolved whatever engine build PyPI had
+current that day. Confirmed live at the time of this fix: a bare `pip
+install 'klayout-tools==0.6.0'` (no `klayout` pin) resolves
+`klayout==0.30.12`, not the `0.30.10` that build's own engine-mismatch
+warning names as tested against — and every record this repo committed at
+that pin before issue #167 carries the resulting warning. `klt` detects the
+mismatch itself and warns on every `drc`/`extract`/`lvs`/`erc` call; the fix
+is to read the warning's own named "tested against" version and pin
+`klayout` to it, in the same commit as whichever `klayout-tools` bump the
+warning came from. See `requirements.txt`'s own header for the
+bump-discipline paragraph covering both pins together.
 
 ## The flow
 
