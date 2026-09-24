@@ -112,4 +112,42 @@
 # unconditionally, which remains correct and is not a no-op to remove: it is
 # what makes a future pin bump that reuses the same reported version (e.g. a
 # later commit pin) safe again without a separate code change.
+#
+# `klayout` (the KLayout Python engine `klt` runs on) is pinned explicitly
+# alongside `klayout-tools` as of issue #167 (2026-09-23). Before this pin,
+# `klayout` was an unpinned transitive dependency of `klayout-tools`, so a
+# cold `layout/bin/setup-venv.sh` install resolved whatever engine build was
+# current on PyPI that day. `klt` itself detects when the resolved engine
+# differs from the version the running `klt` build states it was tested
+# against, and warns on every `drc`/`extract`/`lvs`/`erc` invocation when it
+# does -- that warning text names the version to pin here.
+#
+# Confirmed live at the time of this fix: a bare `pip install
+# 'klayout-tools==0.6.0'` (no `klayout` pin) resolves `klayout==0.30.12`,
+# not the `0.30.10` that build's own engine-mismatch warning names as tested
+# against. The committed evidence already showed the resulting drift across
+# two cold installs of that pin: `layout/pll/erc-reports/` records went from
+# `klayout_version: 0.30.10`
+# (`20260923-062347-b3abad8/erc.json`, an earlier, non-PyPI `klt` build also
+# built against this engine) to `klayout_version: 0.30.12`
+# (`20260923-085051-13ecfe9/erc.json`, the `klayout-tools==0.6.0` PyPI pin,
+# installed cold the same day) -- and every record this repo committed after
+# that point, at the same `0.6.0` pin, kept resolving `0.30.12`, `klt`'s
+# warning included. `0.30.10` is exactly what `klayout-tools==0.6.0`'s own
+# warning names as its tested-against engine, so this pin adds no drift of
+# its own -- it only makes the previously-implicit resolution explicit and
+# reproducible, at the cost of moving this repo's records to an engine
+# version different from the one PyPI's dependency resolver had been
+# silently defaulting to.
+#
+# How to choose the value on a future bump: when `klayout-tools` is bumped,
+# read the *new* build's own engine-mismatch warning text (or its release
+# notes/changelog, if the warning does not fire because the two pins already
+# happen to agree) for the KLayout engine version it was tested against, and
+# move this pin to that value in the same commit as the `klayout-tools` bump
+# -- never leave the two pins to drift independently, and never bump one
+# without re-running both flows (per the bump-discipline paragraph above) to
+# confirm the engine-mismatch warning is gone and to check in the refreshed
+# records.
 klayout-tools==0.6.0
+klayout==0.30.10

@@ -88,12 +88,24 @@ A fourth gap — reproducibility rather than evidence — is **closed** (issue
 than `layout/requirements.txt`'s pin of the day (`klayout-tools==0.4.0`),
 whose `klt erc` predated both `stackup[0].active_layer` and the `provenance`
 block, so it could not be regenerated from the pin. The pin is now
-`klayout-tools==0.6.0`, both layout flows were re-run at it, and the current
-`erc-reports/LATEST` record was produced by the pinned build. The superseded
-record is kept unedited; the current one records the measured
-`0.4.0`-vs-`0.6.0` difference (216 "gates" vs 213 — the old pin counted this
-block's three poly resistors as gates and understated every antenna ratio by
-~2.9×).
+`klayout-tools==0.6.0`, both layout flows were re-run at it, and the
+`erc-reports/LATEST` record of that day was produced by the pinned build. The
+superseded record is kept unedited; the record it superseded records the
+measured `0.4.0`-vs-`0.6.0` difference (216 "gates" vs 213 — the old pin
+counted this block's three poly resistors as gates and understated every
+antenna ratio by ~2.9×).
+
+That fix left one reproducibility gap of its own: `layout/requirements.txt`
+pinned `klayout-tools` but not the `klayout` engine it runs on, so a cold
+install of that pin could resolve whatever `klayout` engine PyPI had current
+that day — a bare `pip install 'klayout-tools==0.6.0'` resolves
+`klayout==0.30.12`, not the `0.30.10` that build's own engine-mismatch
+warning names as tested against — and made `klt` warn on every
+`drc`/`extract`/`lvs`/`erc` call. Closed by **issue #167**:
+`layout/requirements.txt` now also pins `klayout==0.30.10`, both layout flows
+and the ERC run were re-run at it, and `erc-reports/LATEST` is the current
+record. The per-gate antenna attribution moved (131 of 213 gates), but every
+aggregate figure and the verdict on item 11's rules did not.
 
 ## Keeping this file honest
 
