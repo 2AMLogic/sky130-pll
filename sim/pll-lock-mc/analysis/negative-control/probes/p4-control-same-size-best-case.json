@@ -1,0 +1,43 @@
+{
+  "provenance": {
+    "generated_by": "sim/pll-lock-mc/analysis/negative_control_reachability.py",
+    "purpose": "a probe of `klt yield`'s negative-control detection rule, not evidence about the PLL -- the population is synthetic",
+    "question": "a 5-draw control against a 5-draw nominal in which **every** draw passes -- the best a campaign of this size can possibly do, against the control size #195 costs at 5 draws",
+    "nominal_population": {
+      "passing_draws": 5,
+      "failing_draws": 0,
+      "errored_draws": 0,
+      "passing_sample_pct": 0.5,
+      "failing_sample_pct": 2.169
+    },
+    "negative_control_draws": 5,
+    "limit": "period jitter <= 1.0 % RMS (ratified spec row 9, DR-006)"
+  },
+  "measurements": [
+    {
+      "name": "period_jitter_rms_pct",
+      "unit": "%",
+      "samples": [
+        0.5,
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "errored": 0,
+      "failed_unmeasurable": 0,
+      "limits": {
+        "max": 1.0
+      },
+      "source_corners": [
+        "tt_mm_125c_1.80v"
+      ],
+      "negative_control": {
+        "description": "5 draws, none measurable -- the strongest degradation the schema expresses",
+        "samples": [],
+        "errored": 0,
+        "failed_unmeasurable": 5
+      }
+    }
+  ]
+}

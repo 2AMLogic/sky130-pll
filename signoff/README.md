@@ -22,7 +22,7 @@ reason this directory exists before the evidence does rather than after.
 | `tier-report.json` | `klt signoff --manifest … --format json` output. **Generated — do not edit.** Re-render with `bash signoff/run-signoff.sh`. |
 | `run-signoff.sh` | Renders the report (`bash signoff/run-signoff.sh`) or verifies the committed one (`--check`, which is what CI runs), after three guards `klt signoff` does not apply itself (see "Three guards this repo adds"). |
 | `item6_preconditions.py` | Re-derives, from the repo's own artifacts, which of T1 item 6's preconditions are still outstanding — the facts case **4b** below used to carry only in prose. Needs no `klt`, no PDK and no network; `--check` runs in `npm run check:ci`. |
-| `item6-preconditions.md` | That derivation. **Generated — do not edit.** Re-render with `python3 signoff/item6_preconditions.py --write`. |
+| `item6-preconditions.md` | That derivation. **Generated — do not edit.** Re-render with `python3 signoff/item6_preconditions.py --write`. Row 3 also states whether guard 3's `detected` condition is *reachable* over the cited campaign at all — see `sim/pll-lock-mc/analysis/negative-control/reachability.md`, which measures it. |
 
 ## Reproducing
 
@@ -333,7 +333,7 @@ manifest defaults is #103). A prose list of five machine-readable facts is a
 list that rots between the commit that changes one and the reader who notices;
 the generated document is the fix.
 
-Behind the rows that read `unmet` sit two decisions, and both are this
+Behind the rows that read `unmet` sit three decisions, and all three are this
 section's to make rather than that document's to report:
 
 - **Which control counts.** `klt yield`'s `negative_control` takes *a
@@ -353,13 +353,38 @@ section's to make rather than that document's to report:
   elsewhere, is one. That control is #195, filed rather than built here: it is a
   new Monte Carlo sub-campaign with its own cost and its own open question about
   what to degrade, not a re-reading of an existing record.
+- **Whether a control could fire at all — and therefore what to buy first.**
+  That question was assumed rather than checked for as long as item 6's control
+  has been outstanding, and #195's own text flagged it as the cheaper thing to
+  settle before spending simulator time. It is now settled, against spending it:
+  `sim/pll-lock-mc/analysis/negative-control/reachability.md` measures that
+  `klt yield` reports `detected` only when the control's empirical yield *and*
+  its interval's upper bound are strictly below the nominal's estimate and
+  interval lower bound. Both of this campaign's nominal figures are **zero**,
+  under both censored-draw mappings, and a control's own two figures are
+  proportions of a draw count — so **no control, at any population size, at any
+  degradation, can be `detected` here**. Six committed `klt yield` probes check
+  that rather than quote it, including one that shows the 5-draw control #195
+  would cost is unreachable even against a 5-draw nominal in which every draw
+  passes, and one that reports `detected` so the others are known not to be a
+  broken probe. **What this changes**: item 6's control is gated on *the design
+  meeting ratified row 9 in enough draws*, not on simulator time. Buying #195,
+  or the sized campaign, or both, before that would buy a control that cannot
+  fire.
 - **Whether to size the campaign.** `sim/pll-lock-mc/analysis/README.md` is the
   full read: ≈ 400 h of simulator time to sharpen an interval around an
   already-negative Cpk, while the 200 ps measurement-resolution floor #178
-  quantifies is the uncertainty that actually binds. It also records why `klt
+  quantifies is the uncertainty that actually binds. The bullet above adds a
+  second reason, measured rather than argued: probe `p2` is exactly this
+  campaign widened to `required_n` = 183 with row 9 still missed on every draw,
+  and its control is still `not_detected`, so sizing does not supply the other
+  outstanding precondition as a side effect. That README also records why `klt
   yield` cannot be run from this repo's own pin at all
   ([klayout-tools#2466](https://github.com/2AMLogic/klayout-tools/issues/2466)),
-  which gates *re-running* the report even once the control exists.
+  which gates *re-running* the report even once the control exists — though the
+  build that produced every `klt yield` artifact here is now a committed script
+  (`sim/pll-lock-mc/analysis/klt-yield-env.sh`) that regenerates and diffs them,
+  so "built by hand" is no longer the recipe even while CI still cannot run it.
 
 Item 6 becomes citable when every precondition in that document reads `met` —
 not before, and not by re-reading the same report more generously. **Guard 3 is
@@ -369,7 +394,11 @@ README to be caught in review — `run-signoff.sh` exits 1 and names both missin
 conditions, in the report's own fields (`sample_size.verdict` → `sufficient`,
 `negative_control.verdict` → `detected`). So nothing here has to be re-argued
 when they arrive; the citation becomes the mechanical manifest edit #182 always
-said it would be.
+said it would be. What the reachability finding changes is the *order* the two
+arrive in, not the gate: the design work on row 9 comes first, because until it
+lands guard 3's `detected` condition is unreachable rather than merely unmet,
+and the escape hatch guard 3 names (an argued `not_detected`) still needs a
+`klt yield` run to declare a control at all.
 
 **5. The item is a per-partition row whose column this repo cannot produce
 yet.** The digital partition's items 1, 2, 5 and 11 will be answered by the

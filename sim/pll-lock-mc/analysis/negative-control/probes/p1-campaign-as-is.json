@@ -1,0 +1,41 @@
+{
+  "provenance": {
+    "generated_by": "sim/pll-lock-mc/analysis/negative_control_reachability.py",
+    "purpose": "a probe of `klt yield`'s negative-control detection rule, not evidence about the PLL -- the population is synthetic",
+    "question": "the committed campaign itself (3 measurable draws, none passing, 2 censored as `errored`) against the strongest control the schema can express",
+    "nominal_population": {
+      "passing_draws": 0,
+      "failing_draws": 3,
+      "errored_draws": 2,
+      "passing_sample_pct": 0.5,
+      "failing_sample_pct": 2.169
+    },
+    "negative_control_draws": 1000,
+    "limit": "period jitter <= 1.0 % RMS (ratified spec row 9, DR-006)"
+  },
+  "measurements": [
+    {
+      "name": "period_jitter_rms_pct",
+      "unit": "%",
+      "samples": [
+        2.169,
+        2.169,
+        2.169
+      ],
+      "errored": 2,
+      "failed_unmeasurable": 0,
+      "limits": {
+        "max": 1.0
+      },
+      "source_corners": [
+        "tt_mm_125c_1.80v"
+      ],
+      "negative_control": {
+        "description": "1000 draws, none measurable -- the strongest degradation the schema expresses",
+        "samples": [],
+        "errored": 0,
+        "failed_unmeasurable": 1000
+      }
+    }
+  ]
+}

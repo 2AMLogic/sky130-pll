@@ -1,0 +1,122 @@
+{
+  "samples": "sim/pll-lock-mc/analysis/negative-control/probes/p1-campaign-as-is.json",
+  "limits": null,
+  "source": {
+    "kind": "sample-set",
+    "netlist": null,
+    "monte_carlo": null,
+    "sample_count": 3
+  },
+  "schema_version": 1,
+  "confidence": 0.95,
+  "target_ci_halfwidth": 0.01,
+  "min_samples": 2,
+  "status": "reported",
+  "measurement_count": 1,
+  "measurements": [
+    {
+      "name": "period_jitter_rms_pct",
+      "unit": "%",
+      "n": 3,
+      "errored": 2,
+      "failed_unmeasurable": 0,
+      "limits": {
+        "max": 1.0
+      },
+      "source_corners": [
+        "tt_mm_125c_1.80v"
+      ],
+      "distribution": {
+        "model": "normal",
+        "mean": 2.169,
+        "stddev": 0.0,
+        "min": 2.169,
+        "max": 2.169,
+        "median": 2.169,
+        "skewness": null,
+        "excess_kurtosis": null,
+        "normality": {
+          "test": "anderson-darling",
+          "statistic": null,
+          "critical_value": 0.787,
+          "significance": 0.05,
+          "verdict": "degenerate"
+        }
+      },
+      "yield": {
+        "empirical": {
+          "method": "clopper-pearson",
+          "estimate": 0.0,
+          "confidence": 0.95,
+          "confidence_interval": {
+            "low": 0.0,
+            "high": 0.707598226178713
+          },
+          "n": 3
+        },
+        "normal": null,
+        "variance_reduced": null
+      },
+      "capability": {
+        "cp": null,
+        "cpk": null,
+        "cpk_confidence_interval": null,
+        "sigma_to_spec": null,
+        "sigma_to_spec_confidence_interval": null,
+        "limiting_side": null
+      },
+      "sample_size": {
+        "n": 3,
+        "observed_ci_halfwidth": 0.3537991130893565,
+        "target_ci_halfwidth": 0.01,
+        "required_n": 183,
+        "required_n_for_target": null,
+        "verdict": "insufficient",
+        "method": "clopper-pearson-zero-failures",
+        "variance_reduced": null
+      },
+      "negative_control": {
+        "description": "1000 draws, none measurable -- the strongest degradation the schema expresses",
+        "n": 0,
+        "errored": 0,
+        "failed_unmeasurable": 1000,
+        "yield": {
+          "empirical": {
+            "method": "clopper-pearson",
+            "estimate": 0.0,
+            "confidence": 0.95,
+            "confidence_interval": {
+              "low": 0.0,
+              "high": 0.0036820838968658065
+            },
+            "n": 1000
+          },
+          "normal": null,
+          "variance_reduced": null
+        },
+        "nominal_empirical_estimate": 0.0,
+        "degradation_detected": false,
+        "verdict": "not_detected"
+      },
+      "analytic_cross_check": null,
+      "sampling": {
+        "strategy": "plain_random",
+        "replicates": null,
+        "effective_sample_size": null
+      },
+      "status": "reported",
+      "warnings": [
+        "measurement 'period_jitter_rms_pct': every sample has the same value, so the normal fit, Cpk and sigma-to-spec are undefined and are reported as null",
+        "measurement 'period_jitter_rms_pct': N = 3 resolves the yield only to +/-0.3538 at 95% confidence; 183 samples are needed for the requested +/-0.01",
+        "measurement 'period_jitter_rms_pct': 2 sample(s) produced no usable value and were excluded from every statistic below",
+        "measurement 'period_jitter_rms_pct': 2 of the 5 sample(s) drawn (40.0%) produced no usable value, so the empirical yield reported here is conditional on the 3 sample(s) that produced one -- it is not the fraction of the whole draw that met spec. If a missing value is itself a failure for this measurement (an extraction only defined in-regime, a search that reports no operating point in range, a `.meas` that does not trigger), then counting every errored sample as a failure puts the yield over the whole draw at 0.000000, and the estimate reported here is an upper bound; see docs/cli/yield.md#errored-samples-and-conditional-yield",
+        "measurement 'period_jitter_rms_pct': the negative_control's empirical yield (0.000000, CI [0.000000, 0.003682]) is not statistically distinguishable from the nominal draw's (0.000000, CI [0.000000, 0.707598]) -- the deliberate defect did not show up as the degradation the statistics claim to detect"
+      ]
+    }
+  ],
+  "warnings": [
+    "no measurement declared a target_yield, so no yield claim was checked -- the estimates below are reported, never failed",
+    "at least one measurement's negative_control did not show the expected degradation -- see that measurement's own warnings",
+    "at least one measurement excluded errored samples from its denominator, so its empirical yield is conditional on the samples that produced a value rather than over the whole draw -- see that measurement's own warnings, and docs/cli/yield.md#errored-samples-and-conditional-yield"
+  ]
+}
