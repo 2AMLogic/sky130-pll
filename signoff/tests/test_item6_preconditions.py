@@ -210,7 +210,10 @@ class TestVerdictsBothDirections(unittest.TestCase):
             negative_control=None, nominal_yield_estimate=0.0, nominal_yield_ci_low=0.0
         )
         self.assertIn("not reachable over this campaign", closes)
-        self.assertIn("the design meeting row 9 in enough draws", closes)
+        self.assertIn("the design meeting row 9 (**#202**)", closes)
+        # ... and that the bar is a pass rate rather than a draw count, which
+        # is what `negative-control/reachability.md` derives.
+        self.assertIn("essentially *every* draw", closes)
 
     def test_row_3_says_detected_is_reachable_once_the_interval_clears_zero(self):
         # Driven the other way so the row reports the campaign rather than
