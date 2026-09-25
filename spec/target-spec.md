@@ -445,10 +445,18 @@ yield, 95 % CI [0, 0.7076], `cpk` −0.491), and it carries the tool's own
 `required_n` of 183 for a ±1 pp interval. So the campaign is a real miss *and*
 an unsized one, and neither reading is withheld.
 
-Still owed: the **deterministic axis** over the ratified rows 19 × 20 × 1 PVT
-grid (`sim/pll-lock`'s manifest does not yet declare a `measure.jitter` block),
-a finer-grid re-run of the statistical axis able to separate the measured
-figure from its own measurement-resolution floor, and — before any yield claim
+The **deterministic axis** over the ratified rows 19 × 20 × 1 PVT grid is now
+*declared but not yet run*. `sim/pll-lock`'s manifest cites row 9 and carries a
+`measure.jitter` block gated on the ratified 1.0 % bound (#180), so the grid's
+own reducer extracts the figure at every point that locks — but no committed
+`sim/pll-lock` record carries that column yet: the most recent full-grid record
+(`20260905-193322-0f1934d.md`) predates both the widened window and this block.
+The record is owed from the fresh 45-point run tracked by #103, which will mint
+it at no extra simulation cost now that the key is declared ahead of it.
+
+Still owed: **that full-grid record**, a finer-grid re-run of the statistical
+axis able to separate the measured figure from its own
+measurement-resolution floor, and — before any yield claim
 is made over this row — a **sized** statistical population with the
 deterministic negative control T1 item 6 requires (`sim/pll-lock-mc/analysis/README.md`
 states the cost of each and why the floor is the cheaper prerequisite).

@@ -346,6 +346,88 @@ class DividerFamilySiblingManifestTests(unittest.TestCase):
                 self.assertNotIn("**Spec row(s)**", manifest["claim"])
 
 
+class PllLockJitterManifestTests(unittest.TestCase):
+    """sim/pll-lock's row-9 (period jitter) declaration, issue #180.
+
+    The PVT half of `DR-006`'s two-axis verification for ratified row 9 --
+    the statistical half is `sim/pll-lock-mc`. These pin the three things the
+    manifest *decides* (that it cites row 9 at all, the ratified bound it
+    states, and that it gates on it), plus the one arithmetic coupling that
+    makes gating safe on a campaign that deliberately does not require lock.
+    """
+
+    MANIFEST = json.loads((SIM_DIR / "pll-lock" / "testbench" / "tb.json").read_text())
+
+    def _spec(self):
+        from harness import measure as measure_mod
+
+        return measure_mod.MeasureSpec.from_manifest(self.MANIFEST)
+
+    def test_manifest_declares_row_9s_ratified_bound(self):
+        spec = self._spec()
+        self.assertIsNotNone(spec.jitter, "sim/pll-lock declares no measure.jitter block")
+        # 1.0 % of the output period -- target-spec.md row 9, ratified by DR-006.
+        self.assertEqual(spec.jitter.max_frac, 0.01)
+
+    def test_manifest_cites_row_9_alongside_rows_8_and_14(self):
+        self.assertEqual(self.MANIFEST["spec_rows"], [8, 9, 14])
+        self.assertIn("row 9", self.MANIFEST["spec_rows_note"])
+
+    def test_the_gating_choice_is_stated_explicitly_not_left_to_the_default(self):
+        # `JitterSpec.gate_on_bound` defaults to true, so a manifest that
+        # merely omits the key states nothing. This campaign's verdict column
+        # already carries a deliberate non-gating convention for lock
+        # (`require_lock: false`), so its row-9 gating decision has to be
+        # visible in the manifest a reader of a record opens.
+        block = self.MANIFEST["measure"]["jitter"]
+        self.assertIn("gate_on_bound", block)
+        self.assertTrue(block["gate_on_bound"])
+        self.assertIn("gate_on_bound", self.MANIFEST["methodology_note"])
+
+    def test_gating_cannot_fire_on_a_point_this_manifest_expects_not_to_lock(self):
+        # The load-bearing composition: `require_lock: false` says a corner
+        # that never locks is evidence, not a failure. A gated row-9 bound
+        # must not fail that point through the back door.
+        from harness import measure as measure_mod
+
+        spec = self._spec()
+        self.assertFalse(spec.require_lock)
+        dead = measure_mod.Measurement(
+            label="ss_-40c_1.62v",
+            oscillating=True,
+            freq_hz=180e6,
+            duty_cycle=0.5,
+            locked=False,
+            lock_time_s=None,
+            final_freq_hz=180e6,
+            note="no lock within this window",
+            passed=True,
+            period_jitter_frac=None,
+            jitter_cycles=0,
+        )
+        passed, _reason = measure_mod.aggregate([dead], spec)
+        self.assertTrue(passed)
+
+    def test_min_cycles_cannot_outrun_the_population_a_locked_point_guarantees(self):
+        # `lock_time` only reports a lock when at least `min_hold_cycles`
+        # cycles of in-band data follow the lock instant, and the jitter
+        # population is exactly those cycles. So `jitter.min_cycles` <=
+        # `lock.min_hold_cycles` is what stops a gated bound from FAILing a
+        # locked point for a population shortfall it can never have -- an
+        # artefact verdict, not a design fact.
+        spec = self._spec()
+        self.assertLessEqual(spec.jitter.min_cycles, spec.lock.min_hold_cycles)
+
+    def test_the_dump_grid_the_number_is_read_at_is_stated_with_it(self):
+        # measure.period_jitter's figure is only readable together with the
+        # tran_step that produced it (#178). Refusing to restate the grid in
+        # the manifest's own note would hand a record's reader a bare
+        # percentage.
+        note = self.MANIFEST["methodology_note"]
+        self.assertIn(self.MANIFEST["measure"]["tran_step"], note)
+        self.assertIn("#178", note)
+
+
 class LoopRippleManifestTests(unittest.TestCase):
     """sim/loop-ripple (issue #166): same DUT and DR-005 cold start as
     sim/pll-lock, but the ideal supply V1 drives an upstream node VSUP
