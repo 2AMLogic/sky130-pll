@@ -208,6 +208,53 @@ control over-states the floor at `frac(period/step)` = 0.585 and under-states it
 at 0.976, so which way a null-control correction errs is a property of the
 period being corrected. See `sim/jitter-calibration/analysis/calibration.md`.
 
+### The integrator's tolerance puts a second floor under this figure
+
+The dump grid is not the only thing between a design's true period and the
+figure this module reports. A transient analysis carries no device noise, so
+a noiseless ring oscillator at a constant control voltage has a period that
+is exactly constant -- but its edges are placed by ngspice's timestep
+controller, and at ngspice's defaults (`reltol` 1e-3, TMAX = `tran_step`)
+that controller's local-truncation error lands on each edge as an
+independent-looking timing error. A pulse source cannot show this (its edges
+sit on the source's own breakpoints), which is why `sim/jitter-floor` did not
+see it.
+
+**Measured, not argued** (issue #202): `sim/integrator-floor` runs
+`design/vco`'s ring open-loop at `sim/pll-lock-mc`'s own operating point
+(tt/125 C/1.80 V, ~250 MHz, a ~74 ps 10-90 % `CLK` edge) through this exact
+path:
+
+| Settings | Reported period jitter |
+|---|---|
+| ngspice defaults, 200 ps grid (what `sim/pll-lock-mc`'s first record ran) | 1.543 % |
+| `.options reltol=1e-4`, 200 ps grid | 0.658 % |
+| `.options reltol=1e-4`, 20 ps grid, TMAX held at 200 ps | 0.005 % |
+
+The first row is larger than row 9's whole 1.0 % budget for a DUT whose true
+jitter is zero, and it also misplaces the ring's frequency (243.8 MHz against
+251.1 MHz at the tighter tolerance). The second row's residual is the
+dump-grid floor above; the third row removes both.
+
+Two manifest knobs exist for this, both optional and both absent by default
+(so every manifest written before them injects byte-for-byte the block it
+always did):
+
+- **`measure.options`** -- an object of ngspice option names to numeric
+  values, injected as one `.options` card ahead of the analysis (e.g.
+  `{"reltol": "1e-4"}`). `seed` is refused: the Monte Carlo runner owns it.
+- **`measure.tran_max_step`** -- ngspice's TMAX, the `tran` card's fourth
+  positional argument. Unset, ngspice caps its internal step at `tran_step`,
+  so the dump grid and the step cap are one knob; set, they are decoupled,
+  and a manifest can dump on a 20 ps grid while integrating under the 200 ps
+  cap it always had. Measured on the open-loop ring: 109,986 internal steps
+  at `tran 20p 6u 0 200p` against 109,989 at `tran 200p 6u` -- the finer
+  grid costs no integration, only a larger (uncommitted) dump.
+
+A period-jitter figure produced without them on a free-running oscillator
+should be read against the first row of that table before it is read as a
+property of the design.
+
 ## Loop bandwidth / phase margin are deliberately NOT measured here
 
 Issue #52 allows scoping that decision in the implementation. Loop bandwidth
@@ -448,6 +495,25 @@ class MeasureSpec:
     extra_nodes: tuple = field(default=())
     ripple: RippleSpec | None = None
     transition: TransitionSpec | None = None
+    # The optional `measure.options` block: ngspice `.options` cards (name,
+    # value) the injected analysis runs under -- see "The integrator's
+    # tolerance puts a second floor under this figure" in the module
+    # docstring. Empty means ngspice's own defaults, and a manifest that
+    # declares none gets a byte-for-byte unchanged control block.
+    sim_options: tuple = field(default=())
+    # The optional `measure.tran_max_step`: ngspice's TMAX, the cap on the
+    # internal timestep. Unset, ngspice caps the step at `tran_step`, so the
+    # dump grid and the step cap are one knob; setting it decouples them, so
+    # a manifest can dump on a finer grid than it integrates on without
+    # paying for a finer integration (issue #202).
+    tran_max_step: str | None = None
+
+    @property
+    def options_card(self) -> str | None:
+        """The `.options` card this spec injects, or None when it states none."""
+        if not self.sim_options:
+            return None
+        return ".options " + " ".join(f"{k}={v}" for k, v in self.sim_options)
 
     @property
     def tran_stop_s(self) -> float:
@@ -607,6 +673,23 @@ class MeasureSpec:
                 )
             transition = TransitionSpec(frac_lo=frac_lo, frac_hi=frac_hi)
 
+        sim_options = _parse_sim_options(block.get("options"))
+
+        tran_max_step = block.get("tran_max_step")
+        if tran_max_step is not None:
+            tran_max_step = str(tran_max_step)
+            try:
+                tmax_s = parse_spice_time(tran_max_step)
+            except MeasureError as exc:
+                raise MeasureError(
+                    f"manifest `measure.tran_max_step` is not a time: {exc}"
+                ) from exc
+            if not tmax_s > 0.0:
+                raise MeasureError(
+                    f"manifest `measure.tran_max_step` must be positive -- got "
+                    f"{tran_max_step!r}"
+                )
+
         return cls(
             node=block["node"],
             tran_step=str(block["tran_step"]),
@@ -627,7 +710,58 @@ class MeasureSpec:
             extra_nodes=tuple(block.get("extra_nodes", ())),
             ripple=ripple,
             transition=transition,
+            sim_options=sim_options,
+            tran_max_step=tran_max_step,
         )
+
+
+# An ngspice option name is a bare identifier; a value is one numeric literal
+# (optionally SPICE-suffixed). Anything else -- whitespace, a newline, a `=`,
+# a quote -- could smuggle a second card into the netlist, so it is refused
+# rather than escaped.
+_OPTION_NAME_RE = re.compile(r"^[A-Za-z][A-Za-z0-9_]*$")
+_OPTION_VALUE_RE = re.compile(r"^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?[A-Za-z]*$")
+# `seed` is owned by the Monte Carlo runner (one `.options seed=<N>` per
+# trial, `runner.patch_netlist_mc`); a manifest-level seed would silently
+# make every trial the same draw, so it is refused here.
+_RESERVED_OPTIONS = frozenset({"seed"})
+
+
+def _parse_sim_options(raw) -> tuple:
+    """Parse the optional `measure.options` block into ((name, value), ...)."""
+    if raw is None:
+        return ()
+    if not isinstance(raw, dict):
+        raise MeasureError(
+            "manifest `measure.options` block must be an object mapping an "
+            "ngspice option name to its value (e.g. {\"reltol\": \"1e-4\"})"
+        )
+    pairs = []
+    for name, value in raw.items():
+        if not isinstance(name, str) or not _OPTION_NAME_RE.match(name):
+            raise MeasureError(
+                f"manifest `measure.options` key {name!r} is not a bare ngspice "
+                f"option name"
+            )
+        if name.lower() in _RESERVED_OPTIONS:
+            raise MeasureError(
+                f"manifest `measure.options` may not set {name!r}: the Monte "
+                f"Carlo runner owns it (one `.options seed=<N>` per trial), and "
+                f"a manifest-level value would make every trial the same draw"
+            )
+        if isinstance(value, bool) or not isinstance(value, (str, int, float)):
+            raise MeasureError(
+                f"manifest `measure.options.{name}` must be a number or a "
+                f"numeric string -- got {value!r}"
+            )
+        text = str(value).strip()
+        if not _OPTION_VALUE_RE.match(text):
+            raise MeasureError(
+                f"manifest `measure.options.{name}` must be one numeric literal "
+                f"-- got {value!r}"
+            )
+        pairs.append((name.lower(), text))
+    return tuple(pairs)
 
 
 def waveform_names(spec: MeasureSpec, prefix: str = "") -> list:
@@ -649,10 +783,17 @@ def waveform_names(spec: MeasureSpec, prefix: str = "") -> list:
 
 def build_control_block(spec: MeasureSpec, prefix: str = "") -> str:
     """Compose the `.ic` cards plus the `.control` section for one PVT point."""
-    lines = [f".ic {card}" for card in spec.ic]
+    lines = []
+    if spec.options_card is not None:
+        lines.append(spec.options_card)
+    lines += [f".ic {card}" for card in spec.ic]
     lines.append(".control")
     lines.append("set filetype=ascii")
-    tran = f"tran {spec.tran_step} {spec.tran_stop}" + (" uic" if spec.uic else "")
+    tran = f"tran {spec.tran_step} {spec.tran_stop}"
+    if spec.tran_max_step is not None:
+        # TMAX is the fourth positional argument, after TSTART.
+        tran += f" 0 {spec.tran_max_step}"
+    tran += " uic" if spec.uic else ""
     nodes = spec.dump_nodes
     vectors = " ".join(f"v({n})" for n in nodes)
     multi = len(nodes) > 1

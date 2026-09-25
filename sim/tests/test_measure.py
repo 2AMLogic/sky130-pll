@@ -1742,5 +1742,107 @@ class ControlBlockTests(unittest.TestCase):
             self.assertTrue(name.endswith(".raw"), name)
 
 
+class SimulatorOptionsTests(unittest.TestCase):
+    """`measure.options` (issue #202): the ngspice integrator tolerances a
+    transient runs under are a manifest knob, because at ngspice's defaults
+    the timestep controller's own error shows up in a free-running ring's
+    edge times as period "jitter" of the same order as row 9's bound."""
+
+    def _manifest(self, options):
+        block = {"node": "CLK", "tran_step": "200p", "tran_stop": "50u"}
+        if options is not None:
+            block["options"] = options
+        return {"measure": block}
+
+    def test_absent_block_leaves_the_control_block_byte_for_byte_unchanged(self):
+        spec = measure.MeasureSpec.from_manifest(self._manifest(None))
+        self.assertEqual(spec.sim_options, ())
+        self.assertIsNone(spec.options_card)
+        text = measure.build_control_block(spec)
+        self.assertNotIn(".options", text)
+        self.assertTrue(text.startswith(".control\n"))
+
+    def test_options_are_emitted_as_one_card_ahead_of_the_analysis(self):
+        spec = measure.MeasureSpec.from_manifest(
+            self._manifest({"reltol": "1e-4", "method": 2})
+        )
+        self.assertEqual(spec.sim_options, (("reltol", "1e-4"), ("method", "2")))
+        text = measure.build_control_block(spec)
+        self.assertTrue(text.startswith(".options reltol=1e-4 method=2\n"), text)
+        self.assertLess(text.index(".options"), text.index(".control"))
+
+    def test_options_precede_initial_conditions(self):
+        m = self._manifest({"reltol": "1e-4"})
+        m["measure"]["ic"] = ["v(x)=0"]
+        text = measure.build_control_block(measure.MeasureSpec.from_manifest(m))
+        self.assertLess(text.index(".options"), text.index(".ic v(x)=0"))
+
+    def test_non_object_block_is_refused(self):
+        with self.assertRaises(measure.MeasureError):
+            measure.MeasureSpec.from_manifest(self._manifest(["reltol=1e-4"]))
+
+    def test_value_that_could_smuggle_a_second_card_is_refused(self):
+        for bad in ("1e-4\n.tran 1n 1n", "1e-4 abstol=1", "", True, None, [1]):
+            with self.subTest(value=bad):
+                with self.assertRaises(measure.MeasureError):
+                    measure.MeasureSpec.from_manifest(self._manifest({"reltol": bad}))
+
+    def test_non_identifier_name_is_refused(self):
+        for bad in ("rel tol", "reltol=1", "1reltol", ""):
+            with self.subTest(name=bad):
+                with self.assertRaises(measure.MeasureError):
+                    measure.MeasureSpec.from_manifest(self._manifest({bad: "1e-4"}))
+
+    def test_tran_max_step_is_the_fourth_positional_tran_argument(self):
+        m = self._manifest(None)
+        m["measure"]["tran_step"] = "20p"
+        m["measure"]["tran_max_step"] = "200p"
+        spec = measure.MeasureSpec.from_manifest(m)
+        self.assertEqual(spec.tran_max_step, "200p")
+        text = measure.build_control_block(spec)
+        self.assertIn("tran 20p 50u 0 200p\n", text)
+        # The dump grid is still tran_step, not the step cap.
+        self.assertIn("linearize v(CLK)\n", text)
+
+    def test_tran_max_step_composes_with_uic(self):
+        m = self._manifest(None)
+        m["measure"]["tran_max_step"] = "200p"
+        m["measure"]["uic"] = True
+        text = measure.build_control_block(measure.MeasureSpec.from_manifest(m))
+        self.assertIn("tran 200p 50u 0 200p uic\n", text)
+
+    def test_absent_tran_max_step_leaves_the_tran_card_unchanged(self):
+        spec = measure.MeasureSpec.from_manifest(self._manifest(None))
+        self.assertIsNone(spec.tran_max_step)
+        self.assertIn("tran 200p 50u\n", measure.build_control_block(spec))
+
+    def test_bad_tran_max_step_is_refused(self):
+        for bad in ("fast", "0", "-1p"):
+            with self.subTest(value=bad):
+                m = self._manifest(None)
+                m["measure"]["tran_max_step"] = bad
+                with self.assertRaises(measure.MeasureError):
+                    measure.MeasureSpec.from_manifest(m)
+
+    def test_record_states_the_accuracy_knobs_only_when_declared(self):
+        from harness import report
+
+        plain = measure.MeasureSpec.from_manifest(self._manifest(None))
+        self.assertIsNone(report._accuracy_line(plain))
+        m = self._manifest({"reltol": "1e-4"})
+        m["measure"]["tran_step"] = "20p"
+        m["measure"]["tran_max_step"] = "200p"
+        line = report._accuracy_line(measure.MeasureSpec.from_manifest(m))
+        self.assertIn("`.options reltol=1e-4`", line)
+        self.assertIn("capped at 200p", line)
+        self.assertIn("20p dump grid", line)
+
+    def test_seed_is_reserved_for_the_monte_carlo_runner(self):
+        for name in ("seed", "SEED"):
+            with self.subTest(name=name):
+                with self.assertRaises(measure.MeasureError):
+                    measure.MeasureSpec.from_manifest(self._manifest({name: 7}))
+
+
 if __name__ == "__main__":
     unittest.main()

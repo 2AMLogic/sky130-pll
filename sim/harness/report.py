@@ -187,6 +187,43 @@ def _render_footer(
     a(f"- **Supersedes**: {supersedes or '(none -- first record for this claim)'}")
 
 
+def _accuracy_line(spec) -> str | None:
+    """The record line stating a manifest's simulator-accuracy knobs.
+
+    `measure.options` (an injected `.options` card) and `measure.tran_max_step`
+    (ngspice's TMAX, decoupling the internal-step cap from the dump grid) --
+    issue #202. None when the manifest states neither, so every record minted
+    before those knobs existed renders exactly as it always did.
+    """
+    parts = []
+    if spec.options_card is not None:
+        parts.append(
+            f"the transient runs under `{spec.options_card}` (manifest "
+            "`measure.options`), injected ahead of the analysis, instead of "
+            "ngspice's default integrator tolerances"
+        )
+    if spec.tran_max_step is not None:
+        parts.append(
+            f"ngspice's internal timestep is capped at {spec.tran_max_step} "
+            "(manifest `measure.tran_max_step`, the `tran` card's TMAX) "
+            f"independently of the {spec.tran_step} dump grid, so the grid "
+            "the edges are interpolated on is finer than the cap the "
+            "integration runs under rather than equal to it"
+        )
+    if not parts:
+        return None
+    return (
+        "  - Simulator accuracy: "
+        + "; ".join(parts)
+        + ". Stated because at ngspice's defaults (reltol 1e-3, TMAX = the "
+        "dump step) the timestep controller's own error and the dump grid's "
+        "resolution show up in a free-running ring's edge times as period "
+        "jitter of the order of row 9's bound -- see `sim/harness/measure.py`'s "
+        "'The integrator's tolerance puts a second floor under this figure' "
+        "and `sim/integrator-floor/`."
+    )
+
+
 def _render_measurement_criteria(a, spec, methodology_note: str) -> None:
     """The "Methodology / criteria / limitations" bullets for a record whose
     manifest carries a `measure` block.
@@ -247,6 +284,8 @@ def _render_measurement_criteria(a, spec, methodology_note: str) -> None:
         "waveform data as regenerable from the frozen netlist plus the logged "
         "environment."
     )
+    if _accuracy_line(spec) is not None:
+        a(_accuracy_line(spec))
     if spec.ripple is not None:
         a(
             f"  - Ripple (reported, not gated on): {spec.ripple.summary}. The "
@@ -885,6 +924,8 @@ def render_mc(
             "committed -- `sim/README.md`'s retention policy treats them as "
             "regenerable from the frozen netlist plus the logged environment."
         )
+        if _accuracy_line(spec) is not None:
+            a(_accuracy_line(spec))
         a(f"  - {methodology_note}")
     a(f"  - Analysis: {analysis}.")
     a("- **Result**:")
