@@ -1,0 +1,29 @@
+{
+  "schema": "sky130-pll.harness.tb/1",
+  "claim": "design/vco's own CLK transition (10-90% rise/fall) time, measured open-loop from design/vco/vco_ring5.sch at a single fixed VCTRL near the row-9 operating point (issue #186). sim/jitter-floor/ (issue #178) measures this harness's own period-jitter measurement-resolution floor as a family over the ratio of the measured clock's transition time to the dump-grid step, but no committed sim/ record had ever stated what that transition time actually is for this design's own CLK -- so which member of that family applies to sim/pll-lock-mc's measured period-jitter figures was previously only a range, not a number. This testbench closes that gap: VCTRL is held FIXED at 0.865 V, design/top/DESIGN.md's own log-interpolated 'VCTRL @ 250 MHz' figure for the tt/125 C/1.80 V point (that document's capture-window table, derived from the committed 45-point sim/vco/records/20260904-163130-f3ae976.md) -- also sim/pll-lock-mc's own base (corner, temperature, supply) point, the one this repo's row-9 period-jitter evidence is measured at. It is measured design input, not a spec claim, and it proposes no spec change: per CLAUDE.md, ratification is a separate decision-record act argued on its own merits, and there is no spec/target-spec.md row for edge/transition time to ratify in any case.",
+  "spec_rows": [],
+  "spec_rows_note": "no spec/target-spec.md row states a transition-time (rise/fall, edge-rate) target for CLK, so this experiment measures no row directly -- CLAUDE.md and sim/README.md's `spec_rows` convention still requires the explicit declaration and rationale rather than leaving 'measures nothing' to be inferred. Its evidentiary role is orthogonal to any row: it is the missing input that lets a reader determine which member of sim/jitter-floor's measurement-floor family (also spec_rows: [], also a harness-interpretation quantity rather than a design claim) applies to sim/pll-lock-mc's row-9 period-jitter figures -- see sim/harness/measure.py's module docstring, 'The dump grid puts a floor under this figure', and issue #186.",
+  "schematic": "tb_vco_transition.sch",
+  "corner_pattern": "(\\.lib\\s+\\S*sky130\\.lib\\.spice\\s+)(\\w+)",
+  "supply_pattern": "(V1 VDD GND )([0-9.]+)",
+  "process_corners": ["tt"],
+  "temps_c": [125],
+  "supply_nominal": 1.8,
+  "supply_tolerance": 0,
+  "measure": {
+    "node": "clk",
+    "tran_step": "5p",
+    "tran_stop": "200n",
+    "settle_from": "60n",
+    "threshold_frac": 0.5,
+    "hysteresis_frac": 0.15,
+    "min_edges": 4,
+    "ic": ["v(xxxvco.ring0)=0"],
+    "uic": true,
+    "require_oscillation": true,
+    "timeout_s": 3600,
+    "transition": true
+  },
+  "methodology_note": "this testbench's DUT is design/vco/vco_ring5.sch driven open-loop (no PFD, charge pump, loop filter or divider in the path), exactly as sim/vco/testbench/tb_vco.sch's is -- it is that testbench's sibling, same DUT and open-loop harness, with VCTRL held at a single FIXED value (0.865 V, this manifest's own claim explains the basis) instead of swept, and a `measure.transition` block (issue #186's new extractor in sim/harness/measure.py, alongside `measure.duty_cycle`) added to the reduction. `measure.transition: true` requests the extractor's 10-90% default (TransitionSpec.frac_lo=0.1, frac_hi=0.9); sim/jitter-floor's own docstring also names 20-80% as an equally defensible convention, not used here because this manifest has no reason to prefer it over the more common figure. `tran_step` (5 ps) is fine enough to resolve an edge down to tens of ps with several grid samples per transition -- ~1/10 to ~1/40 of what a typical minimum-channel-length (0.15 um) sky130 core-device edge is expected to take -- so the reported figure is not itself limited by this manifest's own dump grid (the same 'resolve the edge, tran_step <= transition-time/2' condition sim/harness/measure.py's module docstring states); this is independent of, and finer than, sim/jitter-floor's/sim/pll-lock-mc's own 200 ps grid, which is what the resulting figure is read AGAINST, not run at. `tran_stop` (200 ns) with `settle_from` (60 ns, discarding ring startup, the same convention sim/vco/testbench/tb.json uses) leaves a 140 ns measured window -- about 35 cycles at the ~250 MHz this VCTRL targets, giving several dozen rise/fall transitions to average rather than one. `measure.ic` forces v(xxxvco.ring0)=0 with `uic` for the same reason sim/vco/testbench/tb.json does: a ring oscillator's DC operating point is the unstable all-stages-at-midrail equilibrium, and a noiseless simulator can sit on it indefinitely without a kick. Single PVT point (tt/125 C/1.80 V, `supply_tolerance` 0) by design, not a subset needing sim/README.md's override justification -- it is this manifest's own declared, whole grid: the claim is about ONE operating point (sim/pll-lock-mc's own base corner), not a PVT characterization, so widening the grid would answer a question this experiment does not ask (design/vco's transition time likely does vary some across corners, temperature and supply, which a future campaign could characterize the same way sim/vco/vco-supply-pushing did for frequency -- not attempted here, in scope).",
+  "analysis": "single fixed-VCTRL transient (`tran 5p 200n uic`, injected by sim/harness/measure.py from this manifest's own measure block)"
+}
