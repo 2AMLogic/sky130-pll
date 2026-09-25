@@ -204,23 +204,29 @@ class CommittedEvidenceTests(unittest.TestCase):
         for f in resolved:
             self.assertEqual(f["floor_frac"], 0.0)
 
-    def test_calibration_covers_only_trial_5s_period_today(self):
-        # Committed evidence for issue #193's Decline decision: the 9-variant
-        # sim/jitter-calibration family runs at one nominal period (3.9170 ns,
-        # trial 5's), and the Monte Carlo trials with a residual ambiguity
-        # (2, 3) run at different periods it has never visited.
+    def test_calibration_covers_trials_2_and_5s_periods_today(self):
+        # Committed evidence for which of issue #193's two Decline grounds
+        # applies per draw. sim/jitter-calibration runs two period families:
+        # 3.9170 ns (issue #185, trial 5's period) and 3.9952 ns (issue #197,
+        # trial 2's). Trial 3's own 3.9904 ns is still unvisited, so the
+        # cross-period-extrapolation ground still applies to it and to nothing
+        # else -- which is exactly what the rendered restatement now says per
+        # draw. A future family at 3.9904 ns is expected to change this test
+        # (and the rendered document with it), not to be worked around.
         mc = jitter_floor.parse_mc_record(MC_RECORD)
         cal = jitter_floor.parse_calibration_records(CALIBRATION_EXPERIMENT)
-        self.assertEqual(len(cal), 9)
-        periods = {round(c["period_s"], 15) for c in cal}
-        self.assertEqual(len(periods), 1, f"expected one calibration period, got {periods}")
+        self.assertEqual(len(cal), 18)
+        periods = sorted({round(c["period_s"], 15) for c in cal})
+        self.assertEqual(len(periods), 2, f"expected two calibration periods, got {periods}")
+        for period_s, expected_ns in zip(periods, (3.9170, 3.9952)):
+            self.assertAlmostEqual(1e9 * period_s, expected_ns, places=3)
         coverage = {
             draw["trial"]: bool(
                 jitter_floor.calibration_variants_at(1.0 / draw["freq_hz"], cal)
             )
             for draw in mc["draws"]
         }
-        self.assertEqual(coverage, {2: False, 3: False, 5: True})
+        self.assertEqual(coverage, {2: True, 3: False, 5: True})
 
 
 class SpiceLiteralTests(unittest.TestCase):
