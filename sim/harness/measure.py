@@ -85,6 +85,47 @@ jitter number at all**, reported as such -- the same discipline the lock
 criterion applies to a run that never locks (never present a value computed
 from too little data as if it were the measurement).
 
+### A gated bound may not ask for more cycles than the lock criterion guarantees
+
+`jitter.min_cycles` and `lock.min_hold_cycles` sit in sibling blocks of the
+same `measure` object, and they are **coupled**: `lock_time` only reports a
+lock once at least `min_hold_cycles` cycles of in-band data follow the lock
+instant, and `period_jitter`'s population is exactly those cycles. So on a
+manifest that declares both blocks, the population of any *locked* point is
+bounded below by `min_hold_cycles`, and the relation between the two knobs
+decides what a FAIL from `_fold_jitter_bound` can mean:
+
+- `jitter.min_cycles <= lock.min_hold_cycles` -- a locked point always holds
+  enough cycles to form the statistic, so every FAIL the fold produces is a
+  point that **missed** the bound: a design result, and the reason gating
+  exists.
+- `jitter.min_cycles > lock.min_hold_cycles` -- every locked point whose
+  population lands in the gap FAILs for a population shortfall it was
+  *arithmetically incapable* of avoiding. Against a ratified row that is an
+  artefact verdict recorded as a design miss, which is the one thing this
+  repo's evidence convention is most careful not to do.
+
+**`MeasureSpec.from_manifest` therefore refuses the second shape** rather than
+letting the fold mint the artefact, in the same place it refuses an
+out-of-range `max_frac` or a `min_cycles` below 2 (#190). Rejecting at parse
+time rather than merely wording the record's message more carefully is the
+choice this module makes deliberately: a manifest is authored once and its
+records are append-only evidence, so the cheap moment to catch the trap is
+before a campaign spends hours producing a verdict a reader would then have
+to be told not to believe.
+
+The refusal is scoped to exactly the shape that can mint an artefact FAIL -- a
+`lock` block, a stated `max_frac`, and `gate_on_bound` -- so the legitimate
+reasons to want a larger population stay legal, and each of them already has a
+way to say so in the manifest's existing vocabulary:
+
+- a **jitter-only** manifest with no `lock` block (`sim/jitter-floor`) has no
+  lock criterion to outrun, and its population starts at `settle_from`;
+- a **characterization** manifest that wants a better-conditioned statistic
+  than its own lock criterion guarantees sets `gate_on_bound` false (or states
+  no bound at all) -- the shortfall is then reported against the point that
+  hit it, never folded into a FAIL.
+
 ### The dump grid puts a floor under this figure
 
 `build_control_block` below `linearize`s the measured node onto the manifest's
@@ -421,10 +462,37 @@ class MeasureSpec:
                     "manifest `measure.jitter.min_cycles` must be at least 2 "
                     "(a standard deviation needs two periods)"
                 )
+            gate_on_bound = bool(jt.get("gate_on_bound", True))
+            # The two knobs are coupled -- see "A gated bound may not ask for
+            # more cycles than the lock criterion guarantees" in the module
+            # docstring. `lock_time` only reports a lock once at least
+            # `min_hold_cycles` cycles of in-band data follow the lock
+            # instant, and the jitter population is exactly those cycles, so a
+            # gated bound asking for more would FAIL a locked point for a
+            # shortfall it was arithmetically incapable of avoiding.
+            if (
+                lock is not None
+                and gate_on_bound
+                and max_frac is not None
+                and min_cycles > lock.min_hold_cycles
+            ):
+                raise MeasureError(
+                    f"manifest `measure.jitter.min_cycles` ({min_cycles}) exceeds "
+                    f"`measure.lock.min_hold_cycles` ({lock.min_hold_cycles}), and "
+                    f"this manifest gates on its jitter bound. A locked point's "
+                    f"jitter population is exactly the in-band cycles the lock "
+                    f"criterion held for, so every locked point whose population "
+                    f"lands in the {lock.min_hold_cycles}-{min_cycles} cycle gap "
+                    f"would FAIL for a shortfall it could not avoid -- an artefact "
+                    f"verdict recorded as a design miss. Lower min_cycles to at "
+                    f"most {lock.min_hold_cycles}, raise min_hold_cycles to at "
+                    f"least {min_cycles}, or set `gate_on_bound` false to report "
+                    f"the number without gating on it"
+                )
             jitter = JitterSpec(
                 max_frac=max_frac,
                 min_cycles=min_cycles,
-                gate_on_bound=bool(jt.get("gate_on_bound", True)),
+                gate_on_bound=gate_on_bound,
             )
 
         sweep = ()
