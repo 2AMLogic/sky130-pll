@@ -48,15 +48,27 @@ measured number of its own. Its inputs are:
    steps -- maximum `step/2` at `f = 0.5` -- and `sqrt(2)*step/sqrt(12)` =
    `0.41*step` for edges arriving at independent, uniformly-spread grid phases,
    which is what a signal with real jitter comparable to the grid approaches
-   and what the null control's deterministic phase walk does not reproduce
-   (`sim/jitter-calibration`, issue #185, measures that regime directly with a
-   known nonzero injected jitter; this script deliberately does not import its
-   numbers -- restating a Monte Carlo draw against a floor measured at another
-   source's jitter magnitude is a further step, not a pointer). Both are
-   arithmetic on the grid step the records themselves
-   declare, not measurements, and both are printed with their formulas so a
-   reader can check them. The restatement uses the *larger* of the two as its
-   robustness test, so its conclusion does not depend on which regime applies.
+   and what the null control's deterministic phase walk does not reproduce.
+   Both are arithmetic on the grid step the records themselves declare, not
+   measurements, and both are printed with their formulas so a reader can
+   check them. The restatement uses the *larger* of the two as its robustness
+   test, so its conclusion does not depend on which regime applies.
+
+## Why the calibration campaign is read but not applied (issue #193)
+
+`sim/jitter-calibration` (issue #185) measures the regime above directly, with
+a known nonzero injected jitter, at **one** nominal period: 3.9170 ns. This
+script reads its records -- solely to check, per draw, whether a calibration
+variant exists at that draw's own measured period -- and, per the decision
+argued in the rendered restatement's own "Why this restatement declines..."
+section, declines to apply its calibrated floor as a correction: two of the
+three locked draws' own periods (3.9952 ns, 3.9904 ns) have no calibration
+variant of their own, only 3.9170 ns does, and applying a floor measured at
+one period to a draw at a different one would smuggle in an assumption this
+repo has not tested (`sim/jitter-calibration/analysis/calibration.md` finds
+the null control's own error changes *sign* with `frac(period/step)`, and
+3.9170 ns's `frac` (0.585) is nowhere near either ambiguous draw's). Issue #197
+names the calibration runs that would close this gap.
 
 Usage:
 
@@ -81,16 +93,24 @@ import math
 import re
 import sys
 from pathlib import Path
+from statistics import fmean, pstdev
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 MC_RECORD = REPO_ROOT / "sim" / "pll-lock-mc" / "records" / "20260924-222341-a9375a5.md"
 FLOOR_EXPERIMENT = REPO_ROOT / "sim" / "jitter-floor"
+CALIBRATION_EXPERIMENT = REPO_ROOT / "sim" / "jitter-calibration"
 OUTPUT = Path(__file__).resolve().parent / "jitter-floor" / "restatement.md"
 
 #: Ratified spec row 9 (`DR-006`), as a fraction of the output period. Asserted
 #: against the Monte Carlo manifest's own gated bound rather than trusted --
 #: see `_assert_bound`.
 ROW_9_MAX_FRAC = 0.01
+
+#: Two periods this far apart (relative) are "the same operating point" for
+#: pairing a null-control floor variant, or a `sim/jitter-calibration`
+#: variant, to a Monte Carlo draw's own measured period. 0.1% is far tighter
+#: than the spacing between any two variants either family runs.
+PERIOD_MATCH_TOL = 1e-3
 
 _SUFFIXES = {"f": 1e-15, "p": 1e-12, "n": 1e-9, "u": 1e-6, "m": 1e-3}
 _LITERAL_RE = re.compile(r"^([+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)\s*([a-zA-Z]*)$")
@@ -108,6 +128,7 @@ _PULSE_RE = re.compile(
     re.M | re.I,
 )
 _TRAN_RE = re.compile(r"^tran\s+(?P<step>\S+)\s+(?P<stop>\S+)\s*$", re.M)
+_PWL_HEAD_RE = re.compile(r"^VCLK\s+\S+\s+\S+\s+pwl\([ \t]*\r?\n", re.M | re.I)
 
 _MC_HEADER = [
     "Trial",
@@ -299,6 +320,177 @@ def parse_floor_records(experiment: Path) -> list[dict]:
     return parsed
 
 
+def pwl_points(netlist: str, path: Path) -> list[tuple[float, float]]:
+    """The `(time_s, volts)` pairs of a committed `VCLK ... pwl(...)` card.
+
+    Ported from `sim/jitter-calibration/analysis/calibration.py`'s function of
+    the same name rather than imported: an `analysis/` script reads committed
+    evidence and keeps running when a sibling campaign's script moves. Trimmed
+    to what `calibration_schedule` below needs -- this script never renders
+    the reported-vs-injected calibration curve `calibration.py` does.
+    """
+    m = _PWL_HEAD_RE.search(netlist)
+    if m is None:
+        raise AnalysisError(
+            f"{path}: no `VCLK <n+> <n-> pwl(` card -- is this a "
+            "sim/jitter-calibration per-point netlist?"
+        )
+    points: list[tuple[float, float]] = []
+    closed = False
+    for line in netlist[m.end() :].splitlines():
+        body = line.strip()
+        if not body.startswith("+"):
+            raise AnalysisError(f"{path}: `pwl(` card ends without a closing `+ )` line")
+        body = body[1:].strip()
+        if body == ")":
+            closed = True
+            break
+        fields = body.split()
+        if len(fields) % 2:
+            raise AnalysisError(
+                f"{path}: `pwl(` continuation line has an odd field count: {line!r}"
+            )
+        for t_text, v_text in zip(fields[0::2], fields[1::2]):
+            points.append((spice_time(t_text), spice_time(v_text)))
+    if not closed:
+        raise AnalysisError(f"{path}: `pwl(` card is never closed")
+    if len(points) < 4:
+        raise AnalysisError(f"{path}: `pwl(` card holds only {len(points)} points")
+    times = [t for t, _ in points]
+    if any(b <= a for a, b in zip(times, times[1:])):
+        raise AnalysisError(f"{path}: `pwl(` times are not strictly increasing")
+    return points
+
+
+def calibration_schedule(points: list[tuple[float, float]], path: Path) -> dict:
+    """The exact period, edge and injected RMS a committed PWL schedule carries.
+
+    This script only needs enough of `sim/jitter-calibration`'s own record to
+    match a variant to a Monte Carlo draw's period -- not the full
+    reported-vs-injected calibration curve `calibration.py` renders -- so the
+    injected figure is re-derived (`pstdev(T_k)/mean(T_k)` over the card's own
+    rising-edge midpoints, the same estimator `sim/harness/measure.period_jitter`
+    applies) but never used as a correction. See this module's docstring.
+    """
+    v_high = max(v for _, v in points)
+    v_low = min(v for _, v in points)
+    if v_high <= v_low:
+        raise AnalysisError(f"{path}: `pwl(` card does not swing")
+    rising, edge_widths = [], []
+    for (t0, v0), (t1, v1) in zip(points, points[1:]):
+        if v0 == v_low and v1 == v_high:
+            rising.append(0.5 * (t0 + t1))
+            edge_widths.append(t1 - t0)
+    if len(rising) < 3:
+        raise AnalysisError(
+            f"{path}: `pwl(` card holds only {len(rising)} rising transitions"
+        )
+    if max(edge_widths) - min(edge_widths) > 1e-15:
+        raise AnalysisError(
+            f"{path}: this restatement assumes one transition time for the whole "
+            f"schedule, got {min(edge_widths):g}..{max(edge_widths):g} s"
+        )
+    periods = [b - a for a, b in zip(rising, rising[1:])]
+    mean_period = fmean(periods)
+    if mean_period <= 0:
+        raise AnalysisError(f"{path}: the committed schedule has a non-positive period")
+    return {
+        "injected_frac": pstdev(periods) / mean_period,
+        "period_s": mean_period,
+        "edge_s": edge_widths[0],
+        "cycles": len(periods),
+    }
+
+
+def parse_calibration_record(record_path: Path, experiment: Path) -> dict:
+    """One `sim/jitter-calibration` variant: what it injected, at what period.
+
+    Read for period coverage only -- see this module's docstring for why its
+    calibrated floor is not applied as a correction here.
+    """
+    text = record_path.read_text()
+    record_id = _record_id(text, record_path)
+
+    variant = _VARIANT_RE.search(text)
+    if variant is None:
+        raise AnalysisError(
+            f"{record_path}: no `THIS RECORD'S VARIANT: <id> --` line -- is this a "
+            "sim/jitter-calibration record?"
+        )
+
+    rows = _table_rows(text, _PVT_HEADER)
+    if len(rows) != 1:
+        raise AnalysisError(
+            f"{record_path}: expected exactly one PVT point, found {len(rows)}"
+        )
+    detail = rows[0][6]
+    jitter = _JITTER_IN_DETAIL_RE.search(detail)
+    if jitter is None:
+        raise AnalysisError(f"{record_path}: point reports no period jitter: {detail!r}")
+
+    corners = experiment / "corners" / record_id
+    netlists = sorted(p for p in corners.glob("*.spice") if not p.name.startswith("tb_"))
+    if len(netlists) != 1:
+        raise AnalysisError(
+            f"{corners}: expected exactly one committed per-point netlist, found "
+            f"{len(netlists)}"
+        )
+    netlist = netlists[0].read_text()
+    schedule = calibration_schedule(pwl_points(netlist, netlists[0]), netlists[0])
+    tran = _TRAN_RE.search(netlist)
+    if tran is None:
+        raise AnalysisError(f"{netlists[0]}: no injected `tran <step> <stop>` card")
+
+    reported_frac = float(jitter.group("pct")) / 100.0
+    period_s = schedule["period_s"]
+    reported_s = reported_frac * period_s
+    injected_s = schedule["injected_frac"] * period_s
+    implied_floor_s = (
+        math.sqrt(reported_s**2 - injected_s**2) if reported_s > injected_s else None
+    )
+
+    return {
+        "record_id": record_id,
+        "path": record_path,
+        "variant": variant.group("variant"),
+        "reported_frac": reported_frac,
+        "injected_frac": schedule["injected_frac"],
+        "period_s": period_s,
+        "edge_s": schedule["edge_s"],
+        "cycles": schedule["cycles"],
+        "step_s": spice_time(tran.group("step")),
+        "implied_floor_s": implied_floor_s,
+        "netlist": _repo_rel(netlists[0]),
+    }
+
+
+def parse_calibration_records(experiment: Path) -> list[dict]:
+    records = sorted((experiment / "records").glob("*.md"))
+    if not records:
+        raise AnalysisError(f"{experiment}/records/ holds no record")
+    return [parse_calibration_record(p, experiment) for p in records]
+
+
+def calibration_variants_at(period_s: float, cal_records: list[dict]) -> list[dict]:
+    """The calibration variants sharing one draw's own measured period.
+
+    Same `PERIOD_MATCH_TOL` `match_floor` uses to pair a null-control variant
+    to a draw -- but unlike `match_floor`, an empty result here is not a
+    refusal: `sim/jitter-calibration` (issue #185) runs at one nominal period
+    today, and a draw at a different one simply has no calibration coverage
+    yet. Naming that gap in the rendered restatement, not raising past it, is
+    the point of this script's Decline resolution (issue #193).
+    """
+    return sorted(
+        (
+            c
+            for c in cal_records
+            if abs(c["period_s"] - period_s) / period_s <= PERIOD_MATCH_TOL
+        ),
+        key=lambda c: c["variant"],
+    )
+
+
 def _assert_bound(manifest_text: str) -> None:
     """The Monte Carlo manifest must still gate at ratified row 9's bound."""
     if f'"max_frac": {ROW_9_MAX_FRAC}' not in manifest_text:
@@ -325,7 +517,7 @@ def match_floor(draw: dict, floors: list[dict]) -> dict:
     at_period = [f for f in floors if f["period_s"] == best_period]
     chosen = min(at_period, key=lambda f: f["edge_s"])
     # A 0.1 % period mismatch would mean this draw has no variant of its own.
-    if abs(best_period - target) / target > 1e-3:
+    if abs(best_period - target) / target > PERIOD_MATCH_TOL:
         raise AnalysisError(
             f"trial {draw['trial']} measured a {1e9 * target:.4f} ns period, but the "
             f"closest floor variant ran at {1e9 * best_period:.4f} ns -- too far "
@@ -334,7 +526,7 @@ def match_floor(draw: dict, floors: list[dict]) -> dict:
     return chosen
 
 
-def restate(mc: dict, floors: list[dict]) -> dict:
+def restate(mc: dict, floors: list[dict], cal_records: list[dict]) -> dict:
     step_s = floors[0]["step_s"]
     # Two unresolved-edge quantization figures, both arithmetic on the grid
     # step (see this module's docstring): the worst case over grid phases for a
@@ -353,6 +545,11 @@ def restate(mc: dict, floors: list[dict]) -> dict:
             residual_s: float | None = math.sqrt(measured_s**2 - floor_s**2)
         else:
             residual_s = None
+        # Read for period coverage only -- this script declines to apply the
+        # calibrated floor as a correction (see this module's docstring); an
+        # empty list here just means "no calibration variant at this draw's
+        # own period", which is the gap the rendered restatement names.
+        cal_at_period = calibration_variants_at(period_s, cal_records)
         rows.append(
             {
                 "draw": draw,
@@ -371,13 +568,21 @@ def restate(mc: dict, floors: list[dict]) -> dict:
                     and math.sqrt(measured_s**2 - unresolved_worst_s**2) / period_s
                     > ROW_9_MAX_FRAC
                 ),
+                "calibration_variants": cal_at_period,
+                "has_calibration_at_period": bool(cal_at_period),
             }
         )
+    # Rounded to 1 fs: `fmean` over each record's own ~300-edge PWL schedule
+    # accumulates float error of that order between otherwise-identical
+    # periods (calibration.py's `restate` rounds the same way for the same
+    # reason), which would otherwise read as spurious distinct periods.
+    calibration_periods_s = sorted({round(c["period_s"], 15) for c in cal_records})
     return {
         "step_s": step_s,
         "unresolved_worst_s": unresolved_worst_s,
         "unresolved_uniform_s": unresolved_uniform_s,
         "rows": rows,
+        "calibration_periods_s": calibration_periods_s,
     }
 
 
@@ -397,7 +602,7 @@ def _ps(seconds: float | None) -> str:
     return "-" if seconds is None else f"{1e12 * seconds:.1f} ps"
 
 
-def render(mc: dict, floors: list[dict], derived: dict) -> str:
+def render(mc: dict, floors: list[dict], cal_records: list[dict], derived: dict) -> str:
     step_s = derived["step_s"]
     out: list[str] = []
     a = out.append
@@ -423,6 +628,13 @@ def render(mc: dict, floors: list[dict], derived: dict) -> str:
         "null control (an ideal pulse source of exactly constant period, true period "
         "jitter zero by construction), all at the same "
         f"{1e12 * step_s:.0f} ps dump grid as the measured record."
+    )
+    a(
+        f"- Calibration, read for period coverage only (see \"Why this restatement "
+        "declines...\" below -- its calibrated floor is not applied as a correction "
+        f"here): `sim/jitter-calibration/records/` -- {len(cal_records)} variant "
+        f"record(s) of a source with known, nonzero injected jitter (issue #185), "
+        f"spanning {len(derived['calibration_periods_s'])} distinct nominal period(s)."
     )
     a("")
     a("## The floor family, as measured")
@@ -538,13 +750,89 @@ def render(mc: dict, floors: list[dict], derived: dict) -> str:
                 )
             )
     a("")
-    a("## What this does and does not settle")
-    a("")
     still = [
         r for r in derived["rows"] if r["residual_frac"] and r["residual_frac"] > ROW_9_MAX_FRAC
     ]
     robust = [r for r in derived["rows"] if r["misses_under_worst"]]
     ambiguous = [r for r in derived["rows"] if not r["misses_under_worst"]]
+    a("## Why this restatement declines to apply the calibration-informed floor")
+    a("")
+    a(
+        "`sim/jitter-calibration` (issue #185) measures the regime above directly, with "
+        "a known, nonzero injected jitter, instead of arguing it from grid arithmetic. "
+        "Its `analysis/calibration.md` finds that the two floors are different "
+        "quantities -- not one a conservative bound on the other -- and that the "
+        "null-control floor's error **changes sign** with `frac(period/step)`: at "
+        "3.9170 ns (`frac` = 0.585, where the whole 9-variant calibration family ran), "
+        "the null control *over*-corrects a strongly jittering signal, and calibration.md "
+        "states explicitly that at a period whose `frac(period/step)` sits nearer 0 or 1 "
+        "the error would run the other way -- a claim it argues from the walk-phase "
+        "formula but has not measured."
+    )
+    a("")
+    a(
+        "That matters here because the family only ever ran at one period. Checked "
+        "against each locked draw's own measured period:"
+    )
+    a("")
+    a("| Trial | f_out | Period | frac(period / step) | Calibration variant at this period? |")
+    a("|---|---|---|---|---|")
+    for r in derived["rows"]:
+        draw = r["draw"]
+        ratio = r["period_s"] / step_s
+        frac = ratio - math.floor(ratio)
+        if r["has_calibration_at_period"]:
+            variants = ", ".join(c["variant"] for c in r["calibration_variants"])
+            coverage = f"**yes** -- {variants}"
+        else:
+            coverage = "**no**"
+        a(
+            f"| {draw['trial']} | {draw['freq_hz'] / 1e6:.1f} MHz | "
+            f"{1e9 * r['period_s']:.4f} ns | {frac:.3f} | {coverage} |"
+        )
+    a("")
+    a(
+        "Trial 5's own period matches the calibration family's (both 3.9170 ns), but "
+        "trial 5 is already resolved without it -- it is one of the "
+        f"{len(robust)} "
+        "draw(s) that miss row 9 even under the null control's own most pessimistic "
+        "floor arithmetic (the bullet above), so nothing about its verdict depends on "
+        "the calibration curve. Trials 2 and 3 -- the only draws with a residual "
+        "ambiguity left to resolve -- run at 3.9952 ns and 3.9904 ns, neither of which "
+        "the calibration family has ever visited."
+    )
+    a("")
+    a(
+        "**Decision: decline**, rather than interpolate or bracket. Interpolating the "
+        "calibration's magnitude-dependent implied floor (90.9 ps at 0.5 % injected, "
+        "85.2 ps at 1.0 %, 81.1 ps at 2.0 % -- see `analysis/calibration.md`) at each "
+        "draw's own measured magnitude is mildly circular even when the period matches "
+        "(a draw's measured figure already contains the floor being looked up, so using "
+        "it to pick the floor assumes what it is trying to bound) -- and neither trial 2 "
+        "nor trial 3 has a period match at all, so interpolating here would compound "
+        "that circularity with an unmeasured cross-period extrapolation, on a quantity "
+        "`calibration.md` itself says does not transfer across periods by assumption. "
+        "Bracketing (reporting the residual under both the null-control floor and the "
+        "calibrated one) fares no better: with no calibration variant at either "
+        "ambiguous trial's period, the \"calibrated\" bound would be exactly the same "
+        "unmeasured extrapolation bracketing is supposed to avoid, not an independent "
+        "second reading. Declining costs nothing this restatement was going to use -- "
+        "trial 5 does not need the calibration floor to reach its verdict, and trials 2 "
+        "and 3 cannot honestly receive one yet."
+    )
+    a("")
+    a(
+        "**The run that would change this answer**: a `sim/jitter-calibration` variant "
+        "family (the same 3 injected magnitudes x 3 edges the existing campaign runs) at "
+        "3.9952 ns and/or 3.9904 ns -- trial 2's and trial 3's own measured periods. "
+        "Both periods' `frac(period/step)` (0.976 and 0.952) sit near the opposite end "
+        "of the range from 3.9170 ns's 0.585, so running there would do double duty: it "
+        "is also the under-correction sign-flip test `analysis/calibration.md` names but "
+        "has not measured. Issue #197 tracks that run."
+    )
+    a("")
+    a("## What this does and does not settle")
+    a("")
     a(
         f"- **{len(still)} of {len(derived['rows'])} locked draws still miss ratified "
         "row 9's 1.0 % bound once the measured floor is removed in quadrature** -- the "
@@ -567,19 +855,18 @@ def render(mc: dict, floors: list[dict], derived: dict) -> str:
     )
     if ambiguous:
         a(
-            f"- **The remaining {_trials(ambiguous)} keep a residual ambiguity, and it "
-            "is named rather than argued away.** "
+            f"- **The remaining {_trials(ambiguous)} keep a residual ambiguity, and this "
+            "restatement declines to resolve it rather than argue it away.** "
             "Their own magnitude rules out the fully-unresolved, uniformly-spread-phase "
             f"floor ({_ps(derived['unresolved_uniform_s'])}, which exceeds what they "
             "measured), but an *intermediate* floor -- edges the grid only partly "
             "resolves, at grid phases spread by the draw's own jitter rather than by a "
             "constant period's walk -- sits between the null control's figure and their "
-            "measured one, and a large enough one would put them inside the bound. That "
-            "regime is exactly what a source of known, nonzero injected jitter settles, "
-            "and `sim/jitter-calibration` (issue #185) now measures it; the null control "
-            "cannot, by construction. Applying that campaign's curve to these draws is a "
-            "further step this restatement does not take on its own -- its floors were "
-            "measured at *its* injected magnitudes, not at these draws'."
+            "measured one, and a large enough one would put them inside the bound. "
+            "`sim/jitter-calibration` (issue #185) measures exactly that regime, but only "
+            "at one nominal period, and neither of these trials' own periods is it -- see "
+            "\"Why this restatement declines...\" above for the argued decision and the "
+            "specific run (issue #197) that would let a future restatement close this."
         )
     a(
         "- **It does not ratify, relax or restate row 9**, and it does not turn the "
@@ -594,8 +881,8 @@ def render(mc: dict, floors: list[dict], derived: dict) -> str:
         "operating point (issue #186), so the applicable floor is bounded by this "
         "family rather than read off it. The first bullet is stated over both ends of "
         "the family so it does not depend on that answer; the ambiguity bullet is what "
-        "that measurement, read together with `sim/jitter-calibration`'s curve, would "
-        "close."
+        "that measurement, read together with a period-matched "
+        "`sim/jitter-calibration` variant (issue #197), would close."
     )
     a("")
     return "\n".join(out) + "\n"
@@ -614,6 +901,14 @@ def main(argv: list[str] | None = None) -> int:
         default=str(FLOOR_EXPERIMENT),
         help="the sim/jitter-floor experiment directory holding the floor records",
     )
+    ap.add_argument(
+        "--calibration-experiment",
+        default=str(CALIBRATION_EXPERIMENT),
+        help=(
+            "the sim/jitter-calibration experiment directory holding the calibration "
+            "records (read for period coverage only -- see this module's docstring)"
+        ),
+    )
     mode = ap.add_mutually_exclusive_group()
     mode.add_argument("--write", action="store_true", help=f"write {OUTPUT.name}")
     mode.add_argument(
@@ -627,7 +922,8 @@ def main(argv: list[str] | None = None) -> int:
             (REPO_ROOT / "sim" / "pll-lock-mc" / "testbench" / "tb.json").read_text()
         )
         floors = parse_floor_records(Path(args.floor_experiment))
-        text = render(mc, floors, restate(mc, floors))
+        cal_records = parse_calibration_records(Path(args.calibration_experiment))
+        text = render(mc, floors, cal_records, restate(mc, floors, cal_records))
     except (AnalysisError, OSError) as exc:
         print(f"jitter_floor.py: {exc}", file=sys.stderr)
         return 2

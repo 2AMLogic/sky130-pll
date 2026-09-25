@@ -322,14 +322,19 @@ Two limits of that record a reader is owed, both argued in the manifest's own
   bounds, and the floor a signal carries moves *down* toward the
   uniformly-spread-phase figure (81.6 ps) as its own jitter grows relative to
   the grid step, so correcting a jittering signal with a null-control floor
-  over-corrects it. That is why the restatement above is deliberately **not**
-  re-derived against the calibration curve: doing so is a further, separate
-  step. `sim/harness/measure.py`'s jitter docstring records what grid
-  a defensible row-9 figure requires, so a future campaign does not re-derive
-  it: resolve the edge (`tran_step` ≤ half the measured node's transition time),
-  or bound the floor unconditionally at `0.5 * tran_step` — 20 ps for a floor
-  inside a quarter of row 9's 40 ps budget, against the 100 ps a 200 ps grid
-  allows.
+  over-corrects it. **The restatement above reads that campaign's records, but
+  only for period coverage, and declines to apply its curve** (issue #193): the
+  calibration family ran at one nominal period, trial 5's, and the two draws
+  (trials 2, 3) that still carry a residual ambiguity after the null-control
+  floor ran at different periods it has never visited, so applying it there
+  would extrapolate across periods on a quantity the calibration document
+  itself says does not transfer by assumption. Issue #197 tracks the run that
+  would close that gap. `sim/harness/measure.py`'s jitter docstring records
+  what grid a defensible row-9 figure requires, so a future campaign does not
+  re-derive it: resolve the edge (`tran_step` ≤ half the measured node's
+  transition time), or bound the floor unconditionally at `0.5 * tran_step` —
+  20 ps for a floor inside a quarter of row 9's 40 ps budget, against the
+  100 ps a 200 ps grid allows.
 
 Row 9's **deterministic** axis — a jitter column across the ratified
 rows 19 × 20 × 1 PVT grid — is still owed; `pll-lock`'s manifest does not yet
