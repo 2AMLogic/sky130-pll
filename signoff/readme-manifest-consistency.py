@@ -84,7 +84,13 @@ def main():
         if line_end == -1:
             line_end = len(readme_text)
 
-        # Look at a larger window of context (50 chars on each side)
+        # Look at a window of context (200 chars on each side).
+        #
+        # Known limitation: the historical-reference exclusion below keys on
+        # literal phrases in the README prose. If the paragraph citing the
+        # superseded record is reworded so neither phrase appears within this
+        # window, that citation will be flagged as drift (a false positive,
+        # not a silent pass). Update the markers here if that prose changes.
         context_start = max(0, position - 200)
         context_end = min(len(readme_text), position + 200)
         context = readme_text[context_start:context_end]
