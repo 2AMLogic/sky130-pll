@@ -182,12 +182,15 @@ the next thing to spend it on:
    (#178) and `jitter-floor/restatement.md` below restates these figures against
    it — and the answer is that it does not explain the miss. The residual
    uncertainty it leaves is still not sampling noise, though: it is the floor a
-   *jittering* signal carries, which the null control cannot reach (#185), and
+   *jittering* signal carries — which the null control cannot reach, and which
+   `sim/jitter-calibration` has since measured directly (#185, see below) — and
    which draw sits at which end of the floor family (#186). Buying 300 more
    draws sharpens none of those.
-3. **A sized campaign also needs a negative control** (below), which does not
-   exist yet either. Widening first would buy 305 draws of a campaign that still
-   could not close item 6.
+3. **A sized campaign also needs a negative control** (below). The known-bad
+   control itself now exists (`sim/jitter-calibration`, #185); whether it is the
+   control item 6's citation may lean on is #182's decision, not this
+   directory's. Widening before that is settled would buy 305 draws of a
+   campaign that still could not close item 6.
 
 The condition under which widening *is* the right call: once #178 has put a
 number on the resolution floor and (if the floor does not dominate) the design
@@ -223,8 +226,24 @@ resolves at grid phases spread by a draw's own jitter, could still put trials 2
 and 3 inside the bound, and only a source of known **nonzero** injected jitter
 (#185) settles that.
 
+**That source now exists**: `sim/jitter-calibration` (#185) is the same kind of
+harness control one step further on — a PWL clock whose rising-edge schedule is
+drawn from a seeded RNG at an exactly specified nonzero RMS period jitter, run
+through the identical reducer at the identical 200 ps grid, so
+*reported*-against-*injected* is a calibration curve rather than a floor. Its
+`analysis/calibration.md` measures what the null control cannot: the floor a
+signal that genuinely jitters carries, and how that floor moves from the
+constant-period walk-phase regime toward the uniformly-spread-phase one as the
+source's own jitter grows relative to the grid step. Read it before applying a
+`sim/jitter-floor` figure to a jittering signal — at this period the null
+control's floor is the *larger* of the two bounds, so it over-corrects.
+
 None of this moves the record: it stands exactly as written, per
-`sim/README.md`'s append-only rule. The restatement is a derived reading of it.
+`sim/README.md`'s append-only rule. The restatement is a derived reading of it,
+and `jitter-floor/restatement.md` is deliberately **not** re-derived against the
+calibration curve here — restating a Monte Carlo draw against a floor measured at
+a *different* source's jitter magnitude is a further step, and it is not taken
+silently inside this README.
 
 ## The negative control: coordinated with #178, not built twice
 
@@ -252,12 +271,27 @@ floor), while item 6 / `klt yield` want a **known-bad** variant whose degradatio
 the statistics must detect. The null control proves the reducer does not invent
 jitter out of nothing at a grid that resolves the edge, and puts a number on what
 it does invent at one that does not — genuinely load-bearing, but it demonstrates
-nothing about detecting a *degraded design*. The known-bad variant the same
-testbench can carry, a source at a known **nonzero** injected jitter, is issue
-#185; whoever closes that loop should start from `sim/jitter-floor`'s testbench
-and records rather than re-deriving either. Both committed `klt yield` reports
-therefore still carry the missing-negative-control warning above, and the
-citation decision below is unchanged.
+nothing about detecting a *degraded design*.
+
+**The known-bad control now exists** — `sim/jitter-calibration` (#185), nine
+committed records of a source at a known **nonzero** injected jitter (0.5 %,
+1.0 % and 2.0 % RMS at three transition times) through the same pipeline. It is
+the *kind* of control item 6 and `klt yield`'s `negative_control` ask for: a
+seeded, known-bad input whose degradation the statistics must detect, and which
+they do detect — the reducer returns the injected figure exactly where the grid
+resolves the edge, and its departure elsewhere is quantified rather than
+asserted.
+
+**Three things that still does not do, stated so nobody reads more into it.**
+(a) It degrades the *measurement input*, not the *design*: its DUT is a voltage
+source and a resistor, so it demonstrates that the reducer detects a degraded
+signal, not that this campaign's statistics detect a degraded PLL. (b) Nothing
+here wires it into either committed `klt yield` report — `negative_control` is
+per-measurement metadata in the sample-set document `yield_evidence.py` renders,
+and populating it is a separate, deliberate act. (c) Whether item 6's citation
+may lean on it at all is **#182's** decision, not this directory's. Both
+committed reports therefore still carry the missing-negative-control warning
+above, and the citation decision below is unchanged.
 
 ## Why `signoff/block-manifest.json` does not cite this report
 

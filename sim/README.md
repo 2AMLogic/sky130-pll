@@ -69,10 +69,18 @@ sim/
   **two** campaigns' records: it restates this campaign's measured period jitter
   against the measurement floor `sim/jitter-floor`'s records report, which is a
   quantity neither campaign's own table can express because it is a relation
-  between them. The rule is otherwise unchanged — it simulates nothing, and
+  between them. The fourth (`sim/jitter-calibration/analysis/calibration.py`,
+  issue #185) pushes the "read from the record's own netlist" allowance to its
+  limit, and states why that is still inside the rule: the quantity it needs is
+  the jitter its campaign *injected*, and that quantity is not a number written
+  in prose anywhere — it is the committed per-point netlist's own PWL edge
+  schedule, from which the script re-derives it with the same estimator
+  `measure.period_jitter` applies to the reduced edges. Reading it there is what
+  makes the injected figure checkable evidence rather than a claim about a
+  generator script. The rule is otherwise unchanged — it simulates nothing, and
   every figure it prints is read from a committed record (or from that record's
-  own committed per-point netlist, for the two numbers that define a floor
-  variant), with the same mandatory `--check` mode.
+  own committed per-point netlist, for the numbers that define a floor variant
+  or an injected schedule), with the same mandatory `--check` mode.
 
 - **`<experiment-slug>`** — short, descriptive, kebab-case name for what is
   being verified. One directory per distinct claim, not per run.
@@ -87,6 +95,7 @@ sim/
   | `pll-lock-25mhz` | sibling of `pll-lock`, same DUT and measurement layer, driven at spec row 3's DRAFT high reference-frequency band edge (25 MHz) instead of 10 MHz — `NSEL[5:0]`=`N`=10 (target 250 MHz, deliberately the same target `pll-lock` uses, isolating the effect of reference frequency alone) | #55 |
   | `pll-lock-mc` | Monte Carlo statistical companion to `pll-lock`: same DUT, same `DR-005` cold start and same lock criterion, but run as a `--mc` campaign — many trials at ONE fixed PVT point (`tt`/125 °C/1.80 V), each trial resampling sky130's `MC_MM_SWITCH` (within-die mismatch) + `MC_PR_SWITCH` (die-to-die process) draws from its own RNG seed — reduced by `sim/harness/measure.py`'s `period_jitter` once a trial locks. This is the statistical half of the verification `DR-006` names for **ratified** spec row 9 (period jitter ≤ 1.0 % of the output period, RMS, at `CLK` in lock); `pll-lock`'s own grid is the deterministic half. The window is 50 µs, not `pll-lock`'s 100 µs, because this campaign buys post-lock population for a post-lock quantity rather than the full row-8 cold-start budget — see the manifest's `monte_carlo.methodology_note` for that trade, for why the base point is `tt`/125 °C (the one point with a documented cold-start lock under this nudge convention) and for the 200 ps dump-grid resolution floor a reader of a jitter number is owed. **Run and recorded**: `sim/pll-lock-mc/records/20260924-222341-a9375a5.md` (2/5 trials PASS — 3 of 5 draws lock, and **all three measure period jitter above row 9's ratified 1.0 % bound**: 1.584 %, 1.851 %, 3.073 %. A recorded miss against a ratified row, per `CLAUDE.md`, read together with the resolution-floor caveat the record states). **Graded**: `sim/pll-lock-mc/analysis/` restates that record as a `klt yield` sample set and commits the resulting report — 0 % empirical yield, 95 % CI [0, 0.7076], `cpk` −0.491, and the tool's own `sample_size.verdict: insufficient` (`n` = 3, `required_n` = 183). That report is deliberately **not** cited for T1 item 6; `signoff/README.md` § "Why every other row is `unmet`" records why | #20, #179 |
   | `jitter-floor` | the **measurement-resolution floor** `sim/harness/measure.py`'s own period-jitter reducer carries at a stated dump grid — a harness negative control (a *null* control), not a PLL design claim. The DUT is an ideal pulse voltage source and a load resistor, no sky130 device at all, so `v(CLK)` is a trapezoid of exactly constant period whose true period jitter is **zero by construction**; it is pushed through the identical `linearize` → `wrdata` → `edge_times` → `period_jitter` path a `pll-lock-mc` trial is reduced by, at the same 200 ps grid and 50 µs window, so whatever jitter the reducer reports for it is the floor. Run as a family of variants (each record names its own, and its committed `corners/<record-id>/*.spice` pins it): the floor is **0.000 %** for an edge spanning five grid steps, 0.610 % at one step, and 0.381–2.371 % for an edge a tenth of a step, at the three periods `pll-lock-mc`'s locked draws measured. **Run and recorded**: `sim/jitter-floor/records/20260925-022153-30889a3.md` (A1), `20260925-022310-30889a3.md` (A2), `20260925-022043-30889a3.md` (A3), `20260925-022424-30889a3.md` (B), `20260925-022516-30889a3.md` (C) — 1/1 PASS each. Read with `sim/pll-lock-mc/analysis/jitter-floor/restatement.md`, which restates that campaign's three measured figures against these floors | #178 |
+  | `jitter-calibration` | the **transfer** of a known period-jitter figure through the same reducer — the sibling of `jitter-floor` one step on, and a *known-bad* control rather than a null one. Same shape of DUT (an ideal source and a load resistor, no sky130 device), same `linearize` → `wrdata` → `edge_times` → `period_jitter` path, same 200 ps grid and 3.9170 ns nominal period; the difference is that this source's rising-edge schedule is drawn from a seeded RNG at an **exactly specified nonzero** RMS period jitter and written edge by edge into the netlist, so the injected figure is a re-derivable property of the committed evidence rather than a claim about a generator. Reported-against-injected over the family is a **calibration curve**: a measured figure can be read back toward a true one, where a floor only bounds it from below. Run as 3 injected values (0.5 %, 1.0 %, 2.0 % RMS) × 3 transition times (20 ps / 200 ps / 1 ns, the same edge family `jitter-floor` uses), 300 cycles each. **Run and recorded**, 1/1 PASS each: `20260925-103212-518b31f` (J05a), `20260925-103238-518b31f` (J05b), `20260925-103303-518b31f` (J05c), `20260925-103326-518b31f` (J10a), `20260925-103348-518b31f` (J10b), `20260925-103409-518b31f` (J10c), `20260925-103435-518b31f` (J20a), `20260925-103459-518b31f` (J20b), `20260925-103526-518b31f` (J20c). The headline: at an edge the grid resolves the reducer returns the injected figure **exactly** (0.500 / 1.000 / 2.000 %), and at one it cannot the reported figure is inflated 1.4×–4.8×. Read with `sim/jitter-calibration/analysis/calibration.md`, which tabulates the curve and shows the floor a *jittering* signal carries moving away from the constant-period walk-phase figure `jitter-floor` measures and toward the uniformly-spread-phase one as the source's jitter grows — i.e. the null control's floor is a different quantity from this one, not a conservative version of it | #185 |
   | `loop-ripple` | how large is the closed-loop PLL's own self-generated disturbance, in lock, on its shared `VDD` rail and on `VCTRL` — `DR-006`'s row 13 Budget 1 transient ripple measurement. Same DUT (`design/top/top.sch`), `DR-005` cold start, 100 µs window and lock criterion as `pll-lock`, but the ideal supply feeds the block's `VDD` through a 1 Ω resistive power-delivery stand-in (`RPDN`, a testbench assumption — without it `v(VDD)` ripple is zero by construction); reports `v(VDD)` and `v(VCTRL)` peak-to-peak over the final 5 µs via `sim/harness/measure.py`'s `ripple_pp`, labelled with whether that window was in lock. **Testbench only, no record yet** — see the manifest's `methodology_note` for the supply model, bandwidth and cost caveats (inherits `pll-lock`'s per-point cost, issue #103) | #166 |
   | `vco` | frequency-vs-`VCTRL` characterization of `design/vco/vco_ring5.sch` alone (open loop, no PFD/charge pump/loop filter/divider), replacing the informal single-corner sanity check `design/vco/DESIGN.md` disclaims with real committed `sim/` evidence across the full PVT matrix | #52 |
   | `vco-supply-pushing` | sibling of `vco`, same DUT and open-loop harness, opposite independent variable: `VCTRL` is held FIXED at four operating points (0.8, 0.9, 1.2, 1.5 V) while `VDD` is the swept quantity, supplied by the corner runner's own 1.62/1.80/1.98 V axis — frequency-vs-`VDD` supply-pushing characterization (fractional `%/V`), the first of the two prerequisites `DR-006` names for a future ratification of spec row 13 Budget 1 (the AC supply-ripple limit), replacing the 1.67x realized-over-floor ratio borrowed from gf180-pll. The cross-point `%/V` derivation (`sim/vco-supply-pushing/analysis/pushing.py`) is appended to the record, not rendered by `sim/harness/report.py` itself. **Run and recorded**: `sim/vco-supply-pushing/records/20260923-141525-e514bb0.md` (45/45 PASS). | #165 |
@@ -290,9 +299,22 @@ Two limits of that record a reader is owed, both argued in the manifest's own
   most pessimistic floor arithmetic allows at this grid (`tran_step/2`, 100 ps).
   **So the recorded miss is not an artefact of the dump grid.** What the null
   control cannot settle is stated there too, and tracked: the floor a signal
-  with *real* jitter carries is a different (wider-phase) quantity (#185), and
+  with *real* jitter carries is a different-phase quantity (#185), and
   which end of the family the DUT's own `CLK` sits at needs its transition time
-  measured (#186). `sim/harness/measure.py`'s jitter docstring records what grid
+  measured (#186).
+
+  **The first of those two is now measured as well** (`sim/jitter-calibration`,
+  issue #185): the same shape of control with a *known, exactly specified,
+  nonzero* injected jitter instead of zero, so what comes back out is a
+  calibration curve rather than a floor. Its finding is that the difference is
+  real and its sign is not what a reader would assume — at this period the null
+  control's walk-phase floor (2.371 %, 92.9 ps) is the **larger** of the two
+  bounds, and the floor a signal carries moves *down* toward the
+  uniformly-spread-phase figure (81.6 ps) as its own jitter grows relative to
+  the grid step, so correcting a jittering signal with a null-control floor
+  over-corrects it. That is why the restatement above is deliberately **not**
+  re-derived against the calibration curve: doing so is a further, separate
+  step. `sim/harness/measure.py`'s jitter docstring records what grid
   a defensible row-9 figure requires, so a future campaign does not re-derive
   it: resolve the edge (`tran_step` ≤ half the measured node's transition time),
   or bound the floor unconditionally at `0.5 * tran_step` — 20 ps for a floor

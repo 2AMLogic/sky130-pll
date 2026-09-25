@@ -182,10 +182,22 @@ re-derive this:
 Two limits of that control, stated here because they bound what the floor
 numbers above can be used for: it is a **null** control (a signal with real
 jitter presents its edges at grid phases spread by that jitter, not at a
-constant period's deterministic walk -- issue #185), and it says nothing about
-which of its own variants the real DUT sits at (issue #186).
+constant period's deterministic walk), and it says nothing about which of its
+own variants the real DUT sits at (issue #186).
 `sim/pll-lock-mc/analysis/jitter-floor/restatement.md` restates that
 campaign's measured figures against this family.
+
+The first of those two limits has its own control: `sim/jitter-calibration`
+(issue #185) is the same shape of testbench with a **known, exactly specified
+nonzero** injected period jitter instead of zero, so what it reports is a
+calibration curve rather than a floor. Its measured answer at a 200 ps grid and
+a 3.9170 ns period: an edge the grid resolves returns the injected figure
+exactly, and for one it cannot, the floor a *jittering* signal carries moves
+away from the null control's walk-phase figure and toward the
+`sqrt(2) * tran_step / sqrt(12)` uniformly-spread-phase figure above as the
+source's own jitter grows relative to the grid step. It is therefore **not**
+safe to assume a null-control floor is a conservative correction for a signal
+that jitters -- see `sim/jitter-calibration/analysis/calibration.md`.
 
 ## Loop bandwidth / phase margin are deliberately NOT measured here
 

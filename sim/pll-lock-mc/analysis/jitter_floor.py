@@ -49,7 +49,11 @@ measured number of its own. Its inputs are:
    `0.41*step` for edges arriving at independent, uniformly-spread grid phases,
    which is what a signal with real jitter comparable to the grid approaches
    and what the null control's deterministic phase walk does not reproduce
-   (issue #185). Both are arithmetic on the grid step the records themselves
+   (`sim/jitter-calibration`, issue #185, measures that regime directly with a
+   known nonzero injected jitter; this script deliberately does not import its
+   numbers -- restating a Monte Carlo draw against a floor measured at another
+   source's jitter magnitude is a further step, not a pointer). Both are
+   arithmetic on the grid step the records themselves
    declare, not measurements, and both are printed with their formulas so a
    reader can check them. The restatement uses the *larger* of the two as its
    robustness test, so its conclusion does not depend on which regime applies.
@@ -483,8 +487,11 @@ def render(mc: dict, floors: list[dict], derived: dict) -> str:
         "The null control's period is exactly constant, so its edges walk through grid "
         "phase deterministically. A signal with real jitter comparable to the grid step "
         "does not: its edges land at grid phases spread by that jitter, which is a wider "
-        "distribution and therefore a larger floor. Neither figure below is measured "
-        "(issue #185 is the control that would measure the second); both are arithmetic "
+        "distribution and therefore a different floor. Neither figure below is measured "
+        "here (`sim/jitter-calibration`, issue #185, is the control that measures the "
+        "second -- see its `analysis/calibration.md`, which finds that at this period "
+        "the walk-phase figure is the *larger* of the two, so a null-control floor "
+        "over-corrects a strongly jittering signal); both are arithmetic "
         f"on this {1e12 * step_s:.0f} ps grid, printed with their formulas:"
     )
     a("")
@@ -568,8 +575,11 @@ def render(mc: dict, floors: list[dict], derived: dict) -> str:
             "resolves, at grid phases spread by the draw's own jitter rather than by a "
             "constant period's walk -- sits between the null control's figure and their "
             "measured one, and a large enough one would put them inside the bound. That "
-            "regime is exactly what a source of known, nonzero injected jitter would "
-            "settle (issue #185); the null control cannot, by construction."
+            "regime is exactly what a source of known, nonzero injected jitter settles, "
+            "and `sim/jitter-calibration` (issue #185) now measures it; the null control "
+            "cannot, by construction. Applying that campaign's curve to these draws is a "
+            "further step this restatement does not take on its own -- its floors were "
+            "measured at *its* injected magnitudes, not at these draws'."
         )
     a(
         "- **It does not ratify, relax or restate row 9**, and it does not turn the "
@@ -584,7 +594,8 @@ def render(mc: dict, floors: list[dict], derived: dict) -> str:
         "operating point (issue #186), so the applicable floor is bounded by this "
         "family rather than read off it. The first bullet is stated over both ends of "
         "the family so it does not depend on that answer; the ambiguity bullet is what "
-        "that measurement (with issue #185's) would close."
+        "that measurement, read together with `sim/jitter-calibration`'s curve, would "
+        "close."
     )
     a("")
     return "\n".join(out) + "\n"
