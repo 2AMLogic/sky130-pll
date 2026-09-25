@@ -1,0 +1,9 @@
+{
+  "confidence": 0.95,
+  "target_ci_halfwidth": 0.01,
+  "measurements": {
+    "period_jitter_rms_pct": {
+      "max": 1.0
+    }
+  }
+}

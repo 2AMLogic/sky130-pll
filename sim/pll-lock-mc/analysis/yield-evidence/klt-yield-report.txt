@@ -1,0 +1,23 @@
+samples: sim/pll-lock-mc/analysis/yield-evidence/mc-samples.json
+limits: sim/pll-lock-mc/analysis/yield-evidence/spec-limits.json
+source: sample-set  samples_analyzed: 3
+confidence: 0.95  target_ci_halfwidth: 0.01
+status: reported  measurements: 1
+
+period_jitter_rms_pct [%]  status: reported  N: 3
+  limits: min(>=)=- max(<=)=1 target_yield=-
+  fit (normal): mean=2.16933 stddev=0.793903 normality=insufficient_samples
+  yield (empirical, clopper-pearson): 0.000000 [0.000000, 0.707598] at 95%, N=3
+  yield (normal, normal-delta): 0.070390 [0.000000, 0.290702] at 95%, N=3
+  capability: cp=- cpk=-0.4910 [-1.1023, 0.1204] sigma_to_spec=-1.4729 limiting=upper
+  sample size: insufficient (N=3, required>=183, observed +/-0.353799 vs target +/-0.01)
+  negative control: none declared
+  warning: measurement 'period_jitter_rms_pct': N = 3 is below the 8 samples the Anderson-Darling critical values assume, so normality was not tested
+  warning: measurement 'period_jitter_rms_pct': N = 3 resolves the yield only to +/-0.3538 at 95% confidence; 183 samples are needed for the requested +/-0.01
+  warning: measurement 'period_jitter_rms_pct': 2 sample(s) produced no usable value and were excluded from every statistic below
+  warning: measurement 'period_jitter_rms_pct': 2 of the 5 sample(s) drawn (40.0%) produced no usable value, so the empirical yield reported here is conditional on the 3 sample(s) that produced one -- it is not the fraction of the whole draw that met spec. If a missing value is itself a failure for this measurement (an extraction only defined in-regime, a search that reports no operating point in range, a `.meas` that does not trigger), then counting every errored sample as a failure puts the yield over the whole draw at 0.000000, and the estimate reported here is an upper bound; see docs/cli/yield.md#errored-samples-and-conditional-yield
+
+warnings:
+  no measurement declared a target_yield, so no yield claim was checked -- the estimates below are reported, never failed
+  no measurement declared a negative_control -- this campaign has no seeded, known-bad variant demonstrating that the statistics above can actually detect a degraded design; see docs/cli/yield.md#negative-control
+  at least one measurement excluded errored samples from its denominator, so its empirical yield is conditional on the samples that produced a value rather than over the whole draw -- see that measurement's own warnings, and docs/cli/yield.md#errored-samples-and-conditional-yield

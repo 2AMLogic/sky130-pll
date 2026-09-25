@@ -437,10 +437,21 @@ records a **miss** (1.584 – 3.073 % RMS across the 3 of 5 draws that locked,
 against a 1.0 % bound), subject to the 50 µs-window and 200 ps-dump-grid limits
 that record states.
 
+That statistical axis has since been **graded** rather than only recorded:
+`sim/pll-lock-mc/analysis/yield-evidence/klt-yield-report.json` is a `klt yield`
+report over the same 5 draws against this row's ratified bound (0 % empirical
+yield, 95 % CI [0, 0.7076], `cpk` −0.491), and it carries the tool's own
+`sample_size.verdict: insufficient` — `n` = 3 measurable draws against a
+`required_n` of 183 for a ±1 pp interval. So the campaign is a real miss *and*
+an unsized one, and neither reading is withheld.
+
 Still owed: the **deterministic axis** over the ratified rows 19 × 20 × 1 PVT
 grid (`sim/pll-lock`'s manifest does not yet declare a `measure.jitter` block),
-and a finer-grid re-run of the statistical axis able to separate the measured
-figure from its own measurement-resolution floor.
+a finer-grid re-run of the statistical axis able to separate the measured
+figure from its own measurement-resolution floor, and — before any yield claim
+is made over this row — a **sized** statistical population with the
+deterministic negative control T1 item 6 requires (`sim/pll-lock-mc/analysis/README.md`
+states the cost of each and why the floor is the cheaper prerequisite).
 `DR-006` ratifies the target; it asserts nothing about whether the present
 schematic meets it, and the miss above is a recorded design result, not a
 reason to revisit the bound.

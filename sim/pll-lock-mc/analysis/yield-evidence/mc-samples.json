@@ -1,0 +1,41 @@
+{
+  "provenance": {
+    "generated_by": "sim/pll-lock-mc/analysis/yield_evidence.py",
+    "source_record": "sim/pll-lock-mc/records/20260924-222341-a9375a5.md",
+    "source_manifest": "sim/pll-lock-mc/testbench/tb.json",
+    "spec_row": 9,
+    "spec_row_status": "RATIFIED (DR-006)",
+    "sampling_point": "tt_mm_125c_1.80v",
+    "seeds_with_a_measurement": [
+      2,
+      3,
+      5
+    ],
+    "seeds_censored_no_lock": [
+      1,
+      4
+    ],
+    "censored_draw_mapping": "errored",
+    "sample_precision_pp": 0.0005,
+    "note": "Derived, not measured: every value restates sim/pll-lock-mc/records/20260924-222341-a9375a5.md at the precision that record prints. No target_yield is declared -- spec row 9 states a jitter bound, not a yield target."
+  },
+  "measurements": [
+    {
+      "name": "period_jitter_rms_pct",
+      "unit": "%",
+      "samples": [
+        1.584,
+        1.851,
+        3.073
+      ],
+      "errored": 2,
+      "failed_unmeasurable": 0,
+      "limits": {
+        "max": 1.0
+      },
+      "source_corners": [
+        "tt_mm_125c_1.80v"
+      ]
+    }
+  ]
+}

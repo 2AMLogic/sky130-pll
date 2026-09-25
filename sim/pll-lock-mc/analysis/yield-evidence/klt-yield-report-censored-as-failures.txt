@@ -1,0 +1,22 @@
+samples: sim/pll-lock-mc/analysis/yield-evidence/mc-samples-censored-as-failures.json
+limits: sim/pll-lock-mc/analysis/yield-evidence/spec-limits.json
+source: sample-set  samples_analyzed: 3
+confidence: 0.95  target_ci_halfwidth: 0.01
+status: reported  measurements: 1
+
+period_jitter_rms_pct [%]  status: reported  N: 3
+  limits: min(>=)=- max(<=)=1 target_yield=-
+  fit (normal): mean=2.16933 stddev=0.793903 normality=insufficient_samples
+  yield (empirical, clopper-pearson): 0.000000 [0.000000, 0.521824] at 95%, N=5
+  yield (normal, normal-delta): 0.070390 [0.000000, 0.290702] at 95%, N=3
+  capability: cp=- cpk=-0.4910 [-1.1023, 0.1204] sigma_to_spec=-1.4729 limiting=upper
+  sample size: insufficient (N=5, required>=183, observed +/-0.260912 vs target +/-0.01)
+  negative control: none declared
+  warning: measurement 'period_jitter_rms_pct': N = 3 is below the 8 samples the Anderson-Darling critical values assume, so normality was not tested
+  warning: measurement 'period_jitter_rms_pct': N = 5 resolves the yield only to +/-0.2609 at 95% confidence; 183 samples are needed for the requested +/-0.01
+  warning: measurement 'period_jitter_rms_pct': 2 of the 5 sample(s) drawn (40.0%) are failed_unmeasurable -- they left the regime this measurement is only defined in and produced no value, so they are counted as failing draws in the empirical yield below (not excluded, unlike `errored`), and excluded from `distribution`/`capability` since there is no value to fit; see docs/cli/yield.md#errored-samples-and-conditional-yield
+
+warnings:
+  no measurement declared a target_yield, so no yield claim was checked -- the estimates below are reported, never failed
+  no measurement declared a negative_control -- this campaign has no seeded, known-bad variant demonstrating that the statistics above can actually detect a degraded design; see docs/cli/yield.md#negative-control
+  at least one measurement counted failed_unmeasurable draws (a design failure with no value to report) as failures in its empirical yield -- see that measurement's own warnings, and docs/cli/yield.md#errored-samples-and-conditional-yield
