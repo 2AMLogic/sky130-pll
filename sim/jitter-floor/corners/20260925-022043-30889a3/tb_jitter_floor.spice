@@ -1,0 +1,18 @@
+** sch_path: /Users/rwalters/GitHub/sky130-pll/.loom/worktrees/issue-178/sim/jitter-floor/testbench/tb_jitter_floor.sch
+**.subckt tb_jitter_floor
+VCLK CLK GND pulse(0 1.8 0 20p 20p 1.9385n 3.9170n)
+R1 CLK GND 1k m=1
+**** begin user architecture code
+
+** sky130 PDK model include (tt corner) -- patched per-point by sim/harness.
+** No device in this testbench uses it: it is here so the harness's own
+** corner substitution and this record's environment provenance are the same
+** as every other campaign's. See this file's header comment.
+.lib /Users/rwalters/.volare/sky130A/libs.tech/combined/sky130.lib.spice tt
+** No .tran/.print card here on purpose -- sim/harness/measure.py injects the
+** analysis from this manifest's own measure block.
+
+**** end user architecture code
+**.ends
+.GLOBAL GND
+.end

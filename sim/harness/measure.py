@@ -85,6 +85,67 @@ jitter number at all**, reported as such -- the same discipline the lock
 criterion applies to a run that never locks (never present a value computed
 from too little data as if it were the measurement).
 
+### The dump grid puts a floor under this figure
+
+`build_control_block` below `linearize`s the measured node onto the manifest's
+own `tran_step` grid before dumping it, and `edge_times` interpolates each
+crossing linearly between the two grid samples that bracket it. So the grid
+step sets a resolution floor under every jitter figure this module reports,
+and row 9's bound is tight against it: 1.0 % of a 4 ns period is **40 ps**,
+where `sim/pll-lock-mc`'s manifest dumps at 200 ps.
+
+**That floor is measured, not argued** -- `sim/jitter-floor/` pushes an ideal
+pulse source of exactly constant period (true period jitter zero by
+construction) through this identical path, and its records report what this
+module attributes to it. At a 200 ps grid the floor is not one number; it is a
+function of two ratios, and the two behave very differently:
+
+- **Transition time / grid step.** At an edge spanning five grid steps the
+  floor is **0.000 %** (`sim/jitter-floor` variant C): both samples bracketing
+  the 50 % crossing sit on the straight ramp, so the linear interpolation is
+  exact. At one grid step it is 0.610 % (variant B), and at 1/10 of a step
+  0.381-2.371 % (variants A1-A3). The floor is a *resolution* effect, so it
+  collapses as soon as the grid resolves the edge.
+- **Period / grid step.** For a constant period the grid phase of successive
+  edges walks by the fractional part of that ratio, so at a fixed (fast) edge
+  the floor runs from ~0 for a period that is an exact multiple of the step up
+  to 2.371 % at variant A3's 0.585 fractional part.
+
+**What grid a defensible row-9 figure needs**, so a future campaign does not
+re-derive this:
+
+1. **Resolve the edge.** `tran_step <= (transition time of the measured
+   node)/2` makes the floor vanish rather than merely shrink. This is the
+   cheap condition, but it needs the measured node's transition time to be
+   known -- and for this repo's `CLK` that is not yet committed anywhere
+   (issue #186).
+2. **Or bound it unconditionally.** A crossing interpolated from a sample pair
+   that straddles the whole edge lands in the middle of whichever grid
+   interval holds it, so the per-edge error is bounded by half a step and the
+   per-period floor is of order `0.4-0.5 * tran_step` RMS: exactly
+   `tran_step * sqrt(f * (1 - f))` for a perfectly periodic clock of
+   `(k + f)` steps (its maximum, `tran_step / 2`, at `f = 0.5`), and
+   `sqrt(2) * tran_step / sqrt(12)` = `0.41 * tran_step` for edges landing at
+   independent, uniformly-spread grid phases. Against row 9's 40 ps budget:
+   200 ps buys a worst case of 100 ps (2.5x the whole budget), 20 ps buys
+   10 ps (a quarter of it -- 6.4 ps at `sim/pll-lock-mc`'s own measured
+   period), 10 ps buys 5 ps. `sim/tests/test_measure.py`'s
+   `DumpGridResolutionFloorTests` pins those two figures.
+3. **Cost it honestly.** `tran_step` also caps ngspice's internal timestep, so
+   a 10x finer grid is roughly a 10x wall-clock cost on a campaign whose
+   points already run ~1 h 20 m each. Refining the grid is a real spend, which
+   is why `sim/jitter-floor` exists: the floor itself is measurable for the
+   price of one 60-second run of a source and a resistor, with no PLL
+   transient at all.
+
+Two limits of that control, stated here because they bound what the floor
+numbers above can be used for: it is a **null** control (a signal with real
+jitter presents its edges at grid phases spread by that jitter, not at a
+constant period's deterministic walk -- issue #185), and it says nothing about
+which of its own variants the real DUT sits at (issue #186).
+`sim/pll-lock-mc/analysis/jitter-floor/restatement.md` restates that
+campaign's measured figures against this family.
+
 ## Loop bandwidth / phase margin are deliberately NOT measured here
 
 Issue #52 allows scoping that decision in the implementation. Loop bandwidth
@@ -689,6 +750,16 @@ def period_jitter(rising, t_from: float | None = None) -> tuple:
     fewer than two periods in the population, or when the population's mean
     period is non-positive: too little data is reported as too little data,
     never as a jitter of zero.
+
+    **This figure carries the dump grid's resolution floor**, and at a tight
+    bound that floor can be a large fraction of it -- 2.371 % of the output
+    period for a 200 ps grid at one of `sim/pll-lock-mc`'s own measured
+    periods, against a 1.0 % bound. The floor is measured (`sim/jitter-floor/`)
+    rather than argued, it can only *inflate* this number (the per-edge error
+    is independent and adds in quadrature), and the grid a defensible row-9
+    figure needs is stated in this module's docstring under "The dump grid puts
+    a floor under this figure". Read a number from here together with the
+    `tran_step` that produced it.
     """
     edges = [t for t in rising if t_from is None or t >= t_from]
     periods = [b - a for a, b in zip(edges, edges[1:])]

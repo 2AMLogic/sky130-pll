@@ -419,6 +419,142 @@ class PeriodJitterTests(unittest.TestCase):
         self.assertEqual(n_cycles, 0)
 
 
+class DumpGridResolutionFloorTests(unittest.TestCase):
+    """The resolution floor the dump grid puts under `period_jitter` (#178).
+
+    `build_control_block` `linearize`s the measured node onto the manifest's
+    `tran_step` grid before dumping it, and `edge_times` interpolates each
+    crossing between the two grid samples that bracket it. Every case below
+    hands the reducer a clock of **exactly constant period** -- true period
+    jitter zero by construction -- sampled onto a stated grid, so whatever it
+    reports is the floor and nothing else.
+
+    **Scope, stated because it is easy to over-read.** These cases exercise
+    only the Python half of the path: the interpolation in `edge_times` on an
+    already-uniform grid. They do *not* exercise ngspice's own `linearize`
+    resampling of its adaptive-timestep data onto that grid. The committed
+    `sim/jitter-floor/` records are what close that gap -- they run this same
+    waveform family through the real simulator, and
+    `test_the_floor_matches_the_committed_jitter_floor_records` below asserts
+    that these synthetic traces reproduce all five of them to within 0.01
+    percentage points, which is the evidence that `linearize` contributes
+    nothing measurable and that the floor is this interpolation.
+    """
+
+    #: `sim/pll-lock-mc`'s own dump grid, and the grid every committed
+    #: `sim/jitter-floor` record ran at.
+    STEP = 200e-12
+
+    #: Ratified row 9 (`DR-006`), as a fraction of the output period.
+    ROW_9 = 0.01
+
+    #: One row per committed `sim/jitter-floor` record: the variant's pulse
+    #: period and transition time (read from that record's own committed
+    #: per-point netlist) and the period jitter the record reports for it.
+    #:
+    #:   A1 20260925-022153-30889a3   A2 20260925-022310-30889a3
+    #:   A3 20260925-022043-30889a3   B  20260925-022424-30889a3
+    #:   C  20260925-022516-30889a3
+    COMMITTED_RECORDS = (
+        ("A1", 3.9952e-9, 20e-12, 0.00381),
+        ("A2", 3.9904e-9, 20e-12, 0.00720),
+        ("A3", 3.9170e-9, 20e-12, 0.02371),
+        ("B", 3.9170e-9, 200e-12, 0.00610),
+        ("C", 3.9170e-9, 1000e-12, 0.00000),
+    )
+
+    def floor_for(self, *, period_s, edge_s, step_s=None, duration_s=5e-6):
+        """The jitter the reducer reports for a jitter-free clock on a grid."""
+        step_s = self.STEP if step_s is None else step_s
+        times, values = square_wave(
+            freq_hz=1.0 / period_s,
+            duration_s=duration_s,
+            step_s=step_s,
+            edge_s=edge_s,
+        )
+        rising, _ = measure.edge_times(times, values, 0.9, 0.27)
+        frac, n_cycles = measure.period_jitter(rising)
+        self.assertIsNotNone(frac, "the synthetic trace produced no jitter figure")
+        self.assertGreater(n_cycles, 100)
+        return frac
+
+    def test_a_period_commensurate_with_the_grid_has_no_floor(self):
+        # 4.000 ns is exactly 20 grid steps, so every edge is quantized
+        # identically and every measured period is identical -- the floor
+        # vanishes for arithmetic reasons, not because the measurement is good.
+        self.assertAlmostEqual(
+            self.floor_for(period_s=4.0e-9, edge_s=20e-12), 0.0, places=12
+        )
+
+    def test_an_edge_the_grid_resolves_has_no_floor_even_off_grid(self):
+        # 3.9170 ns is 19.585 steps -- deliberately NOT commensurate -- but a
+        # 1 ns transition spans five grid samples, so the two samples
+        # bracketing the 50 % crossing both sit on the straight ramp and the
+        # linear interpolation recovers the crossing exactly.
+        self.assertAlmostEqual(
+            self.floor_for(period_s=3.9170e-9, edge_s=1e-9), 0.0, places=12
+        )
+
+    def test_an_edge_the_grid_cannot_resolve_manufactures_a_row_9_miss(self):
+        # The case that matters for #178: a clock with NO jitter at all is
+        # reported as missing ratified row 9's 1.0 % bound, by more than a
+        # factor of two, purely because a 200 ps grid cannot place its edges.
+        floor = self.floor_for(period_s=3.9170e-9, edge_s=20e-12)
+        self.assertGreater(floor, 2 * self.ROW_9)
+        self.assertLess(floor, 3 * self.ROW_9)
+
+    def test_the_floor_matches_the_committed_jitter_floor_records(self):
+        # The cross-check that lets the cheap synthetic cases above stand in
+        # for a simulator run: the same five variants the committed
+        # sim/jitter-floor records ran, at their own 50 us window, agree with
+        # what ngspice + this reducer reported to within 0.01 pp.
+        for variant, period_s, edge_s, recorded in self.COMMITTED_RECORDS:
+            with self.subTest(variant=variant):
+                floor = self.floor_for(
+                    period_s=period_s, edge_s=edge_s, duration_s=50e-6
+                )
+                self.assertAlmostEqual(floor, recorded, delta=1e-4)
+
+    def test_the_floor_falls_as_the_grid_resolves_the_edge(self):
+        # Monotone in transition time at a fixed period and grid: the floor is
+        # a resolution effect, not a constant offset of the reducer.
+        floors = [
+            self.floor_for(period_s=3.9170e-9, edge_s=edge_s)
+            for edge_s in (20e-12, 100e-12, 200e-12, 400e-12)
+        ]
+        self.assertEqual(floors, sorted(floors, reverse=True))
+        self.assertGreater(floors[0], 0.02)
+        self.assertAlmostEqual(floors[-1], 0.0, places=12)
+
+    def test_a_finer_grid_shrinks_the_floor_below_row_9s_budget(self):
+        # What grid a defensible row-9 figure needs, measured rather than
+        # asserted (see measure.py's "The dump grid puts a floor under this
+        # figure"). The edge is held at a tenth of each grid step, so every
+        # point stays in the unresolved-edge regime and the grid step is the
+        # only thing that changes.
+        period_s = 3.9170e-9
+        budget_s = self.ROW_9 * period_s  # 39.2 ps, row 9's whole budget
+        coarse = self.floor_for(period_s=period_s, edge_s=20e-12, step_s=200e-12)
+        fine = self.floor_for(period_s=period_s, edge_s=2e-12, step_s=20e-12)
+        self.assertGreater(coarse * period_s, 2 * budget_s)
+        self.assertLess(fine * period_s, budget_s / 4)
+
+    def test_no_measured_floor_exceeds_half_a_grid_step(self):
+        # The arithmetic bound measure.py's docstring states: an unresolved
+        # edge's crossing lands in the middle of the grid interval holding it,
+        # so the per-edge error is bounded by half a step and a perfectly
+        # periodic clock's per-period floor is `step * sqrt(f*(1-f))` <=
+        # `step/2`. Asserted across the committed variants plus the
+        # half-integer period that maximizes it.
+        worst_case_s = self.STEP / 2
+        periods = [p for _, p, _, _ in self.COMMITTED_RECORDS]
+        periods.append(19.5 * self.STEP)  # f = 0.5, the maximizing phase
+        for period_s in periods:
+            with self.subTest(period_ns=round(1e9 * period_s, 4)):
+                floor_s = self.floor_for(period_s=period_s, edge_s=20e-12) * period_s
+                self.assertLessEqual(floor_s, worst_case_s)
+
+
 class MeasureTraceTests(unittest.TestCase):
     OSC_SPEC = measure.MeasureSpec(
         node="clk",
