@@ -277,6 +277,26 @@ the same reasoning, and it is recorded in `signoff/README.md` § "Why every othe
 row is `unmet`" rather than only here. The report is committed regardless: the
 gap it documents is worth more as a measured artifact than as a sentence.
 
+**The decline is enforced, not merely argued (issue #182).**
+`signoff/run-signoff.sh`'s guard 3 refuses to render a manifest that cites a
+`klt yield` report whose measurements are not sized (`sample_size.verdict` ≠
+`sufficient`) or declare no negative control that fired (`negative_control` →
+`verdict` ≠ `detected`). Citing this report today therefore fails the signoff
+run with both conditions named, rather than producing a green row and a README
+that has to be re-read to notice. Measured, not assumed: without the guard the
+same manifest entry takes `t1_met_count` from 2 to 4, and with a scratch copy
+of this report patched to `sufficient` + `detected` it passes cleanly — so the
+guard blocks exactly this campaign's citation and not the sized one that
+replaces it. The guard retires when
+[klayout-tools#2467](https://github.com/2AMLogic/klayout-tools/issues/2467)
+lands and `klt signoff` applies the same two checks itself.
+
+What that leaves as the remaining work on item 6 is unchanged, and is both of
+the things this section has always named: **#185**'s known-bad control (the
+kind `negative_control` wants — see the section above), and a sized population,
+which is the ≈ 400 h of fleet time "The sample-size question, answered" argues
+is not yet the right spend. Neither is a re-reading of this report.
+
 ## Provenance
 
 The bundle layout (a deterministic, re-runnable script that reformats a
