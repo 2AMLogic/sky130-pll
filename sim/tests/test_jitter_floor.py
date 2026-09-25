@@ -21,6 +21,7 @@ No PDK, ngspice or xschem required. Two kinds of case here:
 from __future__ import annotations
 
 import importlib.util
+import math
 import sys
 import tempfile
 import unittest
@@ -429,6 +430,134 @@ class CalibrationCoverageTests(unittest.TestCase):
             self.assertAlmostEqual(
                 covered["residual_frac"], uncovered["residual_frac"], places=9
             )
+
+
+class CalibrationBracketTests(unittest.TestCase):
+    """The residual bracket over a period-matched family's whole measured
+    range (issue #205) -- distinct from the single-value correction this
+    script still declines to make (see the module docstring)."""
+
+    def test_bracket_is_none_without_a_period_matched_variant(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            experiment = Path(tmp) / "jitter-calibration"
+            write_calibration_record(
+                experiment, record_id="20260101-000000-abcdef0", period_s=3.9170e-9
+            )
+            cal = jitter_floor.parse_calibration_records(experiment)
+            # 5.0 ns is a period this synthetic family never ran.
+            self.assertIsNone(jitter_floor.calibration_bracket(5.0e-9, 0.05e-9, cal))
+
+    def test_bracket_excludes_a_partially_resolved_edge(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            experiment = Path(tmp) / "jitter-calibration"
+            # step defaults to 200p; a 150p edge is above the 0.5*step cut
+            # `calibration.py` scores against, so this period-matched variant
+            # still yields no bracket.
+            write_calibration_record(
+                experiment,
+                record_id="20260101-000000-abcdef0",
+                period_s=3.9170e-9,
+                edge_s=150e-12,
+                pct=1.0,
+            )
+            cal = jitter_floor.parse_calibration_records(experiment)
+            period_s = cal[0]["period_s"]
+            self.assertIsNone(jitter_floor.calibration_bracket(period_s, 0.05e-9, cal))
+
+    def test_bracket_spans_a_separable_and_a_not_separable_point(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            experiment = Path(tmp) / "jitter-calibration"
+            # Two fully-unresolved (edge <= 0.5*step) variants at one shared
+            # period, at different reported magnitudes. This fixture's PWL
+            # schedule is exactly periodic (`_pwl_points` injects no jitter),
+            # so the re-derived injected figure is ~0 and the implied floor
+            # is (to float precision) the reported figure itself.
+            write_calibration_record(
+                experiment,
+                record_id="20260101-000000-abcdef0",
+                variant="K05a",
+                period_s=3.9170e-9,
+                edge_s=20e-12,
+                pct=0.5,
+            )
+            write_calibration_record(
+                experiment,
+                record_id="20260101-000001-abcdef0",
+                variant="K20a",
+                period_s=3.9170e-9,
+                edge_s=20e-12,
+                pct=2.0,
+            )
+            cal = jitter_floor.parse_calibration_records(experiment)
+            period_s = cal[0]["period_s"]
+            # 1.0 % of the period: between the two implied floors (0.5 % and
+            # 2.0 %), so separable against the smaller and not against the
+            # larger -- exactly the shape trial 2's own bracket has.
+            measured_s = 0.01 * period_s
+            bracket = jitter_floor.calibration_bracket(period_s, measured_s, cal)
+            self.assertIsNotNone(bracket)
+            points = {p["variant"]: p for p in bracket["points"]}
+            self.assertEqual(set(points), {"K05a", "K20a"})
+            self.assertIsNotNone(points["K05a"]["residual_s"])
+            self.assertIsNone(points["K20a"]["residual_s"])
+            expected_residual_frac = math.sqrt(0.01**2 - 0.005**2)
+            self.assertAlmostEqual(
+                points["K05a"]["residual_frac"], expected_residual_frac, places=6
+            )
+
+    def test_restate_attaches_a_bracket_only_where_the_period_matches(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            floor_experiment = Path(tmp) / "jitter-floor"
+            cal_experiment = Path(tmp) / "jitter-calibration"
+            write_floor_record(
+                floor_experiment,
+                record_id="20260101-000000-abcdef0",
+                pct=0.1,
+                period="3.9170n",
+            )
+            write_floor_record(
+                floor_experiment,
+                record_id="20260101-000001-abcdef0",
+                variant="D",
+                pct=0.1,
+                period="5.0000n",
+            )
+            write_calibration_record(
+                cal_experiment,
+                record_id="20260101-000002-abcdef0",
+                period_s=3.9170e-9,
+                edge_s=20e-12,
+                pct=0.5,
+            )
+            floors = jitter_floor.parse_floor_records(floor_experiment)
+            cal = jitter_floor.parse_calibration_records(cal_experiment)
+            mc = {
+                "record_id": "synthetic",
+                "path": Path("sim/pll-lock-mc/records/synthetic.md"),
+                "draws": [
+                    {
+                        "trial": 1,
+                        "seed": 1,
+                        "verdict": "FAIL",
+                        "freq_hz": 1.0 / 3.9170e-9,
+                        "jitter_frac": 0.02,
+                        "cycles": 500,
+                    },
+                    {
+                        "trial": 2,
+                        "seed": 2,
+                        "verdict": "FAIL",
+                        # A period the synthetic calibration family never ran.
+                        "freq_hz": 1.0 / 5.0e-9,
+                        "jitter_frac": 0.02,
+                        "cycles": 500,
+                    },
+                ],
+            }
+            derived = jitter_floor.restate(mc, floors, cal)
+            covered, uncovered = derived["rows"]
+            self.assertIsNotNone(covered["calibration_bracket"])
+            self.assertIsNone(uncovered["calibration_bracket"])
 
 
 if __name__ == "__main__":
