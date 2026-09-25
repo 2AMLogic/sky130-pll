@@ -1,10 +1,12 @@
 # `sim/pll-lock-mc/analysis/` — the Monte Carlo record, graded and floor-corrected
 
-Two derived readings of one record live here: its **grading** by `klt yield`
+Three derived readings of one record live here: its **grading** by `klt yield`
 (yield, confidence interval, Cpk, sample-size verdict — the sections from
-"Reproducing" down) and its **restatement against the measurement-resolution
+"Reproducing" down), its **restatement against the measurement-resolution
 floor** `sim/jitter-floor` measures (issue #178 — see "The measurement floor,
-quantified"). Neither simulates; both only restate committed records.
+quantified"), and the **reachability of item 6's negative control** over this
+population (issue #182 — see "Can a negative control fire here at all?"). None
+of them simulates; all three only restate committed artifacts.
 
 
 `sim/pll-lock-mc/records/20260924-222341-a9375a5.md` is this repo's Monte Carlo
@@ -31,6 +33,11 @@ manifest does not already carry.**
 | `yield-evidence/klt-yield-report-censored-as-failures.json` / `.txt` | The same, over the alternative mapping. Committed so "the mapping does not change the verdict" is checkable rather than asserted. |
 | `jitter_floor.py` | Reads the record's per-trial table **and** `sim/jitter-floor`'s records, and restates the three measured period-jitter figures against the measurement-resolution floor those records put a number on (issue #178). Same `--check` contract. |
 | `jitter-floor/restatement.md` | That restatement (generated) — **the artifact that says whether this campaign's recorded miss is the circuit's or the dump grid's.** See "The measurement floor, quantified" below. |
+| `negative_control_reachability.py` | Reads the two committed reports above plus the committed probe reports, and derives whether `klt yield` can report a negative control `detected` over this campaign **at all**. Same `--check` contract. |
+| `negative-control/probes/*.json` | Six synthetic `klt yield` sample-set documents (generated) that probe the tool's negative-control detection rule — evidence about `klt yield`, not about the PLL. |
+| `negative-control/reports/*.json` | `klt yield`'s own outputs over those probes. Committed so the rule is checkable rather than quoted. |
+| `negative-control/reachability.md` | The reachability verdict (generated) — **the artifact that says item 6's negative control is gated on the design, not on simulator time.** See "Can a negative control fire here at all?" below. |
+| `klt-yield-env.sh` | Builds `klt_yield_native` in a throwaway virtualenv from the upstream tag that published the pinned wheel, then regenerates and diffs **every** `klt yield` output in this directory. The reproduction recipe for artifacts this repo's own pin cannot produce. |
 
 ## Reproducing
 
@@ -41,21 +48,28 @@ python3 sim/pll-lock-mc/analysis/yield_evidence.py \
 python3 sim/pll-lock-mc/analysis/yield_evidence.py \
     sim/pll-lock-mc/records/20260924-222341-a9375a5.md --write   # re-derive
 
-# 2. the reports, from the repo root (so the echoed paths stay repo-relative)
-D=sim/pll-lock-mc/analysis/yield-evidence
-klt yield $D/mc-samples.json --limits $D/spec-limits.json --format text
-klt yield $D/mc-samples.json --limits $D/spec-limits.json --format json
-klt yield $D/mc-samples-censored-as-failures.json --limits $D/spec-limits.json --format json
+# 2. every klt yield output in this directory, from a build of the pinned
+#    extension -- verifies the committed ones reproduce byte for byte
+bash sim/pll-lock-mc/analysis/klt-yield-env.sh            # verify
+bash sim/pll-lock-mc/analysis/klt-yield-env.sh --write    # re-derive
 
 # 3. the measurement-floor restatement (no klt, no PDK -- reads records only)
 python3 sim/pll-lock-mc/analysis/jitter_floor.py --check   # verify
 python3 sim/pll-lock-mc/analysis/jitter_floor.py --write   # re-derive
+
+# 4. the negative-control probes and the reachability verdict
+#    (--write-probes needs no klt; re-run step 2 after changing a probe)
+python3 sim/pll-lock-mc/analysis/negative_control_reachability.py --check
+python3 sim/pll-lock-mc/analysis/negative_control_reachability.py --write-probes
+python3 sim/pll-lock-mc/analysis/negative_control_reachability.py --write
 ```
 
-Step 2 needs more than this repo's pinned `klt` — see the next section. Step 3
-needs nothing but Python, and `sim/tests/test_jitter_floor.py` runs its
-`--check` in `npm run check:ci`, so the committed restatement cannot go stale
-against the records it is derived from.
+Step 2 needs more than this repo's pinned `klt` — see the next section; it is
+the only step here that needs a network and a Rust toolchain. Steps 3 and 4
+need nothing but Python, and `sim/tests/test_jitter_floor.py` and
+`sim/tests/test_negative_control_reachability.py` run their `--check` modes in
+`npm run check:ci`, so neither committed document can go stale against the
+artifacts it is derived from.
 
 ## `klt yield` is not reachable from this repo's pin (verified, not assumed)
 
@@ -103,6 +117,24 @@ published this wheel, so the Rust core and the Python side are the same
 revision. The report carries no `provenance` block of
 its own (`klt yield`'s JSON has none at this version), which is why that build
 identity is recorded here instead.
+
+**That build is now a script, and the reports are now shown to reproduce from
+it** (issue #182). `klt-yield-env.sh` performs exactly the sequence above —
+`git clone --branch v0.6.0`, assert the tag still resolves to `c622e8ad`, the
+pinned wheel into a throwaway virtualenv, `maturin develop --release` into that
+same virtualenv — and then regenerates every `klt yield` output in this
+directory and diffs it against the committed one. Run on this tree, all ten
+committed outputs (the four `yield-evidence/` reports and the six
+`negative-control/reports/` probes) reproduce **byte for byte**. Nothing it
+creates is committed and it never touches the host's tools.
+
+That does not close klayout-tools#2466, and this section still stands as
+written: the extension remains unreachable from a plain `pip install` of the
+pin, so CI cannot regenerate these artifacts and a citation resting on them is
+still resting on something CI cannot check. What changed is that "built by
+hand" is no longer the recipe — any reviewer with a Rust toolchain and a
+network can now re-derive every number in this directory from upstream source
+and be told, by exit status, whether it matched.
 
 Filed upstream per `CLAUDE.md`'s friction protocol, described generically:
 
@@ -186,16 +218,20 @@ the next thing to spend it on:
    `sim/jitter-calibration` has since measured directly (#185, see below) — and
    which draw sits at which end of the floor family (#186). Buying 300 more
    draws sharpens none of those.
-3. **A sized campaign also needs a negative control** (below). The known-bad
-   control itself now exists (`sim/jitter-calibration`, #185); whether it is the
-   control item 6's citation may lean on is #182's decision, not this
-   directory's. Widening before that is settled would buy 305 draws of a
-   campaign that still could not close item 6.
+3. **A sized campaign also needs a negative control**, and — measured since,
+   see "Can a negative control fire here at all?" below — **sizing does not
+   supply one**. Probe `p2` of `negative-control/` is precisely this campaign
+   widened to 183 measurable draws with row 9 still missed on every one, checked
+   against the strongest control `klt yield`'s schema can express, and it still
+   reports `not_detected`. Widening therefore buys 305 draws of a campaign that
+   still could not close item 6, and it does not get closer to closing it either.
 
-The condition under which widening *is* the right call: once #178 has put a
-number on the resolution floor and (if the floor does not dominate) the design
-work on row 9 has moved the measured figure to where sampling noise is what
-separates it from the bound. Until then the honest statement is the one the
+The condition under which widening *is* the right call is now sharper than
+"once #178 has put a number on the resolution floor" — #178 has, and the floor
+does not explain the miss. What is left is the design work on row 9: widening
+pays once the measured figure has moved to where sampling noise is what
+separates it from the bound, which is the same threshold the negative-control
+reachability question turns on. Until then the honest statement is the one the
 committed report makes — 0 % yield over 3 measurable draws of 5, interval
 [0, 0.71], sample size insufficient.
 
@@ -293,6 +329,59 @@ may lean on it at all is **#182's** decision, not this directory's. Both
 committed reports therefore still carry the missing-negative-control warning
 above, and the citation decision below is unchanged.
 
+**That decision has since been made** (`signoff/README.md` § "Why every other
+row is `unmet`", case 4b): neither `sim/jitter-floor` nor
+`sim/jitter-calibration` is item 6's control, because neither degrades the
+*design*. The control item 6 still lacks is a seeded, deliberately degraded
+variant of the DUT re-drawn through this campaign, filed as **#195** — and the
+next section is the reason #195 should not be run yet.
+
+## Can a negative control fire here at all?
+
+`negative-control/reachability.md` is the third artifact this directory exists
+to produce, and it answers a question that was assumed rather than checked for
+as long as item 6's negative control has been outstanding: **could `klt yield`
+report a control `detected` over this population, if one existed?**
+
+It cannot. `klt yield` decides that verdict with two comparisons and nothing
+else — the control's own empirical yield strictly below the nominal's, *and* the
+control's interval upper bound strictly below the nominal's interval lower bound
+(`native/yield/src/estimate.rs:1193-1199` at tag `v0.6.0`, the revision that
+built every report here). This campaign's committed report puts the nominal
+estimate at **0.0** and its interval's lower bound at **0.0**, under both
+censored-draw mappings. A control's own estimate and interval upper bound are
+proportions of a draw count, so neither can be negative: both conjuncts are
+unsatisfiable. **No negative control — at any population size, at any
+degradation — can be `detected` over a campaign whose empirical yield is zero.**
+A floor-bounded yield has nothing below it to degrade toward.
+
+Six executed `klt yield` probes are committed under `negative-control/` so that
+is checkable rather than quoted, with the strongest control the schema can
+express (every draw `failed_unmeasurable`) on the other side. The three that
+matter for what to spend next:
+
+- **This campaign as committed, against a 1000-draw control**: `not_detected`.
+- **This campaign widened to `required_n` = 183, still missing row 9 on every
+  draw**: `not_detected`. The ≈ 400 h does not unlock the negative-control
+  precondition as a side effect.
+- **A 5-draw control against a 5-draw nominal in which *every* draw passes**:
+  `not_detected`. At five draws a side the two exact binomial intervals cannot
+  separate (the control's reaches 0.5218, the nominal's best lower bound is
+  0.4782), so the population **#195** costs at 5 draws is unreachable by
+  construction, not merely expensive.
+
+The remaining two probes straddle the threshold at 183 draws a side — 8 passing
+nominal draws is `not_detected`, 9 is `detected` — which is what makes the rows
+above a property of the populations under test rather than of a broken probe.
+
+**What this changes:** item 6's negative control is not gated on simulator time.
+It is gated on the nominal campaign having a yield interval that clears the
+control's, which is to say on **the design meeting ratified row 9 in enough
+draws** — a design precondition, not a sampling or tooling one. `#195` should be
+sized against `negative-control/reachability.md` before any of its time is
+bought, and `signoff/item6-preconditions.md` row 3 now says so from the report's
+own two fields rather than in prose here.
+
 ## Why `signoff/block-manifest.json` does not cite this report
 
 It would turn T1 item 6 green. `klt signoff` grades a yield citation as passing
@@ -325,11 +414,18 @@ replaces it. The guard retires when
 [klayout-tools#2467](https://github.com/2AMLogic/klayout-tools/issues/2467)
 lands and `klt signoff` applies the same two checks itself.
 
-What that leaves as the remaining work on item 6 is unchanged, and is both of
-the things this section has always named: **#185**'s known-bad control (the
-kind `negative_control` wants — see the section above), and a sized population,
-which is the ≈ 400 h of fleet time "The sample-size question, answered" argues
-is not yet the right spend. Neither is a re-reading of this report.
+What that leaves as the remaining work on item 6 has **changed**, and not in the
+direction this section used to point. It named two things: a known-bad control
+and a sized population. Both are still outstanding, and neither is a re-reading
+of this report — but "Can a negative control fire here at all?" above shows that
+*buying either one first would not close the item*. The guard's `detected`
+condition is unreachable over a campaign whose empirical yield is zero, and
+sizing the population does not lift it. The first thing item 6 now needs is
+design work on ratified row 9 — enough draws meeting the 1.0 % bound that the
+campaign's yield interval clears a control's — after which the control (#195)
+and the sized campaign become worth their simulator time. `klt yield`'s own
+unreachability from this repo's pin (klayout-tools#2466) gates the re-run on top
+of all of that.
 
 ## Provenance
 

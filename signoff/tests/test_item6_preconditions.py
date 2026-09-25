@@ -60,6 +60,10 @@ def facts(**overrides) -> dict:
         "errored": 122,
         "failed_unmeasurable": 0,
         "negative_control": {"verdict": "detected"},
+        # A campaign whose yield interval clears zero, so `detected` is
+        # reachable at all -- see the reachability row tests below.
+        "nominal_yield_estimate": 0.049180,
+        "nominal_yield_ci_low": 0.022732,
         "sample_size_verdict": "sufficient",
         "sample_size_n": 183,
         "required_n": 183,
@@ -195,6 +199,38 @@ class TestVerdictsBothDirections(unittest.TestCase):
         self.assertFalse(verdict_of("3", negative_control="declared in prose"))
         self.assertTrue(verdict_of("3", negative_control={"verdict": "detected"}))
 
+    def _row3_closes(self, **overrides) -> str:
+        rows = {row["id"]: row for row in item6._verdicts(facts(**overrides))}
+        return rows["3"]["closes"]
+
+    def test_row_3_says_detected_is_unreachable_over_a_zero_yield_campaign(self):
+        # The finding `sim/pll-lock-mc/analysis/negative-control/` measures: a
+        # nominal pinned at zero leaves nothing for a control to be below.
+        closes = self._row3_closes(
+            negative_control=None, nominal_yield_estimate=0.0, nominal_yield_ci_low=0.0
+        )
+        self.assertIn("not reachable over this campaign", closes)
+        self.assertIn("the design meeting row 9 in enough draws", closes)
+
+    def test_row_3_says_detected_is_reachable_once_the_interval_clears_zero(self):
+        # Driven the other way so the row reports the campaign rather than
+        # hardcoding the finding: a future campaign that meets row 9 in enough
+        # draws flips this text without anyone editing it.
+        closes = self._row3_closes(negative_control=None)
+        self.assertIn("reachable over this campaign", closes)
+        self.assertNotIn("not reachable over this campaign", closes)
+
+    def test_row_3_treats_a_zero_lower_bound_as_unreachable_even_with_a_nonzero_estimate(self):
+        # 1 passing draw of 183 lifts the estimate off zero but not the
+        # interval's lower bound past a large control's upper bound; the
+        # binding comparison is the interval one.
+        closes = self._row3_closes(
+            negative_control=None,
+            nominal_yield_estimate=0.005464,
+            nominal_yield_ci_low=0.0,
+        )
+        self.assertIn("not reachable over this campaign", closes)
+
     def test_process_corner_row_unmet_without_process_sampling(self):
         self.assertFalse(verdict_of("4a", process_sampling=False))
 
@@ -314,6 +350,12 @@ class TestRefusals(unittest.TestCase):
                     "errored": 2,
                     "failed_unmeasurable": 0,
                     "negative_control": None,
+                    "yield": {
+                        "empirical": {
+                            "estimate": 0.0,
+                            "confidence_interval": {"low": 0.0, "high": 0.707598},
+                        }
+                    },
                     "sample_size": {"verdict": "insufficient", "n": 3, "required_n": 183},
                 }
             ],
@@ -341,6 +383,16 @@ class TestRefusals(unittest.TestCase):
         self.assertEqual(collected["declared_trials"], 5)
         self.assertIsNone(collected["negative_control"])
         self.assertEqual(collected["pvt_records_without_jitter"], ["p.md"])
+
+    def test_a_report_with_no_empirical_yield_block_is_refused(self):
+        # Row 3 states whether `detected` is reachable from these two numbers;
+        # a report that carries neither must raise rather than render a row
+        # that has quietly dropped the reachability claim.
+        report = json.loads(self._repo_files()[item6.MC_REPORT])
+        del report["measurements"][0]["yield"]
+        self._with_repo(self._repo_files(**{item6.MC_REPORT: json.dumps(report)}))
+        with self.assertRaises(item6.PreconditionError):
+            item6.collect()
 
     def test_missing_artifact(self):
         files = self._repo_files()

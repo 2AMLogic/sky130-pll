@@ -1,0 +1,133 @@
+{
+  "samples": "sim/pll-lock-mc/analysis/negative-control/probes/p2-campaign-sized-all-missing.json",
+  "limits": null,
+  "source": {
+    "kind": "sample-set",
+    "netlist": null,
+    "monte_carlo": null,
+    "sample_count": 183
+  },
+  "schema_version": 1,
+  "confidence": 0.95,
+  "target_ci_halfwidth": 0.01,
+  "min_samples": 2,
+  "status": "reported",
+  "measurement_count": 1,
+  "measurements": [
+    {
+      "name": "period_jitter_rms_pct",
+      "unit": "%",
+      "n": 183,
+      "errored": 0,
+      "failed_unmeasurable": 0,
+      "limits": {
+        "max": 1.0
+      },
+      "source_corners": [
+        "tt_mm_125c_1.80v"
+      ],
+      "distribution": {
+        "model": "normal",
+        "mean": 2.1689999999999965,
+        "stddev": 3.562460511049405e-15,
+        "min": 2.169,
+        "max": 2.169,
+        "median": 2.169,
+        "skewness": 1.0,
+        "excess_kurtosis": -2.0,
+        "normality": {
+          "test": "anderson-darling",
+          "statistic": 185.672307958321,
+          "critical_value": 0.787,
+          "significance": 0.05,
+          "verdict": "rejected"
+        }
+      },
+      "yield": {
+        "empirical": {
+          "method": "clopper-pearson",
+          "estimate": 0.0,
+          "confidence": 0.95,
+          "confidence_interval": {
+            "low": 0.0,
+            "high": 0.019956000841315824
+          },
+          "n": 183
+        },
+        "normal": {
+          "method": "normal-delta",
+          "estimate": 0.0,
+          "confidence": 0.95,
+          "confidence_interval": {
+            "low": 0.0,
+            "high": 0.0
+          },
+          "n": 183
+        },
+        "variance_reduced": null
+      },
+      "capability": {
+        "cp": null,
+        "cpk": -109381329409285.22,
+        "cpk_confidence_interval": {
+          "low": -120618076253574.33,
+          "high": -98144582564996.11
+        },
+        "sigma_to_spec": -328143988227855.6,
+        "sigma_to_spec_confidence_interval": {
+          "low": -361854228760723.0,
+          "high": -294433747694988.3
+        },
+        "limiting_side": "upper"
+      },
+      "sample_size": {
+        "n": 183,
+        "observed_ci_halfwidth": 0.009978000420657912,
+        "target_ci_halfwidth": 0.01,
+        "required_n": 183,
+        "required_n_for_target": null,
+        "verdict": "sufficient",
+        "method": "clopper-pearson-zero-failures",
+        "variance_reduced": null
+      },
+      "negative_control": {
+        "description": "1000 draws, none measurable -- the strongest degradation the schema expresses",
+        "n": 0,
+        "errored": 0,
+        "failed_unmeasurable": 1000,
+        "yield": {
+          "empirical": {
+            "method": "clopper-pearson",
+            "estimate": 0.0,
+            "confidence": 0.95,
+            "confidence_interval": {
+              "low": 0.0,
+              "high": 0.0036820838968658065
+            },
+            "n": 1000
+          },
+          "normal": null,
+          "variance_reduced": null
+        },
+        "nominal_empirical_estimate": 0.0,
+        "degradation_detected": false,
+        "verdict": "not_detected"
+      },
+      "analytic_cross_check": null,
+      "sampling": {
+        "strategy": "plain_random",
+        "replicates": null,
+        "effective_sample_size": null
+      },
+      "status": "reported",
+      "warnings": [
+        "measurement 'period_jitter_rms_pct': the sample set is not consistent with a normal distribution (Anderson-Darling A2* = 185.6723 > 0.787); treat the parametric yield estimate and Cpk as indicative only and prefer the empirical estimate",
+        "measurement 'period_jitter_rms_pct': the negative_control's empirical yield (0.000000, CI [0.000000, 0.003682]) is not statistically distinguishable from the nominal draw's (0.000000, CI [0.000000, 0.019956]) -- the deliberate defect did not show up as the degradation the statistics claim to detect"
+      ]
+    }
+  ],
+  "warnings": [
+    "no measurement declared a target_yield, so no yield claim was checked -- the estimates below are reported, never failed",
+    "at least one measurement's negative_control did not show the expected degradation -- see that measurement's own warnings"
+  ]
+}

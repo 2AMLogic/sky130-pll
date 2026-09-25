@@ -90,6 +90,7 @@ MC_MANIFEST = "sim/pll-lock-mc/testbench/tb.json"
 PVT_MANIFEST = "sim/pll-lock/testbench/tb.json"
 PVT_RECORDS = "sim/pll-lock/records"
 BLOCK_MANIFEST = "signoff/block-manifest.json"
+REACHABILITY = "sim/pll-lock-mc/analysis/negative-control/reachability.md"
 
 #: The four requirements item 6's checklist text names, in its own order and
 #: its own words (`docs/design-evidence-tiers.md` item 6, `klt` 0.6.0). Each
@@ -222,6 +223,13 @@ def collect() -> dict:
             f"{MC_REPORT}: measurement carries no sample_size block -- is this a "
             "`klt yield` report?"
         )
+    empirical = ((measurement.get("yield") or {}).get("empirical")) or {}
+    interval = empirical.get("confidence_interval")
+    if "estimate" not in empirical or not isinstance(interval, dict):
+        raise PreconditionError(
+            f"{MC_REPORT}: measurement carries no yield.empirical estimate and "
+            "interval -- row 3 cannot state whether `detected` is reachable"
+        )
 
     pvt_manifest = _read_json(PVT_MANIFEST)
     pvt_jitter = (pvt_manifest.get("measure") or {}).get("jitter")
@@ -246,6 +254,8 @@ def collect() -> dict:
         "errored": measurement.get("errored"),
         "failed_unmeasurable": measurement.get("failed_unmeasurable"),
         "negative_control": measurement.get("negative_control"),
+        "nominal_yield_estimate": empirical.get("estimate"),
+        "nominal_yield_ci_low": interval.get("low"),
         "sample_size_verdict": sample_size.get("verdict"),
         "sample_size_n": sample_size.get("n"),
         "required_n": sample_size.get("required_n"),
@@ -272,6 +282,16 @@ def _verdicts(facts: dict) -> list[dict]:
     )
     control = facts["negative_control"]
     control_verdict = control.get("verdict") if isinstance(control, dict) else None
+    # `klt yield` reports `detected` only when the control's own estimate AND its
+    # interval's upper bound are strictly below the nominal's estimate and
+    # interval lower bound respectively. Both control quantities are proportions
+    # of a draw count, so a nominal that is zero on either side makes `detected`
+    # unsatisfiable for every control at every population size -- the finding
+    # `sim/pll-lock-mc/analysis/negative-control/reachability.md` measures.
+    detected_reachable = (
+        (facts["nominal_yield_estimate"] or 0.0) > 0.0
+        and (facts["nominal_yield_ci_low"] or 0.0) > 0.0
+    )
 
     return [
         {
@@ -319,14 +339,36 @@ def _verdicts(facts: dict) -> list[dict]:
             "closes": (
                 "already met"
                 if control_verdict == "detected"
-                else "a `negative_control` block in the sample-set document, "
-                "populated from a seeded known-bad variant's own draws of "
-                f"`{facts['measurement_name']}`, plus a `klt yield` re-run whose "
-                "`negative_control.verdict` is `detected` -- or a committed record "
-                "arguing that `not_detected` is the honest outcome, which "
-                "`run-signoff.sh`'s guard 3 names as its own escape hatch. "
-                "`klt yield` is not reachable from this repo's pin "
-                "(klayout-tools#2466), so the re-run is gated on that too"
+                else (
+                    "a `negative_control` block in the sample-set document, "
+                    "populated from a seeded known-bad variant's own draws of "
+                    f"`{facts['measurement_name']}`, plus a `klt yield` re-run whose "
+                    "`negative_control.verdict` is `detected`. **`detected` is not "
+                    "reachable over this campaign**: the rule needs a control below "
+                    f"both the nominal estimate ({facts['nominal_yield_estimate']}) "
+                    "and its interval's lower bound "
+                    f"({facts['nominal_yield_ci_low']}), and a control's own "
+                    "estimate and interval upper bound are proportions of a draw "
+                    "count, so neither can be negative -- measured in "
+                    f"`{REACHABILITY}`. What is left is guard 3's own escape hatch, "
+                    "an argued record that `not_detected` is the honest outcome, and "
+                    "even that needs a `klt yield` run to declare the control at all, "
+                    "which this repo's pin cannot produce (klayout-tools#2466). What "
+                    "moves this row is the design meeting row 9 in enough draws, not "
+                    "simulator time spent on the control"
+                    if not detected_reachable
+                    else "a `negative_control` block in the sample-set document, "
+                    "populated from a seeded known-bad variant's own draws of "
+                    f"`{facts['measurement_name']}`, plus a `klt yield` re-run whose "
+                    "`negative_control.verdict` is `detected` -- reachable over this "
+                    f"campaign (nominal estimate {facts['nominal_yield_estimate']}, "
+                    f"interval lower bound {facts['nominal_yield_ci_low']}), see "
+                    f"`{REACHABILITY}` for the population sizes it takes -- or a "
+                    "committed record arguing that `not_detected` is the honest "
+                    "outcome, which `run-signoff.sh`'s guard 3 names as its own "
+                    "escape hatch. `klt yield` is not reachable from this repo's pin "
+                    "(klayout-tools#2466), so the re-run is gated on that too"
+                )
             ),
         },
         {

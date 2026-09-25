@@ -1,0 +1,132 @@
+{
+  "samples": "sim/pll-lock-mc/analysis/negative-control/probes/p6-sized-threshold-at.json",
+  "limits": null,
+  "source": {
+    "kind": "sample-set",
+    "netlist": null,
+    "monte_carlo": null,
+    "sample_count": 183
+  },
+  "schema_version": 1,
+  "confidence": 0.95,
+  "target_ci_halfwidth": 0.01,
+  "min_samples": 2,
+  "status": "reported",
+  "measurement_count": 1,
+  "measurements": [
+    {
+      "name": "period_jitter_rms_pct",
+      "unit": "%",
+      "n": 183,
+      "errored": 0,
+      "failed_unmeasurable": 0,
+      "limits": {
+        "max": 1.0
+      },
+      "source_corners": [
+        "tt_mm_125c_1.80v"
+      ],
+      "distribution": {
+        "model": "normal",
+        "mean": 2.0869180327868824,
+        "stddev": 0.3619019945841974,
+        "min": 0.5,
+        "max": 2.169,
+        "median": 2.169,
+        "skewness": -4.169539239683998,
+        "excess_kurtosis": 15.385057471264329,
+        "normality": {
+          "test": "anderson-darling",
+          "statistic": 66.41719249452522,
+          "critical_value": 0.787,
+          "significance": 0.05,
+          "verdict": "rejected"
+        }
+      },
+      "yield": {
+        "empirical": {
+          "method": "clopper-pearson",
+          "estimate": 0.04918032786885246,
+          "confidence": 0.95,
+          "confidence_interval": {
+            "low": 0.022731934353248592,
+            "high": 0.09130414956214955
+          },
+          "n": 183
+        },
+        "normal": {
+          "method": "normal-delta",
+          "estimate": 0.001335129633952733,
+          "confidence": 0.95,
+          "confidence_interval": {
+            "low": 0.0,
+            "high": 0.002827303382584733
+          },
+          "n": 183
+        },
+        "variance_reduced": null
+      },
+      "capability": {
+        "cp": null,
+        "cpk": -1.0011163694890037,
+        "cpk_confidence_interval": {
+          "low": -1.1147360515550337,
+          "high": -0.8874966874229738
+        },
+        "sigma_to_spec": -3.0033491084670114,
+        "sigma_to_spec_confidence_interval": {
+          "low": -3.3442081546651012,
+          "high": -2.6624900622689216
+        },
+        "limiting_side": "upper"
+      },
+      "sample_size": {
+        "n": 183,
+        "observed_ci_halfwidth": 0.03428610760445048,
+        "target_ci_halfwidth": 0.01,
+        "required_n": 1797,
+        "required_n_for_target": null,
+        "verdict": "insufficient",
+        "method": "normal-approximation",
+        "variance_reduced": null
+      },
+      "negative_control": {
+        "description": "183 draws, none measurable -- the strongest degradation the schema expresses",
+        "n": 0,
+        "errored": 0,
+        "failed_unmeasurable": 183,
+        "yield": {
+          "empirical": {
+            "method": "clopper-pearson",
+            "estimate": 0.0,
+            "confidence": 0.95,
+            "confidence_interval": {
+              "low": 0.0,
+              "high": 0.019956000841315824
+            },
+            "n": 183
+          },
+          "normal": null,
+          "variance_reduced": null
+        },
+        "nominal_empirical_estimate": 0.04918032786885246,
+        "degradation_detected": true,
+        "verdict": "detected"
+      },
+      "analytic_cross_check": null,
+      "sampling": {
+        "strategy": "plain_random",
+        "replicates": null,
+        "effective_sample_size": null
+      },
+      "status": "reported",
+      "warnings": [
+        "measurement 'period_jitter_rms_pct': the sample set is not consistent with a normal distribution (Anderson-Darling A2* = 66.4172 > 0.787); treat the parametric yield estimate and Cpk as indicative only and prefer the empirical estimate",
+        "measurement 'period_jitter_rms_pct': N = 183 resolves the yield only to +/-0.0343 at 95% confidence; 1797 samples are needed for the requested +/-0.01"
+      ]
+    }
+  ],
+  "warnings": [
+    "no measurement declared a target_yield, so no yield claim was checked -- the estimates below are reported, never failed"
+  ]
+}
