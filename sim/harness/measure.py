@@ -195,14 +195,18 @@ campaign's measured figures against this family.
 The first of those two limits has its own control: `sim/jitter-calibration`
 (issue #185) is the same shape of testbench with a **known, exactly specified
 nonzero** injected period jitter instead of zero, so what it reports is a
-calibration curve rather than a floor. Its measured answer at a 200 ps grid and
-a 3.9170 ns period: an edge the grid resolves returns the injected figure
-exactly, and for one it cannot, the floor a *jittering* signal carries moves
-away from the null control's walk-phase figure and toward the
-`sqrt(2) * tran_step / sqrt(12)` uniformly-spread-phase figure above as the
-source's own jitter grows relative to the grid step. It is therefore **not**
-safe to assume a null-control floor is a conservative correction for a signal
-that jitters -- see `sim/jitter-calibration/analysis/calibration.md`.
+calibration curve rather than a floor. Its measured answer at a 200 ps grid, at
+each of the two nominal periods it has run (3.9170 ns and 3.9952 ns): an edge
+the grid resolves returns the injected figure exactly, and for one it cannot,
+the floor a *jittering* signal carries moves away from the null control's
+walk-phase figure and toward the `sqrt(2) * tran_step / sqrt(12)`
+uniformly-spread-phase figure above as the source's own jitter grows relative to
+the grid step. It is therefore **not** safe to assume a null-control floor is a
+conservative correction for a signal that jitters -- and the *direction* of the
+error is not fixed either: measured at those two periods (issue #197), the null
+control over-states the floor at `frac(period/step)` = 0.585 and under-states it
+at 0.976, so which way a null-control correction errs is a property of the
+period being corrected. See `sim/jitter-calibration/analysis/calibration.md`.
 
 ## Loop bandwidth / phase margin are deliberately NOT measured here
 

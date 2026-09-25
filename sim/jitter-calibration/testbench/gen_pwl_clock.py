@@ -49,6 +49,17 @@ the evidence. This script is the *provenance* of that netlist, not a
 dependency of reading it -- `sim/tests/test_jitter_calibration.py` re-runs it
 against each committed record and fails on any drift.
 
+## Two nominal periods, because the grid-phase walk is period-specific
+
+Issue #185's family ran at one nominal period (3.9170 ns, `frac(period/step)` =
+0.585 at the 200 ps dump grid) and found that the null control's floor
+*over*-states the floor a strongly jittering signal carries there. It also
+observed, from the walk-phase formula `step*sqrt(f*(1-f))` alone, that at a
+period whose `f` sits nearer 0 or 1 the error must run the other way -- an
+arithmetic claim, not a measurement. Family **K** (issue #197) is that
+measurement: the same nine variants at 3.9952 ns, `f` = 0.976. See
+`FAMILY_PERIOD_S` below for the family letters and why those two periods.
+
 ## Usage
 
     # write testbench/tb_jitter_calibration.sch for one variant, and point
@@ -79,12 +90,32 @@ HERE = Path(__file__).resolve().parent
 SCHEMATIC = HERE / "tb_jitter_calibration.sch"
 MANIFEST = HERE / "tb.json"
 
-#: Nominal period, in seconds. Deliberately the 3.9170 ns period of the
-#: 255.3 MHz post-lock output frequency trial 5 of
+#: Nominal period of family **J**, in seconds. Deliberately the 3.9170 ns
+#: period of the 255.3 MHz post-lock output frequency trial 5 of
 #: `sim/pll-lock-mc/records/20260924-222341-a9375a5.md` measured -- the same
 #: period `sim/jitter-floor`'s A3/B/C variants ran at, so this campaign's
 #: reported figures and that campaign's floors are read at one period.
+#: `frac(period/step)` = 0.585 at the 200 ps dump grid.
 PERIOD_NOM_S = 3.9170e-9
+
+#: Nominal period of family **K**, in seconds (issue #197). The 3.9952 ns
+#: period of the 250.3 MHz post-lock output frequency **trial 2** of the same
+#: Monte Carlo record measured -- the period `sim/jitter-floor`'s A1 variant
+#: ran at, and a period whose `frac(period/step)` = 0.976 sits near the
+#: *opposite* end of the grid-phase range from family J's 0.585. Family J
+#: measured that the null control **over**-corrects a strongly jittering
+#: signal at `f` = 0.585, where the walk-phase floor `step*sqrt(f*(1-f))` is
+#: the larger of the two grid bounds; at `f` = 0.976 that arithmetic makes it
+#: the *smaller* one, so the error should run the other way. Family J argued
+#: that sign flip from the formula; family K is the run that measures it.
+PERIOD_NOM_K_S = 3.9952e-9
+
+#: Family letter -> nominal period. The letter is the first character of a
+#: variant name, so a variant states its own period family: `J05a` is the
+#: 3.9170 ns family, `K05a` the 3.9952 ns one. Every other axis (injected RMS,
+#: transition time, seed, cycle count, dump grid) is held identical across the
+#: two, so a J/K pair differs in the nominal period and in nothing else.
+FAMILY_PERIOD_S = {"J": PERIOD_NOM_S, "K": PERIOD_NOM_K_S}
 
 #: Cycles in the population. Issue #185's own sizing note: a few hundred
 #: periods is plenty for an RMS estimate, and it keeps the committed edge
@@ -106,24 +137,47 @@ TIME_DECIMALS = 6
 #: Points per continuation line in the emitted `pwl(...)` card.
 POINTS_PER_LINE = 4
 
+#: The transient window `tb.json`'s `measure.tran_stop` declares, in seconds.
+#: Mirrored here -- and asserted against every variant's last PWL point -- so a
+#: period or cycle-count change that would let the window truncate the schedule
+#: fails in this generator rather than quietly minting a record whose reducer
+#: formed a smaller population than the committed schedule holds. (Family K's
+#: 300 cycles at 3.9952 ns run 25 ns past family J's own 1.2 us window, which
+#: is why the manifest's window is 1.25 us rather than #185's 1.2 us; the nine
+#: family-J records already committed are evidence of what ran then and are
+#: untouched, per `sim/README.md`'s append-only rule.)
+TRAN_STOP_S = 1.25e-6
+
 
 class GeneratorError(RuntimeError):
     pass
 
 
-#: The variant family. Three injected RMS values x three edge rates, named
-#: `J<rms-in-tenths-of-a-percent><edge-letter>`; the edge letters match
-#: `sim/jitter-floor`'s own family so the two controls line up variant for
-#: variant at the same 200 ps dump grid:
+#: The variant family. Two nominal periods x three injected RMS values x three
+#: edge rates, named `<family-letter><rms-in-tenths-of-a-percent><edge-letter>`.
+#: The family letter names the nominal period (`FAMILY_PERIOD_S` above):
+#:
+#:   J = 3.9170 ns -- `frac(period/step)` 0.585, trial 5's period, the period
+#:                    `sim/jitter-floor`'s A3/B/C variants ran at (issue #185)
+#:   K = 3.9952 ns -- `frac(period/step)` 0.976, trial 2's period, the period
+#:                    `sim/jitter-floor`'s A1 variant ran at (issue #197)
+#:
+#: The edge letters match `sim/jitter-floor`'s own family so the two controls
+#: line up variant for variant at the same 200 ps dump grid:
 #:
 #:   a = 20 ps   -- a tenth of a grid step, an edge the grid cannot resolve
-#:                  (jitter-floor's A3)
-#:   b = 200 ps  -- exactly one grid step, the marginal case (jitter-floor's B)
-#:   c = 1 ns    -- five grid steps, an edge the grid resolves (jitter-floor's C)
+#:                  (jitter-floor's A3 at family J's period, A1 at family K's)
+#:   b = 200 ps  -- exactly one grid step, the marginal case (jitter-floor's B,
+#:                  which ran at family J's period only)
+#:   c = 1 ns    -- five grid steps, an edge the grid resolves (jitter-floor's
+#:                  C, likewise at family J's period only)
 #:
-#: The seed depends only on the injected RMS, so the three edge variants of one
-#: RMS carry the **identical** edge schedule and differ in nothing but the
-#: transition time -- which is what isolates the grid's contribution.
+#: The seed depends only on the injected RMS -- not on the edge and not on the
+#: family -- so the three edge variants of one RMS carry the **identical** edge
+#: schedule and differ in nothing but the transition time (which is what
+#: isolates the grid's contribution), and a J/K pair at one RMS and edge is
+#: built from the **identical** normalized draw scaled to the two periods
+#: (which is what isolates the period's).
 VARIANTS = {
     "J05a": {"rms_frac": 0.005, "seed": 185005, "edge_s": 20e-12},
     "J05b": {"rms_frac": 0.005, "seed": 185005, "edge_s": 200e-12},
@@ -134,7 +188,27 @@ VARIANTS = {
     "J20a": {"rms_frac": 0.020, "seed": 185020, "edge_s": 20e-12},
     "J20b": {"rms_frac": 0.020, "seed": 185020, "edge_s": 200e-12},
     "J20c": {"rms_frac": 0.020, "seed": 185020, "edge_s": 1e-9},
+    "K05a": {"rms_frac": 0.005, "seed": 185005, "edge_s": 20e-12},
+    "K05b": {"rms_frac": 0.005, "seed": 185005, "edge_s": 200e-12},
+    "K05c": {"rms_frac": 0.005, "seed": 185005, "edge_s": 1e-9},
+    "K10a": {"rms_frac": 0.010, "seed": 185010, "edge_s": 20e-12},
+    "K10b": {"rms_frac": 0.010, "seed": 185010, "edge_s": 200e-12},
+    "K10c": {"rms_frac": 0.010, "seed": 185010, "edge_s": 1e-9},
+    "K20a": {"rms_frac": 0.020, "seed": 185020, "edge_s": 20e-12},
+    "K20b": {"rms_frac": 0.020, "seed": 185020, "edge_s": 200e-12},
+    "K20c": {"rms_frac": 0.020, "seed": 185020, "edge_s": 1e-9},
 }
+
+
+def family_period_s(variant: str) -> float:
+    """The nominal period of `variant`'s own family, from its first character."""
+    try:
+        return FAMILY_PERIOD_S[variant[:1]]
+    except KeyError:
+        raise GeneratorError(
+            f"variant {variant!r} names no known period family; known letters: "
+            f"{', '.join(sorted(FAMILY_PERIOD_S))}"
+        ) from None
 
 
 def standard_normals(seed: int, n: int) -> list:
@@ -230,6 +304,12 @@ def pwl_points(rising: list, period_list: list, edge_s: float) -> list:
             "PWL times are not strictly increasing -- the transition time is "
             "too long for the shortest drawn period"
         )
+    if times[-1] >= TRAN_STOP_S:
+        raise GeneratorError(
+            f"the schedule's last point ({times[-1] * 1e9:.6f} ns) is at or past "
+            f"the manifest's transient window ({TRAN_STOP_S * 1e9:.6f} ns), so the "
+            "reducer would form a smaller population than this schedule holds"
+        )
     return pts
 
 
@@ -251,16 +331,18 @@ def variant_schedule(variant: str) -> dict:
         raise GeneratorError(
             f"unknown variant {variant!r}; known: {', '.join(sorted(VARIANTS))}"
         ) from None
-    period_list = periods(spec["rms_frac"], spec["seed"])
+    period_nom_s = family_period_s(variant)
+    period_list = periods(spec["rms_frac"], spec["seed"], period_nom_s=period_nom_s)
     rising = rising_edges(period_list)
     points = pwl_points(rising, period_list, spec["edge_s"])
     return {
         "variant": variant,
+        "family": variant[:1],
         "rms_frac": spec["rms_frac"],
         "seed": spec["seed"],
         "edge_s": spec["edge_s"],
         "cycles": len(period_list),
-        "period_nom_s": PERIOD_NOM_S,
+        "period_nom_s": period_nom_s,
         "periods": period_list,
         "rising": rising,
         "points": points,
@@ -290,6 +372,12 @@ HEADER = """v {{xschem version=3.4.7 file_version=1.2
 * `linearize` -> `wrdata` -> `edge_times` -> `period_jitter` path answers the
 * question a null control cannot: what does this pipeline REPORT when the
 * signal it is handed genuinely jitters by a stated amount (issue #185)?
+*
+* TWO PERIOD FAMILIES: J = 3.9170 ns (frac(period/step) 0.585, issue #185) and
+* K = 3.9952 ns (frac 0.976, issue #197). The grid-phase walk a jitter-free
+* clock presents is set by frac(period/step), so the floor this control
+* measures is period-specific and the sign of the null control's error flips
+* across the two. See the generator's module docstring.
 *
 * Committed state: variant {variant} -- {cycles} cycles of nominal period
 * {period_ns:.4f} ns at an injected {injected_pct:.3f}% RMS period jitter
@@ -393,6 +481,8 @@ def describe(schedule: dict) -> str:
     return "\n".join(
         [
             f"variant           {schedule['variant']}",
+            f"period family     {schedule['family']} "
+            f"({FAMILY_PERIOD_S[schedule['family']] * 1e9:.4f} ns)",
             f"seed              {schedule['seed']}",
             f"cycles            {schedule['cycles']}",
             f"nominal period    {schedule['period_nom_s'] * 1e9:.4f} ns",

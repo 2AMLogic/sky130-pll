@@ -139,15 +139,44 @@ class GeneratorExactnessTests(unittest.TestCase):
                     schedule["injected_frac"], spec["rms_frac"], places=12
                 )
 
-    def test_the_mean_period_is_exactly_nominal_so_every_variant_is_one_window(self):
-        spans = set()
+    def test_the_mean_period_is_exactly_nominal_so_every_family_is_one_window(self):
+        spans: dict = {}
         for variant in sorted(gen.VARIANTS):
             schedule = gen.variant_schedule(variant)
             self.assertAlmostEqual(
-                fmean(schedule["periods"]), gen.PERIOD_NOM_S, places=21
+                fmean(schedule["periods"]),
+                gen.FAMILY_PERIOD_S[schedule["family"]],
+                places=21,
             )
-            spans.add(round(schedule["span_s"], 18))
-        self.assertEqual(len(spans), 1, "variants do not share one window length")
+            spans.setdefault(schedule["family"], set()).add(
+                round(schedule["span_s"], 18)
+            )
+        self.assertEqual(sorted(spans), sorted(gen.FAMILY_PERIOD_S))
+        for family, family_spans in sorted(spans.items()):
+            with self.subTest(family=family):
+                self.assertEqual(
+                    len(family_spans),
+                    1,
+                    f"family {family}'s variants do not share one window length",
+                )
+
+    def test_every_variant_fits_the_manifests_transient_window(self):
+        """The guard that keeps the reducer's population the schedule's own.
+
+        Family K's 300 cycles at its longer period run past issue #185's
+        original 1.2 us window; `pwl_points` refuses a schedule the manifest's
+        window would truncate rather than letting a record be minted from a
+        smaller population than the committed schedule holds.
+        """
+        for variant in sorted(gen.VARIANTS):
+            with self.subTest(variant=variant):
+                self.assertLess(
+                    gen.variant_schedule(variant)["last_point_s"], gen.TRAN_STOP_S
+                )
+        rising = gen.rising_edges(gen.periods(0.01, 185010, cycles=4000))
+        with self.assertRaises(gen.GeneratorError) as ctx:
+            gen.pwl_points(rising, gen.periods(0.01, 185010, cycles=4000), 20e-12)
+        self.assertIn("transient window", str(ctx.exception))
 
     def test_every_variant_emits_a_strictly_increasing_schedule(self):
         for variant in sorted(gen.VARIANTS):
@@ -159,14 +188,34 @@ class GeneratorExactnessTests(unittest.TestCase):
                 self.assertEqual(times, sorted(times))
 
     def test_the_three_edge_variants_of_one_rms_share_one_edge_schedule(self):
+        for family in sorted(gen.FAMILY_PERIOD_S):
+            for rms in ("05", "10", "20"):
+                with self.subTest(family=family, rms=rms):
+                    schedules = [
+                        gen.variant_schedule(f"{family}{rms}{edge}") for edge in "abc"
+                    ]
+                    first = schedules[0]["rising"]
+                    for other in schedules[1:]:
+                        self.assertEqual(first, other["rising"])
+
+    def test_two_families_at_one_rms_share_one_normalized_draw(self):
+        """What isolates the *period's* contribution (issue #197).
+
+        The seed depends only on the injected RMS -- not on the edge, not on the
+        family -- so a J/K pair is the identical normalized draw scaled to the
+        two nominal periods. Asserted as an exact ratio rather than by eye: each
+        drawn period must be its counterpart times the ratio of the two nominal
+        periods.
+        """
+        ratio = gen.PERIOD_NOM_K_S / gen.PERIOD_NOM_S
         for rms in ("05", "10", "20"):
-            with self.subTest(rms=rms):
-                schedules = [
-                    gen.variant_schedule(f"J{rms}{edge}") for edge in "abc"
-                ]
-                first = schedules[0]["rising"]
-                for other in schedules[1:]:
-                    self.assertEqual(first, other["rising"])
+            for edge in "abc":
+                with self.subTest(rms=rms, edge=edge):
+                    j = gen.variant_schedule(f"J{rms}{edge}")["periods"]
+                    k = gen.variant_schedule(f"K{rms}{edge}")["periods"]
+                    self.assertEqual(len(j), len(k))
+                    for a, b in zip(j, k):
+                        self.assertAlmostEqual(b / a, ratio, places=12)
 
     def test_an_rms_outside_the_open_unit_interval_is_refused(self):
         for bad in (0.0, 1.0, -0.01, 1.5):
@@ -261,16 +310,39 @@ class CommittedEvidenceTests(unittest.TestCase):
                 self.assertGreater(row["reported_frac"], row["injected_frac"])
 
     def test_the_null_control_is_still_readable_for_comparison(self):
+        """Every calibration variant's null-control pairing, stated rather than
+        assumed to exist.
+
+        `sim/jitter-floor`'s family ran all three edges at family J's period
+        (A3/B/C) but only the fastest edge at family K's (A1), so the pairing is
+        complete at 20 ps and absent at the two slower edges of family K. That
+        asymmetry is why the rendered document has a "no null-control variant at
+        this period and edge" cell at all, and pinning it here keeps a future
+        `sim/jitter-floor` variant (or a renamed one) from silently changing
+        which rows the #197 section can score.
+        """
         floors = calibration._parse_all(
             FLOOR_EXPERIMENT, calibration.parse_floor_record
         )
         self.assertEqual(len(floors), 5)
-        rows = committed_rows()
-        matched = [calibration.match_floor(r, floors) for r in rows]
-        self.assertTrue(
-            all(m is not None for m in matched),
-            "a calibration variant has no null-control variant at its own "
-            "period, edge and grid",
+        matched = {
+            row["variant"]: (
+                None
+                if calibration.match_floor(row, floors) is None
+                else calibration.match_floor(row, floors)["variant"]
+            )
+            for row in committed_rows()
+        }
+        self.assertEqual(
+            matched,
+            {
+                "J05a": "A3", "J10a": "A3", "J20a": "A3",
+                "J05b": "B", "J10b": "B", "J20b": "B",
+                "J05c": "C", "J10c": "C", "J20c": "C",
+                "K05a": "A1", "K10a": "A1", "K20a": "A1",
+                "K05b": None, "K10b": None, "K20b": None,
+                "K05c": None, "K10c": None, "K20c": None,
+            },
         )
 
     def test_the_implied_floor_is_below_the_reported_figure_everywhere(self):
@@ -285,6 +357,59 @@ class CommittedEvidenceTests(unittest.TestCase):
                 if row["implied_floor_s"] is None:
                     continue
                 self.assertLess(row["implied_floor_s"], row["reported_s"])
+
+    def test_the_committed_records_cover_two_period_families(self):
+        """The evidence issue #197 asked for exists, at the periods it named.
+
+        3.9952 ns is trial 2's own measured post-lock period in
+        `sim/pll-lock-mc/records/20260924-222341-a9375a5.md`, which is what lets
+        a future restatement there cite these records instead of extrapolating
+        across periods.
+        """
+        derived = calibration.restate(
+            committed_rows(),
+            calibration._parse_all(FLOOR_EXPERIMENT, calibration.parse_floor_record),
+        )
+        self.assertEqual([f["letter"] for f in derived["families"]], ["J", "K"])
+        self.assertAlmostEqual(
+            derived["families"][0]["period_s"], gen.PERIOD_NOM_S, places=13
+        )
+        self.assertAlmostEqual(
+            derived["families"][1]["period_s"], gen.PERIOD_NOM_K_S, places=13
+        )
+        # Grid phases at opposite ends of the range, which is the whole point of
+        # running a second family at all.
+        self.assertLess(derived["families"][0]["f_phase"], 0.7)
+        self.assertGreater(derived["families"][1]["f_phase"], 0.9)
+
+    def test_the_null_controls_error_changes_sign_between_the_two_families(self):
+        """Issue #197's finding, pinned to the committed evidence.
+
+        At family J's period the null control's measured floor sits **above**
+        the floor this campaign implied for a signal that genuinely jitters (so
+        a correction using it over-corrects); at family K's it sits **below**
+        it. Neither direction is a property of the pipeline -- which is the
+        claim `analysis/calibration.md` could only argue from the walk-phase
+        formula before this family ran.
+        """
+        derived = calibration.restate(
+            committed_rows(),
+            calibration._parse_all(FLOOR_EXPERIMENT, calibration.parse_floor_record),
+        )
+        directions = {
+            fam["letter"]: calibration._direction(fam) for fam in derived["families"]
+        }
+        self.assertEqual(directions, {"J": "over", "K": "under"})
+        for fam in derived["families"]:
+            with self.subTest(family=fam["letter"]):
+                self.assertTrue(fam["signed"], "no variant could be scored")
+                # The same direction, read off the arithmetic bound rather than
+                # the measured null control: the two must agree here, or the
+                # document's rendered agreement claim is wrong.
+                predicted_over = fam["walk_phase_s"] > fam["uniform_phase_s"]
+                self.assertEqual(
+                    predicted_over, calibration._direction(fam) == "over"
+                )
 
 
 class RefusalTests(unittest.TestCase):
@@ -328,6 +453,62 @@ class RefusalTests(unittest.TestCase):
             with self.assertRaises(calibration.AnalysisError) as ctx:
                 calibration.restate(rows, [])
             self.assertIn("one dump grid", str(ctx.exception))
+
+    def test_records_whose_names_and_periods_disagree_are_refused(self):
+        """A variant's family letter *is* its nominal period (issue #197).
+
+        Two records naming the same family letter but carrying schedules at two
+        different periods mean the committed names no longer describe the
+        committed evidence, which would silently mis-group the per-period
+        restatement. Refused rather than grouped by period and renamed.
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            experiment = Path(tmp) / "jitter-calibration"
+            write_calibration_record(
+                experiment, record_id="20260101-000000-aaaaaaa", variant="J20a"
+            )
+            write_calibration_record(
+                experiment,
+                record_id="20260101-000001-aaaaaaa",
+                variant="J10a",
+                # ...but at family K's period, which its name does not say.
+                card=gen.variant_schedule("K10a")["card"],
+            )
+            rows = calibration._parse_all(
+                experiment, calibration.parse_calibration_record
+            )
+            with self.assertRaises(calibration.AnalysisError) as ctx:
+                calibration.restate(rows, [])
+            self.assertIn("two different nominal periods", str(ctx.exception))
+
+    def test_records_at_two_periods_restate_as_two_families(self):
+        """The two-period case the committed evidence exercises, on synthetic
+        records: `restate` groups rather than refusing, and keeps each family's
+        own grid phase."""
+        with tempfile.TemporaryDirectory() as tmp:
+            experiment = Path(tmp) / "jitter-calibration"
+            write_calibration_record(
+                experiment, record_id="20260101-000000-aaaaaaa", variant="J10a"
+            )
+            write_calibration_record(
+                experiment,
+                record_id="20260101-000001-aaaaaaa",
+                variant="K10a",
+                card=gen.variant_schedule("K10a")["card"],
+            )
+            derived = calibration.restate(
+                calibration._parse_all(
+                    experiment, calibration.parse_calibration_record
+                ),
+                [],
+            )
+            self.assertEqual([f["letter"] for f in derived["families"]], ["J", "K"])
+            self.assertEqual([len(f["rows"]) for f in derived["families"]], [1, 1])
+            # No null-control records were handed in, so no family can state a
+            # measured direction -- and the restatement must not invent one.
+            self.assertEqual(
+                [calibration._direction(f) for f in derived["families"]], [None, None]
+            )
 
     def test_a_non_monotonic_schedule_is_refused(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -383,11 +564,24 @@ class ArithmeticTests(unittest.TestCase):
             math.sqrt(2.0) * step / math.sqrt(12.0),
             places=18,
         )
-        f = derived["f_phase"]
-        self.assertAlmostEqual(
-            derived["walk_phase_s"], step * math.sqrt(f * (1.0 - f)), places=18
+        # The walk-phase bound is period-specific, so it is checked per family
+        # against that family's own `f` -- the uniform-phase one is not, and
+        # every family must report the same figure for it.
+        for fam in derived["families"]:
+            with self.subTest(period_ns=1e9 * fam["period_s"]):
+                f = fam["f_phase"]
+                self.assertTrue(0.0 <= f < 1.0)
+                self.assertAlmostEqual(
+                    fam["walk_phase_s"], step * math.sqrt(f * (1.0 - f)), places=18
+                )
+                self.assertAlmostEqual(
+                    fam["uniform_phase_s"], derived["uniform_phase_s"], places=18
+                )
+        self.assertEqual(
+            len({round(fam["f_phase"], 12) for fam in derived["families"]}),
+            len(derived["families"]),
+            "two period families report the same grid phase",
         )
-        self.assertTrue(0.0 <= f < 1.0)
 
     def test_spice_literals_parse_the_suffixes_this_evidence_uses(self):
         self.assertAlmostEqual(calibration.spice_literal("200p"), 200e-12)

@@ -57,18 +57,26 @@ measured number of its own. Its inputs are:
 ## Why the calibration campaign is read but not applied (issue #193)
 
 `sim/jitter-calibration` (issue #185) measures the regime above directly, with
-a known nonzero injected jitter, at **one** nominal period: 3.9170 ns. This
-script reads its records -- solely to check, per draw, whether a calibration
-variant exists at that draw's own measured period -- and, per the decision
-argued in the rendered restatement's own "Why this restatement declines..."
-section, declines to apply its calibrated floor as a correction: two of the
-three locked draws' own periods (3.9952 ns, 3.9904 ns) have no calibration
-variant of their own, only 3.9170 ns does, and applying a floor measured at
-one period to a draw at a different one would smuggle in an assumption this
-repo has not tested (`sim/jitter-calibration/analysis/calibration.md` finds
-the null control's own error changes *sign* with `frac(period/step)`, and
-3.9170 ns's `frac` (0.585) is nowhere near either ambiguous draw's). Issue #197
-names the calibration runs that would close this gap.
+a known nonzero injected jitter. This script reads its records -- solely to
+check, per draw, whether a calibration variant exists at that draw's own
+measured period -- and, per the decision argued in the rendered restatement's
+own "Why this restatement declines..." section, declines to apply its
+calibrated floor as a correction. Two grounds were argued there: applying a
+floor measured at one period to a draw at a different one smuggles in an
+assumption this repo had not tested (`calibration.md` finds the null control's
+own error changes *sign* with `frac(period/step)`), and indexing a
+magnitude-dependent floor by a draw's *measured* figure is mildly circular
+because that figure already contains the floor being looked up.
+
+**Which of those two grounds applies is now per draw, and this script renders
+it from the records rather than asserting it.** Issue #197 has since run the
+calibration family at a second nominal period, 3.9952 ns -- one ambiguous
+draw's own -- so the first ground no longer covers that draw while the second
+still does. Nothing about the decision or any verdict here changed; the
+rendered document states, per draw, which grounds remain and names what is
+still unrun. Deciding whether the now-available period-matched bracket should
+be applied is deliberately **not** made here (see the rendered section's
+closing paragraph for where it is tracked).
 
 Usage:
 
@@ -701,9 +709,9 @@ def render(mc: dict, floors: list[dict], cal_records: list[dict], derived: dict)
         "does not: its edges land at grid phases spread by that jitter, which is a wider "
         "distribution and therefore a different floor. Neither figure below is measured "
         "here (`sim/jitter-calibration`, issue #185, is the control that measures the "
-        "second -- see its `analysis/calibration.md`, which finds that at this period "
-        "the walk-phase figure is the *larger* of the two, so a null-control floor "
-        "over-corrects a strongly jittering signal); both are arithmetic "
+        "second -- see its `analysis/calibration.md`, which finds that *which way* the "
+        "null control's floor differs from the floor a jittering signal carries is "
+        "itself a property of the period being corrected); both are arithmetic "
         f"on this {1e12 * step_s:.0f} ps grid, printed with their formulas:"
     )
     a("")
@@ -757,22 +765,32 @@ def render(mc: dict, floors: list[dict], cal_records: list[dict], derived: dict)
     ambiguous = [r for r in derived["rows"] if not r["misses_under_worst"]]
     a("## Why this restatement declines to apply the calibration-informed floor")
     a("")
+    cal_periods = derived["calibration_periods_s"]
     a(
         "`sim/jitter-calibration` (issue #185) measures the regime above directly, with "
         "a known, nonzero injected jitter, instead of arguing it from grid arithmetic. "
         "Its `analysis/calibration.md` finds that the two floors are different "
         "quantities -- not one a conservative bound on the other -- and that the "
-        "null-control floor's error **changes sign** with `frac(period/step)`: at "
-        "3.9170 ns (`frac` = 0.585, where the whole 9-variant calibration family ran), "
-        "the null control *over*-corrects a strongly jittering signal, and calibration.md "
-        "states explicitly that at a period whose `frac(period/step)` sits nearer 0 or 1 "
-        "the error would run the other way -- a claim it argues from the walk-phase "
-        "formula but has not measured."
+        "null-control floor's error **changes sign** with `frac(period/step)`: where the "
+        "walk-phase figure `step*sqrt(f*(1-f))` is the larger of the two grid bounds "
+        "above, the null control *over*-states the floor a strongly jittering signal "
+        "carries and a correction using it over-corrects; where it is the smaller one, "
+        "the error runs the other way."
     )
     a("")
     a(
-        "That matters here because the family only ever ran at one period. Checked "
-        "against each locked draw's own measured period:"
+        f"That campaign's {len(cal_records)} committed variant record(s) span "
+        f"{len(cal_periods)} distinct nominal period(s) -- "
+        + ", ".join(f"{1e9 * p:.4f} ns" for p in cal_periods)
+        + " -- "
+        + (
+            "so the sign's period dependence is measured there rather than argued from "
+            "the formula (issue #197)."
+            if len(cal_periods) > 1
+            else "so the sign's period dependence is argued there from the formula "
+            "rather than measured."
+        )
+        + " Checked against each locked draw's own measured period:"
     )
     a("")
     a("| Trial | f_out | Period | frac(period / step) | Calibration variant at this period? |")
@@ -791,45 +809,98 @@ def render(mc: dict, floors: list[dict], cal_records: list[dict], derived: dict)
             f"{1e9 * r['period_s']:.4f} ns | {frac:.3f} | {coverage} |"
         )
     a("")
+    robust_covered = [r for r in robust if r["has_calibration_at_period"]]
+    ambiguous_covered = [r for r in ambiguous if r["has_calibration_at_period"]]
+    ambiguous_uncovered = [r for r in ambiguous if not r["has_calibration_at_period"]]
+    if robust_covered:
+        a(
+            f"{_trials(robust_covered).capitalize()} already has a calibration family at "
+            "its own period, but is resolved without it -- it is one of the "
+            f"{len(robust)} draw(s) that miss row 9 even under the null control's own "
+            "most pessimistic floor arithmetic (the bullet above), so nothing about its "
+            "verdict depends on the calibration curve."
+        )
+        a("")
+    if ambiguous:
+        a(
+            f"Of the draws with a residual ambiguity left to resolve "
+            f"({_trials(ambiguous)}), "
+            + (
+                f"{_trials(ambiguous_covered)} now has a calibration family at its own "
+                "period ("
+                + "; ".join(
+                    f"{1e9 * r['period_s']:.4f} ns -- "
+                    + ", ".join(c["variant"] for c in r["calibration_variants"])
+                    for r in ambiguous_covered
+                )
+                + ")"
+                if ambiguous_covered
+                else "none has a calibration family at its own period"
+            )
+            + (
+                f", and {_trials(ambiguous_uncovered)} still has none ("
+                + ", ".join(
+                    f"{1e9 * r['period_s']:.4f} ns" for r in ambiguous_uncovered
+                )
+                + ", a period the calibration family has never visited)."
+                if ambiguous_uncovered
+                else ", and none is left without one."
+            )
+        )
+        a("")
     a(
-        "Trial 5's own period matches the calibration family's (both 3.9170 ns), but "
-        "trial 5 is already resolved without it -- it is one of the "
-        f"{len(robust)} "
-        "draw(s) that miss row 9 even under the null control's own most pessimistic "
-        "floor arithmetic (the bullet above), so nothing about its verdict depends on "
-        "the calibration curve. Trials 2 and 3 -- the only draws with a residual "
-        "ambiguity left to resolve -- run at 3.9952 ns and 3.9904 ns, neither of which "
-        "the calibration family has ever visited."
+        "**Decision: decline**, rather than interpolate or bracket -- unchanged from the "
+        "resolution argued when this section was written (issue #193), and on grounds "
+        "this document now states per draw rather than collectively. Interpolating the "
+        "calibration's magnitude-dependent implied floor at a draw's own measured "
+        "magnitude is mildly circular **even when the period matches**: a draw's measured "
+        "figure already contains the floor being looked up, so using it to pick the floor "
+        "assumes what it is trying to bound. That ground applies to every draw here and "
+        "is not weakened by any calibration run."
+        + (
+            f" For {_trials(ambiguous_uncovered)} a second ground still applies on top of "
+            "it: with no calibration variant at that period, interpolating **or** "
+            "bracketing would compound the circularity with an unmeasured cross-period "
+            "extrapolation, on a quantity `calibration.md` itself says does not transfer "
+            "across periods by assumption."
+            if ambiguous_uncovered
+            else ""
+        )
+        + " Declining costs nothing this restatement was going to use: no draw's verdict "
+        "above depends on a calibration floor."
     )
     a("")
-    a(
-        "**Decision: decline**, rather than interpolate or bracket. Interpolating the "
-        "calibration's magnitude-dependent implied floor (90.9 ps at 0.5 % injected, "
-        "85.2 ps at 1.0 %, 81.1 ps at 2.0 % -- see `analysis/calibration.md`) at each "
-        "draw's own measured magnitude is mildly circular even when the period matches "
-        "(a draw's measured figure already contains the floor being looked up, so using "
-        "it to pick the floor assumes what it is trying to bound) -- and neither trial 2 "
-        "nor trial 3 has a period match at all, so interpolating here would compound "
-        "that circularity with an unmeasured cross-period extrapolation, on a quantity "
-        "`calibration.md` itself says does not transfer across periods by assumption. "
-        "Bracketing (reporting the residual under both the null-control floor and the "
-        "calibrated one) fares no better: with no calibration variant at either "
-        "ambiguous trial's period, the \"calibrated\" bound would be exactly the same "
-        "unmeasured extrapolation bracketing is supposed to avoid, not an independent "
-        "second reading. Declining costs nothing this restatement was going to use -- "
-        "trial 5 does not need the calibration floor to reach its verdict, and trials 2 "
-        "and 3 cannot honestly receive one yet."
-    )
-    a("")
-    a(
-        "**The run that would change this answer**: a `sim/jitter-calibration` variant "
-        "family (the same 3 injected magnitudes x 3 edges the existing campaign runs) at "
-        "3.9952 ns and/or 3.9904 ns -- trial 2's and trial 3's own measured periods. "
-        "Both periods' `frac(period/step)` (0.976 and 0.952) sit near the opposite end "
-        "of the range from 3.9170 ns's 0.585, so running there would do double duty: it "
-        "is also the under-correction sign-flip test `analysis/calibration.md` names but "
-        "has not measured. Issue #197 tracks that run."
-    )
+    if ambiguous_covered:
+        a(
+            "**What the calibration run since changed, and what it did not.** "
+            f"{_trials(ambiguous_covered).capitalize()} now has a period-matched "
+            "calibration family (issue #197 ran it at that draw's own period, which is "
+            "also the sign-flip test `analysis/calibration.md` could previously only "
+            "argue from the formula). So the second ground above -- cross-period "
+            "extrapolation -- no longer applies to it, and a **bracket** at its own "
+            "period, reporting the residual under the null-control floor and under the "
+            "measured implied-floor range of the family at that period, is now "
+            "constructible from committed evidence rather than being the extrapolation "
+            "bracketing was supposed to avoid. Whether to apply that bracket -- and what "
+            "it would mean for a draw the record above already marks FAIL -- is a "
+            "decision about this campaign's own reading of ratified row 9, and is "
+            "**deliberately not made here**: this document states the coverage and stops. "
+            "Issue #205 tracks it."
+        )
+        a("")
+    if ambiguous_uncovered:
+        a(
+            "**The run that would close the remaining gap**: a `sim/jitter-calibration` "
+            "variant family (the same 3 injected magnitudes x 3 edges that campaign runs) "
+            "at "
+            + " and ".join(
+                f"{1e9 * r['period_s']:.4f} ns" for r in ambiguous_uncovered
+            )
+            + f" -- {_trials(ambiguous_uncovered)}'s own measured "
+            f"period{'' if len(ambiguous_uncovered) == 1 else 's'}, which the "
+            "calibration family has not visited. Until then this restatement has nothing "
+            "period-matched to read there, in either direction."
+        )
     a("")
     a("## What this does and does not settle")
     a("")
@@ -863,10 +934,23 @@ def render(mc: dict, floors: list[dict], cal_records: list[dict], derived: dict)
             "resolves, at grid phases spread by the draw's own jitter rather than by a "
             "constant period's walk -- sits between the null control's figure and their "
             "measured one, and a large enough one would put them inside the bound. "
-            "`sim/jitter-calibration` (issue #185) measures exactly that regime, but only "
-            "at one nominal period, and neither of these trials' own periods is it -- see "
-            "\"Why this restatement declines...\" above for the argued decision and the "
-            "specific run (issue #197) that would let a future restatement close this."
+            "`sim/jitter-calibration` (issue #185) measures exactly that regime, at "
+            f"{len(derived['calibration_periods_s'])} nominal period(s) so far; "
+            + (
+                f"{_trials([r for r in ambiguous if r['has_calibration_at_period']])} "
+                "now has a family at its own period and "
+                if any(r["has_calibration_at_period"] for r in ambiguous)
+                else ""
+            )
+            + (
+                f"{_trials([r for r in ambiguous if not r['has_calibration_at_period']])} "
+                "does not"
+                if any(not r["has_calibration_at_period"] for r in ambiguous)
+                else "every ambiguous draw now has one"
+            )
+            + " -- see \"Why this restatement declines...\" above for the argued "
+            "decision, which stands on grounds a period match does not remove, and for "
+            "what remains unrun."
         )
     a(
         "- **It does not ratify, relax or restate row 9**, and it does not turn the "

@@ -278,8 +278,14 @@ through the identical reducer at the identical 200 ps grid, so
 signal that genuinely jitters carries, and how that floor moves from the
 constant-period walk-phase regime toward the uniformly-spread-phase one as the
 source's own jitter grows relative to the grid step. Read it before applying a
-`sim/jitter-floor` figure to a jittering signal — at this period the null
-control's floor is the *larger* of the two bounds, so it over-corrects.
+`sim/jitter-floor` figure to a jittering signal: **which way** that correction
+errs depends on the period. Measured at the campaign's two nominal periods
+(#197), the null control's floor is the *larger* of the two grid bounds at
+`frac(period/step)` = 0.585 and over-corrects, and the *smaller* one at 0.976
+and under-corrects — so a null-control floor is neither a conservative bound
+nor a consistently optimistic one. One of those two periods is trial 2's own;
+what that coverage should change in the restatement below, if anything, is
+**#205**, not this directory's to assume.
 
 None of this moves the record: it stands exactly as written, per
 `sim/README.md`'s append-only rule. The restatement is a derived reading of it,
@@ -316,9 +322,10 @@ jitter out of nothing at a grid that resolves the edge, and puts a number on wha
 it does invent at one that does not — genuinely load-bearing, but it demonstrates
 nothing about detecting a *degraded design*.
 
-**The known-bad control now exists** — `sim/jitter-calibration` (#185), nine
-committed records of a source at a known **nonzero** injected jitter (0.5 %,
-1.0 % and 2.0 % RMS at three transition times) through the same pipeline. It is
+**The known-bad control now exists** — `sim/jitter-calibration` (#185, extended
+by #197), eighteen committed records of a source at a known **nonzero** injected
+jitter (0.5 %, 1.0 % and 2.0 % RMS at three transition times, at each of two
+nominal periods) through the same pipeline. It is
 the *kind* of control item 6 and `klt yield`'s `negative_control` ask for: a
 seeded, known-bad input whose degradation the statistics must detect, and which
 they do detect — the reducer returns the injected figure exactly where the grid
