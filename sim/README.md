@@ -374,7 +374,8 @@ Two limits of that record a reader is owed, both argued in the manifest's own
   `measure.options` and `measure.tran_max_step` (the two knobs
   `sim/harness/measure.py` gained for this; see its "The integrator's tolerance
   puts a second floor under this figure"), and the campaign's re-run under them
-  supersedes the first record.
+  — same five seeds, same window, same lock criterion, same ratified 1.0 %
+  bound — is the record that supersedes the first.
 
 Row 9's **deterministic** axis — a jitter column across the ratified
 rows 19 × 20 × 1 PVT grid — is still owed; `pll-lock`'s manifest does not yet
