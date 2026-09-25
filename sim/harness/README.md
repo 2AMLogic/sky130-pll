@@ -517,16 +517,17 @@ owed. A manifest declares one analysis mode or the other, never both
 `sim/run_corners.py <slug> --mc` runs a **statistical variation** campaign
 instead of a PVT sweep: many trials at one fixed (corner, temperature,
 supply) point, each drawing a fresh random sample of sky130's device-level
-process/mismatch variation, rather than many fixed named PVT points. This
-stands up the *capability* generically (issue #20); it is not itself a PLL
-statistical-spec measurement — see `sim/README.md`'s Monte Carlo section for
-what a record produced this way can and cannot support.
+process/mismatch variation, rather than many fixed named PVT points. Issue #20
+stood up the *capability* generically; **what a given `--mc` record supports
+depends entirely on whether its manifest also declares a `measure` block** —
+see "Per-trial criterion" below and `sim/README.md`'s Monte Carlo section.
 
 ```sh
 python3 sim/run_corners.py pdk-smoke --mc                  # manifest's monte_carlo config, writes a record
 python3 sim/run_corners.py pdk-smoke --mc --no-write       # run, print pass/fail, write nothing
 python3 sim/run_corners.py pdk-smoke --mc \
   --mc-trials 3 --subset-reason "fast selftest pass, not a design claim"
+python3 sim/run_corners.py pll-lock-mc --mc -j 5           # a measuring campaign: row 9 period jitter per draw
 ```
 
 ### Sampling mechanism
@@ -604,12 +605,35 @@ override the manifest's `monte_carlo` block the same way `--corners`/
 when combined with `--write` — see `sim/README.md`'s subset-justification
 rule.
 
-Per-trial pass/fail is the same **plumbing** criterion as the PVT matrix:
-ngspice must exit 0, print its analysis-completion marker, and emit no
-`Error:` line. It proves the sampling mechanism runs to completion, seed by
-seed — it is not, by itself, a claim about any circuit quantity's statistical
-distribution landing inside a spec limit. A campaign that measures an actual
-circuit quantity's spread (once a PLL schematic exists and a targeted
-statistical spec row is ratified) extends `runner.py`/`report.py` with its
-own reduction over the per-trial results, the same way a future PVT
-measurement campaign would.
+### Per-trial criterion
+
+A Monte Carlo trial is judged by exactly the checks its own manifest earns,
+which is the same rule a PVT point follows (`runner.run_point` vs.
+`runner.run_mc_trial` — the measurement reduction, `_reduce_measurements`, is
+shared verbatim between them):
+
+- **A manifest with no `measure` block** (e.g. `sim/pdk-smoke`'s) gets the
+  **plumbing** criterion only: ngspice must exit 0, print the harness's
+  analysis-completion marker, and emit no `Error:` line. That proves the
+  sampling mechanism runs to completion, seed by seed — it is not, by itself,
+  a claim about any circuit quantity's statistical distribution landing
+  inside a spec limit.
+- **A manifest that also declares `measure`** (e.g. `sim/pll-lock-mc`'s) gets
+  the plumbing criterion **plus** the manifest's own measurement gate.
+  `runner.patch_netlist_mc` appends the same manifest-owned `.control` block
+  `measure.build_control_block` writes for a PVT point *after* the trial's
+  `MC_MM_SWITCH`/`MC_PR_SWITCH`/`seed`/`.temp` cards, so each trial runs the
+  manifest's transient window against its own sampled device draw, dumps the
+  same waveform, and is reduced by the same threshold-crossing extractor.
+  A trial's `McTrialResult.measurements` then carries the same `Measurement`
+  a PVT point's would (frequency, duty cycle, time-to-lock, period jitter),
+  and a manifest-stated bound the draw misses — e.g. row 9's period-jitter
+  bound under `measure.jitter.gate_on_bound` — fails that trial rather than
+  being folded into a plumbing-only PASS.
+
+`report.render_mc` follows the same split: a plumbing-only campaign renders
+the `Trial | Seed | Verdict | Detail` table, while a measuring campaign
+renders the per-trial measurement columns (`_render_mc_trials_table`, the
+Monte Carlo twin of `_render_measured_points_table`, with an explicit
+**Period jitter** column when the manifest declares `measure.jitter`) and
+states the measurement criterion in the record's own methodology section.

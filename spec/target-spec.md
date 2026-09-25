@@ -241,12 +241,17 @@ is not delivered by this ratification.
 **< 0.5 % is retained as an uncommitted stretch** — no evidence either way,
 not a second ratified bound.
 
-**This ratifies a target, not a compliance claim.** No period-jitter
-*measurement* exists in this repo: as of #158 `sim/harness/measure.py` carries
-the extractor (`measure.period_jitter`, reached from a manifest's
-`measure.jitter` block), but no campaign has been run through it — no
-testbench declares that block and no `sim/*/records/` entry reports a jitter
-number. An extractor is a capability, not evidence. With this ring's measured
+**This ratifies a target, not a compliance claim.** The first period-jitter
+*measurement* in this repo — `sim/pll-lock-mc/records/20260924-222341-a9375a5.md`
+(#20), the statistical axis this row is stated over — **records a miss**: of 5
+local-mismatch + process draws at `tt`/125 °C/1.80 V, the 3 that locked measured
+1.584 %, 1.851 % and 3.073 % RMS against this row's 1.0 % bound. That is
+recorded as a miss, not a reason to move the bound (`CLAUDE.md`); this
+ratification stands as written. Two limits of that record belong with the
+numbers: its 50 µs window is shorter than row 8's 100 µs cold-start budget, and
+the 200 ps waveform-dump grid puts a quantization floor under any jitter figure
+which can only *inflate* it — so the measured miss cannot be read as a design
+miss until a finer-grid re-run separates the two. With this ring's measured
 tuning slope
 (`Kvco/f_out` = 4.3 – 10.9 per volt), roughly a millivolt of `VCTRL` ripple
 consumes the whole budget — so this is a demanding target for the present
@@ -422,15 +427,20 @@ the campaign that substantiates it, recorded per the append-only `sim/`
 convention seeded from gf180-pll. Until then, this file is a set of intentions,
 not results.
 
-**Row 9 (period jitter), specifically.** Now that this row is ratified it is
-owed a campaign, and none exists: no `sim/*/records/` entry reports a jitter
-number, and no testbench manifest declares the `measure.jitter` block that
-would ask for one. The *extractor* is no longer the gap —
-`sim/harness/measure.py` gained the period-jitter metric at #158, alongside
-the mean frequency, duty cycle and lock time it already derived — so what the
-row is owed is now purely campaign work: the deterministic axis over the
-ratified rows 19 × 20 × 1 PVT grid *and* the statistical axis over a
-local-mismatch Monte Carlo population at the nominal point
-(`sim/run_corners.py <slug> --mc`).
+**Row 9 (period jitter), specifically.** Half of what this row is owed now
+exists. The *extractor* stopped being the gap at #158
+(`sim/harness/measure.py`'s period-jitter metric, alongside the mean frequency,
+duty cycle and lock time it already derived), and the **statistical axis** — a
+local-mismatch Monte Carlo population (`sim/run_corners.py <slug> --mc`) — has
+been run: `sim/pll-lock-mc/records/20260924-222341-a9375a5.md` (#20), which
+records a **miss** (1.584 – 3.073 % RMS across the 3 of 5 draws that locked,
+against a 1.0 % bound), subject to the 50 µs-window and 200 ps-dump-grid limits
+that record states.
+
+Still owed: the **deterministic axis** over the ratified rows 19 × 20 × 1 PVT
+grid (`sim/pll-lock`'s manifest does not yet declare a `measure.jitter` block),
+and a finer-grid re-run of the statistical axis able to separate the measured
+figure from its own measurement-resolution floor.
 `DR-006` ratifies the target; it asserts nothing about whether the present
-schematic meets it.
+schematic meets it, and the miss above is a recorded design result, not a
+reason to revisit the bound.

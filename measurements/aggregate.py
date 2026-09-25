@@ -453,14 +453,17 @@ def render_markdown(data: ReportData) -> str:
     a(
         "Rolls up every `sim/*/records/*.md` and `layout/*/reports/*/"
         "record.md` evidence record into one table, keyed by "
-        "`spec/target-spec.md` row number. **No row below is a ratified PLL "
-        "result, and a populated row is not a passing row.** Only rows 0, 1, "
-        "19 and 20 of `spec/target-spec.md` are ratified (`DR-001`/`DR-002`/"
-        "`DR-003`); every numeric row an evidence record appears against is "
-        "still DRAFT. A record listed against a row is *evidence bearing on "
-        "that row* -- the measured input a future decision record would argue "
-        "the row from -- never a verdict on it, and never a substitute for "
-        "the ratification act itself. Read each record before quoting it: its "
+        "`spec/target-spec.md` row number. **A populated row is not a passing "
+        "row.** Rows 0, 1, 9, 19 and 20 of `spec/target-spec.md` are ratified "
+        "(`DR-001`/`DR-002`/`DR-003`/`DR-006`); every other numeric row an "
+        "evidence record appears against is still DRAFT. For a DRAFT row, a "
+        "record listed against it is *evidence bearing on that row* -- the "
+        "measured input a future decision record would argue the row from -- "
+        "never a verdict on it, and never a substitute for the ratification "
+        "act itself. For a **ratified** row the record's verdict does grade "
+        "against a binding bound, and a FAIL there is a recorded miss against "
+        "the spec (never a reason to relax it -- see `CLAUDE.md`). Read each "
+        "record before quoting it either way: its "
         "own `Verdict` column here is the record's overall pass/fail, which "
         "for several campaigns means \"the harness ran and recorded what "
         "happened\", including recorded non-lock."
@@ -468,7 +471,7 @@ def render_markdown(data: ReportData) -> str:
     a("")
     a("## Per-spec-row summary")
     a("")
-    a("| Row | Parameter | DRAFT target (unratified except rows 0/1/19/20 -- see spec/target-spec.md) | Evidence | Verdict | Citation |")
+    a("| Row | Parameter | DRAFT target (unratified except rows 0/1/9/19/20 -- see spec/target-spec.md) | Evidence | Verdict | Citation |")
     a("|---|---|---|---|---|---|")
     for row in data.spec_rows:
         matches = data.rows.get(row.number, [])

@@ -72,6 +72,7 @@ sim/
   | `pll-lock` | does the closed-loop PLL, driven cold-start from `design/top/top.sch`'s own power-on reset, lock its output to `N * Fref` within a real (multi-microsecond, not 200 ns) transient window — a measurement claim (output frequency, duty cycle, time-to-lock, or explicit no-lock), extracted via `sim/harness/measure.py`. Drives a 10 MHz reference, `NSEL[5:0]`=`N`=25 (target 250 MHz) | #52 |
   | `pll-lock-1mhz` | sibling of `pll-lock`, same DUT and measurement layer, driven at spec row 3's DRAFT low reference-frequency band edge (1 MHz) instead of 10 MHz — `NSEL[5:0]`=`N`=64 (the divider's maximum representable ratio, target 64 MHz), the closest achievable target to `sim/vco/records/`'s characterized VCO tuning floor (~145.1 MHz) given the divider's `N<=64` ceiling; exercises spec row 3's frequency-range claim at more than the single 10 MHz point `pll-lock` drives | #55 |
   | `pll-lock-25mhz` | sibling of `pll-lock`, same DUT and measurement layer, driven at spec row 3's DRAFT high reference-frequency band edge (25 MHz) instead of 10 MHz — `NSEL[5:0]`=`N`=10 (target 250 MHz, deliberately the same target `pll-lock` uses, isolating the effect of reference frequency alone) | #55 |
+  | `pll-lock-mc` | Monte Carlo statistical companion to `pll-lock`: same DUT, same `DR-005` cold start and same lock criterion, but run as a `--mc` campaign — many trials at ONE fixed PVT point (`tt`/125 °C/1.80 V), each trial resampling sky130's `MC_MM_SWITCH` (within-die mismatch) + `MC_PR_SWITCH` (die-to-die process) draws from its own RNG seed — reduced by `sim/harness/measure.py`'s `period_jitter` once a trial locks. This is the statistical half of the verification `DR-006` names for **ratified** spec row 9 (period jitter ≤ 1.0 % of the output period, RMS, at `CLK` in lock); `pll-lock`'s own grid is the deterministic half. The window is 50 µs, not `pll-lock`'s 100 µs, because this campaign buys post-lock population for a post-lock quantity rather than the full row-8 cold-start budget — see the manifest's `monte_carlo.methodology_note` for that trade, for why the base point is `tt`/125 °C (the one point with a documented cold-start lock under this nudge convention) and for the 200 ps dump-grid resolution floor a reader of a jitter number is owed. **Run and recorded**: `sim/pll-lock-mc/records/20260924-222341-a9375a5.md` (2/5 trials PASS — 3 of 5 draws lock, and **all three measure period jitter above row 9's ratified 1.0 % bound**: 1.584 %, 1.851 %, 3.073 %. A recorded miss against a ratified row, per `CLAUDE.md`, read together with the resolution-floor caveat the record states) | #20 |
   | `loop-ripple` | how large is the closed-loop PLL's own self-generated disturbance, in lock, on its shared `VDD` rail and on `VCTRL` — `DR-006`'s row 13 Budget 1 transient ripple measurement. Same DUT (`design/top/top.sch`), `DR-005` cold start, 100 µs window and lock criterion as `pll-lock`, but the ideal supply feeds the block's `VDD` through a 1 Ω resistive power-delivery stand-in (`RPDN`, a testbench assumption — without it `v(VDD)` ripple is zero by construction); reports `v(VDD)` and `v(VCTRL)` peak-to-peak over the final 5 µs via `sim/harness/measure.py`'s `ripple_pp`, labelled with whether that window was in lock. **Testbench only, no record yet** — see the manifest's `methodology_note` for the supply model, bandwidth and cost caveats (inherits `pll-lock`'s per-point cost, issue #103) | #166 |
   | `vco` | frequency-vs-`VCTRL` characterization of `design/vco/vco_ring5.sch` alone (open loop, no PFD/charge pump/loop filter/divider), replacing the informal single-corner sanity check `design/vco/DESIGN.md` disclaims with real committed `sim/` evidence across the full PVT matrix | #52 |
   | `vco-supply-pushing` | sibling of `vco`, same DUT and open-loop harness, opposite independent variable: `VCTRL` is held FIXED at four operating points (0.8, 0.9, 1.2, 1.5 V) while `VDD` is the swept quantity, supplied by the corner runner's own 1.62/1.80/1.98 V axis — frequency-vs-`VDD` supply-pushing characterization (fractional `%/V`), the first of the two prerequisites `DR-006` names for a future ratification of spec row 13 Budget 1 (the AC supply-ripple limit), replacing the 1.67x realized-over-floor ratio borrowed from gf180-pll. The cross-point `%/V` derivation (`sim/vco-supply-pushing/analysis/pushing.py`) is appended to the record, not rendered by `sim/harness/report.py` itself. **Run and recorded**: `sim/vco-supply-pushing/records/20260923-141525-e514bb0.md` (45/45 PASS). | #165 |
@@ -211,27 +212,59 @@ with a distinct ngspice RNG seed — see `sim/harness/README.md`'s Monte Carlo
 section for the manifest schema and sampling mechanism. Records land in the
 same `records/<record-id>.md` / `netlist-snapshots/<record-id>.spice` /
 `corners/<record-id>/` tree a PVT record uses (same append-only/retention
-rules apply); `sim/harness/report.render_mc` renders a trial table (trial,
-seed, verdict, detail) and the campaign's sampling configuration (base
-corner, temperature, supply, which switches were on, trial count and seed
-range) in place of the PVT per-point matrix.
+rules apply); `sim/harness/report.render_mc` renders a trial table and the
+campaign's sampling configuration (base corner, temperature, supply, which
+switches were on, trial count and seed range) in place of the PVT per-point
+matrix.
 
-**This capability is scoped to the harness/methodology, not a PLL claim.** An
-`--mc` record produced by a manifest that measures nothing (e.g.
-`pdk-smoke`'s) is a harness plumbing check ("does the sky130 statistical-
-sampling mechanism run this DUT to completion, seed by seed, with each seed
-producing a distinct draw?"), not a statistical-spec measurement.
+**What an `--mc` record supports depends on its manifest, not on the run
+mode.** There are exactly two kinds:
+
+- A manifest that **measures nothing** (e.g. `pdk-smoke`'s) yields a harness
+  plumbing check — "does the sky130 statistical-sampling mechanism run this
+  DUT to completion, seed by seed, with each seed producing a distinct draw?"
+  — and nothing more. Its table is `Trial | Seed | Verdict | Detail`.
+- A manifest that also declares a `measure` block (e.g. `pll-lock-mc`'s) is
+  reduced per trial by exactly the extractor a PVT point of that manifest
+  would use, so each trial reports the measured quantities (frequency, duty
+  cycle, time-to-lock, period jitter) and a manifest-stated bound a draw
+  misses fails that trial. See `sim/harness/README.md`'s Monte Carlo section
+  → "Per-trial criterion".
 
 Of `spec/target-spec.md`'s statistical-shaped rows, **row 9 (period jitter) is
 now RATIFIED** (`DR-006`, #151) — ≤ 1.0 % of the output period, RMS, at `CLK`
 in lock — while reference spur (row 10) and supply sensitivity (row 13) remain
-DRAFT. Row 9's extractor exists as of #158 (`measure.period_jitter`, wired in
-through the manifest's `measure.jitter` block — see `sim/harness/README.md`),
-so the statistical axis that row is owed is now a campaign away rather than a
-missing capability. **No such record exists yet**: the extractor landing is not
-a measurement, and nothing in `sim/*/records/` reports a jitter number. The
-deterministic axis (the ratified rows 19 × 20 × 1 PVT grid) and the statistical
-axis (`--mc` local-mismatch draws at the nominal point) are both still owed.
+DRAFT. Row 9's extractor landed with #158 (`measure.period_jitter`, wired in
+through the manifest's `measure.jitter` block) and the first campaign to use it
+is **`pll-lock-mc`** (#20) — the statistical half of the verification `DR-006`
+names for that row, a local-mismatch + process draw population at one fixed PVT
+point.
+
+`sim/pll-lock-mc/records/20260924-222341-a9375a5.md` is that first record, and
+**it records a miss**: of 5 draws at `tt`/125 °C/1.80 V, 3 lock (at 26.32,
+38.68 and 48.88 µs) and all 3 measure period jitter *above* the ratified
+1.0 % bound — 1.584 %, 1.851 % and 3.073 % RMS. Per `CLAUDE.md` a result that
+misses the spec is recorded as a miss; the bound is not relaxed to make it
+pass, and `DR-006` stands as written.
+
+Two limits of that record a reader is owed, both argued in the manifest's own
+`monte_carlo.methodology_note` rather than left implicit:
+
+- Its **50 µs window** is shorter than row 8's 100 µs cold-start budget, so a
+  draw that would lock later is recorded as "no lock within 50 µs" — a limit of
+  the window, not a row-8 verdict. Two of the five draws land there.
+- The **200 ps dump grid** puts a quantization floor under any jitter figure.
+  `measure.py` `linearize`s `v(CLK)` onto the transient's own `tran_step` grid
+  before dumping, so each interpolated edge carries a grid error and each
+  period inherits it from both ends, against a bound that is 1.0 % of a 4 ns
+  period (40 ps). That error is independent per edge and adds in quadrature, so
+  it can only *inflate* the measured number: a measured pass is conservative,
+  but **this record's measured miss cannot be read as a design miss without a
+  finer-grid re-run** separating the floor from the circuit's own jitter.
+
+Row 9's **deterministic** axis — a jitter column across the ratified
+rows 19 × 20 × 1 PVT grid — is still owed; `pll-lock`'s manifest does not yet
+declare a `measure.jitter` block.
 
 ## Summary record format
 
