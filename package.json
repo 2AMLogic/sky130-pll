@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "worktree:return": "./.loom/scripts/worktree-return.sh",
-    "check:ci": "npm run lint && npm run test && ./.loom/scripts/check-xschem-embedded-quotes.sh && bash sim/selftest.sh",
+    "check:ci": "npm run lint && npm run test && ./.loom/scripts/check-xschem-embedded-quotes.sh && python3 signoff/readme-manifest-consistency.py && bash sim/selftest.sh",
     "check:all": "npm run lint && npm run test && ./.loom/scripts/check-xschem-embedded-quotes.sh && bash sim/selftest.sh --require-pdk",
     "test": "npm run test:compile && npm run test:unit",
     "test:compile": "find sim layout measurements signoff -name '*.py' -not -path 'layout/.venv/*' -print0 | xargs -0 -r -n1 python3 -m py_compile",

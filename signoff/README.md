@@ -95,7 +95,7 @@ as written, so it is stated here rather than borrowed.
 ## The one met row: item 3, and what it does and does not say
 
 Item 3 cites
-`layout/pll/reports/20260923-084911-13ecfe9/drc.json` — the DRC envelope of
+`layout/pll/reports/20260924-041509-c53e7c4/drc.json` — the DRC envelope of
 the record `layout/pll/reports/LATEST` currently names — with its input pinned
 to `sha256:939f97e05b9e4a2a0f866a44bb6f758c030cfd611eaa0a567d5dc3002fa68d4c`,
 which is the SHA-256 of `pll_top.gds` committed in that same record directory
@@ -152,7 +152,7 @@ the expected direction of travel, not a regression to be argued away.
 This same record already carries evidence for exactly one of those 35 rules,
 and it complicates the forecast rather than simply confirming it. The
 record's own routed spot-check
-(`layout/pll/reports/20260923-084911-13ecfe9/route-spot-check/drc.json`)
+(`layout/pll/reports/20260924-041509-c53e7c4/route-spot-check/drc.json`)
 reports `status: "clean"`, zero violations — but not because a full route
 passed `met1.space.1` clean. Per that same record's `record.md` ("Routing
 spot-check"), the router's spacing-aware collision check (new at `klt`
