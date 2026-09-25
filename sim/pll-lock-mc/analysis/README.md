@@ -33,10 +33,10 @@ manifest does not already carry.**
 | `yield-evidence/klt-yield-report-censored-as-failures.json` / `.txt` | The same, over the alternative mapping. Committed so "the mapping does not change the verdict" is checkable rather than asserted. |
 | `jitter_floor.py` | Reads the record's per-trial table **and** `sim/jitter-floor`'s records, and restates the three measured period-jitter figures against the measurement-resolution floor those records put a number on (issue #178). Same `--check` contract. |
 | `jitter-floor/restatement.md` | That restatement (generated) — **the artifact that says whether this campaign's recorded miss is the circuit's or the dump grid's.** See "The measurement floor, quantified" below. |
-| `negative_control_reachability.py` | Reads the two committed reports above plus the committed probe reports, and derives whether `klt yield` can report a negative control `detected` over this campaign **at all**. Same `--check` contract. |
-| `negative-control/probes/*.json` | Six synthetic `klt yield` sample-set documents (generated) that probe the tool's negative-control detection rule — evidence about `klt yield`, not about the PLL. |
+| `negative_control_reachability.py` | Reads the two committed reports above plus the committed probe reports, and derives whether `klt yield` can report a negative control `detected` over this campaign **at all** — and, for the populations nobody has run, which ones would. Same `--check` contract; the derived half additionally re-derives every committed probe's interval bounds, verdict and sample-size state and refuses to render if any disagrees with the tool. |
+| `negative-control/probes/*.json` | Eleven synthetic `klt yield` sample-set documents (generated) that probe the tool's negative-control detection rule — evidence about `klt yield`, not about the PLL. |
 | `negative-control/reports/*.json` | `klt yield`'s own outputs over those probes. Committed so the rule is checkable rather than quoted. |
-| `negative-control/reachability.md` | The reachability verdict (generated) — **the artifact that says item 6's negative control is gated on the design, not on simulator time.** See "Can a negative control fire here at all?" below. |
+| `negative-control/reachability.md` | The reachability verdict (generated) — **the artifact that says item 6's negative control is gated on the design rather than on simulator time, and prices what closing it costs.** See "Can a negative control fire here at all?" below. |
 | `klt-yield-env.sh` | Builds `klt_yield_native` in a throwaway virtualenv from the upstream tag that published the pinned wheel, then regenerates and diffs **every** `klt yield` output in this directory. The reproduction recipe for artifacts this repo's own pin cannot produce. |
 
 ## Reproducing
@@ -191,6 +191,11 @@ rather than presenting a five-draw campaign as a sized yield estimate:
 - `observed_ci_halfwidth` = **±0.354** in absolute yield, against the requested
   `target_ci_halfwidth` of ±0.01.
 - `required_n` = **183** samples for that precision at the observed pass rate.
+  Read that figure with its branch attached: `method` is
+  `clopper-pearson-zero-failures`, so 183 is the size of a campaign in which
+  **no** draw passes. It stops being the right number the moment one does — see
+  "How well the design has to do, and what that costs" below, where the same
+  183-draw campaign at 9 passing draws reports `required_n` = 1797.
 - `required_n_for_target` = `null` — no `target_yield` is declared, and none can
   be: row 9 states a jitter bound, `DR-006` states no yield target, and
   inventing one here would be a spec change without a decision record
@@ -228,12 +233,14 @@ the next thing to spend it on:
 
 The condition under which widening *is* the right call is now sharper than
 "once #178 has put a number on the resolution floor" — #178 has, and the floor
-does not explain the miss. What is left is the design work on row 9: widening
-pays once the measured figure has moved to where sampling noise is what
-separates it from the bound, which is the same threshold the negative-control
-reachability question turns on. Until then the honest statement is the one the
-committed report makes — 0 % yield over 3 measurable draws of 5, interval
-[0, 0.71], sample size insufficient.
+does not explain the miss. What is left is the design work on row 9 (**#202**),
+and the threshold it has to clear is now a number rather than a direction:
+widening pays once the design meets row 9 on essentially every draw, which is
+both when a 183-draw campaign is sized again and when a negative control can
+fire. Anywhere in between costs more, not less — the derivation is in "How well
+the design has to do, and what that costs" below. Until then the honest
+statement is the one the committed report makes — 0 % yield over 3 measurable
+draws of 5, interval [0, 0.71], sample size insufficient.
 
 ## The measurement floor, quantified
 
@@ -355,8 +362,8 @@ unsatisfiable. **No negative control — at any population size, at any
 degradation — can be `detected` over a campaign whose empirical yield is zero.**
 A floor-bounded yield has nothing below it to degrade toward.
 
-Six executed `klt yield` probes are committed under `negative-control/` so that
-is checkable rather than quoted, with the strongest control the schema can
+Eleven executed `klt yield` probes are committed under `negative-control/` so
+that is checkable rather than quoted, with the strongest control the schema can
 express (every draw `failed_unmeasurable`) on the other side. The three that
 matter for what to spend next:
 
@@ -364,23 +371,54 @@ matter for what to spend next:
 - **This campaign widened to `required_n` = 183, still missing row 9 on every
   draw**: `not_detected`. The ≈ 400 h does not unlock the negative-control
   precondition as a side effect.
-- **A 5-draw control against a 5-draw nominal in which *every* draw passes**:
-  `not_detected`. At five draws a side the two exact binomial intervals cannot
-  separate (the control's reaches 0.5218, the nominal's best lower bound is
-  0.4782), so the population **#195** costs at 5 draws is unreachable by
-  construction, not merely expensive.
+- **183 measurable draws in which *every* one meets row 9, against a 2-draw
+  control**: `detected` — and `sample_size.verdict` `sufficient`. It is the only
+  committed population where both of guard 3's conditions hold at once, i.e. the
+  cheapest campaign the guard would actually accept.
 
-The remaining two probes straddle the threshold at 183 draws a side — 8 passing
-nominal draws is `not_detected`, 9 is `detected` — which is what makes the rows
-above a property of the populations under test rather than of a broken probe.
+The other eight straddle three thresholds one draw apart each (8 vs 9 passing at
+a 183-draw control; 20 vs 21 at a 50-draw one; a 5-of-5 nominal against a 5- vs
+a 6-draw control), which is what makes the `not_detected` rows a property of the
+populations under test rather than of a broken probe.
+
+### How well the design has to do, and what that costs
+
+The rule is a comparison of two Clopper-Pearson intervals, so the *forward*
+question — which populations would work — is arithmetic rather than opinion, and
+`reachability.md` now derives it. It checks that arithmetic against all eleven
+committed `klt yield` outputs first (each probe's interval bounds,
+`negative_control.verdict`, `required_n` and `sample_size.verdict` must come
+back out of the formulas) and refuses to render on a single disagreement. Three
+readings come out of it that the probes alone did not give:
+
+1. **"Five draws a side is too few" was about the diagonal, not the size.** The
+   same 5-of-5 nominal that is `not_detected` against a 5-draw control is
+   `detected` against a **6**-draw one. The control is the cheap half of this
+   precondition; against a nominal that is also *sized*, `klt yield`'s own
+   2-draw minimum is enough. **#195** is therefore smaller than its own estimate
+   assumed — and still not buyable first, because it buys nothing while row 9 is
+   missed on every draw.
+2. **Guard 3's two conditions pull against each other.** `required_n` uses an
+   exact zero-failures interval at a pass rate of exactly 0 or exactly 1 and a
+   normal approximation in between, so it *peaks in the middle*. This campaign is
+   "sized" at 183 today only because **no** draw passes; the first draws that
+   pass make it unsized (`required_n` 209 at 182 of 183, 1797 at 9 of 183).
+3. **So the target is a pass rate, and it is essentially 100 %.** The cheapest
+   citable campaign is 183 measurable draws with every one meeting row 9, plus a
+   2-draw control: ≈ 307 drawn trials, ≈ 409 h — roughly the ≈ 400 h quoted
+   above, but conditional on a pass rate nobody had stated. A design meeting
+   row 9 half the time costs ≈ 21,000 h, about 50× as much. **Part-way is the
+   expensive place to stop.**
 
 **What this changes:** item 6's negative control is not gated on simulator time.
 It is gated on the nominal campaign having a yield interval that clears the
-control's, which is to say on **the design meeting ratified row 9 in enough
-draws** — a design precondition, not a sampling or tooling one. `#195` should be
-sized against `negative-control/reachability.md` before any of its time is
-bought, and `signoff/item6-preconditions.md` row 3 now says so from the report's
-own two fields rather than in prose here.
+control's, which is to say on **the design meeting ratified row 9 on
+essentially every draw** — a design precondition, not a sampling or tooling one.
+That design gap is **#202**, filed against the table above because until it was
+derived there was no target to file it against. `#195` should be sized against
+`negative-control/reachability.md` before any of its time is bought, and
+`signoff/item6-preconditions.md` row 3 says so from the report's own fields
+rather than in prose here.
 
 ## Why `signoff/block-manifest.json` does not cite this report
 
@@ -421,9 +459,12 @@ of this report — but "Can a negative control fire here at all?" above shows th
 *buying either one first would not close the item*. The guard's `detected`
 condition is unreachable over a campaign whose empirical yield is zero, and
 sizing the population does not lift it. The first thing item 6 now needs is
-design work on ratified row 9 — enough draws meeting the 1.0 % bound that the
-campaign's yield interval clears a control's — after which the control (#195)
-and the sized campaign become worth their simulator time. `klt yield`'s own
+design work on ratified row 9 (**#202**) — and the bar is not "enough draws",
+it is **essentially every draw**: the cheapest population that is both sized and
+`detected` is 183 measurable draws with none of them missing the 1.0 % bound
+(≈ 409 h, plus a 2-draw control), while a campaign passing half the time costs
+≈ 50× that. After that the control (#195) and the sized campaign are worth their
+simulator time, and are cheaper than previously estimated. `klt yield`'s own
 unreachability from this repo's pin (klayout-tools#2466) gates the re-run on top
 of all of that.
 

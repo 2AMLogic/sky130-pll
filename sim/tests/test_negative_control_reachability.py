@@ -151,5 +151,121 @@ class ProbeDocumentTests(unittest.TestCase):
             ncr.PROBES = original
 
 
+class DerivedArithmeticTests(unittest.TestCase):
+    """The derived frontier describes populations nobody ran.
+
+    The only thing separating it from assertion is that the same formulas
+    reproduce `klt yield`'s answers on the ones that *were* run, so that
+    agreement is tested here as well as enforced at render time.
+    """
+
+    def setUp(self):
+        self.alpha, self.halfwidth = ncr.load_spec_limits()
+        self.reports = ncr.load_probe_reports()
+
+    def test_the_declared_confidence_is_the_campaigns_own(self):
+        limits = json.loads(ncr.SPEC_LIMITS.read_text())
+        self.assertAlmostEqual(self.alpha, 1.0 - limits["confidence"])
+        self.assertEqual(self.halfwidth, limits["target_ci_halfwidth"])
+
+    def test_the_arithmetic_reproduces_every_committed_klt_yield_output(self):
+        problems = ncr.check_arithmetic_against_probes(
+            self.reports, self.alpha, self.halfwidth
+        )
+        self.assertEqual(problems, [])
+
+    def test_the_committed_intervals_are_reproduced_probe_by_probe(self):
+        for pid, _q, passing, failing, _errored, nc_n, _v in ncr.PROBES:
+            n = passing + failing
+            with self.subTest(probe=pid):
+                m = self.reports[pid]["measurements"][0]
+                self.assertAlmostEqual(
+                    ncr.cp_low(passing, n, self.alpha),
+                    m["yield"]["empirical"]["confidence_interval"]["low"],
+                    places=9,
+                )
+                self.assertAlmostEqual(
+                    ncr.cp_high(
+                        0, nc_n, self.alpha
+                    ),
+                    m["negative_control"]["yield"]["empirical"]["confidence_interval"][
+                        "high"
+                    ],
+                    places=9,
+                )
+                self.assertEqual(
+                    ncr.required_n(passing, n, self.alpha, self.halfwidth),
+                    m["sample_size"]["required_n"],
+                )
+
+    def test_a_disagreement_with_the_tool_refuses_to_render(self):
+        # Fail-closed: if a klt version change moved the rule, the derived
+        # tables must not be published against the old formulas.
+        original = ncr.cp_low
+        try:
+            ncr.cp_low = lambda k, n, alpha: 0.5 if k else 0.0
+            self.assertEqual(ncr.main(["--check"]), 1)
+        finally:
+            ncr.cp_low = original
+
+    def test_detection_is_driven_from_both_sides(self):
+        # Probe 4 vs probe 7: one extra control draw flips the verdict, which
+        # is the reading that corrects "five draws a side is too few".
+        self.assertFalse(ncr.is_detected(5, 5, 5, self.alpha))
+        self.assertTrue(ncr.is_detected(5, 5, 6, self.alpha))
+
+    def test_min_passing_brackets_the_probed_thresholds(self):
+        self.assertEqual(ncr.min_passing(183, 183, self.alpha), 9)
+        self.assertEqual(ncr.min_passing(183, 50, self.alpha), 21)
+        self.assertIsNone(ncr.min_passing(5, 5, self.alpha))
+
+    def test_min_control_is_never_below_klt_yields_own_floor(self):
+        for passing, n in ncr.JOINT_COST_POPULATIONS:
+            with self.subTest(population=f"{passing}/{n}"):
+                nc = ncr.min_control(passing, n, self.alpha)
+                self.assertIsNotNone(nc)
+                self.assertGreaterEqual(nc, ncr.MIN_CONTROL_DRAWS)
+                self.assertTrue(ncr.is_detected(passing, n, nc, self.alpha))
+                if nc > ncr.MIN_CONTROL_DRAWS:
+                    # Minimal in the statistics. At the floor the binding
+                    # constraint is klt yield's own refusal of a 1-draw control
+                    # ("it needs its own confidence interval to be checkable"),
+                    # not the interval comparison -- verified by running the
+                    # verb: a 183/183 nominal against a 1-draw control exits
+                    # with that error rather than a verdict.
+                    self.assertFalse(ncr.is_detected(passing, n, nc - 1, self.alpha))
+
+    def test_every_joint_cost_row_is_a_campaign_klt_yield_would_call_sized(self):
+        for passing, n in ncr.JOINT_COST_POPULATIONS:
+            with self.subTest(population=f"{passing}/{n}"):
+                self.assertTrue(ncr.is_sized(passing, n, self.alpha, self.halfwidth))
+
+    def test_the_sizing_rule_is_driven_from_both_sides(self):
+        # The non-monotonicity the document turns on: sized at both ends of
+        # the pass-rate range, unsized in between, at the same draw count.
+        self.assertTrue(ncr.is_sized(0, 183, self.alpha, self.halfwidth))
+        self.assertTrue(ncr.is_sized(183, 183, self.alpha, self.halfwidth))
+        self.assertFalse(ncr.is_sized(9, 183, self.alpha, self.halfwidth))
+        self.assertFalse(ncr.is_sized(182, 183, self.alpha, self.halfwidth))
+
+    def test_exactly_one_probe_satisfies_both_guard_3_conditions(self):
+        both = [
+            pid
+            for pid, _q, passing, failing, _e, nc_n, _v in ncr.PROBES
+            if ncr.is_sized(passing, passing + failing, self.alpha, self.halfwidth)
+            and ncr.is_detected(passing, passing + failing, nc_n, self.alpha)
+        ]
+        self.assertEqual(both, ["p10-both-guard-3-conditions"])
+
+    def test_an_unsized_joint_cost_row_is_refused(self):
+        original = ncr.JOINT_COST_POPULATIONS
+        try:
+            ncr.JOINT_COST_POPULATIONS = ((9, 183),)
+            with self.assertRaises(SystemExit):
+                ncr.render_joint_cost(self.alpha, self.halfwidth, 0.6, 5, 3)
+        finally:
+            ncr.JOINT_COST_POPULATIONS = original
+
+
 if __name__ == "__main__":
     unittest.main()

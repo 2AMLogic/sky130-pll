@@ -1,0 +1,132 @@
+{
+  "samples": "sim/pll-lock-mc/analysis/negative-control/probes/p11-one-failing-draw.json",
+  "limits": null,
+  "source": {
+    "kind": "sample-set",
+    "netlist": null,
+    "monte_carlo": null,
+    "sample_count": 183
+  },
+  "schema_version": 1,
+  "confidence": 0.95,
+  "target_ci_halfwidth": 0.01,
+  "min_samples": 2,
+  "status": "reported",
+  "measurement_count": 1,
+  "measurements": [
+    {
+      "name": "period_jitter_rms_pct",
+      "unit": "%",
+      "n": 183,
+      "errored": 0,
+      "failed_unmeasurable": 0,
+      "limits": {
+        "max": 1.0
+      },
+      "source_corners": [
+        "tt_mm_125c_1.80v"
+      ],
+      "distribution": {
+        "model": "normal",
+        "mean": 0.509120218579235,
+        "stddev": 0.12337603012231821,
+        "min": 0.5,
+        "max": 2.169,
+        "median": 0.5,
+        "skewness": 13.416612631565934,
+        "excess_kurtosis": 178.00549450549454,
+        "normality": {
+          "test": "anderson-darling",
+          "statistic": 70.31374322787322,
+          "critical_value": 0.787,
+          "significance": 0.05,
+          "verdict": "rejected"
+        }
+      },
+      "yield": {
+        "empirical": {
+          "method": "clopper-pearson",
+          "estimate": 0.994535519125683,
+          "confidence": 0.95,
+          "confidence_interval": {
+            "low": 0.9699314498826119,
+            "high": 0.9998616608922273
+          },
+          "n": 183
+        },
+        "normal": {
+          "method": "normal-delta",
+          "estimate": 0.9999653576619383,
+          "confidence": 0.95,
+          "confidence_interval": {
+            "low": 0.9999023353607923,
+            "high": 1.0
+          },
+          "n": 183
+        },
+        "variance_reduced": null
+      },
+      "capability": {
+        "cp": null,
+        "cpk": 1.3262429796508934,
+        "cpk_confidence_interval": {
+          "low": 1.1816916354532467,
+          "high": 1.4707943238485401
+        },
+        "sigma_to_spec": 3.9787289389526803,
+        "sigma_to_spec_confidence_interval": {
+          "low": 3.54507490635974,
+          "high": 4.41238297154562
+        },
+        "limiting_side": "upper"
+      },
+      "sample_size": {
+        "n": 183,
+        "observed_ci_halfwidth": 0.014965105504807674,
+        "target_ci_halfwidth": 0.01,
+        "required_n": 209,
+        "required_n_for_target": null,
+        "verdict": "insufficient",
+        "method": "normal-approximation",
+        "variance_reduced": null
+      },
+      "negative_control": {
+        "description": "2 draws, none measurable -- the strongest degradation the schema expresses",
+        "n": 0,
+        "errored": 0,
+        "failed_unmeasurable": 2,
+        "yield": {
+          "empirical": {
+            "method": "clopper-pearson",
+            "estimate": 0.0,
+            "confidence": 0.95,
+            "confidence_interval": {
+              "low": 0.0,
+              "high": 0.841886116991581
+            },
+            "n": 2
+          },
+          "normal": null,
+          "variance_reduced": null
+        },
+        "nominal_empirical_estimate": 0.994535519125683,
+        "degradation_detected": true,
+        "verdict": "detected"
+      },
+      "analytic_cross_check": null,
+      "sampling": {
+        "strategy": "plain_random",
+        "replicates": null,
+        "effective_sample_size": null
+      },
+      "status": "reported",
+      "warnings": [
+        "measurement 'period_jitter_rms_pct': the sample set is not consistent with a normal distribution (Anderson-Darling A2* = 70.3137 > 0.787); treat the parametric yield estimate and Cpk as indicative only and prefer the empirical estimate",
+        "measurement 'period_jitter_rms_pct': N = 183 resolves the yield only to +/-0.0150 at 95% confidence; 209 samples are needed for the requested +/-0.01"
+      ]
+    }
+  ],
+  "warnings": [
+    "no measurement declared a target_yield, so no yield claim was checked -- the estimates below are reported, never failed"
+  ]
+}

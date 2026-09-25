@@ -22,7 +22,7 @@ reason this directory exists before the evidence does rather than after.
 | `tier-report.json` | `klt signoff --manifest … --format json` output. **Generated — do not edit.** Re-render with `bash signoff/run-signoff.sh`. |
 | `run-signoff.sh` | Renders the report (`bash signoff/run-signoff.sh`) or verifies the committed one (`--check`, which is what CI runs), after three guards `klt signoff` does not apply itself (see "Three guards this repo adds"). |
 | `item6_preconditions.py` | Re-derives, from the repo's own artifacts, which of T1 item 6's preconditions are still outstanding — the facts case **4b** below used to carry only in prose. Needs no `klt`, no PDK and no network; `--check` runs in `npm run check:ci`. |
-| `item6-preconditions.md` | That derivation. **Generated — do not edit.** Re-render with `python3 signoff/item6_preconditions.py --write`. Row 3 also states whether guard 3's `detected` condition is *reachable* over the cited campaign at all — see `sim/pll-lock-mc/analysis/negative-control/reachability.md`, which measures it. |
+| `item6-preconditions.md` | That derivation. **Generated — do not edit.** Re-render with `python3 signoff/item6_preconditions.py --write`. Row 3 also states whether guard 3's `detected` condition is *reachable* over the cited campaign at all, and rows 3 and 5 both name what it would cost to satisfy them together — see `sim/pll-lock-mc/analysis/negative-control/reachability.md`, which measures and derives both. |
 
 ## Reproducing
 
@@ -363,23 +363,48 @@ section's to make rather than that document's to report:
   interval lower bound. Both of this campaign's nominal figures are **zero**,
   under both censored-draw mappings, and a control's own two figures are
   proportions of a draw count — so **no control, at any population size, at any
-  degradation, can be `detected` here**. Six committed `klt yield` probes check
-  that rather than quote it, including one that shows the 5-draw control #195
-  would cost is unreachable even against a 5-draw nominal in which every draw
-  passes, and one that reports `detected` so the others are known not to be a
-  broken probe. **What this changes**: item 6's control is gated on *the design
-  meeting ratified row 9 in enough draws*, not on simulator time. Buying #195,
-  or the sized campaign, or both, before that would buy a control that cannot
-  fire.
+  degradation, can be `detected` here**. Eleven committed `klt yield` probes
+  check that rather than quote it, over three thresholds straddled one draw
+  apart, so the `not_detected` rows are known not to be a broken probe.
+  **What this changes**: item 6's control is gated on *the design meeting
+  ratified row 9*, not on simulator time. Buying #195, or the sized campaign,
+  or both, before that would buy a control that cannot fire.
+- **How good the design has to get, and what the citation then costs.** The
+  bullet above left "enough draws" as a direction. It is now a number, derived
+  from the same two fields and checked against every committed probe's own
+  interval bounds, verdict, `required_n` and sample-size state before the
+  document will render. Two results change what this repo should expect to
+  spend. First, **guard 3's two conditions pull against each other**:
+  `klt yield` sizes an estimate with an exact zero-failures interval at a pass
+  rate of exactly 0 or exactly 1 and a normal approximation in between, so
+  `required_n` *peaks in the middle* — this campaign is "sized" at 183 today
+  only because no draw passes, and the first draws that pass make it unsized
+  (`required_n` 209 at 182 of 183, 1797 at 9 of 183). Second, therefore, **the
+  target is a pass rate and it is essentially 100 %**: the cheapest population
+  that is both sized and `detected` is 183 measurable draws with none missing
+  the bound, against a control at `klt yield`'s own 2-draw floor — ≈ 409 h,
+  roughly the ≈ 400 h this repo has quoted all along but conditional on a pass
+  rate nobody had stated. A design meeting row 9 half the time costs ≈ 50× that.
+  **Part-way is the expensive place to stop**, which is the opposite of the
+  intuition that any improvement brings the citation nearer. The design gap is
+  **#202**, filed against that table because until it was derived there was no
+  target to file it against. One correction falls out of the same derivation:
+  probe 4's `not_detected` at five draws a side is a fact about the
+  `n_control = n_nominal` diagonal, not about small populations — the identical
+  5-of-5 nominal against a **6**-draw control is `detected`, so #195 is smaller
+  than its own estimate assumed, and still not buyable first.
 - **Whether to size the campaign.** `sim/pll-lock-mc/analysis/README.md` is the
   full read: ≈ 400 h of simulator time to sharpen an interval around an
   already-negative Cpk, while the 200 ps measurement-resolution floor #178
-  quantifies is the uncertainty that actually binds. The bullet above adds a
-  second reason, measured rather than argued: probe `p2` is exactly this
+  quantifies is the uncertainty that actually binds. The bullets above add two
+  further reasons, measured rather than argued: probe `p2` is exactly this
   campaign widened to `required_n` = 183 with row 9 still missed on every draw,
   and its control is still `not_detected`, so sizing does not supply the other
-  outstanding precondition as a side effect. That README also records why `klt
-  yield` cannot be run from this repo's own pin at all
+  outstanding precondition as a side effect — and the 183 that figure rests on
+  is the zero-failures branch, the size of a campaign that fails everywhere,
+  which stops being the right size the moment the design starts passing. That
+  README also records why `klt yield` cannot be run from this repo's own pin at
+  all
   ([klayout-tools#2466](https://github.com/2AMLogic/klayout-tools/issues/2466)),
   which gates *re-running* the report even once the control exists — though the
   build that produced every `klt yield` artifact here is now a committed script
@@ -395,10 +420,13 @@ conditions, in the report's own fields (`sample_size.verdict` → `sufficient`,
 `negative_control.verdict` → `detected`). So nothing here has to be re-argued
 when they arrive; the citation becomes the mechanical manifest edit #182 always
 said it would be. What the reachability finding changes is the *order* the two
-arrive in, not the gate: the design work on row 9 comes first, because until it
-lands guard 3's `detected` condition is unreachable rather than merely unmet,
-and the escape hatch guard 3 names (an argued `not_detected`) still needs a
-`klt yield` run to declare a control at all.
+arrive in, not the gate: the design work on row 9 (#202) comes first, because
+until it lands guard 3's `detected` condition is unreachable rather than merely
+unmet, and the escape hatch guard 3 names (an argued `not_detected`) still needs
+a `klt yield` run to declare a control at all. And the two do not arrive
+separately: the derivation above shows they are satisfied together, at a pass
+rate of essentially 100 %, or not at all without paying an order of magnitude
+more for the campaign.
 
 **5. The item is a per-partition row whose column this repo cannot produce
 yet.** The digital partition's items 1, 2, 5 and 11 will be answered by the
