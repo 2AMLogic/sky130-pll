@@ -181,7 +181,7 @@ Two further disclosures that belong with the claim:
 ## Why every other row is `unmet`
 
 All 20 remaining T1 rows render `reason: "no_evidence"` — the manifest cites
-nothing for them. That single machine code covers five materially different
+nothing for them. That single machine code covers six materially different
 situations, and the difference is the point of this section.
 
 **1. The artifact exists, but not as a `klt` JSON envelope.** The `sim/`
@@ -196,7 +196,7 @@ attempted against it; the routed spot-check under the same record's
 `route-spot-check/` reports a large, honest mismatch, and it is a *different*
 build from the one item 3 cites, so citing it here would be citing the wrong
 artifact for the claim as well as a failing one; closure is issue #18). There
-is no Monte Carlo campaign (item 6, issue #20), no `klt pex` run (item 7,
+is no `klt pex` run (item 7,
 issue #21), no aggregated PLL characterization report (item 8, issue #22 —
 `measurements/report.md` exists but rolls up harness-plumbing evidence only,
 not per-spec-row PLL performance, so a `generic` envelope asserting `pass` over
@@ -247,6 +247,59 @@ cite — and citing it is not a one-line manifest edit. Guard 2 below matches
 silently skipped, leaving the new citation with no superseded-record check at
 all. Extending the pattern is part of the work of citing item 11, not a
 follow-up to it.
+
+**4b. A real `klt` envelope exists, and citing it would grade the row green
+against what the envelope itself says.** Item **6** (statistical claims carry
+Monte Carlo evidence) is the second instance of §4's trade, arriving from the
+opposite direction: item 11's envelope is *clean* and answers two thirds of its
+claim, while item 6's envelope is an honest report of a **failing, unsized**
+campaign that `klt signoff` would nonetheless grade as passing.
+
+The campaign and the report both exist. `sim/pll-lock-mc/records/20260924-222341-a9375a5.md`
+is row 9's Monte Carlo population (5 seeded local-mismatch + process draws at
+`tt`/125 °C/1.80 V), and `sim/pll-lock-mc/analysis/yield-evidence/klt-yield-report.json`
+is a stock `klt yield --format json` envelope over it against row 9's ratified
+1.0 % bound — the exact shape `klt signoff` classifies as `kind: "yield"`, the
+only kind item 6 accepts. What that envelope says:
+
+- `yield.empirical.estimate` **0.0** — not one of the 3 draws that produced a
+  measurement met the bound (95 % CI `[0, 0.7076]`).
+- `capability.cpk` **−0.491**, `sigma_to_spec` **−1.473** — the fitted mean
+  (2.169 %) is outside the limit, not merely close to it.
+- `sample_size.verdict` **`insufficient`**: `n` = 3, `observed_ci_halfwidth`
+  ±0.354 against a ±0.01 target, `required_n` **183**.
+- run-level warnings: no measurement declared a `target_yield` (so nothing could
+  be failed), and **no measurement declared a `negative_control`** — the
+  deterministic negative control item 6's own checklist text requires.
+
+`klt signoff` grades a yield citation passing when `status` is `"pass"` or
+`"reported"`, and `"reported"` is exactly what a measurement with no
+`target_yield` produces. It consults neither `sample_size.verdict` nor the
+negative-control warning (filed generically as
+[klayout-tools#2467](https://github.com/2AMLogic/klayout-tools/issues/2467)).
+Citing this report would therefore render item 6 **`met`** on a campaign whose
+own artifact says its estimate is unsized, whose measured yield is zero, and
+which carries no self-check that the statistics can detect a bad design. That is
+§3's trade again, so it gets §3's answer: nothing is cited, and the row stays
+`unmet` / `no_evidence`.
+
+Two things make that the honest call rather than a technicality. Item 6's
+checklist text asks for a recorded seed (present — seeds 1..5), a sample count
+(present — 5), a **deterministic negative control** (absent; #178 is building
+one, for its own reasons, and this repo is not building a second) and results
+**combined with, not instead of, process corners** (the draws carry die-to-die
+process spread, but row 9 has no deterministic PVT-grid jitter measurement to
+combine them with — `sim/pll-lock`'s manifest declares no `measure.jitter`
+block; that is issue #180). Two of the four are missing, and both are tracked.
+`sim/pll-lock-mc/analysis/README.md` is the full read, including why the
+campaign was not widened to 183 samples (≈ 400 h of simulator time to sharpen an
+interval around an already-negative Cpk, while the 200 ps measurement-resolution
+floor #178 quantifies is the uncertainty that actually binds) and why `klt
+yield` cannot be run from this repo's own pin at all
+([klayout-tools#2466](https://github.com/2AMLogic/klayout-tools/issues/2466)).
+
+Item 6 becomes citable when the negative control exists and the campaign is
+sized — not before, and not by re-reading the same report more generously.
 
 **5. The item is a per-partition row whose column this repo cannot produce
 yet.** The digital partition's items 1, 2, 5 and 11 will be answered by the
