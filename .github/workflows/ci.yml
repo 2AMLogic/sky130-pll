@@ -10,7 +10,12 @@ name: CI
 #     and `layout/tests/` unit coverage for the trivial-cell LVS reference
 #     netlists, the DRC negative-control fixture's injected violations, and
 #     the layout record's own provenance logic) -> `checks` job below, every
-#     push/PR. Headless, no PDK needed.
+#     push/PR. Headless, no PDK needed -- true on every host, not just this
+#     CI runner: its final step is a plain `bash sim/selftest.sh` (no flags),
+#     which only runs stage 1's PDK-free unit tests and exits; it never
+#     resolves or simulates against a PDK even on a host that has one
+#     installed (see sim/selftest.sh's own header). Simulating at all needs
+#     the separate `--require-pdk` opt-in below (issue #183).
 #   - `sim/run_corners.py pdk-smoke` (the harness's own liveness test: proves
 #     the pinned sky130 PDK models load in ngspice, xschem netlists
 #     headlessly, and the PVT knobs actually reach the simulator) via
