@@ -248,12 +248,16 @@ silently skipped, leaving the new citation with no superseded-record check at
 all. Extending the pattern is part of the work of citing item 11, not a
 follow-up to it.
 
-**4b. A real `klt` envelope exists, and citing it would grade the row green
-against what the envelope itself says.** Item **6** (statistical claims carry
-Monte Carlo evidence) is the second instance of §4's trade, arriving from the
-opposite direction: item 11's envelope is *clean* and answers two thirds of its
-claim, while item 6's envelope is an honest report of a **failing, unsized**
-campaign that `klt signoff` would nonetheless grade as passing.
+**4b. A real `klt` envelope exists, citing it would grade the row green
+against what the envelope itself says — and guard 3 now refuses to render
+that citation at all.** Item **6** (statistical claims carry Monte Carlo
+evidence) is the second instance of §4's trade, arriving from the opposite
+direction: item 11's envelope is *clean* and answers two thirds of its claim,
+while item 6's envelope is an honest report of a **failing, unsized** campaign
+that `klt signoff` would nonetheless grade as passing. It is also the one
+instance of the trade this repo stopped taking on trust: §3's and §4's
+declines are prose, enforced only by whoever reads them, while this one is a
+check (issue #182 — see "Three guards this repo adds" below, guard 3).
 
 The campaign and the report both exist. `sim/pll-lock-mc/records/20260924-222341-a9375a5.md`
 is row 9's Monte Carlo population (5 seeded local-mismatch + process draws at
@@ -283,10 +287,32 @@ which carries no self-check that the statistics can detect a bad design. That is
 §3's trade again, so it gets §3's answer: nothing is cited, and the row stays
 `unmet` / `no_evidence`.
 
-Two things make that the honest call rather than a technicality. Item 6's
+**That paragraph is measured, not predicted.** Adding
+
+```json
+"6": {
+  "file": "sim/pll-lock-mc/analysis/yield-evidence/klt-yield-report.json",
+  "content_hash": "sha256:2416e83066dc3942975d063555f117b5126724d1e3b57ce0c3753690547feea3"
+}
+```
+
+to the manifest and rendering at the pinned `klt` 0.6.0 takes `t1_met_count`
+from **2 to 4** — item 6 `met` in *both* partition columns, `citation.kind`
+`"yield"`, `check_status` `"reported"`, `input_verified` `true` — over the
+report quoted above. Note which artifact that hash pins: a `klt yield` report
+names its input as `samples`, so the pin is the SHA-256 of
+`yield-evidence/mc-samples.json`, not of the report file. Pinning the report's
+own hash instead renders `unmet` / `stale_evidence`, which looks like the
+decline this section argues for but is really just a mis-pinned citation — a
+green row one corrected hash away, not a gate.
+
+Two things make the decline the honest call rather than a technicality. Item 6's
 checklist text asks for a recorded seed (present — seeds 1..5), a sample count
-(present — 5), a **deterministic negative control** (absent; #178 is building
-one, for its own reasons, and this repo is not building a second) and results
+(present — 5), a **deterministic negative control** (absent — #178 built a
+*null* control, `sim/jitter-floor`, which measures the pipeline's resolution
+floor rather than demonstrating that the statistics detect a degraded design;
+the **known-bad** variant `klt yield`'s `negative_control` and this item both
+want is issue #185, and this repo is not building a second) and results
 **combined with, not instead of, process corners** (the draws carry die-to-die
 process spread, but row 9 has no deterministic PVT-grid jitter measurement to
 combine them with — `sim/pll-lock`'s manifest declares no `measure.jitter`
@@ -300,6 +326,13 @@ yield` cannot be run from this repo's own pin at all
 
 Item 6 becomes citable when the negative control exists and the campaign is
 sized — not before, and not by re-reading the same report more generously.
+**Guard 3 is what makes that sentence binding**: a manifest that cites this
+report today does not render a green row and a stale README to be caught in
+review — `run-signoff.sh` exits 1 and names both missing conditions. The two
+that retire the guard's objection are exactly the two above, in the report's own
+fields (`sample_size.verdict` → `sufficient`, `negative_control.verdict` →
+`detected`), so nothing here has to be re-argued when they arrive; the citation
+becomes the mechanical manifest edit #182 always said it would be.
 
 **5. The item is a per-partition row whose column this repo cannot produce
 yet.** The digital partition's items 1, 2, 5 and 11 will be answered by the
@@ -311,11 +344,12 @@ T2, T3 and T4 render as single ladder rows, always `unmet` with `reason:
 "tier_not_supported"`: they need commercial signoff tools, fab access, or
 production data, none of which this repo has a mechanism to check.
 
-## Two guards this repo adds
+## Three guards this repo adds
 
-`run-signoff.sh` runs two checks before rendering, because the grader's
-freshness model leaves two doors open that matter for an append-only evidence
-repo. Both are demonstrated below.
+`run-signoff.sh` runs three checks before rendering. The first two exist
+because the grader's freshness model leaves two doors open that matter for an
+append-only evidence repo; the third because the grader reads a `klt yield`
+citation's *status* and not its *statistics*. All three are demonstrated below.
 
 1. **The cited artifact is re-hashed.** `klt signoff` does re-hash a citation's
    input artifact when it can find it, and discloses the answer as the
@@ -336,6 +370,12 @@ repo. Both are demonstrated below.
    [klayout-tools#2340](https://github.com/2AMLogic/klayout-tools/issues/2340)
    (cross-confirmed from this repo, per `CLAUDE.md`'s friction protocol); this
    guard retires when that lands.
+
+   **Which key names the artifact depends on the verb**: `klt drc`/`lvs`/`erc`
+   envelopes call it `file`, a `klt yield` report calls its sample-set document
+   `samples`. Both are read (issue #182). Before that, a yield citation hit the
+   "names no input artifact" branch — warn, skip, keep going — so its pin was
+   never checked against anything (negative control 7 below).
 2. **The cited record must be the one `LATEST` names.** A pinned hash catches
    an artifact that *changed*; it cannot catch one that was *superseded*.
    `layout/` records are append-only, so a fresh flow run mints a new
@@ -349,14 +389,34 @@ repo. Both are demonstrated below.
    future citation under a differently-named sibling record tree (the live
    example is `layout/pll/erc-reports/`, item 11's, see §4 above) gets no
    superseded-record check until the pattern is widened to cover it.
+3. **A cited `klt yield` report must be one its own statistics stand behind.**
+   The grader reads such a citation's `status` and nothing else — and `status`
+   is `"reported"`, which it grades as passing, for any measurement that
+   declares no `target_yield`, i.e. for a measurement that *can never fail*
+   (klayout-tools#2467). So a report that says in its own body "this estimate
+   is unsized" and "nothing here demonstrates these statistics can detect a
+   degraded design" still renders item 6 `met`; §4b above is that false green,
+   measured. Two of item 6's four checklist requirements are machine-readable
+   in the report itself, so the guard checks them rather than trusting a
+   reviewer: every measurement's `sample_size.verdict` must be `sufficient`,
+   and every measurement must declare a `negative_control` whose `verdict` is
+   `detected`. Nothing else about the report is judged — a *failing* campaign
+   is still citable, and should be: the guard is about whether the statistics
+   support a claim, not about whether the claim is good news. If `not_detected`
+   is a campaign's honest outcome, the argument for it belongs in a committed
+   record beside the report, and relaxing this guard is part of making that
+   argument rather than a way around it. The guard retires when
+   klayout-tools#2467 lands and `klt signoff` applies both checks itself.
 
 ## Negative controls
 
 A gate that cannot fail is not a gate — the same discipline
 `layout/trivial-cell/`'s injected-defect fixtures apply to the DRC/LVS flow.
-All five properties were demonstrated against a scratch copy of the cited
-record — the first four before this directory was committed, and the fifth
-(the missing-artifact case, issue #163) once it was found:
+All seven properties were demonstrated against a scratch copy of the cited
+record — the first four before this directory was committed, the fifth (the
+missing-artifact case, issue #163) once it was found, and the last two when
+guard 3 landed (issue #182, against the real committed
+`yield-evidence/klt-yield-report.json` cited from a scratch manifest):
 
 | Injected fault | Result |
 | --- | --- |
@@ -365,6 +425,8 @@ record — the first four before this directory was committed, and the fifth
 | The envelope's own `provenance.input.content_hash` changed (it ran against a different revision than the claim) | `klt signoff` re-grades item 3 `unmet` / `stale_evidence`, `t1_met_count` 2 → 0, the committed report no longer matches, `--check` exits 1 |
 | One field of the committed `tier-report.json` hand-edited | `--check` prints the diff (`"t1_met_count": 99` → `2`) and exits 1 |
 | `pll_top.gds` deleted outright (not edited — the cited artifact is simply gone) | guard 1 fails: `layout/pll/reports/<record>/pll_top.gds is missing -- layout/pll/reports/<record>/drc.json's pinned content_hash cannot be re-verified because the cited artifact is gone, not merely changed`, exit 1. This is the one case guard 1 used to let through (issue #163): re-run against the pre-fix script with the identical scratch record, `rm pll_top.gds` printed only `warning: … not found` and `--check` still reported `signoff/tier-report.json is current.` and exited 0 — the exact false-pass the fix above closes. |
+| Item 6 cited at `yield-evidence/klt-yield-report.json`, pinned correctly to its sample document (the false green §4b measures) | guard 3 fails, exit 1, naming both conditions: `measurement 'period_jitter_rms_pct': sample_size.verdict is 'insufficient' (n = 3, required_n = 183)` and `… no negative_control is declared -- nothing demonstrates these statistics can detect a degraded design`. Without the guard the same manifest renders `t1_met_count` 2 → 4. The converse was checked too, so the guard is a gate and not a blanket refusal: the same citation against a scratch copy of the report with `sample_size.verdict` `sufficient` and a `negative_control.verdict` of `detected` passes all three guards silently and grades item 6 `met` in both columns — exactly the citation #182 is waiting to be able to make. |
+| The same citation pinned to the report's own SHA-256 instead of its sample document's | guard 1 fails: `sim/pll-lock-mc/analysis/yield-evidence/mc-samples.json hashes to sha256:2416e830… but the manifest pins sha256:ccc0b324…`, exit 1. Re-run against the pre-#182 script with the identical manifest, this printed only `warning: … names no input artifact -- its pinned content_hash could not be re-hashed` and rendered anyway: the pin was compared to nothing at all. It survived only because `klt signoff` independently re-hashes what a yield report names (that path is relative, unlike the layout envelopes' — see guard 1) and graded the row `stale_evidence`. A pin nobody checks that happens to be caught by the grader is not a guard. |
 
 ## Why the checklist is not vendored here
 
