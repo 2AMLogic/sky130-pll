@@ -1,61 +1,8 @@
-v {xschem version=3.4.7 file_version=1.2
-* tb_jitter_calibration.sch -- period-jitter CALIBRATION control (issue #185)
-*
-* GENERATED FILE -- do not hand-edit. Regenerate with
-*   python3 sim/jitter-calibration/testbench/gen_pwl_clock.py --variant J20c
-* That script's module docstring is the authoritative description of how the
-* edge schedule below is built and why its injected figure is exact.
-*
-* DELIBERATELY NOT A PLL, and deliberately NOT a null control. The whole DUT
-* is one piecewise-linear voltage source and one load resistor. Unlike
-* sim/jitter-floor/testbench/tb_jitter_floor.sch -- whose pulse source has a
-* period that is exactly constant, i.e. TRUE period jitter of zero -- this
-* source's rising edges are scheduled from a seeded RNG at a KNOWN, nonzero
-* RMS period jitter. Pushing it through the identical
-* `linearize` -> `wrdata` -> `edge_times` -> `period_jitter` path answers the
-* question a null control cannot: what does this pipeline REPORT when the
-* signal it is handed genuinely jitters by a stated amount (issue #185)?
-*
-* Committed state: variant J20c -- 300 cycles of nominal period
-* 3.9170 ns at an injected 2.000% RMS period jitter
-* (seed 185020), transition time TR = TF = 1 ns. The `pwl(...)` card below
-* IS the schedule: every 50% crossing is the exact midpoint of a symmetric
-* ramp, so the injected figure is a property of this text rather than a claim
-* about the generator. sim/jitter-calibration/analysis/calibration.py
-* re-derives it from each record's own committed per-point netlist.
-*
-* Why there is no sky130 device here at all: a control has to isolate the
-* thing under test, which is the harness's own reduction path and not a
-* circuit, so anything that could itself jitter is removed. The sky130 .lib
-* include below is kept anyway, unused, so the harness's per-point corner
-* substitution (`corner_pattern`) has something real to patch and this
-* campaign's records carry the same PDK/model/simulator environment
-* provenance every other record under sim/ carries -- the same choice
-* tb_jitter_floor.sch makes, for the same reasons.
-*
-* No `.tran` card here on purpose -- sim/harness/measure.py injects the
-* transient window, the `linearize` onto the manifest's `tran_step` grid, the
-* `wrdata` dump and the completion marker from sim/jitter-calibration/
-* testbench/tb.json's own `measure` block.
-*
-* Provenance: schematic-capture convention (label-based wiring, one lab_pin
-* per net, zero drawn wire segments) matches sim/jitter-floor/testbench/
-* tb_jitter_floor.sch; written fresh for issue #185, no external source
-* netlist.
-}
-G {}
-V {}
-S {}
-E {}
-C {devices/lab_pin.sym} 0 -30 0 0 {name=p1 sig_type=std_logic lab=CLK}
-C {devices/gnd.sym} 0 30 0 0 {name=l1 lab=GND}
-C {devices/res.sym} 300 0 0 0 {name=R1 value=1k}
-C {devices/lab_pin.sym} 300 -30 0 0 {name=p2 sig_type=std_logic lab=CLK}
-C {devices/gnd.sym} 300 30 0 0 {name=l2 lab=GND}
-C {devices/code.sym} 600 -100 0 0 {name=CLKSRC
-only_toplevel=true
-format="tcleval( @value )"
-value="
+** sch_path: /home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-185/sim/jitter-calibration/testbench/tb_jitter_calibration.sch
+**.subckt tb_jitter_calibration
+R1 CLK GND 1k m=1
+**** begin user architecture code
+
 ** GENERATED -- variant J20c: 300 cycles, nominal period
 ** 3.9170 ns, injected period jitter 2.000000% RMS
 ** (seeded RNG, seed 185020), TR = TF = 1 ns.
@@ -363,19 +310,27 @@ VCLK CLK GND pwl(
 + 1175.671486n 0 1176.600000n 0 1177.600000n 1.8 1178.558500n 1.8
 + 1179.558500n 0
 + )
-"
-spice_ignore=false}
-C {devices/code.sym} 600 200 0 0 {name=MODELS
-only_toplevel=true
-format="tcleval( @value )"
-value="
+
+
 ** sky130 PDK model include (tt corner) -- patched per-point by sim/harness.
 ** No device in this testbench uses it: it is here so the harness's own
 ** corner substitution and this record's environment provenance are the same
 ** as every other campaign's. See this file's header comment.
-.lib $::SKYWATER_MODELS/sky130.lib.spice tt
+.lib /home/ubuntu/.volare/sky130A/libs.tech/combined/sky130.lib.spice tt
 ** No .tran/.print card here on purpose -- sim/harness/measure.py injects the
 ** analysis from this manifest's own measure block.
-"
-spice_ignore=false}
-C {devices/title.sym} -200 300 0 0 {name=l3 author="2AM Logic (issue #185, period-jitter calibration control)"}
+
+**** end user architecture code
+**.ends
+.GLOBAL GND
+.temp 27
+.control
+set filetype=ascii
+save v(CLK)
+tran 200p 1.2u
+linearize v(CLK)
+wrdata tt_27c_1.80v-point000.raw v(CLK)
+destroy all
+echo "sim/harness: analysis complete"
+.endc
+.end
