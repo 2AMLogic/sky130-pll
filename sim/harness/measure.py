@@ -25,7 +25,12 @@ synthetic traces):
    `measure.ripple` block also dumps the named DC-ish nodes
    (`parse_wrdata_columns`) and reduces each to a peak-to-peak figure over the
    final settled window of the transient (`ripple_pp`), reported alongside --
-   never gating -- the clock measurement.
+   never gating -- the clock measurement. A manifest with a `measure.transition`
+   block additionally reduces the same `v(node)` samples `edge_times` already
+   has in hand to a rise/fall transition time (`transition_times`, issue
+   #186) -- the 10-90% (default; a manifest may state another pair of
+   fractions) edge speed, again reported alongside and never gating the
+   clock measurement.
 
 ## What "locked" means here
 
@@ -382,6 +387,35 @@ class RippleSpec:
 
 
 @dataclass(frozen=True)
+class TransitionSpec:
+    """The optional `measure.transition` block: reduce the measured node's
+    own edges to a rise/fall transition time (issue #186), reported --
+    never gated -- alongside frequency/duty/jitter.
+
+    `frac_lo`/`frac_hi` are fractions of the node's `[0, supply_v]` swing
+    (the same convention `threshold_frac` uses for the 50% crossing), the
+    levels a rising edge's duration is measured between (in the reverse
+    order for a falling edge). The conventional figure is 10-90%
+    (`frac_lo=0.1`, `frac_hi=0.9`, this module's default); `sim/jitter-floor`
+    also cites 20-80% as an equally defensible alternative convention, so a
+    manifest that wants it states so explicitly rather than this module
+    picking for it.
+    """
+
+    frac_lo: float = 0.1
+    frac_hi: float = 0.9
+
+    @property
+    def summary(self) -> str:
+        return (
+            f"{self.frac_lo * 100:g}-{self.frac_hi * 100:g}% transition time "
+            f"(rise/fall separately), each edge's duration between linearly "
+            f"interpolated crossings of {self.frac_lo:g}*VDD and "
+            f"{self.frac_hi:g}*VDD"
+        )
+
+
+@dataclass(frozen=True)
 class MeasureSpec:
     """The `measure` block of a `tb.json` manifest, parsed."""
 
@@ -409,6 +443,7 @@ class MeasureSpec:
     min_oscillating_points: int = 0
     extra_nodes: tuple = field(default=())
     ripple: RippleSpec | None = None
+    transition: TransitionSpec | None = None
 
     @property
     def tran_stop_s(self) -> float:
@@ -548,6 +583,26 @@ class MeasureSpec:
                 raise MeasureError("`measure.ripple` is not supported on a swept manifest")
             ripple = RippleSpec(nodes=nodes, window_s=window_s)
 
+        transition = None
+        if "transition" in block:
+            trb = block["transition"]
+            if trb is None or trb is True:
+                trb = {}
+            if not isinstance(trb, dict):
+                raise MeasureError(
+                    "manifest `measure.transition` block must be an object "
+                    "(or `true` for the default 10-90%)"
+                )
+            frac_lo = float(trb.get("frac_lo", 0.1))
+            frac_hi = float(trb.get("frac_hi", 0.9))
+            if not 0.0 <= frac_lo < frac_hi <= 1.0:
+                raise MeasureError(
+                    "manifest `measure.transition` fractions must satisfy "
+                    f"0 <= frac_lo < frac_hi <= 1 -- got frac_lo={frac_lo!r}, "
+                    f"frac_hi={frac_hi!r}"
+                )
+            transition = TransitionSpec(frac_lo=frac_lo, frac_hi=frac_hi)
+
         return cls(
             node=block["node"],
             tran_step=str(block["tran_step"]),
@@ -567,6 +622,7 @@ class MeasureSpec:
             min_oscillating_points=int(block.get("min_oscillating_points", 0)),
             extra_nodes=tuple(block.get("extra_nodes", ())),
             ripple=ripple,
+            transition=transition,
         )
 
 
@@ -786,6 +842,80 @@ def duty_cycle(rising, falling, t_from: float | None = None) -> float | None:
     return fmean(ratios)
 
 
+def transition_times(
+    times,
+    values,
+    v_lo: float,
+    v_hi: float,
+    frac_lo: float = 0.1,
+    frac_hi: float = 0.9,
+    t_from: float | None = None,
+) -> tuple:
+    """Rise/fall transition durations of the measured node (issue #186).
+
+    A rising edge's duration is the time between its linearly interpolated
+    crossing of `v_lo + frac_lo*(v_hi - v_lo)` and its crossing of
+    `v_lo + frac_hi*(v_hi - v_lo)` (the reverse order, high level first, for
+    a falling edge) -- the same linear-interpolation-between-the-bracketing-
+    sample-pair method `edge_times`/`_interpolate_back` use for a single
+    threshold, applied at two levels instead of one.
+
+    Returns `(rise_times, fall_times)`, each a list of durations in seconds,
+    one entry per edge that completes a **monotonic** crossing of both
+    levels in the expected direction: an excursion that reverses before
+    reaching the far level (e.g. ringing that re-crosses the near level) is
+    silently dropped rather than contributing a bogus duration, mirroring
+    `edge_times`' treatment of a crossing that never resolves. An edge whose
+    near-level crossing lands before `t_from` is excluded, the same
+    settle/lock-window convention `duty_cycle`/`mean_frequency` use.
+
+    `v_lo`/`v_hi` are the node's assumed rail-to-rail swing (typically `0`
+    and the PVT point's own supply voltage, mirroring `threshold_frac`'s
+    convention), not a per-edge measured extremum -- a node that does not
+    swing rail-to-rail under-reports both levels' separation and so
+    over-reports the transition time, which is a property of the DUT stated
+    once by the caller, not inferred edge-by-edge.
+    """
+    if frac_hi <= frac_lo:
+        raise MeasureError(
+            f"transition_times needs frac_lo < frac_hi -- got frac_lo={frac_lo!r}, "
+            f"frac_hi={frac_hi!r}"
+        )
+    lo = v_lo + frac_lo * (v_hi - v_lo)
+    hi = v_lo + frac_hi * (v_hi - v_lo)
+    rises, falls = [], []
+    pending_rise: float | None = None  # interpolated `lo` crossing time, going up
+    pending_fall: float | None = None  # interpolated `hi` crossing time, going down
+    for i in range(1, len(values)):
+        t0, t1 = times[i - 1], times[i]
+        v0, v1 = values[i - 1], values[i]
+        if v0 != v1:
+            if v0 < lo <= v1:
+                pending_rise = t0 + (lo - v0) * (t1 - t0) / (v1 - v0)
+            if pending_rise is not None and v0 < hi <= v1:
+                t_hi = t0 + (hi - v0) * (t1 - t0) / (v1 - v0)
+                if t_from is None or pending_rise >= t_from:
+                    rises.append(t_hi - pending_rise)
+                pending_rise = None
+
+            if v0 > hi >= v1:
+                pending_fall = t0 + (hi - v0) * (t1 - t0) / (v1 - v0)
+            if pending_fall is not None and v0 > lo >= v1:
+                t_lo = t0 + (lo - v0) * (t1 - t0) / (v1 - v0)
+                if t_from is None or pending_fall >= t_from:
+                    falls.append(t_lo - pending_fall)
+                pending_fall = None
+
+        # A reversal before the far level completes cancels the pending
+        # crossing rather than letting the next excursion complete it with a
+        # stale start time.
+        if pending_rise is not None and v1 < lo:
+            pending_rise = None
+        if pending_fall is not None and v1 > hi:
+            pending_fall = None
+    return rises, falls
+
+
 def lock_time(rising, spec: LockSpec) -> tuple:
     """Apply this module's lock criterion. Returns (locked, time_to_lock)."""
     w = spec.window_cycles
@@ -917,6 +1047,17 @@ class Measurement:
     # One `RippleResult` per `measure.ripple` node; empty when the manifest
     # asks for no ripple reduction.
     ripple: tuple = ()
+    # Issue #186's transition-time figure -- `None`/`0` when the manifest
+    # declares no `transition` block, or when no edge of that direction
+    # completed a monotonic crossing of both levels. The mean is over
+    # `n_rise_edges`/`n_fall_edges` individual edge durations, reported
+    # separately because a single-ended current-starved ring's rise and fall
+    # need not be symmetric (design/vco/DESIGN.md's own 2:1 PMOS:NMOS sizing
+    # note).
+    rise_time_s: float | None = None
+    fall_time_s: float | None = None
+    n_rise_edges: int = 0
+    n_fall_edges: int = 0
 
     def summary(self) -> str:
         """One-line human-readable form, used in the record's result table."""
@@ -983,6 +1124,44 @@ def _measure_jitter(rising, spec: MeasureSpec, t_from: float | None) -> tuple:
             f"{js.max_frac * 100:g}% of the output period"
         )
     return frac, n_cycles, clause
+
+
+def _measure_transition(
+    times, values, spec: MeasureSpec, supply_v: float, t_from: float | None
+) -> tuple:
+    """Issue #186's transition-time figure for one trace:
+    `(rise_mean, fall_mean, n_rise, n_fall, note_clause)`.
+
+    `t_from` is the same population start instant `_measure_jitter` uses --
+    `t_lock` for a manifest with a `lock` block, `settle_from` for one
+    without -- so a transition figure is never drawn from the pre-lock
+    acquisition transient either. All five results are `None`/`0`/`None`
+    when the manifest declares no `transition` block, so a campaign that
+    does not ask for it is byte-for-byte unaffected.
+    """
+    if spec.transition is None:
+        return None, None, 0, 0, None
+    ts = spec.transition
+    rises, falls = transition_times(
+        times, values, 0.0, supply_v,
+        frac_lo=ts.frac_lo, frac_hi=ts.frac_hi, t_from=t_from,
+    )
+    rise_mean = fmean(rises) if rises else None
+    fall_mean = fmean(falls) if falls else None
+    tag = f"{ts.frac_lo * 100:g}-{ts.frac_hi * 100:g}%"
+    if rise_mean is None and fall_mean is None:
+        start = "the start of the trace" if t_from is None else _fmt_s(t_from)
+        return None, None, 0, 0, (
+            f"{tag} transition time **not measured**: no rising or falling "
+            f"edge from {start} completed a monotonic crossing of both levels"
+        )
+    parts = []
+    if rise_mean is not None:
+        parts.append(f"rise {_fmt_s(rise_mean)} (n={len(rises)})")
+    if fall_mean is not None:
+        parts.append(f"fall {_fmt_s(fall_mean)} (n={len(falls)})")
+    clause = f"{tag} transition time: " + ", ".join(parts)
+    return rise_mean, fall_mean, len(rises), len(falls), clause
 
 
 def measure_trace(
@@ -1094,6 +1273,11 @@ def _measure_clock(
         )
         if jitter_clause:
             note += f", {jitter_clause}"
+        rise_t, fall_t, n_rise, n_fall, transition_clause = _measure_transition(
+            times, values, spec, supply_v, t_from=settle
+        )
+        if transition_clause:
+            note += f", {transition_clause}"
         return Measurement(
             label=label,
             oscillating=True,
@@ -1106,6 +1290,10 @@ def _measure_clock(
             passed=True,
             period_jitter_frac=jitter_frac,
             jitter_cycles=jitter_cycles,
+            rise_time_s=rise_t,
+            fall_time_s=fall_t,
+            n_rise_edges=n_rise,
+            n_fall_edges=n_fall,
         )
 
     locked, t_lock = lock_time(usable, spec.lock)
@@ -1155,6 +1343,11 @@ def _measure_clock(
     )
     if jitter_clause:
         note += f", {jitter_clause}"
+    rise_t, fall_t, n_rise, n_fall, transition_clause = _measure_transition(
+        times, values, spec, supply_v, t_from=t_lock
+    )
+    if transition_clause:
+        note += f", {transition_clause}"
     return Measurement(
         label=label,
         oscillating=True,
@@ -1167,6 +1360,10 @@ def _measure_clock(
         passed=True,
         period_jitter_frac=jitter_frac,
         jitter_cycles=jitter_cycles,
+        rise_time_s=rise_t,
+        fall_time_s=fall_t,
+        n_rise_edges=n_rise,
+        n_fall_edges=n_fall,
     )
 
 

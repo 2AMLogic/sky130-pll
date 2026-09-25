@@ -260,6 +260,18 @@ def _render_measurement_criteria(a, spec, methodology_note: str) -> None:
             "start; otherwise the figure is shown but labelled as not "
             "ripple-in-lock evidence."
         )
+    if spec.transition is not None:
+        a(
+            f"  - Transition time (reported, not gated on; issue #186): "
+            f"{spec.transition.summary}, from the same "
+            f"`v({spec.node})` samples the frequency/duty/jitter reduction "
+            f"above already extracted edges from -- rise and fall are reported "
+            f"separately (a single-ended current-starved ring's PMOS/NMOS "
+            f"tail legs are not assumed symmetric) as the mean over every "
+            f"edge that completes a monotonic crossing of both levels at or "
+            f"after the same population start instant (the lock instant, or "
+            f"`settle_from` when the manifest declares no lock criterion)."
+        )
     a(
         "  - Not measured here: loop bandwidth and phase margin are open-loop "
         "quantities and need their own AC/linearized-model testbench -- see "
@@ -438,33 +450,51 @@ def _render_ac_extremes(a, results, ac_spec) -> None:
     a("")
 
 
+def _format_transition(m) -> str:
+    """`Transition (rise/fall)` cell text -- `-` when the manifest carries no
+    `measure.transition` block, or when neither edge direction measured a
+    figure for this point (`m` itself is still non-`None` in that case)."""
+    if m is None or (m.rise_time_s is None and m.fall_time_s is None):
+        return "-"
+    rise = measure_mod.format_s(m.rise_time_s) if m.rise_time_s is not None else "-"
+    fall = measure_mod.format_s(m.fall_time_s) if m.fall_time_s is not None else "-"
+    return f"{rise} / {fall}"
+
+
 def _render_measured_points_table(a, results, spec) -> None:
     """Per-point result table for an unswept measurement record."""
     lock_mode = spec.lock is not None
+    transition_mode = spec.transition is not None
+    transition_col = " Transition (rise/fall) |" if transition_mode else ""
+    transition_sep = "---|" if transition_mode else ""
     if lock_mode:
-        a("  | Corner | Temp (C) | Supply (V) | Verdict | Locked | Time-to-lock | f_out (post-lock) | Duty | Detail |")
-        a("  |---|---|---|---|---|---|---|---|---|")
+        a(
+            "  | Corner | Temp (C) | Supply (V) | Verdict | Locked | "
+            f"Time-to-lock | f_out (post-lock) | Duty |{transition_col} Detail |"
+        )
+        a(f"  |---|---|---|---|---|---|---|---|{transition_sep}---|")
     else:
-        a("  | Corner | Temp (C) | Supply (V) | Verdict | f_out | Duty | Detail |")
-        a("  |---|---|---|---|---|---|---|")
+        a(f"  | Corner | Temp (C) | Supply (V) | Verdict | f_out | Duty |{transition_col} Detail |")
+        a(f"  |---|---|---|---|---|---|{transition_sep}---|")
     for r in results:
         p = r.point
         verdict = "PASS" if r.passed else "FAIL"
         m = r.measurements[0] if r.measurements else None
         duty = f"{m.duty_cycle * 100:.1f}%" if (m and m.duty_cycle is not None) else "-"
+        transition_cell = f" {_format_transition(m)} |" if transition_mode else ""
         if lock_mode:
             locked = "-" if m is None else ("yes" if m.locked else "**no**")
             t_lock = measure_mod.format_s(m.lock_time_s) if m else "-"
             fout = measure_mod.format_hz(m.freq_hz) if m else "-"
             a(
                 f"  | {p.corner} | {p.temp_c:g} | {p.supply_v:.2f} | {verdict} | "
-                f"{locked} | {t_lock} | {fout} | {duty} | {r.reason} |"
+                f"{locked} | {t_lock} | {fout} | {duty} |{transition_cell} {r.reason} |"
             )
         else:
             fout = measure_mod.format_hz(m.freq_hz) if m else "-"
             a(
                 f"  | {p.corner} | {p.temp_c:g} | {p.supply_v:.2f} | {verdict} | "
-                f"{fout} | {duty} | {r.reason} |"
+                f"{fout} | {duty} |{transition_cell} {r.reason} |"
             )
 
 

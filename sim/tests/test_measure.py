@@ -212,6 +212,83 @@ class EdgeExtractionTests(unittest.TestCase):
         self.assertEqual(falling, [])
 
 
+class TransitionTimeTests(unittest.TestCase):
+    """`transition_times` -- issue #186's rise/fall extractor. `square_wave`'s
+    `edge_s` ramps linearly from `v_low` to `v_high` over that whole width, so
+    the true 10-90% duration of every edge is `0.8 * edge_s` by construction
+    -- known ground truth, not a value read back out of the extractor itself.
+    """
+
+    def test_rise_and_fall_recover_the_known_ramp_width(self):
+        edge_s = 200e-12
+        times, values = square_wave(
+            freq_hz=100e6, duration_s=200e-9, step_s=2e-12, edge_s=edge_s
+        )
+        rises, falls = measure.transition_times(times, values, 0.0, 1.8)
+        self.assertGreater(len(rises), 5)
+        self.assertGreater(len(falls), 5)
+        for d in rises + falls:
+            self.assertAlmostEqual(d, 0.8 * edge_s, delta=edge_s * 0.02)
+
+    def test_a_coarse_grid_still_resolves_a_multi_step_edge(self):
+        # The edge spans many dump-grid steps (step_s << edge_s), so each
+        # level's crossing lands inside a different sample pair -- the
+        # multi-sample-step case sim/jitter-floor's variant C exercises.
+        edge_s = 1e-9
+        times, values = square_wave(
+            freq_hz=20e6, duration_s=200e-9, step_s=20e-12, edge_s=edge_s
+        )
+        rises, falls = measure.transition_times(times, values, 0.0, 1.8)
+        self.assertGreater(len(rises), 2)
+        for d in rises + falls:
+            self.assertAlmostEqual(d, 0.8 * edge_s, delta=edge_s * 0.01)
+
+    def test_frac_lo_must_be_less_than_frac_hi(self):
+        with self.assertRaises(measure.MeasureError):
+            measure.transition_times([0.0, 1e-9], [0.0, 1.8], 0.0, 1.8, frac_lo=0.9, frac_hi=0.1)
+
+    def test_a_reversal_before_the_far_level_drops_the_edge(self):
+        # Rises past the 10% level, then falls back below it and stays there
+        # -- not a completed rising transition, so it must not be counted
+        # (and, unlike the fixture below, there is no later excursion that
+        # could complete a *different* valid rise instead).
+        times = [0.0, 1e-9, 2e-9, 3e-9]
+        values = [0.0, 0.3, 0.1, 0.1]
+        rises, falls = measure.transition_times(times, values, 0.0, 1.8)
+        self.assertEqual(rises, [])
+        self.assertEqual(falls, [])
+
+    def test_only_edges_at_or_after_t_from_are_counted(self):
+        edge_s = 200e-12
+        times, values = square_wave(
+            freq_hz=100e6, duration_s=200e-9, step_s=2e-12, edge_s=edge_s
+        )
+        all_rises, _ = measure.transition_times(times, values, 0.0, 1.8)
+        later_rises, _ = measure.transition_times(
+            times, values, 0.0, 1.8, t_from=100e-9
+        )
+        self.assertLess(len(later_rises), len(all_rises))
+        self.assertGreater(len(later_rises), 0)
+
+    def test_a_flat_trace_has_no_transitions(self):
+        times = [i * 1e-11 for i in range(100)]
+        values = [1.8] * 100
+        rises, falls = measure.transition_times(times, values, 0.0, 1.8)
+        self.assertEqual(rises, [])
+        self.assertEqual(falls, [])
+
+    def test_a_custom_20_80_fraction_pair_scales_the_recovered_duration(self):
+        edge_s = 200e-12
+        times, values = square_wave(
+            freq_hz=100e6, duration_s=200e-9, step_s=2e-12, edge_s=edge_s
+        )
+        rises, _ = measure.transition_times(
+            times, values, 0.0, 1.8, frac_lo=0.2, frac_hi=0.8
+        )
+        for d in rises:
+            self.assertAlmostEqual(d, 0.6 * edge_s, delta=edge_s * 0.02)
+
+
 class FrequencyAndDutyTests(unittest.TestCase):
     def test_mean_frequency_of_a_known_wave(self):
         times, values = square_wave(freq_hz=250e6, duration_s=200e-9, step_s=20e-12)
@@ -634,6 +711,85 @@ class MeasureTraceTests(unittest.TestCase):
         m = measure.measure_trace(times, values, self.OSC_SPEC, supply_v=1.62)
         self.assertTrue(m.oscillating)
         self.assertAlmostEqual(m.freq_hz, 500e6, delta=500e6 * 2e-3)
+
+
+class TransitionMeasureTraceTests(unittest.TestCase):
+    """End-to-end through `measure_trace`: issue #186's transition figure,
+    on both the free-running (no `lock` block) and post-lock branches."""
+
+    EDGE_S = 300e-12
+    OSC_SPEC = measure.MeasureSpec(
+        node="clk",
+        tran_step="20p",
+        tran_stop="200n",
+        threshold_frac=0.5,
+        hysteresis_frac=0.15,
+        settle_from_s=50e-9,
+        min_edges=5,
+        timeout_s=600,
+        transition=measure.TransitionSpec(),
+    )
+    LOCK_SPEC = measure.MeasureSpec(
+        node="clk",
+        tran_step="200p",
+        tran_stop="6u",
+        threshold_frac=0.5,
+        hysteresis_frac=0.15,
+        settle_from_s=0.0,
+        min_edges=50,
+        timeout_s=600,
+        lock=measure.LockSpec(
+            target_hz=250e6, tolerance_frac=0.02, window_cycles=10, min_hold_cycles=20
+        ),
+        transition=measure.TransitionSpec(),
+    )
+
+    def test_free_running_mode_reports_rise_and_fall(self):
+        times, values = square_wave(
+            freq_hz=500e6, duration_s=200e-9, step_s=2e-12, edge_s=self.EDGE_S
+        )
+        m = measure.measure_trace(times, values, self.OSC_SPEC, supply_v=1.8)
+        self.assertAlmostEqual(m.rise_time_s, 0.8 * self.EDGE_S, delta=self.EDGE_S * 0.05)
+        self.assertAlmostEqual(m.fall_time_s, 0.8 * self.EDGE_S, delta=self.EDGE_S * 0.05)
+        self.assertGreater(m.n_rise_edges, 0)
+        self.assertGreater(m.n_fall_edges, 0)
+        self.assertIn("transition time: rise", m.note)
+
+    def test_locked_trace_reports_transition_from_the_post_lock_population(self):
+        times, values = square_wave(
+            freq_hz=250e6, duration_s=2e-6, step_s=100e-12, edge_s=self.EDGE_S
+        )
+        m = measure.measure_trace(times, values, self.LOCK_SPEC, supply_v=1.8)
+        self.assertTrue(m.locked)
+        self.assertAlmostEqual(m.rise_time_s, 0.8 * self.EDGE_S, delta=self.EDGE_S * 0.05)
+        self.assertAlmostEqual(m.fall_time_s, 0.8 * self.EDGE_S, delta=self.EDGE_S * 0.05)
+        self.assertIn("transition time: rise", m.note)
+
+    def test_no_transition_block_leaves_the_measurement_unchanged(self):
+        spec = measure.MeasureSpec(
+            node="clk", tran_step="20p", tran_stop="200n", threshold_frac=0.5,
+            hysteresis_frac=0.15, settle_from_s=50e-9, min_edges=5, timeout_s=600,
+        )
+        times, values = square_wave(
+            freq_hz=500e6, duration_s=200e-9, step_s=2e-12, edge_s=self.EDGE_S
+        )
+        m = measure.measure_trace(times, values, spec, supply_v=1.8)
+        self.assertIsNone(m.rise_time_s)
+        self.assertIsNone(m.fall_time_s)
+        self.assertEqual(m.n_rise_edges, 0)
+        self.assertEqual(m.n_fall_edges, 0)
+        self.assertNotIn("transition", m.note)
+
+    def test_a_point_that_never_locked_reports_no_transition_time(self):
+        # Consistent with jitter: a point with no post-lock population has
+        # nothing for this figure to be measured over either.
+        times, values = square_wave(
+            freq_hz=150e6, duration_s=2e-6, step_s=200e-12, edge_s=self.EDGE_S
+        )
+        m = measure.measure_trace(times, values, self.LOCK_SPEC, supply_v=1.8)
+        self.assertFalse(m.locked)
+        self.assertIsNone(m.rise_time_s)
+        self.assertIsNone(m.fall_time_s)
 
 
 class JitterMeasureTraceTests(unittest.TestCase):
@@ -1434,6 +1590,66 @@ class ManifestParsingTests(unittest.TestCase):
         with self.assertRaises(measure.MeasureError):
             measure.MeasureSpec.from_manifest(
                 {"measure": {"node": "clk", "tran_step": "1p", "tran_stop": "1n", "lock": {}}}
+            )
+
+    def test_a_manifest_with_no_transition_block_parses_to_no_transition_spec(self):
+        spec = measure.MeasureSpec.from_manifest(
+            {"measure": {"node": "clk", "tran_step": "1p", "tran_stop": "1n"}}
+        )
+        self.assertIsNone(spec.transition)
+
+    def test_a_bare_true_transition_block_uses_the_10_90_default(self):
+        spec = measure.MeasureSpec.from_manifest(
+            {
+                "measure": {
+                    "node": "clk", "tran_step": "1p", "tran_stop": "1n",
+                    "transition": True,
+                }
+            }
+        )
+        self.assertAlmostEqual(spec.transition.frac_lo, 0.1)
+        self.assertAlmostEqual(spec.transition.frac_hi, 0.9)
+
+    def test_a_transition_block_may_state_its_own_fractions(self):
+        spec = measure.MeasureSpec.from_manifest(
+            {
+                "measure": {
+                    "node": "clk", "tran_step": "1p", "tran_stop": "1n",
+                    "transition": {"frac_lo": 0.2, "frac_hi": 0.8},
+                }
+            }
+        )
+        self.assertAlmostEqual(spec.transition.frac_lo, 0.2)
+        self.assertAlmostEqual(spec.transition.frac_hi, 0.8)
+
+    def test_malformed_transition_fractions_are_rejected(self):
+        bad = (
+            {"frac_lo": 0.9, "frac_hi": 0.1},  # inverted
+            {"frac_lo": 0.5, "frac_hi": 0.5},  # equal
+            {"frac_lo": -0.1, "frac_hi": 0.9},  # out of [0, 1]
+            {"frac_lo": 0.1, "frac_hi": 1.1},
+        )
+        for block in bad:
+            with self.subTest(block=block):
+                with self.assertRaises(measure.MeasureError):
+                    measure.MeasureSpec.from_manifest(
+                        {
+                            "measure": {
+                                "node": "clk", "tran_step": "1p", "tran_stop": "1n",
+                                "transition": block,
+                            }
+                        }
+                    )
+
+    def test_a_non_object_non_bool_transition_block_is_rejected(self):
+        with self.assertRaises(measure.MeasureError):
+            measure.MeasureSpec.from_manifest(
+                {
+                    "measure": {
+                        "node": "clk", "tran_step": "1p", "tran_stop": "1n",
+                        "transition": "10-90",
+                    }
+                }
             )
 
 
