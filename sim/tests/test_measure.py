@@ -1228,6 +1228,11 @@ class ManifestParsingTests(unittest.TestCase):
                         "target_hz": 250e6,
                         "tolerance_frac": 0.05,
                         "window_cycles": 20,
+                        # A gated bound may not ask for a larger population
+                        # than the lock criterion guarantees a locked point
+                        # (#190), so a 200-cycle population needs the lock
+                        # criterion to hold for 200 cycles too.
+                        "min_hold_cycles": 200,
                     },
                     "jitter": {"max_frac": 0.01, "min_cycles": 200},
                 }
@@ -1282,6 +1287,108 @@ class ManifestParsingTests(unittest.TestCase):
                     }
                 }
             )
+
+    def test_a_gated_bound_whose_population_outruns_the_lock_criterion_is_rejected(self):
+        # `lock_time` only reports a lock when at least `min_hold_cycles`
+        # cycles of in-band data follow the lock instant, and the jitter
+        # population is exactly those cycles. So a gated bound asking for MORE
+        # cycles than the lock criterion guarantees FAILs every locked point
+        # whose population lands in the gap -- for a shortfall it was
+        # arithmetically incapable of avoiding. That is an artefact verdict
+        # recorded as a design miss, so the manifest is refused instead.
+        with self.assertRaises(measure.MeasureError) as caught:
+            measure.MeasureSpec.from_manifest(
+                {
+                    "measure": {
+                        "node": "clk",
+                        "tran_step": "1p",
+                        "tran_stop": "1n",
+                        "lock": {
+                            "target_hz": 250e6,
+                            "tolerance_frac": 0.02,
+                            "window_cycles": 20,
+                            "min_hold_cycles": 20,
+                        },
+                        "jitter": {"max_frac": 0.01, "min_cycles": 50},
+                    }
+                }
+            )
+        # The message must name both knobs -- the trap is the relationship
+        # between them, not either value on its own.
+        message = str(caught.exception)
+        self.assertIn("measure.jitter.min_cycles", message)
+        self.assertIn("measure.lock.min_hold_cycles", message)
+        self.assertIn("50", message)
+        self.assertIn("20", message)
+
+    def test_a_population_equal_to_what_the_lock_criterion_guarantees_is_accepted(self):
+        # The boundary is the committed manifests' own setting
+        # (`min_cycles == min_hold_cycles == 20`): every locked point holds
+        # exactly enough cycles, so mode 2 is unreachable and every FAIL the
+        # fold produces is a real miss. Must stay legal.
+        spec = measure.MeasureSpec.from_manifest(
+            {
+                "measure": {
+                    "node": "clk",
+                    "tran_step": "1p",
+                    "tran_stop": "1n",
+                    "lock": {
+                        "target_hz": 250e6,
+                        "tolerance_frac": 0.02,
+                        "window_cycles": 20,
+                        "min_hold_cycles": 20,
+                    },
+                    "jitter": {"max_frac": 0.01, "min_cycles": 20},
+                }
+            }
+        )
+        self.assertEqual(spec.jitter.min_cycles, 20)
+        self.assertEqual(spec.lock.min_hold_cycles, 20)
+
+    def test_a_larger_population_stays_legal_where_no_artefact_fail_can_follow(self):
+        # The check is scoped to exactly the shape that can mint an artefact
+        # FAIL: a lock criterion, a stated bound, and gating on it. Everything
+        # else may ask for a better-conditioned statistic than its own lock
+        # criterion guarantees -- the shortfall is then reported as "not
+        # measured" against that point, never folded into a FAIL.
+        base = {
+            "node": "clk",
+            "tran_step": "1p",
+            "tran_stop": "1n",
+            "lock": {
+                "target_hz": 250e6,
+                "tolerance_frac": 0.02,
+                "window_cycles": 20,
+                "min_hold_cycles": 20,
+            },
+        }
+        legal = (
+            # Gating explicitly disabled: the number is reported, not gated.
+            {"max_frac": 0.01, "min_cycles": 50, "gate_on_bound": False},
+            # No bound stated at all: `_fold_jitter_bound` is a no-op.
+            {"min_cycles": 50},
+        )
+        for block in legal:
+            with self.subTest(jitter=block):
+                spec = measure.MeasureSpec.from_manifest({"measure": dict(base, jitter=block)})
+                self.assertEqual(spec.jitter.min_cycles, 50)
+
+    def test_a_jitter_block_without_a_lock_block_is_unaffected_by_the_coupling(self):
+        # `sim/jitter-floor`'s shape: a jitter block and no lock criterion at
+        # all, so the population starts at `settle_from` and nothing bounds it
+        # below. The new check must not start rejecting it.
+        spec = measure.MeasureSpec.from_manifest(
+            {
+                "measure": {
+                    "node": "clk",
+                    "tran_step": "1p",
+                    "tran_stop": "1n",
+                    "jitter": {"max_frac": 0.01, "min_cycles": 500},
+                }
+            }
+        )
+        self.assertIsNone(spec.lock)
+        self.assertEqual(spec.jitter.min_cycles, 500)
 
     def test_parses_a_ripple_block_and_orders_the_dump_nodes(self):
         spec = measure.MeasureSpec.from_manifest(
