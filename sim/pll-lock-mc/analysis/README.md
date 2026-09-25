@@ -1,4 +1,11 @@
-# `sim/pll-lock-mc/analysis/` — the Monte Carlo record, graded by `klt yield`
+# `sim/pll-lock-mc/analysis/` — the Monte Carlo record, graded and floor-corrected
+
+Two derived readings of one record live here: its **grading** by `klt yield`
+(yield, confidence interval, Cpk, sample-size verdict — the sections from
+"Reproducing" down) and its **restatement against the measurement-resolution
+floor** `sim/jitter-floor` measures (issue #178 — see "The measurement floor,
+quantified"). Neither simulates; both only restate committed records.
+
 
 `sim/pll-lock-mc/records/20260924-222341-a9375a5.md` is this repo's Monte Carlo
 population for **ratified** spec row 9 (period jitter ≤ 1.0 % of the output
@@ -22,6 +29,8 @@ manifest does not already carry.**
 | `yield-evidence/spec-limits.json` | Row 9's ratified bound as a spec-limits file (generated). |
 | `yield-evidence/klt-yield-report.json` / `.txt` | `klt yield`'s report over `mc-samples.json` — **the artifact this directory exists to produce**. |
 | `yield-evidence/klt-yield-report-censored-as-failures.json` / `.txt` | The same, over the alternative mapping. Committed so "the mapping does not change the verdict" is checkable rather than asserted. |
+| `jitter_floor.py` | Reads the record's per-trial table **and** `sim/jitter-floor`'s records, and restates the three measured period-jitter figures against the measurement-resolution floor those records put a number on (issue #178). Same `--check` contract. |
+| `jitter-floor/restatement.md` | That restatement (generated) — **the artifact that says whether this campaign's recorded miss is the circuit's or the dump grid's.** See "The measurement floor, quantified" below. |
 
 ## Reproducing
 
@@ -37,9 +46,16 @@ D=sim/pll-lock-mc/analysis/yield-evidence
 klt yield $D/mc-samples.json --limits $D/spec-limits.json --format text
 klt yield $D/mc-samples.json --limits $D/spec-limits.json --format json
 klt yield $D/mc-samples-censored-as-failures.json --limits $D/spec-limits.json --format json
+
+# 3. the measurement-floor restatement (no klt, no PDK -- reads records only)
+python3 sim/pll-lock-mc/analysis/jitter_floor.py --check   # verify
+python3 sim/pll-lock-mc/analysis/jitter_floor.py --write   # re-derive
 ```
 
-Step 2 needs more than this repo's pinned `klt` — see the next section.
+Step 2 needs more than this repo's pinned `klt` — see the next section. Step 3
+needs nothing but Python, and `sim/tests/test_jitter_floor.py` runs its
+`--check` in `npm run check:ci`, so the committed restatement cannot go stale
+against the records it is derived from.
 
 ## `klt yield` is not reachable from this repo's pin (verified, not assumed)
 
@@ -161,11 +177,14 @@ the next thing to spend it on:
    1.0 % bound by 1.47 sample standard deviations, so the question 183 samples
    answers is "how far below the bound is the yield", not "is the row met".
 2. **The binding uncertainty is not sampling noise.** Each sample carries the
-   200 ps dump-grid resolution floor the record states, of unquantified size
-   against a 40 ps budget (#178). Buying 300 more draws of a measurement whose
-   floor is unquantified adds precision to the wrong quantity; #178 quantifies
-   that floor cheaply, with no PLL transient at all, and is the work that
-   determines whether the measured miss is attributable to the circuit.
+   200 ps dump-grid resolution floor the record states, against a 40 ps budget.
+   That floor is **no longer unquantified** — `sim/jitter-floor` measured it
+   (#178) and `jitter-floor/restatement.md` below restates these figures against
+   it — and the answer is that it does not explain the miss. The residual
+   uncertainty it leaves is still not sampling noise, though: it is the floor a
+   *jittering* signal carries, which the null control cannot reach (#185), and
+   which draw sits at which end of the floor family (#186). Buying 300 more
+   draws sharpens none of those.
 3. **A sized campaign also needs a negative control** (below), which does not
    exist yet either. Widening first would buy 305 draws of a campaign that still
    could not close item 6.
@@ -176,6 +195,36 @@ work on row 9 has moved the measured figure to where sampling noise is what
 separates it from the bound. Until then the honest statement is the one the
 committed report makes — 0 % yield over 3 measurable draws of 5, interval
 [0, 0.71], sample size insufficient.
+
+## The measurement floor, quantified
+
+`jitter-floor/restatement.md` is the second artifact this directory exists to
+produce, and it answers the question the record itself had to leave open: **is
+the 1.584 % / 1.851 % / 3.073 % miss the circuit's, or the 200 ps dump grid's?**
+
+`sim/jitter-floor` (#178) measures the floor directly, with no PLL transient at
+all — an ideal source of exactly constant period (true jitter zero) through the
+identical reducer at the identical grid. Its family, and this campaign's figures
+restated against it:
+
+| Trial | Measured | Floor at that draw's period | Floor-removed | Still misses row 9? |
+| --- | --- | --- | --- | --- |
+| 2 | 1.584 % (63.3 ps) | 0.381 % (15.2 ps) | 1.537 % | yes |
+| 3 | 1.851 % (73.9 ps) | 0.720 % (28.7 ps) | 1.705 % | yes |
+| 5 | 3.073 % (120.4 ps) | 2.371 % (92.9 ps) | 1.955 % | yes |
+
+At the other end of the family — an edge the grid resolves rather than one it
+cannot — the measured floor is **0.000 %** and the figures stand unchanged. So
+under both regimes the control covers, the recorded miss is attributable to the
+circuit, and trial 5 misses even under the most pessimistic floor the arithmetic
+allows at this grid (`tran_step/2` = 100 ps). The generated document states the
+one gap that remains — an *intermediate* floor, for edges the grid only partly
+resolves at grid phases spread by a draw's own jitter, could still put trials 2
+and 3 inside the bound, and only a source of known **nonzero** injected jitter
+(#185) settles that.
+
+None of this moves the record: it stands exactly as written, per
+`sim/README.md`'s append-only rule. The restatement is a derived reading of it.
 
 ## The negative control: coordinated with #178, not built twice
 
@@ -189,19 +238,26 @@ warning:
 > known-bad variant demonstrating that the statistics above can actually detect
 > a degraded design
 
-**#178 is where that control is being built**, for its own reason (quantifying
-the 200 ps resolution floor by pushing an ideal source of known exact period
-through the same `linearize` → `wrdata` → `edge_times` → `period_jitter`
-pipeline). Nothing here builds a second one: #178 was open and in progress when
-this directory was written, and `yield_evidence.py` needs no change to carry a
-control once one exists — `negative_control` is per-measurement metadata in the
-same sample-set document. Note the two are different *kinds* of control and only
-one of them is item 6's: #178's is a **null** control (a signal whose true
-jitter is zero, to measure the pipeline's floor), while item 6 / `klt yield`
-want a **known-bad** variant whose degradation the statistics must detect. The
-floor control is the cheaper prerequisite and may well be enough to argue the
-known-bad case; whoever closes that loop should read #178's record first rather
-than re-deriving it here.
+**#178 built that control, and it is `sim/jitter-floor`** — five committed
+records of an ideal source of exactly known period through the same `linearize` →
+`wrdata` → `edge_times` → `period_jitter` pipeline (see the section above).
+Nothing here built a second one, and `yield_evidence.py` still needs no change to
+carry one: `negative_control` is per-measurement metadata in the same sample-set
+document.
+
+**It is not, however, item 6's control, and this directory does not pretend
+otherwise.** The two are different *kinds*: `sim/jitter-floor` is a **null**
+control (a signal whose true jitter is zero, which measures the pipeline's
+floor), while item 6 / `klt yield` want a **known-bad** variant whose degradation
+the statistics must detect. The null control proves the reducer does not invent
+jitter out of nothing at a grid that resolves the edge, and puts a number on what
+it does invent at one that does not — genuinely load-bearing, but it demonstrates
+nothing about detecting a *degraded design*. The known-bad variant the same
+testbench can carry, a source at a known **nonzero** injected jitter, is issue
+#185; whoever closes that loop should start from `sim/jitter-floor`'s testbench
+and records rather than re-deriving either. Both committed `klt yield` reports
+therefore still carry the missing-negative-control warning above, and the
+citation decision below is unchanged.
 
 ## Why `signoff/block-manifest.json` does not cite this report
 

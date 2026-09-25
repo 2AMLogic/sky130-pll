@@ -1,0 +1,30 @@
+
+Note: Compatibility modes selected: hs a
+
+
+Circuit: ** sch_path: /users/rwalters/github/sky130-pll/.loom/worktrees/issue-178/sim/jitter-floor/testbench/tb_jitter_floor.sch
+
+option SCALE: Scale is set to 1e-06 for instance and model parameters
+option SCALE: Scale is set to 1e-06 for instance and model parameters
+option SCALE: Scale is set to 1e-06 for instance and model parameters
+option SCALE: Scale is set to 1e-06 for instance and model parameters
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using KLU as Direct Linear Solver
+ Reference value :  0.00000e+00
+ Reference value :  4.07877e-06
+ Reference value :  7.67830e-06
+ Reference value :  1.10471e-05
+ Reference value :  1.49081e-05
+ Reference value :  1.86398e-05
+ Reference value :  2.23134e-05
+ Reference value :  2.60559e-05
+ Reference value :  2.98466e-05
+ Reference value :  3.43206e-05
+ Reference value :  3.79477e-05
+ Reference value :  4.16005e-05
+ Reference value :  4.54217e-05
+ Reference value :  4.89821e-05
+No. of Data Rows : 508091
+sim/harness: analysis complete
+Note: Simulation executed from .control section 
