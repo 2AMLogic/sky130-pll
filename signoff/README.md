@@ -20,7 +20,9 @@ reason this directory exists before the evidence does rather than after.
 | --- | --- |
 | `block-manifest.json` | The block manifest: this block's `block` name, its `kind`, and the evidence envelope cited per T1 item. Hand-edited; the only file here a human writes. |
 | `tier-report.json` | `klt signoff --manifest … --format json` output. **Generated — do not edit.** Re-render with `bash signoff/run-signoff.sh`. |
-| `run-signoff.sh` | Renders the report (`bash signoff/run-signoff.sh`) or verifies the committed one (`--check`, which is what CI runs), after two guards `klt signoff` does not apply itself (see "Two guards this repo adds"). |
+| `run-signoff.sh` | Renders the report (`bash signoff/run-signoff.sh`) or verifies the committed one (`--check`, which is what CI runs), after three guards `klt signoff` does not apply itself (see "Three guards this repo adds"). |
+| `item6_preconditions.py` | Re-derives, from the repo's own artifacts, which of T1 item 6's preconditions are still outstanding — the facts case **4b** below used to carry only in prose. Needs no `klt`, no PDK and no network; `--check` runs in `npm run check:ci`. |
+| `item6-preconditions.md` | That derivation. **Generated — do not edit.** Re-render with `python3 signoff/item6_preconditions.py --write`. |
 
 ## Reproducing
 
@@ -28,12 +30,16 @@ reason this directory exists before the evidence does rather than after.
 pip install 'klayout-tools==0.6.0'
 bash signoff/run-signoff.sh --check    # verify the committed report
 bash signoff/run-signoff.sh            # re-render it after changing the manifest
+
+# item 6's outstanding preconditions -- no klt, no PDK, no network
+python3 signoff/item6_preconditions.py --check    # verify (also run by check:ci)
+python3 signoff/item6_preconditions.py --write    # re-derive
 ```
 
 No PDK, no KLayout binary, and no layout input are needed: the grader only
 reads committed JSON plus its own bundled checklist. The CI `checks` job runs
 `--check` on every push and pull request. That is what stops this verdict from
-rotting — see "Negative controls" below for the four ways it is demonstrated to
+rotting — see "Negative controls" below for the eight ways it is demonstrated to
 fail rather than rot.
 
 The two pins here remain deliberately **independent**: the **grader** is `klt`
@@ -93,7 +99,7 @@ Item 3 cites
 the record `layout/pll/reports/LATEST` currently names — with its input pinned
 to `sha256:939f97e05b9e4a2a0f866a44bb6f758c030cfd611eaa0a567d5dc3002fa68d4c`,
 which is the SHA-256 of `pll_top.gds` committed in that same record directory
-(re-hashed on every run, see "Two guards this repo adds"). It is cited once,
+(re-hashed on every run, see "Three guards this repo adds"). It is cited once,
 with a kind-independent `"3"` key, so it grades both partitions' rows: the
 stream it ran on is the composed `pll_top` cell, which contains both
 partitions' devices.
@@ -306,33 +312,62 @@ own hash instead renders `unmet` / `stale_evidence`, which looks like the
 decline this section argues for but is really just a mis-pinned citation — a
 green row one corrected hash away, not a gate.
 
-Two things make the decline the honest call rather than a technicality. Item 6's
-checklist text asks for a recorded seed (present — seeds 1..5), a sample count
-(present — 5), a **deterministic negative control** (absent — #178 built a
-*null* control, `sim/jitter-floor`, which measures the pipeline's resolution
-floor rather than demonstrating that the statistics detect a degraded design;
-the **known-bad** variant `klt yield`'s `negative_control` and this item both
-want is issue #185, and this repo is not building a second) and results
-**combined with, not instead of, process corners** (the draws carry die-to-die
-process spread, but row 9 has no deterministic PVT-grid jitter measurement to
-combine them with — `sim/pll-lock`'s manifest declares no `measure.jitter`
-block; that is issue #180). Two of the four are missing, and both are tracked.
-`sim/pll-lock-mc/analysis/README.md` is the full read, including why the
-campaign was not widened to 183 samples (≈ 400 h of simulator time to sharpen an
-interval around an already-negative Cpk, while the 200 ps measurement-resolution
-floor #178 quantifies is the uncertainty that actually binds) and why `klt
-yield` cannot be run from this repo's own pin at all
-([klayout-tools#2466](https://github.com/2AMLogic/klayout-tools/issues/2466)).
+What makes the decline the honest call rather than a technicality is item 6's
+own checklist text, which asks for four things: a recorded seed, a sample count,
+a **deterministic negative control**, and results **combined with, not instead
+of, process corners**. **Which of them are outstanding is not asserted here.**
+`signoff/item6-preconditions.md` re-derives all four — plus guard 3's sizing
+condition — from the artifact and field that settles each one, and
+`python3 signoff/item6_preconditions.py --check` runs in `npm run check:ci`.
+Read that document for the current state; this section argues the *decision*,
+not the facts.
 
-Item 6 becomes citable when the negative control exists and the campaign is
-sized — not before, and not by re-reading the same report more generously.
-**Guard 3 is what makes that sentence binding**: a manifest that cites this
-report today does not render a green row and a stale README to be caught in
-review — `run-signoff.sh` exits 1 and names both missing conditions. The two
-that retire the guard's objection are exactly the two above, in the report's own
-fields (`sample_size.verdict` → `sufficient`, `negative_control.verdict` →
-`detected`), so nothing here has to be re-argued when they arrive; the citation
-becomes the mechanical manifest edit #182 always said it would be.
+That split exists because the facts went stale here once already, quietly. This
+section used to say "`sim/pll-lock`'s manifest declares no `measure.jitter`
+block; that is issue #180" — and kept saying it after #180 landed the block (PR
+#189). The conclusion survived, but for a different reason than the one written
+down: the deterministic grid's column is now *declared* and has still never been
+*run*, so no committed `sim/pll-lock` record carries a period-jitter figure to
+combine the statistical axis with (the full-grid re-run against the current
+manifest defaults is #103). A prose list of five machine-readable facts is a
+list that rots between the commit that changes one and the reader who notices;
+the generated document is the fix.
+
+Behind the rows that read `unmet` sit two decisions, and both are this
+section's to make rather than that document's to report:
+
+- **Which control counts.** `klt yield`'s `negative_control` takes *a
+  known-bad variant's own samples of the same measurement* — here, draws of
+  `period_jitter_rms_pct` from this DUT. Neither control this repo has built is
+  that. `sim/jitter-floor` (#178) is a **null** control: an ideal source whose
+  true jitter is zero, which measures the pipeline's resolution floor. The
+  control #185 asks for is a **known-bad measurement input**: an ideal source at
+  a known *nonzero* injected jitter, which calibrates reported against injected.
+  Both are load-bearing, and neither is a degraded *design* — so declaring
+  either one's samples as this campaign's `negative_control` would
+  claim the statistics separate this population from a degraded PLL when what
+  they separate it from is an ideal pulse source. That is the decision #182
+  reserved to itself, made here: **the control item 6 still lacks is a seeded,
+  deliberately degraded variant of the DUT, re-drawn through this same Monte
+  Carlo campaign** — none of the controls this repo has, or has planned
+  elsewhere, is one.
+- **Whether to size the campaign.** `sim/pll-lock-mc/analysis/README.md` is the
+  full read: ≈ 400 h of simulator time to sharpen an interval around an
+  already-negative Cpk, while the 200 ps measurement-resolution floor #178
+  quantifies is the uncertainty that actually binds. It also records why `klt
+  yield` cannot be run from this repo's own pin at all
+  ([klayout-tools#2466](https://github.com/2AMLogic/klayout-tools/issues/2466)),
+  which gates *re-running* the report even once the control exists.
+
+Item 6 becomes citable when every precondition in that document reads `met` —
+not before, and not by re-reading the same report more generously. **Guard 3 is
+what makes that sentence binding** for the two the report itself carries: a
+manifest that cites this report today does not render a green row and a stale
+README to be caught in review — `run-signoff.sh` exits 1 and names both missing
+conditions, in the report's own fields (`sample_size.verdict` → `sufficient`,
+`negative_control.verdict` → `detected`). So nothing here has to be re-argued
+when they arrive; the citation becomes the mechanical manifest edit #182 always
+said it would be.
 
 **5. The item is a per-partition row whose column this repo cannot produce
 yet.** The digital partition's items 1, 2, 5 and 11 will be answered by the
@@ -412,11 +447,14 @@ citation's *status* and not its *statistics*. All three are demonstrated below.
 
 A gate that cannot fail is not a gate — the same discipline
 `layout/trivial-cell/`'s injected-defect fixtures apply to the DRC/LVS flow.
-All seven properties were demonstrated against a scratch copy of the cited
+All eight properties were demonstrated against a scratch copy of the cited
 record — the first four before this directory was committed, the fifth (the
-missing-artifact case, issue #163) once it was found, and the last two when
+missing-artifact case, issue #163) once it was found, the sixth and seventh when
 guard 3 landed (issue #182, against the real committed
-`yield-evidence/klt-yield-report.json` cited from a scratch manifest):
+`yield-evidence/klt-yield-report.json` cited from a scratch manifest), and the
+eighth when `item6_preconditions.py` landed (issue #182 again — that one is
+demonstrated by `signoff/tests/test_item6_preconditions.py` on every CI run
+rather than once by hand, because unlike the others it needs no `klt`):
 
 | Injected fault | Result |
 | --- | --- |
@@ -427,6 +465,7 @@ guard 3 landed (issue #182, against the real committed
 | `pll_top.gds` deleted outright (not edited — the cited artifact is simply gone) | guard 1 fails: `layout/pll/reports/<record>/pll_top.gds is missing -- layout/pll/reports/<record>/drc.json's pinned content_hash cannot be re-verified because the cited artifact is gone, not merely changed`, exit 1. This is the one case guard 1 used to let through (issue #163): re-run against the pre-fix script with the identical scratch record, `rm pll_top.gds` printed only `warning: … not found` and `--check` still reported `signoff/tier-report.json is current.` and exited 0 — the exact false-pass the fix above closes. |
 | Item 6 cited at `yield-evidence/klt-yield-report.json`, pinned correctly to its sample document (the false green §4b measures) | guard 3 fails, exit 1, naming both conditions: `measurement 'period_jitter_rms_pct': sample_size.verdict is 'insufficient' (n = 3, required_n = 183)` and `… no negative_control is declared -- nothing demonstrates these statistics can detect a degraded design`. Without the guard the same manifest renders `t1_met_count` 2 → 4. The converse was checked too, so the guard is a gate and not a blanket refusal: the same citation against a scratch copy of the report with `sample_size.verdict` `sufficient` and a `negative_control.verdict` of `detected` passes all three guards silently and grades item 6 `met` in both columns — exactly the citation #182 is waiting to be able to make. |
 | The same citation pinned to the report's own SHA-256 instead of its sample document's | guard 1 fails: `sim/pll-lock-mc/analysis/yield-evidence/mc-samples.json hashes to sha256:2416e830… but the manifest pins sha256:ccc0b324…`, exit 1. Re-run against the pre-#182 script with the identical manifest, this printed only `warning: … names no input artifact -- its pinned content_hash could not be re-hashed` and rendered anyway: the pin was compared to nothing at all. It survived only because `klt signoff` independently re-hashes what a yield report names (that path is relative, unlike the layout envelopes' — see guard 1) and graded the row `stale_evidence`. A pin nobody checks that happens to be caught by the grader is not a guard. |
+| Any one of item 6's preconditions flipped state (a `negative_control` declared, `sample_size.verdict` → `sufficient`, a `sim/pll-lock` record carrying a period-jitter column, `monte_carlo.process` turned off, the manifest citing item 6 while a row is still `unmet`) | `python3 signoff/item6_preconditions.py --check` exits 1, naming the document as drifted, and `npm run check:ci` fails. Measured on the real repo for the case most likely to arrive first: dropping a scratch `sim/pll-lock` record carrying a `Period jitter` column into `records/` flips row 4b to `met`, takes the summary from `3 of 6 preconditions outstanding` to `2 of 6`, and `--check` exits 1 — removing it again restores `is current.` and exit 0. Both directions are pinned in CI too: `signoff/tests/test_item6_preconditions.py` drives every row from a synthetic fact set in its met **and** its unmet state, so the document is shown to report the repo rather than to hardcode `unmet` — the same objection guard 3 had to answer. It also fails closed: an input artifact that is missing, unparseable, or not the shape claimed raises rather than rendering a document that has quietly dropped a fact. |
 
 ## Why the checklist is not vendored here
 
@@ -452,5 +491,5 @@ ported from the sibling canary `2AMLogic/gf180-pll`
 (`signoff/run-signoff.sh`, `signoff/README.md` at commit `d85287d8`,
 2026-09-20), per `CLAUDE.md`'s instruction to copy the proven patterns rather
 than reinvent them and to record provenance where we do. The evidence, the
-verdict, the partition boundary, the item-3 disclosure and the two guards are
-this block's own.
+verdict, the partition boundary, the item-3 disclosure, the three guards and
+`item6_preconditions.py` are this block's own.

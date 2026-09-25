@@ -7,9 +7,13 @@ name: CI
 #     sim/**/testbench/tb.json manifest, shell/python syntax of the harness
 #     scripts, `sim/tests/` unit coverage for sim/harness's own
 #     PDK-resolution/corner-matrix/netlist-patch/record-provenance logic,
-#     and `layout/tests/` unit coverage for the trivial-cell LVS reference
+#     `layout/tests/` unit coverage for the trivial-cell LVS reference
 #     netlists, the DRC negative-control fixture's injected violations, and
-#     the layout record's own provenance logic) -> `checks` job below, every
+#     the layout record's own provenance logic, and `signoff/tests/` coverage
+#     of `signoff/item6_preconditions.py` -- which re-derives which of T1 item
+#     6's preconditions are outstanding and fails when the committed
+#     `signoff/item6-preconditions.md` no longer matches the repo) ->
+#     `checks` job below, every
 #     push/PR. Headless, no PDK needed -- true on every host, not just this
 #     CI runner: its final step is a plain `bash sim/selftest.sh` (no flags),
 #     which only runs stage 1's PDK-free unit tests and exits; it never
