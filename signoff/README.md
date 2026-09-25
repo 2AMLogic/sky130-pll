@@ -350,7 +350,9 @@ section's to make rather than that document's to report:
   reserved to itself, made here: **the control item 6 still lacks is a seeded,
   deliberately degraded variant of the DUT, re-drawn through this same Monte
   Carlo campaign** — none of the controls this repo has, or has planned
-  elsewhere, is one.
+  elsewhere, is one. That control is #195, filed rather than built here: it is a
+  new Monte Carlo sub-campaign with its own cost and its own open question about
+  what to degrade, not a re-reading of an existing record.
 - **Whether to size the campaign.** `sim/pll-lock-mc/analysis/README.md` is the
   full read: ≈ 400 h of simulator time to sharpen an interval around an
   already-negative Cpk, while the 200 ps measurement-resolution floor #178
