@@ -118,6 +118,8 @@ python3 sim/run_corners.py pdk-smoke --jobs 8            # 8 points at a time
 python3 sim/run_corners.py pdk-smoke --executor remote --jobs 8  # 8 Spot shards
 python3 sim/run_corners.py pdk-smoke --jobs 8 \
   --resume 20260911-071500-730c24b                       # finish an interrupted run
+python3 sim/run_corners.py pdk-smoke --stage-dir /scratch # work outside the checkout
+python3 sim/run_corners.py pdk-smoke --no-stage           # work inside it, always
 ```
 
 ### Long campaigns: `--jobs` and `--resume`
@@ -125,11 +127,21 @@ python3 sim/run_corners.py pdk-smoke --jobs 8 \
 `--jobs N`/`-j N` (default `1`) runs `N` PVT points — or `--mc` trials —
 concurrently, each as its own `ngspice -b` process against its own patched
 copy of the netlist. `--resume <record-id>` finishes an interrupted run of
-that record id: each point is checkpointed to
-`sim/<slug>/corners/<record-id>/checkpoint.json` the instant it completes,
-and a resume re-runs only what is missing, refusing outright if the manifest,
-the netlisted DUT, the resolved PDK build, the run mode or the requested
-point list have changed since the checkpoint was written.
+that record id: each point is checkpointed to `checkpoint.json` in the run's
+working directory the instant it completes (see the next section for where
+that is), and a resume re-runs only what is missing, refusing outright if the
+manifest, the netlisted DUT, the resolved PDK build, the run mode or the
+requested point list have changed since the checkpoint was written.
+
+A resume is deliberately *not* refused for being run from a different
+checkout than the one that started the campaign: the fingerprint's netlist
+hash is taken over the netlist text with the checkout path factored out of
+xschem's `** sch_path:`/`** sym_path:` comments
+(`checkpoint.canonical_netlist_text`), so the same DUT netlisted from a new
+worktree matches, while a netlist that includes a *different* schematic still
+does not. Only the fingerprint is canonicalized — the simulated netlist and
+the record's `netlist-snapshots/<record-id>.spice` keep xschem's verbatim
+text.
 
 Both are execution-model only. The record is still rendered once, from the
 full point list in manifest order, after the last point lands — so a
@@ -138,6 +150,58 @@ rows read exactly like a serial run's. Implementation and the reasoning
 behind each guard: `sim/harness/checkpoint.py`'s module docstring and
 `cli._iter_unit_results`. Operator-facing detail: `sim/README.md`'s
 "Interrupted and parallel runs".
+
+### Staging a campaign's work outside the checkout
+
+A campaign's working files — the netlisted DUT, each unit's patched
+`<corner-id>.spice`, its `<corner-id>.log`, its `<corner-id>-*.raw` waveform
+dumps and the `--resume` checkpoint — used to be written straight into
+`sim/<slug>/corners/<record-id>/`, i.e. inside the checkout the harness was
+invoked from. That is fine in a clone and fatal in a **linked git worktree**,
+which another process may remove while the campaign runs: issue #212 records a
+4 h 26 min Monte Carlo campaign whose worktree was deleted beneath five live
+ngspice processes, taking with it the checkpoint that would have made the
+finished trials resumable.
+
+So the harness now chooses the working directory (`sim/harness/staging.py`):
+
+| Checkout | Work goes to |
+|---|---|
+| a clone (`.git` is a directory) | `sim/<slug>/corners/<record-id>/` — unchanged |
+| a linked worktree (`.git` is a *file*) | `$XDG_CACHE_HOME/sky130-pll/sim-stage/<slug>/<record-id>/` |
+
+`--stage-dir DIR` (or `$SKY130_PLL_SIM_SCRATCH`) names the staging root
+explicitly — for a host whose cache directory is small, or to stage a
+main-clone run deliberately; `--no-stage` forces the in-tree behaviour
+anywhere. A staged run prints where its work went on the first line.
+
+When the record is written, the committed artifact classes are copied from the
+staging directory into `sim/<slug>/corners/<record-id>/`, so the evidence trail
+is byte-for-byte what an unstaged run would have committed. Waveform dumps and
+the checkpoint are not copied: the first are excluded from the committed trail
+by `sim/README.md`'s retention policy, and the second is transient run state
+that is deleted the moment the record exists. What stays in the staging
+directory after a successful run is therefore pure scratch, and can be deleted
+once the record is committed.
+
+Recovering a campaign whose worktree is gone needs no flags and no guessing —
+the staging path is derived from the slug and record id only, so from any
+checkout:
+
+```sh
+python3 sim/run_corners.py pll-lock-mc --mc --jobs 5 --resume 20260924-222341-a9375a5
+```
+
+reloads every completed trial and simulates only the rest. A resume follows
+the checkpoint: if the staging root holds none for that record id but
+`sim/<slug>/corners/<record-id>/` does (a campaign started in a clone, or
+before this seam existed), it resumes in the tree instead.
+
+Staging changes nothing about what a campaign measures, and nothing about the
+evidence: the record's schema, its text and the location of every committed
+artifact are identical either way, which is why a staged run records no
+provenance about having been staged. It is where ngspice's scratch lived, not
+a fact about the DUT.
 
 ### Where a unit runs: `--executor {local,remote}`
 

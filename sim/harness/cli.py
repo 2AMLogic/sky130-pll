@@ -20,6 +20,7 @@ from . import montecarlo as mc_mod
 from . import pdk as pdk_mod
 from . import report as report_mod
 from . import runner as runner_mod
+from . import staging as staging_mod
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
@@ -87,20 +88,23 @@ def cmd_list(args: argparse.Namespace) -> int:
 
 
 @contextlib.contextmanager
-def _corners_dir(write: bool, exp_dir: Path, record_id: str):
+def _corners_dir(write: bool, exp_dir: Path, record_id: str, staging=None):
     """Where per-corner .spice/.log artifacts go for this run.
 
     When writing evidence, this is the real, committed
-    sim/<slug>/corners/<record-id>/ path. When --no-write (the default for
-    sim/selftest.sh and a plain CI check:ci run), it is a real temp
-    directory that is cleaned up on exit -- otherwise every non-recording
-    run (which still has to netlist and simulate for real) would leave an
-    orphaned, record-less sim/<slug>/corners/<id>/ directory behind, and
-    neither *.spice nor the sim/README.md-mandated un-ignored *.log pattern
-    excludes those from `git add -A` by accident.
+    sim/<slug>/corners/<record-id>/ path -- unless `staging` says this
+    checkout is one another process can delete under a running campaign, in
+    which case the work goes to the staging directory and is promoted back
+    here when the record is written (issue #212, sim/harness/staging.py).
+    When --no-write (the default for sim/selftest.sh and a plain CI check:ci
+    run), it is a real temp directory that is cleaned up on exit -- otherwise
+    every non-recording run (which still has to netlist and simulate for
+    real) would leave an orphaned, record-less sim/<slug>/corners/<id>/
+    directory behind, and neither *.spice nor the sim/README.md-mandated
+    un-ignored *.log pattern excludes those from `git add -A` by accident.
     """
     if write:
-        path = exp_dir / "corners" / record_id
+        path = staging.work_dir if staging is not None else exp_dir / "corners" / record_id
         path.mkdir(parents=True, exist_ok=True)
         yield path
     else:
@@ -274,6 +278,34 @@ def _execution_note(
     return note.strip()
 
 
+def _mint_failure(exc: OSError, staging, record_id: str, args: argparse.Namespace) -> str:
+    """What to say when the *checkout* fails at the moment of minting.
+
+    The failure this is written for is issue #212's: the campaign finished
+    every unit, and then the directory it was going to write the record into
+    turned out not to exist any more, because something removed the worktree
+    while it ran. That is a recoverable situation and the message has to say
+    how -- the units are all in the checkpoint, which (when staged) is
+    somewhere the removal could not reach.
+    """
+    head = f"run_corners.py: could not write this record into the checkout ({exc})"
+    if staging is None:
+        return (
+            f"{head} -- every completed unit is still in this record's own "
+            f"corners/{record_id}/checkpoint.json if that directory survived; see "
+            "sim/harness/README.md's \"Staging a campaign's work outside the "
+            'checkout" for how to keep a long campaign out of a reapable '
+            "worktree in the first place"
+        )
+    resume = f"python3 sim/run_corners.py {args.experiment} --resume {record_id}"
+    return (
+        f"{head} -- nothing is lost: every completed unit is in "
+        f"{staging.checkpoint_path}, outside this checkout. From a checkout that "
+        f"exists, finish the campaign with `{resume}` (add the same --mc/--jobs "
+        "flags the run used); the staged units are reloaded, not re-simulated."
+    )
+
+
 def _run_experiment(
     args: argparse.Namespace,
     *,
@@ -377,9 +409,10 @@ def _run_experiment(
     resume_id = getattr(args, "resume", None)
     if resume_id and not args.write:
         print(
-            "run_corners.py: --resume needs this record's real "
-            "sim/<slug>/corners/<record-id>/ directory, which --no-write does not "
-            "create -- a run that writes no evidence has nothing to resume",
+            "run_corners.py: --resume needs this record's real working directory "
+            "(sim/<slug>/corners/<record-id>/, or the staging directory it was "
+            "run from), which --no-write does not create -- a run that writes no "
+            "evidence has nothing to resume",
             file=sys.stderr,
         )
         return 1
@@ -417,7 +450,33 @@ def _run_experiment(
         )
         return 1
 
-    with _corners_dir(args.write, exp_dir, record_id) as corners_dir:
+    # Where this campaign's work lives while it runs (issue #212). `None` is
+    # the status quo: straight into sim/<slug>/corners/<record-id>/. A
+    # checkout something else can delete -- a Loom-managed worktree -- stages
+    # outside it instead, so a reap costs the units still running, never the
+    # checkpoint that makes the finished ones resumable.
+    staging = None
+    if args.write:
+        try:
+            staging = staging_mod.resolve(
+                exp_dir=exp_dir,
+                slug=slug,
+                record_id=record_id,
+                explicit=getattr(args, "stage_dir", None),
+                disabled=not getattr(args, "stage", True),
+                resuming=bool(resume_id),
+            )
+        except staging_mod.StagingError as e:
+            print(f"run_corners.py: {e}", file=sys.stderr)
+            return 1
+        if staging is not None:
+            print(
+                f"run_corners.py: staging this campaign's work in {staging.work_dir} "
+                f"({staging.reason}); its evidence artifacts are copied into "
+                f"{staging.final_dir} when the record is written"
+            )
+
+    with _corners_dir(args.write, exp_dir, record_id, staging) as corners_dir:
         print(f"run_corners.py: netlisting {schematic} ...")
         try:
             netlist_text = runner_mod.netlist_schematic(
@@ -432,7 +491,15 @@ def _run_experiment(
         ckpt = None
         if args.write:
             fingerprint = checkpoint_mod.fingerprint(
-                mode=mode, manifest=manifest, netlist_text=netlist_text, pdk=pdk, units=units
+                mode=mode,
+                manifest=manifest,
+                netlist_text=netlist_text,
+                pdk=pdk,
+                units=units,
+                # So the same DUT netlisted from a *different* checkout of
+                # this commit fingerprints identically -- what lets a staged
+                # campaign be resumed after its worktree is gone (#212).
+                repo_root=REPO_ROOT,
             )
             ckpt_path = corners_dir / checkpoint_mod.CHECKPOINT_NAME
             try:
@@ -541,30 +608,49 @@ def _run_experiment(
         failed = [r for r in results if not r.passed]
 
         if args.write:
-            snapshots_dir.mkdir(parents=True, exist_ok=True)
-            records_dir.mkdir(parents=True, exist_ok=True)
-            snapshot_path = snapshots_dir / f"{record_id}.spice"
-            snapshot_path.write_text(netlist_text)
+            try:
+                snapshots_dir.mkdir(parents=True, exist_ok=True)
+                records_dir.mkdir(parents=True, exist_ok=True)
+                snapshot_path = snapshots_dir / f"{record_id}.spice"
+                snapshot_path.write_text(netlist_text)
+                if staging is not None:
+                    # Before the record is rendered, so it is written against
+                    # a tree that already holds every artifact it cites -- and
+                    # before the checkpoint is discarded, so a checkout that
+                    # went away leaves the campaign resumable rather than
+                    # half-landed.
+                    promoted = staging_mod.promote(staging)
+                    print(
+                        f"run_corners.py: copied {len(promoted)} staged artifact(s) "
+                        f"into {staging.final_dir}"
+                    )
+            except OSError as e:
+                print(_mint_failure(e, staging, record_id, args), file=sys.stderr)
+                return 1
 
             subset_reason = args.subset_reason if is_subset else None
-            record_md = render_record(
-                manifest=manifest,
-                slug=slug,
-                record_id=record_id,
-                pdk=pdk,
-                netlist_snapshot=snapshot_path,
-                units=units,
-                results=results,
-                subset_reason=subset_reason,
-                execution_note=_execution_note(
-                    segments=ckpt.segments if ckpt is not None else [],
-                    jobs=jobs,
-                    unit_noun=unit_noun,
+            try:
+                record_md = render_record(
+                    manifest=manifest,
+                    slug=slug,
                     record_id=record_id,
-                    executor_note=_executor_note(backend.provenance()),
-                ),
-            )
-            record_path.write_text(record_md)
+                    pdk=pdk,
+                    netlist_snapshot=snapshot_path,
+                    units=units,
+                    results=results,
+                    subset_reason=subset_reason,
+                    execution_note=_execution_note(
+                        segments=ckpt.segments if ckpt is not None else [],
+                        jobs=jobs,
+                        unit_noun=unit_noun,
+                        record_id=record_id,
+                        executor_note=_executor_note(backend.provenance()),
+                    ),
+                )
+                record_path.write_text(record_md)
+            except OSError as e:
+                print(_mint_failure(e, staging, record_id, args), file=sys.stderr)
+                return 1
             print(f"run_corners.py: wrote {record_path}")
             # Only now, with the record on disk, is the campaign finished --
             # so a surviving checkpoint always means "interrupted, no record".
@@ -787,6 +873,33 @@ def build_parser() -> argparse.ArgumentParser:
             "are run, and the record is written once the grid is complete. Refused "
             "if the manifest, DUT netlist, PDK build or requested point list have "
             "changed since the checkpoint was written"
+        ),
+    )
+    p.add_argument(
+        "--stage-dir",
+        metavar="DIR",
+        help=(
+            "stage this campaign's working files (per-unit netlists, logs, "
+            "waveform dumps and the --resume checkpoint) under DIR/<slug>/"
+            "<record-id>/ instead of inside the checkout, and copy the evidence "
+            "artifacts into sim/<slug>/corners/<record-id>/ when the record is "
+            "written. Also settable as $SKY130_PLL_SIM_SCRATCH. Staging is "
+            "automatic when the checkout is a linked git worktree -- which "
+            "another process can remove mid-campaign, taking the checkpoint with "
+            "it (issue #212) -- and the default root is "
+            "$XDG_CACHE_HOME/sky130-pll/sim-stage"
+        ),
+    )
+    p.add_argument(
+        "--no-stage",
+        dest="stage",
+        action="store_false",
+        default=True,
+        help=(
+            "write this campaign's working files into sim/<slug>/corners/"
+            "<record-id>/ even in a worktree, i.e. the behaviour before issue "
+            "#212. A campaign run this way is lost if its checkout is removed "
+            "while it runs"
         ),
     )
     p.add_argument(

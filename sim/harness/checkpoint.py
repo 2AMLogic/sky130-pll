@@ -33,10 +33,12 @@ properties matter more than the file format:
    mixing results from two different manifests/DUTs into one record.
 
 The append-only evidence convention (`sim/README.md`) is preserved by the
-caller, not here: the checkpoint lives *beside* the record
-(`sim/<slug>/corners/<record-id>/checkpoint.json`) and is deleted once the
-record is written, so a leftover checkpoint means exactly "this record-id's
-run was interrupted and has no record" -- one complete record, or none.
+caller, not here: the checkpoint lives *beside the campaign's work*
+(`sim/<slug>/corners/<record-id>/checkpoint.json`, or the staging directory
+`sim/harness/staging.py` chose for a checkout something else can delete) and
+is deleted once the record is written, so a leftover checkpoint means exactly
+"this record-id's run was interrupted and has no record" -- one complete
+record, or none.
 """
 
 from __future__ import annotations
@@ -45,6 +47,7 @@ import contextlib
 import hashlib
 import json
 import os
+import re
 import tempfile
 from dataclasses import fields, is_dataclass
 from datetime import datetime, timezone
@@ -56,8 +59,19 @@ from .corners import PvtPoint
 from .montecarlo import McTrial
 from .runner import McTrialResult, PointResult
 
-SCHEMA_VERSION = 1
+# 2 since issue #212: `fingerprint`'s `netlist_sha256` is now taken over the
+# *checkout-relative* netlist text (see `canonical_netlist_text`), so the
+# version bump is what turns a pre-#212 checkpoint into an honest "this
+# harness writes a different schema" refusal instead of a misleading "the
+# netlisted DUT changed" one.
+SCHEMA_VERSION = 2
 CHECKPOINT_NAME = "checkpoint.json"
+
+#: xschem stamps the *absolute* path of every schematic and symbol it
+#: traverses into the netlist it emits (`** sch_path: /…/tb_x.sch`). Those
+#: lines are the only place a netlist mentions the checkout it was produced
+#: in -- verified against every committed `sim/*/netlist-snapshots/*.spice`.
+_PATH_COMMENT_RE = re.compile(r"^(\*\*\s+(?:sch|sym)_path:\s+)(\S.*)$", re.MULTILINE)
 
 # The closed set of result-tree types a checkpoint may carry. Deliberately a
 # whitelist: an unknown type in a checkpoint file is an error, not something
@@ -156,22 +170,63 @@ def unit_id_of(result) -> str:
     raise CheckpointError(f"unrecognized result type {type(result).__name__}")
 
 
-def fingerprint(*, mode: str, manifest: dict, netlist_text: str, pdk, units) -> dict:
+def canonical_netlist_text(netlist_text: str, repo_root=None) -> str:
+    """The netlist text as "which DUT is this", with the checkout factored out.
+
+    xschem writes the absolute path of each schematic/symbol it traversed into
+    a `** sch_path:`/`** sym_path:` comment, so the same DUT netlisted from two
+    different checkouts of the same commit produces two different texts --
+    differing *only* in those comments. Hashing the raw text therefore made a
+    resume from a new worktree impossible: the checkpoint would be refused for
+    "the netlisted DUT changed" when nothing about the DUT had (issue #212,
+    where the worktree that started the campaign no longer existed).
+
+    Rewriting those comments relative to the checkout root fixes that without
+    weakening the check: a DUT that now includes a *different* schematic still
+    has a different relative path, so it still refuses. A path outside the
+    checkout (an absolute PDK `.lib`, say) is left exactly as it is -- and if
+    the prefix does not match for any reason, the line stays absolute and the
+    resume degrades to the old, stricter refusal. The direction of failure is
+    always "refuse a resume that would have been fine", never "accept one that
+    splices two DUTs".
+
+    Canonicalization is confined to the fingerprint. The netlist that is
+    simulated, the per-unit `<corner-id>.spice` files, and the record's
+    `netlist-snapshots/<record-id>.spice` all keep the verbatim text xschem
+    emitted, exactly as every committed record has.
+    """
+    if repo_root is None:
+        return netlist_text
+    prefix = str(Path(repo_root)).rstrip("/") + "/"
+
+    def _rel(match: re.Match) -> str:
+        value = match.group(2)
+        if value.startswith(prefix):
+            return f"{match.group(1)}{value[len(prefix):]}"
+        return match.group(0)
+
+    return _PATH_COMMENT_RE.sub(_rel, netlist_text)
+
+
+def fingerprint(*, mode: str, manifest: dict, netlist_text: str, pdk, units, repo_root=None) -> dict:
     """Everything that must not change between segments of one campaign.
 
-    Deliberately *not* included: `--subset-reason` prose, `--supersedes`, and
-    the repo commit. The first two do not change what is measured (and the
-    record states the values given at completion); the repo commit is recorded
-    per segment instead, and surfaces in the record's execution note, so a
-    reader can see the run spanned commits rather than having the resume
-    refused over an unrelated commit landing on the branch.
+    Deliberately *not* included: `--subset-reason` prose, `--supersedes`, the
+    repo commit, and (issue #212) the checkout the netlist was produced in.
+    The first two do not change what is measured (and the record states the
+    values given at completion); the repo commit is recorded per segment
+    instead, and surfaces in the record's execution note, so a reader can see
+    the run spanned commits rather than having the resume refused over an
+    unrelated commit landing on the branch; the checkout path is factored out
+    by `canonical_netlist_text` so a campaign whose worktree was removed can be
+    resumed from a new one.
     """
     return {
         "mode": mode,
         "manifest_sha256": _sha256_text(
             json.dumps(manifest, sort_keys=True, separators=(",", ":"))
         ),
-        "netlist_sha256": _sha256_text(netlist_text),
+        "netlist_sha256": _sha256_text(canonical_netlist_text(netlist_text, repo_root)),
         "pdk_variant": getattr(pdk, "variant", None),
         "pdk_commit": getattr(pdk, "resolved_commit", None),
         "units": [u.corner_id for u in units],

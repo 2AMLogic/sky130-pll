@@ -218,10 +218,11 @@ python3 sim/run_corners.py pll-lock --jobs 8 --resume 20260911-071500-730c24b
 
 - **`--resume <record-id>`** finishes an interrupted run instead of
   restarting it. Every completed point is persisted, the instant it
-  completes, to `corners/<record-id>/checkpoint.json`; a resume reloads those
-  and runs only the points that are missing. The run prints its record id at
-  the start (`record id ... -- an interrupted run can be resumed with
-  --resume ...`) so it is available before the run finishes.
+  completes, to `checkpoint.json` in the run's working directory (see
+  `--stage-dir` below for where that is); a resume reloads those and runs only
+  the points that are missing. The run prints its record id at the start
+  (`record id ... -- an interrupted run can be resumed with --resume ...`) so
+  it is available before the run finishes.
 
   A resume is **refused** — loudly, with no record written — if the testbench
   manifest, the netlisted DUT, the resolved PDK build, the run mode or the
@@ -245,12 +246,29 @@ python3 sim/run_corners.py pll-lock --jobs 8 --resume 20260911-071500-730c24b
   `sim/harness/README.md` → "Where a unit runs"; the committed side-by-side
   local/remote comparison lives in `sim/executor-equivalence/`.
 
+- **`--stage-dir DIR`** (or `$SKY130_PLL_SIM_SCRATCH`; `--no-stage` to opt
+  out) puts a campaign's *working* files — per-point netlists, logs, waveform
+  dumps and the checkpoint — outside the checkout while it runs, and copies
+  the committed artifacts into `corners/<record-id>/` when the record is
+  written. **This is automatic when the checkout is a linked git worktree**,
+  because a worktree is a directory another process can remove mid-campaign:
+  issue #212 records a 4 h 26 min Monte Carlo campaign destroyed exactly that
+  way, checkpoint included. A staged campaign survives its checkout — from any
+  other checkout, `--resume <record-id>` finds it (the staging path depends on
+  the slug and record id only), reloads every completed point and simulates
+  only the rest.
+
+  Like the three flags above, this is execution-model only: the record, its
+  text, and the location and contents of every committed artifact are
+  identical either way. Details: `sim/harness/README.md` → "Staging a
+  campaign's work outside the checkout".
+
 The checkpoint is **run state, not evidence**: it is deleted the moment the
-record is written, and it is gitignored (`sim/*/corners/**/checkpoint.json`)
-so it can never land in the committed record trail. A checkpoint that still
-exists therefore means exactly one thing: *that record id's run was
-interrupted and has no record*. Either resume it, or delete it to run that
-record id from scratch.
+record is written, and — when it is written in the tree at all — it is
+gitignored (`sim/*/corners/**/checkpoint.json`) so it can never land in the
+committed record trail. A checkpoint that still exists therefore means exactly
+one thing: *that record id's run was interrupted and has no record*. Either
+resume it, or delete it to run that record id from scratch.
 
 This preserves the append-only contract in both directions: a run produces
 **one complete record with every requested point, or no record at all** —

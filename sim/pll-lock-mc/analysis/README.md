@@ -205,7 +205,7 @@ rather than presenting a five-draw campaign as a sized yield estimate:
 **The campaign was not widened, and that is a cost decision stated rather than
 hidden.** 183 *measurable* samples at this campaign's observed 3-of-5 lock rate
 is ≈ 305 draws; at the ~1 h 20 m per trial the record's own execution notes
-give, that is ≈ 400 h of simulator time — real money on the batch fleet, and
+give, that is ≈ 400 h of simulator time — real money on whatever runs it, and
 ~60× the ≈ 6.7 h the five draws already recorded cost. Three reasons it is not
 the next thing to spend it on:
 
@@ -230,6 +230,17 @@ the next thing to spend it on:
    against the strongest control `klt yield`'s schema can express, and it still
    reports `not_detected`. Widening therefore buys 305 draws of a campaign that
    still could not close item 6, and it does not get closer to closing it either.
+
+**A campaign that long also has to survive the session that starts it**, which
+is a harness property rather than a statistical one. It is not a fleet
+question: `sim/run_corners.py` stages a campaign's working files — the
+checkpoint included — outside the checkout whenever that checkout is a
+removable worktree, so a reap costs the trials still in flight instead of the
+whole run, and `--resume <record-id>` finishes it from any checkout (#212,
+`sim/harness/README.md` → "Staging a campaign's work outside the checkout").
+This harness has no batch execution backend: `--executor` offers `local` and
+`remote`, and a 400 h campaign run here is a long series of resumable local or
+Spot-fleet segments, not a batch submission.
 
 The condition under which widening *is* the right call is now sharper than
 "once #178 has put a number on the resolution floor" — #178 has, and the floor
