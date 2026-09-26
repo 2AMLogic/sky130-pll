@@ -1,0 +1,63 @@
+{
+  "schema": "sky130-pll.harness.tb/1",
+  "claim": "How much of the closed-loop PLL's post-lock period jitter is set by the loop filter's C2 -- the shunt capacitor at the charge-pump node whose stated design purpose (design/loop-filter/DESIGN.md, 'Filter order' and 'Topology') is to attenuate reference-frequency ripple reaching VCTRL. Same DUT as sim/pll-lock-mc (design/top/top.sch, NSEL[5:0]=011000 / N=25, 10 MHz reference), same sampling point (tt/125C/1.80V, MC_MM_SWITCH + MC_PR_SWITCH, seed 1), same reducer and the same 20 ps dump grid under .options reltol=1e-4 -- run as a family of arms that differ ONLY in C2's drawn area, so the family is a measured sensitivity of one ratified-row quantity (row 9, period jitter) to one loop-filter component. This is NOT a design claim about the PLL and NOT row 9's evidence -- sim/pll-lock-mc holds that. It exists because T1 item 6's negative control (issue #195) needs a deliberately degraded variant of the DUT whose degradation is large enough to miss row 9's 1.0% bound but small enough that the loop still LOCKS (a draw that never locks carries no period-jitter figure at all, so it cannot serve as a control sample), and choosing that factor without measuring it would be a guess.",
+  "spec_rows": [],
+  "spec_rows_note": "No spec row is claimed here. The measured quantity is the same one ratified row 9 bounds (period jitter, RMS, as a fraction of the output period, at CLK in lock), and row 9's own bound is carried in `measure.jitter.max_frac` so the harness prints each arm's figure against it -- but `gate_on_bound` is false and the degraded arms are EXPECTED to exceed it. Reporting its finding is what a control is for; see sim/integrator-floor/testbench/tb.json for this repo's precedent on that setting for a control unit. The nominal arm is the one figure here that is read as a design statement, and it is read only as a cross-check of sim/pll-lock-mc's own record, never as a substitute for it.",
+  "schematic": "tb_lf_c2_jitter_c2div9.sch",
+  "corner_pattern": "(\\.lib\\s+\\S*sky130\\.lib\\.spice\\s+)(\\w+)",
+  "supply_pattern": "(V1 VDD GND )([0-9.]+)",
+  "process_corners": [
+    "tt"
+  ],
+  "temps_c": [
+    125
+  ],
+  "supply_nominal": 1.8,
+  "supply_tolerance": 0,
+  "measure": {
+    "node": "CLK",
+    "tran_step": "20p",
+    "tran_stop": "20u",
+    "timeout_s": 172800,
+    "threshold_frac": 0.5,
+    "hysteresis_frac": 0.15,
+    "settle_from": "0",
+    "min_edges": 4,
+    "ic": [
+      "v(xxxtop.xxvco.ring0)=0",
+      "v(xxxtop.vctrl)=0.865",
+      "v(xxxtop.cp)=0.865",
+      "v(xxxtop.xxlf.z1)=0.865"
+    ],
+    "lock": {
+      "target_hz": 250000000,
+      "tolerance_frac": 0.05,
+      "window_cycles": 20,
+      "min_hold_cycles": 20
+    },
+    "require_lock": false,
+    "jitter": {
+      "max_frac": 0.01,
+      "min_cycles": 20,
+      "gate_on_bound": false
+    },
+    "tran_max_step": "200p",
+    "options": {
+      "reltol": "1e-4"
+    }
+  },
+  "monte_carlo": {
+    "claim": "One draw, not a population: trial 1 at seed 1 of exactly the sampling point sim/pll-lock-mc samples (tt/125C/1.80V, MC_MM_SWITCH and MC_PR_SWITCH both on). The Monte Carlo mode is used here to pin the DEVICE DRAW, not to estimate a distribution -- every arm of this family runs the same seed against a netlist that differs only in C2's W/L (no device is added, removed or reordered), so the arms share their sampled draw and the difference between their measured figures is attributable to C2. A one-draw run is not a statistical claim and this unit makes none; sim/pll-lock-mc's campaign is where the population lives.",
+    "methodology_note": "Window and initial conditions differ deliberately from sim/pll-lock-mc's, and the reason is cost: that campaign's 50 us window is sized to pay for a cold start from a fully discharged loop filter (24.32-29.72 us of acquisition ramp in its own record 20260925-224917-3a2dd6e) before any post-lock population exists, at roughly an hour and a half of simulator time per trial. This unit pre-charges the loop filter's three storage nodes to 0.865 V -- the fixed control voltage sim/vco-clk-transition/records/20260925-110645-810cd82.md states 'puts the ring near the row-9 operating point' -- so the ramp is skipped and a 20 us window buys a long post-lock population. The consequence is stated rather than hidden: a pre-charged start is NOT the DR-005 cold start row 9's evidence is taken under, so an arm's absolute figure here is not interchangeable with a sim/pll-lock-mc draw's, and this unit's own nominal arm exists precisely so the family is read as a RATIO measured under one set of conditions rather than as absolute numbers borrowed across two. `gate_on_bound` is false because every degraded arm is expected to exceed row 9's bound by construction -- that is the finding, not a failure (same setting and same reasoning as sim/integrator-floor). `require_lock` is false for the same reason it is false in sim/pll-lock-mc: a run that completes but never locks is evidence about this arm at this window, recorded as such.",
+    "analysis": "pre-charged transient, closed loop, one sky130 statistical draw (`tran 20p 20u 0 200p` under `.options reltol=1e-4`, injected by sim/harness/measure.py from this manifest's own measure block)",
+    "corner": "tt",
+    "temp_c": 125,
+    "supply_v": 1.8,
+    "mismatch": true,
+    "process": true,
+    "trials": 1,
+    "seed_base": 1
+  },
+  "methodology_note": "This unit is a FAMILY of arms run out of one testbench directory, in the same way sim/jitter-floor and sim/integrator-floor are: every arm's schematic is committed (sim/lf-c2-jitter-sensitivity/testbench/tb_lf_c2_jitter_*.sch, all generated by gen_c2_variant.py from the committed design files with `--check` proving they have not drifted), and a run selects one by pointing this manifest's `schematic` field at it. Each record names the arm it ran and its own corners/<record-id>/*.spice pins the netlist, so the committed value of `schematic` is a convenience for the next run, never the authority for a past one.",
+  "analysis": "pre-charged transient, closed loop (`tran 20p 20u 0 200p` under `.options reltol=1e-4`, injected by sim/harness/measure.py from this manifest's own measure block -- the arm schematics carry no `.tran` card of their own, exactly as sim/pll-lock-mc/testbench/tb_pll_lock_mc.sch does not)"
+}

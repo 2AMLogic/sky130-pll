@@ -255,6 +255,131 @@ class DeriveTests(unittest.TestCase):
             )
 
 
+def control_manifest(**overrides) -> dict:
+    """A minimal negative-control tb.json: the nominal one plus its own
+    `negative_control` block, six draws instead of three.
+    """
+    doc = manifest(**overrides)
+    doc["monte_carlo"]["trials"] = overrides.get("monte_carlo.trials", 6)
+    doc.setdefault(
+        "negative_control",
+        {
+            "of": "sim/pll-lock-mc",
+            "degradation": "loop filter C2 area / 9 (W=L=72 um -> 24 um)",
+        },
+    )
+    return doc
+
+
+#: Three draws that all lock and all meet the 1.0 % bound -- the shape of the
+#: nominal population a control has to separate from.
+THREE_PASSING_ROWS = [
+    (1, 1, "PASS", True, "0.554% (6426 cycles)"),
+    (2, 2, "PASS", True, "0.669% (5949 cycles)"),
+    (3, 3, "PASS", True, "0.717% (5077 cycles)"),
+]
+
+#: Six draws that all lock and all miss the 1.0 % bound -- what a deliberately
+#: degraded variant of the DUT is expected to produce.
+SIX_DEGRADED_ROWS = [
+    (index, index, "FAIL", True, f"{1.4 + index / 10:.3f}% (5000 cycles)")
+    for index in range(1, 7)
+]
+
+
+class NegativeControlTests(unittest.TestCase):
+    """The `negative_control` block, and the four refusals that guard it."""
+
+    def setUp(self):
+        self.nominal_manifest = yield_evidence.parse_manifest(manifest())
+        self.nominal = yield_evidence.parse_record(record(THREE_PASSING_ROWS))
+        self.nominal_derived = yield_evidence.derive(self.nominal, self.nominal_manifest)
+        self.control_manifest = yield_evidence.parse_control_manifest(control_manifest())
+        self.control = yield_evidence.parse_record(record(SIX_DEGRADED_ROWS, trials=6))
+        self.control_derived = yield_evidence.derive_control(
+            self.control,
+            self.control_manifest,
+            self.nominal_manifest,
+            self.nominal_derived,
+        )
+
+    def test_control_block_carries_the_control_draws(self):
+        doc = yield_evidence.samples_doc(
+            self.nominal,
+            self.nominal_manifest,
+            self.nominal_derived,
+            as_failures=False,
+            control=self.control_derived,
+        )
+        control = doc["measurements"][0]["negative_control"]
+        self.assertEqual(len(control["samples"]), 6)
+        self.assertEqual(control["errored"], 0)
+        self.assertEqual(control["failed_unmeasurable"], 0)
+        self.assertIn("C2 area / 9", control["description"])
+
+    def test_no_control_argument_leaves_the_block_out(self):
+        doc = yield_evidence.samples_doc(
+            self.nominal, self.nominal_manifest, self.nominal_derived, as_failures=False
+        )
+        self.assertNotIn("negative_control", doc["measurements"][0])
+
+    def test_provenance_names_the_control_record_and_its_degradation(self):
+        doc = yield_evidence.samples_doc(
+            self.nominal,
+            self.nominal_manifest,
+            self.nominal_derived,
+            as_failures=False,
+            control=self.control_derived,
+        )
+        control = doc["provenance"]["negative_control"]
+        self.assertEqual(
+            control["source_record"],
+            "sim/pll-lock-mc-negative-control/records/20260101-000000-abcdef0.md",
+        )
+        self.assertEqual(control["degradation"], control_manifest()["negative_control"]["degradation"])
+        self.assertEqual(control["seeds_with_a_measurement"], [1, 2, 3, 4, 5, 6])
+
+    def test_manifest_without_a_negative_control_block_raises(self):
+        with self.assertRaises(yield_evidence.AnalysisError):
+            yield_evidence.parse_control_manifest(manifest())
+
+    def test_control_at_a_different_sampling_point_raises(self):
+        # A control drawn at another PVT point is not this campaign's control.
+        drifted = yield_evidence.parse_control_manifest(
+            control_manifest(**{"monte_carlo.temp_c": 27})
+        )
+        with self.assertRaises(yield_evidence.AnalysisError):
+            yield_evidence.derive_control(
+                self.control, drifted, self.nominal_manifest, self.nominal_derived
+            )
+
+    def test_control_run_in_a_different_window_raises(self):
+        # "Same testbench, same reducer" is checked, not claimed: a control
+        # measured over another window is not comparable with the nominal.
+        drifted = yield_evidence.parse_control_manifest(
+            control_manifest(**{"measure.tran_stop": "20u"})
+        )
+        with self.assertRaises(yield_evidence.AnalysisError):
+            yield_evidence.derive_control(
+                self.control, drifted, self.nominal_manifest, self.nominal_derived
+            )
+
+    def test_control_that_does_not_separate_from_the_nominal_raises(self):
+        # `klt yield` needs the control's own pass rate strictly below the
+        # nominal's; a variant whose draws pass as often demonstrates nothing,
+        # so the document is refused rather than written and graded.
+        passing = [
+            (index, index, "PASS", True, "0.600% (5000 cycles)") for index in range(1, 7)
+        ]
+        with self.assertRaises(yield_evidence.AnalysisError):
+            yield_evidence.derive_control(
+                yield_evidence.parse_record(record(passing, trials=6)),
+                self.control_manifest,
+                self.nominal_manifest,
+                self.nominal_derived,
+            )
+
+
 class DocumentTests(unittest.TestCase):
     def setUp(self):
         self.manifest = yield_evidence.parse_manifest(manifest())
