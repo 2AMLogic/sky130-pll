@@ -1,0 +1,43 @@
+{
+  "schema": "sky130-pll.harness.tb/1",
+  "claim": "ngspice integrator-error null control on design/vco (issue #202). The DUT is design/vco/vco_ring5.sch -- the ring sim/pll-lock-mc's closed loop is built on -- driven open-loop from an ideal 0.86 V DC control voltage and an ideal 1.80 V supply at tt/125 C, the Monte Carlo base point's operating point (~250 MHz). Nothing in the netlist varies with time except the ring, and a transient analysis carries no device noise, so the ring's TRUE period jitter is zero by construction: whatever period jitter this record reports is error the simulation added, not a property of the design. It is pushed through the identical path a sim/pll-lock-mc trial is reduced by -- the same sim/harness/measure.py `.control` block, the same 200 ps `tran_step` (which also caps ngspice's internal timestep), the same `linearize` -> `wrdata` -> `edge_times` -> `period_jitter` reduction, the same 0.5/0.15 threshold and hysteresis fractions. sim/jitter-floor measured the dump grid's share of such a figure with an ideal pulse source, whose edges are placed by the source's own breakpoints; a free-running ring's edges are placed by the integrator, so this is the control that measures the integrator's share, which a pulse source cannot show. It exists to test issue #202's premise -- that sim/pll-lock-mc/records/20260924-222341-a9375a5.md's 1.584% / 1.851% / 3.073% RMS figures are the circuit's -- before any design is changed. It is a harness NULL control, not a PLL design measurement, and it ratifies nothing.\n\nTHIS RECORD'S VARIANT: G -- variant T's tightened tolerance (`measure.options` = {\"reltol\": \"1e-4\"}) PLUS a 20 ps dump grid: `tran_step` 20p with `tran_max_step` 200p, i.e. `tran 20p 10u 0 200p`. The 200p TMAX keeps ngspice's internal-step cap exactly where variants D and T had it (unset, TMAX defaults to `tran_step`), so the integration is variant T's and only the grid the edges are interpolated on changes -- a 10x finer grid, bought without a 10x finer integration. Variant T's residual is therefore expected to be sim/jitter-floor's dump-grid floor, and this variant is the test of that expectation. Read the injected cards in this record's own corners/<record-id>/tt_125c_1.80v.spice for the authoritative statement of what ran.",
+  "spec_rows": [],
+  "spec_rows_note": "none -- this experiment measures no property of the PLL. Its DUT's true period jitter is zero by construction, and the quantity it reports is a property of the simulation (ngspice's timestep control at the stated tolerances plus the harness's dump grid). It is read ALONGSIDE ratified row 9's evidence (sim/pll-lock-mc), never as evidence for or against the row itself -- the same choice sim/jitter-floor makes.",
+  "schematic": "tb_integrator_floor.sch",
+  "corner_pattern": "(\\.lib\\s+\\S*sky130\\.lib\\.spice\\s+)(\\w+)",
+  "supply_pattern": "(V1 VDD GND )([0-9.]+)",
+  "process_corners": [
+    "tt"
+  ],
+  "temps_c": [
+    125
+  ],
+  "supply_nominal": 1.8,
+  "supply_tolerance": 0,
+  "measure": {
+    "node": "CLK",
+    "tran_step": "20p",
+    "tran_stop": "10u",
+    "timeout_s": 3600,
+    "threshold_frac": 0.5,
+    "hysteresis_frac": 0.15,
+    "settle_from": "1u",
+    "min_edges": 4,
+    "ic": [
+      "v(xxxvco.ring0)=0"
+    ],
+    "require_lock": false,
+    "require_oscillation": true,
+    "jitter": {
+      "max_frac": 0.01,
+      "min_cycles": 20,
+      "gate_on_bound": false
+    },
+    "options": {
+      "reltol": "1e-4"
+    },
+    "tran_max_step": "200p"
+  },
+  "methodology_note": "this testbench's DUT is design/vco/vco_ring5.sch open-loop at a fixed control voltage, used as a null control: its true period is constant, so the reported period jitter is simulation error. ONE PVT point (tt/125 C/1.80 V) on purpose -- it is sim/pll-lock-mc's Monte Carlo base point, the point whose figures this control is read against; widening the grid would characterize the integrator's error elsewhere, which no claim here needs. The population starts at `settle_from` = 1 us (no lock block: there is no loop), well after the ring's start-up transient, and spans ~2,200 cycles. `gate_on_bound` is false with row 9's 1.0% still stated so the figure is directly comparable: a null control cannot sensibly FAIL for reporting a large number -- that IS the finding.",
+  "analysis": "transient of the open-loop ring (`tran 20p 10u 0 200p`, injected by sim/harness/measure.py from this manifest's own measure block, preceded by the `.options` card when `measure.options` is declared)"
+}
