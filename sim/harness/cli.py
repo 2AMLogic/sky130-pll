@@ -508,7 +508,15 @@ def _run_experiment(
             try:
                 if resume_id:
                     ckpt = checkpoint_mod.resume(
-                        ckpt_path, record_id=record_id, slug=slug, fp=fingerprint
+                        ckpt_path,
+                        record_id=record_id,
+                        slug=slug,
+                        fp=fingerprint,
+                        # Lets a campaign checkpointed before #212 be finished
+                        # rather than stranded by the schema change.
+                        legacy_netlist_sha256=checkpoint_mod.raw_netlist_sha256(
+                            netlist_text
+                        ),
                     )
                 else:
                     ckpt = checkpoint_mod.start(

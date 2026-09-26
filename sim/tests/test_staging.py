@@ -35,6 +35,7 @@ wrong while still passing every existing test:
 
 from __future__ import annotations
 
+import json
 import re
 import shutil
 import sys
@@ -355,6 +356,118 @@ class FingerprintPortabilityTests(unittest.TestCase):
         root = "/tmp/repo"
         text = "** sch_path: /opt/shared/tb_fake.sch\n" + NETLIST
         self.assertEqual(checkpoint_mod.canonical_netlist_text(text, root), text)
+
+
+class LegacyCheckpointTests(unittest.TestCase):
+    """A campaign already in flight when the schema changed is not stranded.
+
+    The netlist hash moved (raw text -> checkout-relative text), which bumped
+    the checkpoint schema to 2. A campaign that had been running for hours
+    under schema 1 must not become unresumable for that reason -- losing a
+    long campaign is the very thing #212 is about -- so a schema-1 checkpoint
+    is accepted when, and only when, the pre-#212 harness would itself have
+    accepted the resume.
+    """
+
+    POINT = corners_mod.PvtPoint(corner="tt", temp_c=27.0, supply_v=1.8)
+    ROOT = "/tmp/repo/.loom/worktrees/issue-202"
+    NETLIST_WITH_PATH = (
+        f"** sch_path: {ROOT}/sim/fake-exp/testbench/tb_fake.sch\n" + NETLIST
+    )
+
+    def _fp(self, repo_root):
+        return checkpoint_mod.fingerprint(
+            mode="pvt",
+            manifest=MANIFEST,
+            netlist_text=self.NETLIST_WITH_PATH,
+            pdk=_StubPdk(),
+            units=[self.POINT],
+            repo_root=repo_root,
+        )
+
+    def _schema_1_checkpoint(self, tmp: Path) -> Path:
+        path = tmp / checkpoint_mod.CHECKPOINT_NAME
+        # `repo_root=None` reproduces exactly what schema 1 hashed.
+        ckpt = checkpoint_mod.start(
+            path, record_id=RECORD_ID, slug="fake-exp", fp=self._fp(None)
+        )
+        ckpt.record(self.POINT.corner_id, _point_result(self.POINT))
+        payload = json.loads(path.read_text())
+        payload["schema_version"] = 1
+        path.write_text(json.dumps(payload))
+        return path
+
+    def test_a_schema_1_checkpoint_resumes_when_the_dut_is_the_same(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self._schema_1_checkpoint(Path(tmp))
+            ckpt = checkpoint_mod.resume(
+                path,
+                record_id=RECORD_ID,
+                slug="fake-exp",
+                fp=self._fp(self.ROOT),
+                legacy_netlist_sha256=checkpoint_mod.raw_netlist_sha256(
+                    self.NETLIST_WITH_PATH
+                ),
+            )
+            self.assertEqual(list(ckpt.results), [self.POINT.corner_id])
+            # From here the campaign continues under the current schema.
+            ckpt.save()
+            self.assertEqual(
+                json.loads(path.read_text())["schema_version"],
+                checkpoint_mod.SCHEMA_VERSION,
+            )
+
+    def test_a_schema_1_checkpoint_still_refuses_a_changed_dut(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self._schema_1_checkpoint(Path(tmp))
+            other = self.NETLIST_WITH_PATH + "R9 CLK GND 1k\n"
+            with self.assertRaises(checkpoint_mod.CheckpointError) as caught:
+                checkpoint_mod.resume(
+                    path,
+                    record_id=RECORD_ID,
+                    slug="fake-exp",
+                    fp=checkpoint_mod.fingerprint(
+                        mode="pvt",
+                        manifest=MANIFEST,
+                        netlist_text=other,
+                        pdk=_StubPdk(),
+                        units=[self.POINT],
+                        repo_root=self.ROOT,
+                    ),
+                    legacy_netlist_sha256=checkpoint_mod.raw_netlist_sha256(other),
+                )
+            self.assertIn("netlisted DUT", str(caught.exception))
+
+    def test_a_schema_1_checkpoint_refuses_a_changed_manifest(self):
+        # The shim covers the netlist hash only: every other guard is intact.
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self._schema_1_checkpoint(Path(tmp))
+            with self.assertRaises(checkpoint_mod.CheckpointError):
+                checkpoint_mod.resume(
+                    path,
+                    record_id=RECORD_ID,
+                    slug="fake-exp",
+                    fp=checkpoint_mod.fingerprint(
+                        mode="pvt",
+                        manifest=dict(MANIFEST, temps_c=[27]),
+                        netlist_text=self.NETLIST_WITH_PATH,
+                        pdk=_StubPdk(),
+                        units=[self.POINT],
+                        repo_root=self.ROOT,
+                    ),
+                    legacy_netlist_sha256=checkpoint_mod.raw_netlist_sha256(
+                        self.NETLIST_WITH_PATH
+                    ),
+                )
+
+    def test_an_unknown_schema_is_still_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self._schema_1_checkpoint(Path(tmp))
+            payload = json.loads(path.read_text())
+            payload["schema_version"] = checkpoint_mod.SCHEMA_VERSION + 1
+            path.write_text(json.dumps(payload))
+            with self.assertRaises(checkpoint_mod.CheckpointError):
+                checkpoint_mod.load(path)
 
 
 class ReapedWorktreeTests(unittest.TestCase):

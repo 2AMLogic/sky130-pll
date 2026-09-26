@@ -143,6 +143,13 @@ does not. Only the fingerprint is canonicalized — the simulated netlist and
 the record's `netlist-snapshots/<record-id>.spice` keep xschem's verbatim
 text.
 
+That moved the checkpoint schema to version 2. A campaign that was already in
+flight under version 1 still resumes: a version-1 checkpoint is accepted when
+the netlist hash it stored matches the raw text this run netlisted — i.e. when
+the previous harness would itself have accepted the resume — and is refused on
+every other ground exactly as before. Losing a long campaign to a schema bump
+would be the same failure this section exists to prevent.
+
 Both are execution-model only. The record is still rendered once, from the
 full point list in manifest order, after the last point lands — so a
 parallel or resumed run produces one complete record or none at all, and its

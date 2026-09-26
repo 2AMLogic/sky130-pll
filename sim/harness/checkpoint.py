@@ -65,6 +65,15 @@ from .runner import McTrialResult, PointResult
 # harness writes a different schema" refusal instead of a misleading "the
 # netlisted DUT changed" one.
 SCHEMA_VERSION = 2
+
+#: Versions a resume will read. Schema 1 is accepted so that a campaign
+#: already in flight when #212 landed is not stranded by the change -- the one
+#: field that moved is the netlist hash, and `resume` accepts a version-1
+#: checkpoint only when that field matches the hash version 1 itself would
+#: have written (see `resume`'s `legacy_netlist_sha256`). Nothing else is
+#: relaxed, so the shim accepts exactly the resumes the pre-#212 harness
+#: accepted and no others.
+READABLE_SCHEMA_VERSIONS = (1, 2)
 CHECKPOINT_NAME = "checkpoint.json"
 
 #: xschem stamps the *absolute* path of every schematic and symbol it
@@ -206,6 +215,11 @@ def canonical_netlist_text(netlist_text: str, repo_root=None) -> str:
         return match.group(0)
 
     return _PATH_COMMENT_RE.sub(_rel, netlist_text)
+
+
+def raw_netlist_sha256(netlist_text: str) -> str:
+    """The netlist hash a schema-1 checkpoint carried -- see `resume`."""
+    return _sha256_text(netlist_text)
 
 
 def fingerprint(*, mode: str, manifest: dict, netlist_text: str, pdk, units, repo_root=None) -> dict:
@@ -354,10 +368,12 @@ def load(path: Path) -> tuple[dict, dict]:
         raise CheckpointError(f"checkpoint {path} is not a JSON object")
 
     version = payload.get("schema_version")
-    if version != SCHEMA_VERSION:
+    if version not in READABLE_SCHEMA_VERSIONS:
         raise CheckpointError(
             f"checkpoint {path} declares schema version {version!r}, this harness "
-            f"writes {SCHEMA_VERSION} -- refusing to resume"
+            f"writes {SCHEMA_VERSION} and reads "
+            f"{', '.join(str(v) for v in sorted(READABLE_SCHEMA_VERSIONS))} "
+            "-- refusing to resume"
         )
     for key in ("record_id", "slug", "fingerprint", "completed"):
         if key not in payload:
@@ -390,12 +406,30 @@ def load(path: Path) -> tuple[dict, dict]:
         "slug": payload["slug"],
         "fingerprint": payload["fingerprint"],
         "segments": payload.get("segments") or [],
+        "schema_version": version,
     }
     return header, results
 
 
-def resume(path: Path, *, record_id: str, slug: str, fp: dict) -> Checkpoint:
-    """Load a checkpoint and assert it belongs to this exact campaign."""
+def resume(
+    path: Path,
+    *,
+    record_id: str,
+    slug: str,
+    fp: dict,
+    legacy_netlist_sha256: str | None = None,
+) -> Checkpoint:
+    """Load a checkpoint and assert it belongs to this exact campaign.
+
+    `legacy_netlist_sha256` is the hash a **schema-1** checkpoint would have
+    stored for this run's netlist: the raw text, before #212 started factoring
+    the checkout path out of xschem's path comments. It is consulted only for
+    a schema-1 checkpoint, only when the netlist hash is the *single* field
+    that differs, and only when it matches exactly -- i.e. only when the
+    pre-#212 harness would itself have accepted this resume. That keeps a
+    long campaign that was already in flight when the schema changed
+    resumable, without accepting any resume the old code would have refused.
+    """
     header, results = load(path)
 
     if header["record_id"] != record_id:
@@ -409,6 +443,15 @@ def resume(path: Path, *, record_id: str, slug: str, fp: dict) -> Checkpoint:
 
     old = header["fingerprint"]
     drift = [k for k in fp if old.get(k) != fp[k]]
+    if (
+        drift == ["netlist_sha256"]
+        and header.get("schema_version") == 1
+        and legacy_netlist_sha256 is not None
+        and old.get("netlist_sha256") == legacy_netlist_sha256
+    ):
+        # A campaign checkpointed before #212: the DUT is the same text this
+        # run netlisted, hashed the way that schema hashed it.
+        drift = []
     if drift:
         detail = "; ".join(
             f"{_FINGERPRINT_LABELS.get(k, k)}: checkpoint has {old.get(k)!r}, this run has {fp[k]!r}"
