@@ -21,13 +21,14 @@ therefore bit-identical to the campaign's, and like it this schematic carries no
 `sim/harness/measure.py`.
 
 The degraded DUT is **not re-derived here.** It is the same generated netlist
-`sim/lf-c2-jitter-sensitivity` measured -- the unit that established, by
+`sim/lf-c1-jitter-sensitivity` measured -- the unit that established, by
 simulation, which degradation factor misses ratified row 9's bound while still
-locking. Pointing at that unit's committed symbol rather than making a second
-copy is deliberate: a second copy could drift from the one the sizing evidence
-was taken on, and then this unit's DUT and its own justification would be
-different circuits. `sim/lf-c2-jitter-sensitivity/testbench/gen_c2_variant.py`
-is the generator that derives it from `design/`, with its own `--check`.
+locking (`C1` area/12: 1.274 % RMS against the nominal's 0.523 %, locked).
+Pointing at that unit's committed symbol rather than making a second copy is
+deliberate: a second copy could drift from the one the sizing evidence was taken
+on, and then this unit's DUT and its own justification would be different
+circuits. `sim/lf-c1-jitter-sensitivity/testbench/gen_c1_variant.py` is the
+generator that derives it from `design/`, with its own `--check`.
 
 Usage
 -----
@@ -49,8 +50,8 @@ REPO = HERE.parents[2]
 #: The sizing unit's arm this control's DUT is. Changing it means re-running the
 #: campaign: the record names the arm it drew, and the committed `tb.json`'s
 #: `negative_control.degradation` has to agree with it.
-ARM = "top_c2div4"
-ARM_UNIT = "sim/lf-c2-jitter-sensitivity"
+ARM = "top_c1div12"
+ARM_UNIT = "sim/lf-c1-jitter-sensitivity"
 
 NOMINAL_TB = "sim/pll-lock-mc/testbench/tb_pll_lock_mc.sch"
 OUT_NAME = "tb_pll_lock_mc_negative_control.sch"

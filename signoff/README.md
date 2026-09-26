@@ -393,6 +393,20 @@ section's to make rather than that document's to report:
   `n_control = n_nominal` diagonal, not about small populations — the identical
   5-of-5 nominal against a **6**-draw control is `detected`, so #195 is smaller
   than its own estimate assumed, and still not buyable first.
+- **That last "not buyable first" has since expired, and the control is now
+  built but not yet run.** #202 landed: `sim/pll-lock-mc`'s superseding record
+  `20260925-224917-3a2dd6e.md` has **5 of 5 draws locking and meeting row 9**
+  (0.554–0.717 % RMS), which is the 5-of-5 nominal population the bullet above
+  names — so the `detected` conjunct is reachable for the first time, at a
+  **six**-draw control. `sim/pll-lock-mc-negative-control/` is that control's
+  committed testbench (#195): the same campaign with `design/loop-filter`'s `C2`
+  at a quarter of its drawn area and nothing else changed, sized against
+  `sim/lf-c2-jitter-sensitivity`'s own measurement of what that does to period
+  jitter. **It has no record yet**, so every verdict in this section stands
+  exactly as written and item 6 stays `unmet` — and it would stay `unmet` even
+  with the control fired, because guard 3's *other* condition (a sized estimate)
+  is untouched by it. What the control closes is one of two preconditions, which
+  is what `signoff/item6-preconditions.md` row 3 tracks.
 - **Whether to size the campaign.** `sim/pll-lock-mc/analysis/README.md` is the
   full read: ≈ 400 h of simulator time to sharpen an interval around an
   already-negative Cpk, while the 200 ps measurement-resolution floor #178

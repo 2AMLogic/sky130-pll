@@ -159,24 +159,62 @@ class ControlIsTheSameExperiment(unittest.TestCase):
 
     def test_control_declares_what_it_degrades_and_for_which_campaign(self):
         self.assertEqual(self.control["of"], "sim/pll-lock-mc")
-        self.assertIn("C2", self.control["degradation"])
+        # `gen_tb.ARM` is `top_<component><divisor>`; the declaration has to name
+        # the component the DUT actually degrades.
+        component = gen_tb.ARM.removeprefix("top_").split("div")[0].upper()
+        self.assertIn(component, self.control["degradation"])
 
     def test_testbench_points_at_the_arm_the_degradation_names(self):
-        # gen_tb.ARM is `top_c2div<F>`; the declared degradation has to name the
-        # same factor, or the manifest describes a circuit the run would not use.
-        factor = gen_tb.ARM.rsplit("c2div", 1)[1]
-        side = gen_c2_variant.side_for(int(factor))
+        # The declared degradation has to name the same geometry the arm carries,
+        # or the manifest describes a circuit the run would not use.
+        stem = gen_tb.ARM.removeprefix("top_")
+        component, _, factor = stem.partition("div")
+        generator = {"c1": gen_c1_variant, "c2": gen_c2_variant}[component]
+        side = generator.side_for(int(factor))
         self.assertIn(
             f"{side} um",
             self.control["degradation"],
-            f"the control's DUT is arm {gen_tb.ARM} (C2 side {side} um), which the "
-            "declared degradation string does not name",
+            f"the control's DUT is arm {gen_tb.ARM} ({component.upper()} side "
+            f"{side} um), which the declared degradation string does not name",
         )
         self.assertIn(
             gen_tb.ARM,
             (CONTROL / "testbench" / gen_tb.OUT_NAME).read_text(),
             "the committed control testbench does not instantiate the declared arm",
         )
+
+    def test_the_control_arm_has_a_sizing_record_behind_it(self):
+        # A degradation factor is only "measured rather than guessed" if the unit
+        # that measured it has a committed record for this exact arm.
+        unit = REPO_ROOT / gen_tb.ARM_UNIT
+        cited = self.control_raw["negative_control"]["sizing_evidence"]
+        record_ids = [
+            path.stem for path in (unit / "records").glob("*.md") if path.stem in cited
+        ]
+        self.assertTrue(
+            record_ids,
+            "negative_control.sizing_evidence does not cite a record that exists "
+            f"under {gen_tb.ARM_UNIT}/records/",
+        )
+        # ...and that record's own per-point netlist must carry this arm's geometry.
+        stem = gen_tb.ARM.removeprefix("top_")
+        component, _, factor = stem.partition("div")
+        generator = {"c1": gen_c1_variant, "c2": gen_c2_variant}[component]
+        side = generator.side_for(int(factor))
+        for record_id in record_ids:
+            netlists = list((unit / "corners" / record_id).glob("mc001_*.spice"))
+            self.assertTrue(netlists, f"{record_id} has no committed per-point netlist")
+            for netlist in netlists:
+                self.assertIn(
+                    f"X{component.upper()} ",
+                    netlist.read_text(),
+                )
+                self.assertIn(
+                    f"W={side} L={side}",
+                    netlist.read_text(),
+                    f"{record_id}'s netlist does not carry {component.upper()} at "
+                    f"W=L={side} um, so it did not measure the control's DUT",
+                )
 
     def test_control_draws_enough_trials_for_the_detection_rule(self):
         # sim/pll-lock-mc/analysis/negative-control/reachability.md: against a

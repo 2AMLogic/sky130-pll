@@ -16,41 +16,58 @@ costs; issue #195 tracks it.
 
 ## What is degraded, and why that
 
-`design/top/top.sch` with **`design/loop-filter`'s `C2` at a quarter of its
-drawn area** — `W=L=72 µm` → `36 µm`, i.e. 10.47 pF → 2.64 pF by the
-`cap_mim_m3_1` subcircuit's own capacitance expression. `R1`, `C1`, `R3`, `C3`
-and every other device, net, label and property of the four-block closed loop
-are unchanged.
+`design/top/top.sch` with **`design/loop-filter`'s `C1` at a twelfth of its drawn
+area** — `W=L=322 µm` → `92.9534 µm`, i.e. 207.83 pF → 17.41 pF by the
+`cap_mim_m3_1` subcircuit's own capacitance expression. `R1`, `C2`, `R3`, `C3`
+and every other device, net, label and property of the four-block closed loop are
+unchanged.
 
-`C2` is the shunt capacitor at the charge-pump node, and
-`design/loop-filter/DESIGN.md` states its design purpose directly: it "adds the
-filter's first non-zero pole" in order to "attenuate reference-frequency ripple
-reaching `VCTRL`". Ripple on `VCTRL` is what frequency-modulates the ring, and
-period jitter at `CLK` is what ratified spec row 9 bounds — so shrinking `C2`
-degrades **exactly the mechanism the measurement under grading is taken over**,
-and nothing else's design intent.
+`C1` is the series capacitor of the `R1`/`C1` branch that forms the loop's
+compensation zero, and `design/loop-filter/DESIGN.md`'s own sizing derivation
+makes it the single component that fixes **both** quantities the loop's dynamics
+are stated over — `R1·C1 = tan(φm)/ωc` places the zero, and
+`C1 = Icp·Kv·sec(φm)/(2π·N·ωc²)` sets the crossover. Shrinking it raises the
+crossover and collapses the phase margin together, leaving a badly under-damped
+loop whose residual phase error rings. Period jitter at `CLK` is what ratified
+row 9 bounds, so this degrades the loop's damping rather than one filtering path.
 
-Three properties made it the right knob rather than one of the other four
-passives, and the third is the one a negative control lives or dies on:
+**The factor is measured, and so is the choice of knob.**
+`sim/lf-c1-jitter-sensitivity` and `sim/lf-c2-jitter-sensitivity` ran seven arms of
+this same DUT at this campaign's own sampling point and seed, and between them
+they answer both questions a control's degradation has to answer:
 
-1. **It is monotone and exactly stateable.** One drawn geometry on one
-   component, so the injected degradation is a factor, not a hand-tuned number.
-2. **It does not degrade rows 6/7.** Per that same document's derivation the
-   `C2` pole `1/(2π·R1·Ceff)` moves *further above* the loop crossover as `C2`
-   shrinks, so phase margin does not fall — a control that destabilised the loop
-   would be testing something else.
-3. **It does not cost the lock.** A draw that never locks carries **no**
-   period-jitter figure at all (row 9 is a post-lock quantity), so it is
-   censored out of the control's own denominator rather than counted as a
-   failing sample — which, as the sizing section below shows, is the difference
-   between a control that fires and one that does not. `C2` is a few per cent of
-   the `C1+C2+C3` that document identifies as the cold-start acquisition ramp's
-   capacitance, so the ramp the 50 µs window pays for is essentially unchanged.
+| Arm | `C1` / `C2` | Period jitter (RMS) | Locked | Usable as this control? |
+| --- | --- | --- | --- | --- |
+| nominal | 207.83 / 10.47 pF | 0.523 % | 867 ps | — the population to separate from |
+| `C2` area/4 | 2.64 pF | 0.551 % | 867 ps | no — 45 % *under* the bound |
+| `C2` area/9 | 1.19 pF | 0.566 % | 867 ps | no — 43 % under |
+| `C1` area/9 | 23.19 pF | 0.983 % | 347 ns | no — 1.7 % under |
+| **`C1` area/12** | **17.41 pF** | **1.274 %** | **1.53 µs** | **yes** — 27 % over, locks fast |
+| `C1` area/16 | 13.07 pF | 3.086 % | 13.13 µs | works (209 % over), but 13 µs to lock is a censoring risk |
+| `C1` area/25 | 8.39 pF | *no lock* | — | no — a no-lock draw carries no figure |
 
-**Neither the factor nor those last two properties are asserted.**
-`sim/lf-c2-jitter-sensitivity` measures this exact netlist's post-lock period
-jitter against the unmodified design's, at the same sampling point and the same
-device draw, and that unit's record family is where the `4` comes from.
+Two things had to be true of the knob, and the first one killed the obvious
+candidate:
+
+1. **The effect has to be large.** `C2` — the capacitor whose *stated* design
+   purpose is attenuating reference-frequency ripple reaching `VCTRL`, and
+   therefore the intuitive choice — turns out **not** to be a lever on this
+   quantity: an 8.8× reduction moves the measured figure by 8 %, where the control
+   needs roughly +91 %. It is rejected by measurement, and
+   `sim/lf-c2-jitter-sensitivity`'s README is where that result lives.
+2. **The loop still has to lock.** Row 9 is a post-lock quantity, so a draw that
+   never locks carries **no** period-jitter figure and is censored out of the
+   control's own denominator — costing the control a draw exactly as a passing
+   draw would. `C1` area/25 is that failure, measured.
+
+`C1` area/12 is the arm inside both constraints, with margin on both sides: 27 %
+over the bound (against the nominal campaign's own −13 %/+13 % draw-to-draw
+spread, which puts the worst expected control draw at ≈ 1.11 %, still over) and
+1.53 µs to lock from a pre-charged start, against a 50 µs cold-start window whose
+nominal draws already reach lock in 24.32–29.72 µs.
+
+**`C1` area/16 is the named fallback** if a `c1div12` draw ever comes back under
+the bound: 8× the jitter margin, spent on the other constraint.
 
 ## Why this is a *third* control, not a duplicate of the two that exist
 
@@ -62,7 +79,7 @@ rather than left to be re-derived:
 | --- | --- | --- | --- |
 | `sim/jitter-floor` (#178) | **null** control | nothing — an ideal source whose true period jitter is zero by construction | what the `linearize` → `wrdata` → `edge_times` → `period_jitter` pipeline *reports* for a signal that does not jitter, i.e. the dump-grid resolution floor |
 | `sim/jitter-calibration` (#185, #197) | **known-bad measurement input** | the *measurement input* — an ideal source at a known nonzero injected jitter | that the reducer recovers an injected figure, and by how much it errs where the grid cannot resolve the edge |
-| **this unit** (#195) | **known-bad design** | the *DUT*, by one stated loop-filter parameter | that *this campaign's statistics*, over this population, separate the real design from a worse one |
+| **this unit** (#195) | **known-bad design** | the *DUT*, by one stated loop-filter parameter (`C1` area/12) | that *this campaign's statistics*, over this population, separate the real design from a worse one |
 
 Both of the first two are load-bearing and neither is a degraded design.
 Declaring either one's samples as this campaign's `negative_control` would claim
@@ -130,7 +147,7 @@ That is **checked rather than asserted**, in two places:
   `sim/pll-lock-mc/testbench/tb_pll_lock_mc.sch`'s own body and fails on a byte
   of drift, so "same stimulus, same strapping, same reference" is a property
   rather than a claim about a careful copy. The degraded DUT it points at is
-  `sim/lf-c2-jitter-sensitivity`'s committed arm — *referenced*, not copied, so
+  `sim/lf-c1-jitter-sensitivity`'s committed arm — *referenced*, not copied, so
   this unit's circuit and the sizing evidence for it cannot become two different
   circuits.
 
@@ -148,7 +165,7 @@ than a reading of the table.)
 ```sh
 # 0. the testbench is generated from the design and the nominal campaign --
 #    verify neither has drifted
-python3 sim/lf-c2-jitter-sensitivity/testbench/gen_c2_variant.py --check
+python3 sim/lf-c1-jitter-sensitivity/testbench/gen_c1_variant.py --check
 python3 sim/pll-lock-mc-negative-control/testbench/gen_tb.py --check
 
 # 1. the campaign: 6 draws, seeds 1..6, the same 50 us cold-start window
@@ -173,7 +190,10 @@ python3 signoff/item6_preconditions.py --write
 - **The campaign itself.** Six draws of a 50 µs cold-start transient at
   `reltol=1e-4`; the nominal campaign's own record puts five such draws at
   ≈ 4 h 23 m of wall-clock time at `--jobs 5` on a shared host, so this is a
-  real spend and it has not been made. `sim/executor-equivalence/README.md`
+  real spend and it has not been made. (The sizing spend *has*: seven 20 µs
+  pre-charged draws across the two `lf-c*-jitter-sensitivity` units, which is
+  what stopped the six 50 µs draws from being bought on `C2`, a knob that
+  measurement then rejected.) `sim/executor-equivalence/README.md`
   records that no host is provisioned for the batch/remote fleet yet
   (2AMLogic/2am#934), so it is a local spend or none.
 - **The `klt yield` verdict.** `negative_control.verdict` must come back
