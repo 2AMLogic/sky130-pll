@@ -257,7 +257,7 @@ def _execution_note(
         note += (
             f"An interrupted run was resumed with `--resume {record_id}`: "
             f"{unit_noun} completed in an earlier segment were reloaded verbatim "
-            "from this record's own `corners/<record-id>/checkpoint.json` rather "
+            "from this campaign's own `checkpoint.json` rather "
             "than re-simulated. The resume is refused outright unless the "
             "testbench manifest, the netlisted DUT, the resolved PDK build and "
             "the requested point/trial list all match the first segment's, so no "
@@ -278,17 +278,20 @@ def _execution_note(
     return note.strip()
 
 
-def _mint_failure(exc: OSError, staging, record_id: str, args: argparse.Namespace) -> str:
-    """What to say when the *checkout* fails at the moment of minting.
+def _checkout_gone(
+    exc: OSError, staging, record_id: str, args: argparse.Namespace, doing: str
+) -> str:
+    """What to say when the *checkout* fails under a running campaign.
 
-    The failure this is written for is issue #212's: the campaign finished
-    every unit, and then the directory it was going to write the record into
-    turned out not to exist any more, because something removed the worktree
-    while it ran. That is a recoverable situation and the message has to say
-    how -- the units are all in the checkpoint, which (when staged) is
-    somewhere the removal could not reach.
+    The failure this is written for is issue #212's: something removed the
+    worktree while the campaign ran, so the next file the harness reads from
+    (or writes into) the checkout is not there. Observed both ways -- a unit
+    that can no longer read `sim/spiceinit`, and a finished grid whose record
+    directory has vanished. Neither is recoverable in-process, but a staged
+    campaign's completed units are recoverable, and the message has to say so:
+    an operator who sees only an errno has no reason to think anything survived.
     """
-    head = f"run_corners.py: could not write this record into the checkout ({exc})"
+    head = f"run_corners.py: {doing} failed against this checkout ({exc})"
     if staging is None:
         return (
             f"{head} -- every completed unit is still in this record's own "
@@ -591,6 +594,15 @@ def _run_experiment(
         except runner_mod.NetlistError as e:
             print(f"run_corners.py: {e}", file=sys.stderr)
             return 1
+        except OSError as e:
+            # The shape issue #212's incident actually takes while units are
+            # still running: the checkout is removed, and the next thing the
+            # harness reads out of it (`sim/spiceinit`, the schematic, a
+            # waveform dump) is simply gone. Nothing about that is recoverable
+            # in-process -- but a staged campaign's completed units are, and a
+            # traceback is a bad way to find that out.
+            print(_checkout_gone(e, staging, record_id, args, "running a unit"), file=sys.stderr)
+            return 1
 
         missing = [u.corner_id for u in units if u.corner_id not in collected]
         if missing:
@@ -625,7 +637,10 @@ def _run_experiment(
                         f"into {staging.final_dir}"
                     )
             except OSError as e:
-                print(_mint_failure(e, staging, record_id, args), file=sys.stderr)
+                print(
+                    _checkout_gone(e, staging, record_id, args, "writing this record's artifacts"),
+                    file=sys.stderr,
+                )
                 return 1
 
             subset_reason = args.subset_reason if is_subset else None
@@ -649,7 +664,10 @@ def _run_experiment(
                 )
                 record_path.write_text(record_md)
             except OSError as e:
-                print(_mint_failure(e, staging, record_id, args), file=sys.stderr)
+                print(
+                    _checkout_gone(e, staging, record_id, args, "writing this record"),
+                    file=sys.stderr,
+                )
                 return 1
             print(f"run_corners.py: wrote {record_path}")
             # Only now, with the record on disk, is the campaign finished --

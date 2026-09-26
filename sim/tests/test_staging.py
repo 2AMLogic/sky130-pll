@@ -461,6 +461,39 @@ class ReapedWorktreeTests(unittest.TestCase):
                 (self._staged_dir(cache) / checkpoint_mod.CHECKPOINT_NAME).exists()
             )
 
+    def test_a_vanished_checkout_reports_how_to_recover(self):
+        """The observed shape of the incident, and what it should print.
+
+        A real reap kills the run from inside a unit: the next file the
+        harness reads out of the checkout (`sim/spiceinit`, in the run this
+        test is modelled on) is gone. An operator who sees only an errno and
+        a traceback has no reason to think the campaign survived -- so the
+        message has to name the surviving checkpoint and the command that
+        finishes it.
+        """
+        def run_point(pdk, spiceinit, manifest, netlist_text, point, work_dir):
+            if point.corner_id != ALL_POINT_IDS[0]:
+                raise FileNotFoundError(2, "No such file or directory", "sim/spiceinit")
+            return _point_result(point)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            cache = tmp / "cache"
+            wt = _make_linked_worktree(tmp / "wt", _make_clone(tmp / "main"))
+            h = _Harness(wt)
+            with mock.patch.dict("os.environ", {"XDG_CACHE_HOME": str(cache)}):
+                rc, out = h.run([], run_point)
+
+            self.assertEqual(rc, 1)
+            self.assertIn("nothing is lost", out)
+            self.assertIn(str(self._staged_dir(cache)), out)
+            self.assertIn(f"--resume {RECORD_ID}", out)
+            self.assertFalse(h.record_path.exists())
+            # And the claim the message makes is true.
+            staged = self._staged_dir(cache) / checkpoint_mod.CHECKPOINT_NAME
+            _header, done = checkpoint_mod.load(staged)
+            self.assertEqual(list(done), ALL_POINT_IDS[:1])
+
     def test_no_stage_reproduces_the_original_loss(self):
         """The escape hatch does what it says -- and why it is not the default.
 
