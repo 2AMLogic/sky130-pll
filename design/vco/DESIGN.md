@@ -173,11 +173,13 @@ issue's acceptance criteria required that, and forcing it here without
 simulation evidence would be exactly the kind of unverified claim
 `CLAUDE.md` rules out ("no claim without a testbench").
 
-## Update (issue #98): `Kvco` is now the binding constraint on two other blocks
+## Update (issues #98, #202): `Kvco` is the binding constraint on three closed-loop quantities
 
 The "likely levers" named above — longer tail-device `L`, source
-degeneration, a narrower usable `VCTRL` range — have since acquired two
-concrete, measured reasons to be exercised, both outside this block:
+degeneration, a narrower usable `VCTRL` range — have since acquired three
+concrete reasons to be exercised, all of them outside this block. The first
+two are measured (issue #98); the third is derived from committed
+measurements (issue #202):
 
 1. **Cold-start acquisition time.** `design/loop-filter/DESIGN.md`'s
    "Cold-start acquisition time: measured, and why `Icp` is not a lever"
@@ -194,8 +196,21 @@ concrete, measured reasons to be exercised, both outside this block:
    irrecoverably. A gentler tuning slope widens that window directly. The
    per-corner table is in `design/top/DESIGN.md`'s "What a cold-start
    settling-time fix would actually have to target (#98)" section.
+3. **Row 9's control-node ripple budget (added under issue #202).** Period
+   jitter converts a `VCTRL` disturbance into a fractional-frequency one
+   through this block's local tuning slope, so row 9's 1.0 % bound is also a
+   `VCTRL`-ripple bound, and it tightens **inversely** with `Kvco`: at the
+   Monte Carlo base point (`tt`/125 °C/1.80 V, local slope 1509 MHz/V read
+   off `sim/vco/records/20260904-163130-f3ae976.md`) the whole of row 9 buys
+   only **4.69 mV pk-pk** on `VCTRL`, roughly 10x tighter than the
+   corresponding supply-ripple budget derived from this block's own
+   `sim/vco-supply-pushing` record. The derivation, and the finding that this
+   mechanism is an order of magnitude short of explaining the
+   `sim/pll-lock-mc` misses that prompted #202, are in
+   `design/top/DESIGN.md`'s "Row 9 (period jitter): the design-attributable
+   budget at the Monte Carlo base point (issue #202)" section.
 
-Neither is acted on here — a re-size needs its own `sim/vco` re-run plus the
+None of the three is acted on here — a re-size needs its own `sim/vco` re-run plus the
 closed-loop `sim/pll-lock` re-run tracked in #103 to be argued against, and
 `sim/vco/records/20260904-163130-f3ae976.md` (45 points, measured
 692–1751 MHz/V) is the committed evidence any such re-derivation starts
