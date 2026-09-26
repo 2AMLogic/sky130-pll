@@ -208,7 +208,11 @@ measurements (issue #202):
    mechanism is an order of magnitude short of explaining the
    `sim/pll-lock-mc` misses that prompted #202, are in
    `design/top/DESIGN.md`'s "Row 9 (period jitter): the design-attributable
-   budget at the Monte Carlo base point (issue #202)" section.
+   budget at the Monte Carlo base point (issue #202)" section, which also
+   checks the budget against the superseding campaign
+   (`sim/pll-lock-mc/records/20260925-224917-3a2dd6e.md`, 5/5 draws meet
+   row 9 at 0.554-0.717 %): row 9 is **met**, but with 1.4-1.8x margin at one
+   PVT point, on a conversion linear in this block's local slope.
 
 None of the three is acted on here — a re-size needs its own `sim/vco` re-run plus the
 closed-loop `sim/pll-lock` re-run tracked in #103 to be argued against, and

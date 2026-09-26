@@ -853,6 +853,17 @@ re-derive it. It is the design-side companion to `sim/integrator-floor`
 (issue #202 / PR #209), which attacked the same question from the simulator's
 side.
 
+**Outcome, stated up front.** The control node *is* the binding path, by about
+10x over the supply — so #202 named the right node. But the loop cannot source
+anything like the ripple a 1.5–3.1 % figure needs, so the named mechanism was
+never the cause of those misses, and the superseding campaign
+(`sim/pll-lock-mc/records/20260925-224917-3a2dd6e.md`, issue #202 / PR #211)
+confirms it: the identical five seeds at corrected integrator settings lock
+5/5 and meet row 9 5/5, at 0.554–0.717 %. **No netlist is changed.** What the
+budget below adds that the record does not is the *margin*: 0.554–0.717 %
+against a 1.0 % bound is 1.4–1.8x, at one PVT point, on a conversion that is
+linear in a tuning slope varying ~2.5x across the ratified grid.
+
 ### The operating point, from committed evidence
 
 The Monte Carlo base point is `tt`/125 °C/1.80 V, `N` = 25 against a 10 MHz
@@ -943,6 +954,51 @@ description, as an uncommitted diagnostic rather than a `sim/` record) 0.77–
 1.05 mV pk-pk of `VCTRL` ripple in the closed loop, which is 16–22 % of the
 4.69 mV budget above and lands in the same place this derivation does.
 
+### Checked against the superseding record
+
+`sim/pll-lock-mc/records/20260925-224917-3a2dd6e.md` (issue #202 / PR #211)
+re-ran the identical five seeds at the corrected integrator settings and
+**passed 5/5**, with all five draws locking and all five meeting row 9:
+
+| Trial | Period jitter | Implied `VCTRL` ripple, pk-pk (this section's conversion) | Fraction of the row-9 budget |
+|---|---|---|---|
+| 1 | 0.554 % | 2.60 mV | 55 % |
+| 2 | 0.669 % | 3.14 mV | 67 % |
+| 3 | 0.717 % | 3.36 mV | 72 % |
+| 4 | 0.633 % | 2.97 mV | 63 % |
+| 5 | 0.600 % | 2.81 mV | 60 % |
+
+Three things follow, and the third is the honest caveat.
+
+1. **The prediction held in direction and order of magnitude.** This section
+   said the loop's own disturbance is worth a few tenths of a percent, not
+   1.5–3.1 %. The measured figures are 0.554–0.717 %.
+2. **But the margin is 1.4–1.8x, not the 4–6x the uncommitted #209 ripple
+   probe implied.** Row 9 is met, and it is met with more than half of its
+   budget already spent. This is a transient simulation with no device noise
+   sources, and the `VDD` in this testbench is an ideal source, so essentially
+   the whole measured figure is deterministic disturbance reaching `VCTRL` —
+   the path this section identifies as binding.
+3. **Inverting the conversion does not reproduce #209's probe, and that gap is
+   not resolved here.** 0.554–0.717 % implies ≥2.6–3.4 mV pk-pk of effective
+   control-node disturbance (≥, because the pk-pk column assumes a sinusoid and
+   a pulse-shaped ripple has a higher crest factor for the same RMS), against
+   the 0.77–1.05 mV pk-pk PR #209 reports. The two disagree by 2.5–4.4x, so
+   either the ripple is larger than that uncommitted probe measured, or part of
+   the measured jitter arrives by a path this two-term budget does not model.
+   `sim/loop-ripple` (issue #166) measures the `VCTRL` pk-pk figure directly
+   and is what settles it; until it runs, the budget above is a bound and the
+   0.77–1.05 mV figure is an uncommitted probe, and neither is a measurement of
+   this loop's in-lock ripple on the record.
+
+**The margin does not transfer off this point.** The campaign samples one PVT
+point, and the conversion is linear in the *local* tuning slope, which
+`sim/vco`'s 45-point record measures as varying by ~2.5x across the ratified
+grid (692–1751 MHz/V endpoint-to-endpoint). A draw at a steeper point converts
+the same ripple into proportionally more jitter, and 1.4–1.8x is not a large
+enough margin to assume that survives. That is `sim/pll-lock`'s PVT half
+(issue #103), not this campaign's.
+
 ### The lever, if design margin is needed: `Kvco`
 
 Both budgets above, and the loop's two other known closed-loop weaknesses,
@@ -959,23 +1015,24 @@ identified twice as the only lever with real headroom:
 `design/vco/DESIGN.md` already names the implementation levers for a gentler
 slope (longer tail-device `L`, source degeneration, a narrower usable `VCTRL`
 range) and already records, under its issue-#98 update, that `Kvco` is "the
-only lever with real headroom". **This section adds the fourth reason and the
-row-9 arithmetic behind it; it does not change `vco_ring5.sch`.**
+only lever with real headroom". **This section adds row 9 to that list, with the
+arithmetic behind it; it does not change `vco_ring5.sch`.**
 
 ### Why no netlist is changed by issue #202
 
 Three reasons, in order of weight:
 
-1. **There is no measured design defect to point at yet.** Every figure that
-   motivated #202 was taken at ngspice's default tolerances, where the
-   campaign's own null control reports more than the entire bound
-   (`sim/integrator-floor`). `sim/pll-lock-mc/testbench/tb.json` now declares
-   `.options reltol=1e-4` and a 20 ps dump grid, and the superseding campaign
-   under those settings is what says whether any design margin is owed.
-   Changing the netlist first would be a claim without a testbench, which
-   `CLAUDE.md` forbids.
-2. **The budget above says the named mechanism is not the one.** A 2–3x miss
-   needs 7–14 mV pk-pk on `VCTRL`; the loop cannot source it in lock.
+1. **There is no measured design defect.** Every figure that motivated #202
+   was taken at ngspice's default tolerances, where the campaign's own null
+   control reports more than the entire bound (`sim/integrator-floor`).
+   `sim/pll-lock-mc/testbench/tb.json` now declares `.options reltol=1e-4` and
+   a 20 ps dump grid, and the superseding campaign under those settings
+   (`20260925-224917-3a2dd6e`) **passes row 9 on 5 of 5 draws**. Changing a
+   netlist that meets its ratified row, to fix a miss that turned out to be
+   the simulator's, would be a claim without a testbench — which `CLAUDE.md`
+   forbids — and would invalidate every other committed campaign in the repo.
+2. **The budget above says the named mechanism was never the one.** A 2–3x
+   miss needs 7–14 mV pk-pk on `VCTRL`; the loop cannot source it in lock.
 3. **A `Kvco` re-size is not a local edit.** `R1`/`C1`/`C2`/`R3`/`C3` are
    *outputs* of `(Icp, Kvco, N, f_c, phi_m)`, so a new slope re-derives the
    whole loop filter, and the evidence chain that would have to be re-run
@@ -997,5 +1054,6 @@ changes either issue's scope.
 ### No spec edits
 
 Row 9 and `DR-006` are untouched by this section. A campaign that misses a
-ratified row is recorded as a miss (`CLAUDE.md`); the superseded record stands
-as written, and any superseding record names it.
+ratified row is recorded as a miss (`CLAUDE.md`); the superseded record
+`20260924-222341-a9375a5` stands as written, and `20260925-224917-3a2dd6e`
+names it rather than replacing it on disk.
