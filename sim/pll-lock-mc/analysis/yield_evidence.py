@@ -103,6 +103,33 @@ MEASUREMENT_NAME = "period_jitter_rms_pct"
 #: Written by `--write`, verified by `--check`, relative to this file.
 OUTPUT_DIR = Path(__file__).resolve().parent / "yield-evidence"
 
+#: The unit this campaign is, and the unit its negative control is. Both appear
+#: inside the generated documents (as `provenance.source_record` and
+#: `provenance.negative_control.source_record`), which is how
+#: `signoff/item6_preconditions.py` walks from an artifact back to the record
+#: that produced it -- so they are named here once rather than spelled out at
+#: each use.
+NOMINAL_UNIT = "sim/pll-lock-mc"
+CONTROL_UNIT = "sim/pll-lock-mc-negative-control"
+
+#: Fields of the control campaign's manifest that must equal the nominal
+#: campaign's, or "same testbench, same reducer" is a claim rather than a
+#: checked property: the measured node, the dump grid, the transient window, the
+#: gated bound, the post-lock population floor, and the statistical sampling
+#: point itself.
+_CONTROL_MUST_MATCH = (
+    "max_frac",
+    "min_cycles",
+    "node",
+    "tran_step",
+    "tran_stop",
+    "corner",
+    "temp_c",
+    "supply_v",
+    "mismatch",
+    "process",
+)
+
 _PRIMARY_SAMPLES = "mc-samples.json"
 _VARIANT_SAMPLES = "mc-samples-censored-as-failures.json"
 _SPEC_LIMITS = "spec-limits.json"
@@ -237,6 +264,108 @@ def parse_manifest(manifest: dict) -> dict:
     return out
 
 
+def parse_control_manifest(manifest: dict) -> dict:
+    """`parse_manifest` for the negative control's own campaign.
+
+    Adds the one thing the nominal manifest does not carry: a
+    `negative_control` block naming, in the manifest that actually ran the
+    control, **what was degraded**. That sentence is read rather than written
+    here on purpose -- a description of a degradation composed by this script
+    could drift from the netlist the control was drawn on, while the manifest
+    that netlisted it cannot.
+    """
+    out = parse_manifest(manifest)
+    block = manifest.get("negative_control")
+    if not isinstance(block, dict):
+        raise AnalysisError(
+            "the control campaign's tb.json declares no `negative_control` block, "
+            "so nothing in the repo states what this control degrades -- add one "
+            "with `of` (the campaign it is the control for) and `degradation` (the "
+            "exact parameter change), rather than describing it in prose here"
+        )
+    degradation = block.get("degradation")
+    if not isinstance(degradation, str) or not degradation.strip():
+        raise AnalysisError(
+            "`negative_control.degradation` must be a non-empty string naming the "
+            "exact, stated parameter change the variant carries"
+        )
+    if block.get("of") != NOMINAL_UNIT:
+        raise AnalysisError(
+            f"`negative_control.of` is {block.get('of')!r}, but this script grades "
+            f"{NOMINAL_UNIT}'s campaign -- a control declared for another campaign "
+            "is not this one's"
+        )
+    out["degradation"] = degradation.strip()
+    out["of"] = NOMINAL_UNIT
+    return out
+
+
+def derive_control(
+    record: dict, control_manifest: dict, nominal_manifest: dict, nominal_derived: dict
+) -> dict:
+    """The control campaign's draws, checked against the nominal they grade.
+
+    Two refusals, both of which would otherwise be assumptions a reader of the
+    committed document could not check:
+
+    * **The control must be the same experiment.** Every field of
+      `_CONTROL_MUST_MATCH` has to agree, so the control's samples are the same
+      measurement of the same quantity at the same sampling point, differing
+      only in the DUT's stated degradation.
+    * **The control must separate from the nominal.** `klt yield` reports
+      `detected` only when the control's own empirical yield is strictly below
+      the nominal's, so a control whose draws pass as often as the nominal's
+      cannot produce that verdict however deliberate its degradation was.
+      Writing the block anyway would spend a `klt yield` run to learn something
+      the sample counts already settle.
+    """
+    mismatched = [
+        field
+        for field in _CONTROL_MUST_MATCH
+        if control_manifest[field] != nominal_manifest[field]
+    ]
+    if mismatched:
+        detail = ", ".join(
+            f"{field}: control {control_manifest[field]!r} vs nominal "
+            f"{nominal_manifest[field]!r}"
+            for field in mismatched
+        )
+        raise AnalysisError(
+            "the control campaign's manifest does not match the nominal's on "
+            f"{detail} -- a negative control has to be the same measurement of the "
+            "same quantity at the same sampling point, or its samples are not "
+            "comparable with the population they are supposed to separate from"
+        )
+
+    derived = derive(record, control_manifest)
+    bound = nominal_manifest["max_frac"] * 100.0
+    control_drawn = len(derived["samples"]) + len(derived["censored_seeds"])
+    nominal_drawn = len(nominal_derived["samples"]) + len(
+        nominal_derived["censored_seeds"]
+    )
+    control_rate = sum(1 for value in derived["samples"] if value <= bound) / control_drawn
+    nominal_rate = (
+        sum(1 for value in nominal_derived["samples"] if value <= bound) / nominal_drawn
+    )
+    if control_rate >= nominal_rate:
+        raise AnalysisError(
+            f"the control's draws meet the {bound:g} % bound at least as often as the "
+            f"nominal campaign's ({control_rate:.3f} vs {nominal_rate:.3f} of drawn "
+            "trials), so this variant does not separate from the population it is "
+            "supposed to be the known-bad counterpart of -- `klt yield` can only "
+            "report `detected` for a control whose own yield is strictly below the "
+            "nominal's"
+        )
+    return {
+        **derived,
+        "record_id": record["record_id"],
+        "source_record": f"{CONTROL_UNIT}/records/{record['record_id']}.md",
+        "degradation": control_manifest["degradation"],
+        "pass_rate": control_rate,
+        "nominal_pass_rate": nominal_rate,
+    }
+
+
 def corner_id(manifest: dict) -> str:
     """The `<lib-corner>_<temp>c_<supply>v` id `sim/README.md` documents for a
     Monte Carlo trial's raw log, minus the per-trial `mc<n>_seed<n>_` prefix --
@@ -317,14 +446,20 @@ def derive(record: dict, manifest: dict) -> dict:
     }
 
 
-def _provenance(record: dict, manifest: dict, derived: dict, mapping: str) -> dict:
+def _provenance(
+    record: dict,
+    manifest: dict,
+    derived: dict,
+    mapping: str,
+    control: dict | None = None,
+) -> dict:
     """Metadata `klt yield` ignores, carried so the document is self-describing
     if it is ever read (or content-hashed by `klt signoff`) on its own.
     """
-    return {
+    block = {
         "generated_by": "sim/pll-lock-mc/analysis/yield_evidence.py",
-        "source_record": f"sim/pll-lock-mc/records/{record['record_id']}.md",
-        "source_manifest": "sim/pll-lock-mc/testbench/tb.json",
+        "source_record": f"{NOMINAL_UNIT}/records/{record['record_id']}.md",
+        "source_manifest": f"{NOMINAL_UNIT}/testbench/tb.json",
         "spec_row": 9,
         "spec_row_status": "RATIFIED (DR-006)",
         "sampling_point": corner_id(manifest),
@@ -334,14 +469,56 @@ def _provenance(record: dict, manifest: dict, derived: dict, mapping: str) -> di
         "sample_precision_pp": 0.0005,
         "note": (
             "Derived, not measured: every value restates "
-            f"sim/pll-lock-mc/records/{record['record_id']}.md at the precision "
+            f"{NOMINAL_UNIT}/records/{record['record_id']}.md at the precision "
             "that record prints. No target_yield is declared -- spec row 9 states "
             "a jitter bound, not a yield target."
         ),
     }
+    if control is not None:
+        block["negative_control"] = {
+            "source_record": control["source_record"],
+            "source_manifest": f"{CONTROL_UNIT}/testbench/tb.json",
+            "degradation": control["degradation"],
+            "seeds_with_a_measurement": control["sample_seeds"],
+            "seeds_censored_no_lock": control["censored_seeds"],
+            "pass_rate_of_drawn_trials": round(control["pass_rate"], 6),
+            "nominal_pass_rate_of_drawn_trials": round(
+                control["nominal_pass_rate"], 6
+            ),
+        }
+    return block
 
 
-def samples_doc(record: dict, manifest: dict, derived: dict, *, as_failures: bool) -> dict:
+def _control_block(control: dict, *, as_failures: bool) -> dict:
+    """The per-measurement `negative_control` block `klt yield` grades.
+
+    The censored-draw mapping is the document's own -- a control is declared
+    under the same reading of a draw that produced no value as the population
+    it is checked against, never a more convenient one.
+    """
+    censored = len(control["censored_seeds"])
+    drawn = len(control["samples"]) + censored
+    return {
+        "description": (
+            f"{drawn} draws of the same campaign at a deliberately degraded DUT "
+            f"({control['degradation']}), seeds "
+            f"{control['sample_seeds'] + control['censored_seeds']}, from "
+            f"{control['source_record']}"
+        ),
+        "samples": control["samples"],
+        "errored": 0 if as_failures else censored,
+        "failed_unmeasurable": censored if as_failures else 0,
+    }
+
+
+def samples_doc(
+    record: dict,
+    manifest: dict,
+    derived: dict,
+    *,
+    as_failures: bool,
+    control: dict | None = None,
+) -> dict:
     censored = len(derived["censored_seeds"])
     measurement = {
         "name": MEASUREMENT_NAME,
@@ -352,9 +529,13 @@ def samples_doc(record: dict, manifest: dict, derived: dict, *, as_failures: boo
         "limits": {"max": manifest["max_frac"] * 100.0},
         "source_corners": [corner_id(manifest)],
     }
+    if control is not None:
+        measurement["negative_control"] = _control_block(
+            control, as_failures=as_failures
+        )
     mapping = "failed_unmeasurable" if as_failures else "errored"
     return {
-        "provenance": _provenance(record, manifest, derived, mapping),
+        "provenance": _provenance(record, manifest, derived, mapping, control),
         "measurements": [measurement],
     }
 
@@ -386,6 +567,29 @@ def main(argv: list[str] | None = None) -> int:
         default=Path(__file__).resolve().parents[1] / "testbench" / "tb.json",
         help="path to the campaign's tb.json (default: this campaign's own)",
     )
+    parser.add_argument(
+        "--negative-control",
+        type=Path,
+        default=None,
+        metavar="RECORD",
+        help=(
+            "path to a negative-control campaign's record markdown -- a "
+            "deliberately degraded variant of the DUT re-drawn through this same "
+            "campaign. Its draws become the per-measurement `negative_control` "
+            f"block `klt yield` grades. Omit it and no block is written ({CONTROL_UNIT} "
+            "is the control this repo committed; see its tb.json's negative_control "
+            "block for what it degrades)"
+        ),
+    )
+    parser.add_argument(
+        "--negative-control-manifest",
+        type=Path,
+        default=Path(__file__).resolve().parents[2]
+        / "pll-lock-mc-negative-control"
+        / "testbench"
+        / "tb.json",
+        help="path to the negative control's tb.json (default: this repo's own)",
+    )
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument(
         "--write", action="store_true", help=f"write the documents to {OUTPUT_DIR}"
@@ -401,13 +605,28 @@ def main(argv: list[str] | None = None) -> int:
         record = parse_record(args.record.read_text())
         manifest = parse_manifest(json.loads(args.manifest.read_text()))
         derived = derive(record, manifest)
+        control = None
+        if args.negative_control is not None:
+            control_manifest = parse_control_manifest(
+                json.loads(args.negative_control_manifest.read_text())
+            )
+            control = derive_control(
+                parse_record(args.negative_control.read_text()),
+                control_manifest,
+                manifest,
+                derived,
+            )
     except (AnalysisError, OSError, ValueError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
 
     documents = {
-        _PRIMARY_SAMPLES: samples_doc(record, manifest, derived, as_failures=False),
-        _VARIANT_SAMPLES: samples_doc(record, manifest, derived, as_failures=True),
+        _PRIMARY_SAMPLES: samples_doc(
+            record, manifest, derived, as_failures=False, control=control
+        ),
+        _VARIANT_SAMPLES: samples_doc(
+            record, manifest, derived, as_failures=True, control=control
+        ),
         _SPEC_LIMITS: spec_limits_doc(manifest),
     }
 
