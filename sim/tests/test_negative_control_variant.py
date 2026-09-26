@@ -35,6 +35,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SIZING = REPO_ROOT / "sim" / "lf-c2-jitter-sensitivity"
+SIZING_C1 = REPO_ROOT / "sim" / "lf-c1-jitter-sensitivity"
 CONTROL = REPO_ROOT / "sim" / "pll-lock-mc-negative-control"
 NOMINAL_MANIFEST = REPO_ROOT / "sim" / "pll-lock-mc" / "testbench" / "tb.json"
 
@@ -52,6 +53,9 @@ def _load(name: str, path: Path):
 
 gen_c2_variant = _load(
     "gen_c2_variant", SIZING / "testbench" / "gen_c2_variant.py"
+)
+gen_c1_variant = _load(
+    "gen_c1_variant", SIZING_C1 / "testbench" / "gen_c1_variant.py"
 )
 gen_tb = _load("gen_control_tb", CONTROL / "testbench" / "gen_tb.py")
 yield_evidence = _load(
@@ -88,6 +92,34 @@ class VariantsStillDeriveFromTheDesign(unittest.TestCase):
                         (SIZING / "testbench" / name).exists(),
                         f"arm {factor} declares {name}, which is not committed",
                     )
+
+    def test_c1_sizing_arms_match_the_committed_design_files(self):
+        self.assertEqual(
+            gen_c1_variant.main(["--check"]),
+            0,
+            "a committed sim/lf-c1-jitter-sensitivity arm no longer re-derives from "
+            "design/loop-filter/loop_filter.sch + design/top/top.sch",
+        )
+
+    def test_the_two_sizing_units_measure_the_same_thing(self):
+        # sim/lf-c1-jitter-sensitivity has no nominal arm of its own: it cites
+        # sim/lf-c2-jitter-sensitivity's, which is only valid while the two
+        # manifests agree on the window, the initial conditions, the reducer and
+        # the draw. Without this assertion that citation could go stale silently.
+        c2 = json.loads((SIZING / "testbench" / "tb.json").read_text())
+        c1 = json.loads((SIZING_C1 / "testbench" / "tb.json").read_text())
+        self.assertEqual(c2["measure"], c1["measure"])
+        for field in (
+            "corner",
+            "temp_c",
+            "supply_v",
+            "mismatch",
+            "process",
+            "trials",
+            "seed_base",
+        ):
+            with self.subTest(field=field):
+                self.assertEqual(c2["monte_carlo"][field], c1["monte_carlo"][field])
 
     def test_the_degraded_arm_changes_only_c2(self):
         # The one substitution, spelled out: C2's drawn geometry differs and no
