@@ -61,7 +61,7 @@ _C2_LINE = "C {sky130_fd_pr/cap_mim_m3_1.sym} 0 0 0 0 {name=C2\n"
 #: degraded arm's figure is read against, run under identical window and
 #: initial conditions). Adding one means running it: a committed variant with
 #: no record is a netlist, not evidence.
-FACTORS = (1, 4)
+FACTORS = (1, 4, 9)
 
 _HEADER_MARKER = "}\nG {}\n"
 
@@ -71,13 +71,17 @@ class GenError(RuntimeError):
 
 
 def _body(path: Path) -> str:
-    """Everything from the schematic's `G {}` line on -- its own content, with
-    only the leading `v { ... }` header comment dropped."""
+    """Everything from the `v { ... }` block's closing brace on -- the
+    schematic's own content, with only the header comment's text dropped.
+
+    The closing brace belongs to the body rather than to the replacement header,
+    so a header written by this generator cannot leave the `v {}` block unclosed.
+    """
     text = path.read_text()
-    head, marker, rest = text.partition(_HEADER_MARKER)
+    _head, marker, rest = text.partition(_HEADER_MARKER)
     if not marker:
         raise GenError(f"{path}: no `v {{...}}` header block found")
-    return "G {}\n" + rest
+    return _HEADER_MARKER + rest
 
 
 def _c2_nominal_side(loop_filter: str) -> float:

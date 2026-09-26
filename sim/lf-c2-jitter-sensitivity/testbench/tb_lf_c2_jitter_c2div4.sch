@@ -9,6 +9,7 @@ v {xschem version=3.4.7 file_version=1.2
 * therefore bit-identical to the Monte Carlo campaign's own testbench, and
 * like it this schematic carries no `.tran` card of its own -- the window comes
 * from this unit's tb.json via sim/harness/measure.py.
+}
 G {}
 V {}
 S {}
