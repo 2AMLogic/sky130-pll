@@ -473,12 +473,29 @@ class LoopRippleManifestTests(unittest.TestCase):
             self.assertIn(f".ic {card}", patched)
         self.assertIn("set wr_singlescale", patched)
         self.assertIn("wrdata ss_-40c_1.62v-point000.raw v(CLK) v(VDD) v(xxxtop.vctrl)", patched)
-        self.assertIn("tran 200p 100u", patched)
+        # Derived from the manifest, not restated: a manifest that legitimately
+        # re-tunes its grid or its TMAX must not have to remember to edit a
+        # hardcoded card here too (#210).
+        mine = self.MANIFEST["measure"]
+        self.assertIn(f"tran {mine['tran_step']} {mine['tran_stop']}", patched)
+        self.assertIn(f"0 {mine['tran_max_step']}", patched)
+        self.assertIn(".options reltol=%s" % mine["options"]["reltol"], patched)
 
     def test_cold_start_and_lock_criterion_match_sim_pll_lock(self):
-        # Comparable lock column: same ic cards, window and criterion.
+        # Comparable lock column: same ic cards, window and criterion -- and,
+        # since #210, the same simulator accuracy. `options` and
+        # `tran_max_step` belong in this list for exactly the reason
+        # `tran_step` already did: sim/integrator-floor measured that
+        # ngspice's default `reltol` shifts this ring's reported frequency by
+        # ~2.9 % and manufactures 1.543 % RMS apparent period jitter on a DUT
+        # whose true jitter is zero, so two campaigns run at different
+        # tolerances do NOT have comparable frequency or lock columns however
+        # identical the rest of their measure blocks are.
         mine, theirs = self.MANIFEST["measure"], self.PLL_LOCK["measure"]
-        for key in ("ic", "lock", "tran_stop", "tran_step", "require_lock", "node"):
+        for key in (
+            "ic", "lock", "tran_stop", "tran_step", "require_lock", "node",
+            "tran_max_step", "options",
+        ):
             self.assertEqual(mine[key], theirs[key], key)
         self.assertEqual(self.MANIFEST["process_corners"], self.PLL_LOCK["process_corners"])
         self.assertEqual(self.MANIFEST["spec_rows"], [13])
