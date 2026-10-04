@@ -246,5 +246,69 @@ class ControlIsTheSameExperiment(unittest.TestCase):
         )
 
 
+class VariantGeneratorDriftTests(unittest.TestCase):
+    """Run each generator directly (as `python3 <path>`) against a scratch copy
+    of the files it reads, and prove `--check` fails on each drift class
+    without touching the source checkout."""
+
+    GENERATORS = {
+        "c1": SIZING_C1 / "testbench" / "gen_c1_variant.py",
+        "c2": SIZING / "testbench" / "gen_c2_variant.py",
+    }
+
+    def _scratch(self, tag: str) -> Path:
+        import shutil
+        import tempfile
+
+        root = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, root, True)
+        shutil.copytree(REPO_ROOT / "design", root / "design")
+        shutil.copytree(
+            REPO_ROOT / "sim" / "pll-lock-mc" / "testbench",
+            root / "sim" / "pll-lock-mc" / "testbench",
+        )
+        shutil.copy(REPO_ROOT / "sim" / "variant_generator.py", root / "sim" / "variant_generator.py")
+        unit = self.GENERATORS[tag].parents[1].name
+        shutil.copytree(
+            self.GENERATORS[tag].parent, root / "sim" / unit / "testbench"
+        )
+        return root / "sim" / unit / "testbench"
+
+    def _check(self, tag: str, tb: Path):
+        import subprocess
+
+        return subprocess.run(
+            [sys.executable, str(tb / self.GENERATORS[tag].name), "--check"],
+            capture_output=True,
+            text=True,
+        )
+
+    def test_clean_copy_passes_and_drift_fails(self):
+        for tag, module in (("c1", gen_c1_variant), ("c2", gen_c2_variant)):
+            factor = [f for f in module.FACTORS if f != 1][0]
+            lf_sch = f"loop_filter_{tag}div{factor}.sch"
+            lf_sym = f"loop_filter_{tag}div{factor}.sym"
+            with self.subTest(tag=tag, case="clean"):
+                tb = self._scratch(tag)
+                result = self._check(tag, tb)
+                self.assertEqual(result.returncode, 0, result.stderr)
+            for case, name, action in (
+                ("missing schematic", lf_sch, "delete"),
+                ("modified schematic", lf_sch, "modify"),
+                ("missing symbol", lf_sym, "delete"),
+                ("modified symbol", lf_sym, "modify"),
+            ):
+                with self.subTest(tag=tag, case=case):
+                    tb = self._scratch(tag)
+                    target = tb / name
+                    if action == "delete":
+                        target.unlink()
+                    else:
+                        target.write_text(target.read_text() + "* drift\n")
+                    result = self._check(tag, tb)
+                    self.assertEqual(result.returncode, 1)
+                    self.assertIn(f"DRIFT: sim/{tb.parents[0].name}/testbench/{name}", result.stderr)
+
+
 if __name__ == "__main__":
     unittest.main()
