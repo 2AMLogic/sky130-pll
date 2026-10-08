@@ -2,6 +2,11 @@
 
 Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
+### 2026-10-08
+
+- **PR #226**: signoff: cite the characterization report for T1 item 8 (analog partition)
+- **Issue #224** (closed): T1 item 8: decide and record the characterization-report citation now that #22 has closed
+
 ### 2026-10-07
 
 - **PR #222**: ci: run on GitHub-hosted runners; the shared self-hosted runner is retired

@@ -49,11 +49,10 @@ Issues carrying `loom:curated`.
 - **#166**: sim: measure transient VDD/VCTRL ripple-in-lock of the assembled loop (DR-006 row 13 Budget 1, part 2) *(curated)*
 - **#182**: signoff: cite T1 item 6 once row 9's Monte Carlo campaign has a negative control and a sized population *(curated)*
 - **#215**: sim(pll-lock-mc-negative-control): draw the six-trial control campaign and grade it with klt yield *(curated)*
-- **#224**: T1 item 8: decide and record the characterization-report citation now that #22 has closed *(curated)*
 
 ## Proposed (Architect / Hermit)
 
-_None._
+- **#227**: README status section is stale: claims no PLL sim or layout evidence *(architect)*
 
 ## Epics
 
@@ -69,7 +68,7 @@ _None._
 | In Progress (`loom:building`) | 0 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
-| Curated | 9 |
-| Architect / Hermit proposals | 0 |
+| Curated | 8 |
+| Architect / Hermit proposals | 1 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
