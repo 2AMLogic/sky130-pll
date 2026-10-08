@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "kind": "generic",
+  "status": "pass",
+  "source": "measurements/report.md",
+  "summary": "T1 item 8, analog partition only. status 'pass' asserts one thing: measurements/report.md is the artifact item 8 names -- one aggregated, current report (kept current by measurements/tests/test_report_freshness.py) giving a verdict per row of spec/target-spec.md and the evidence record each verdict rests on. It does NOT assert that any spec row is met, and it converts no FAIL or no-evidence row into a pass. The report itself records FAIL against row 3 (reference input: the 1 MHz and 25 MHz closed-loop records), row 8 (lock time: every record FAIL), row 9 (period jitter, ratified by DR-006: both deterministic sim/pll-lock records FAIL; only the sim/pll-lock-mc Monte Carlo record passes) and row 14 (output duty cycle: every record FAIL). It records no evidence at all for rows 0, 1, 10, 11, 12, 15, 16, 17, 18, 19 and 20. Every row except 0, 1, 9, 19 and 20 is still DRAFT, so a PASS listed against a DRAFT row is evidence bearing on that row, not a verdict against a binding bound. The report carries verdicts and citations, not numeric figures; the numbers are in the cited records. The digital partition (8.digital) is deliberately not cited: its checklist text requires Fmax, area and power across the corner set, and the report has no Fmax field and no evidence for power (row 12) or area (row 18).",
+  "provenance": {
+    "input": {
+      "content_hash": "sha256:9e7e1de4abeeaa2b59a687ac2f7414ee33d4402f7367295daa33606e298f8b92",
+      "path": {
+        "path": "measurements/report.md",
+        "scope": "repo"
+      },
+      "role": "characterization-report"
+    }
+  }
+}

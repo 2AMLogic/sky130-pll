@@ -5,6 +5,10 @@
     "3": {
       "file": "layout/pll/reports/20260924-041509-c53e7c4/drc.json",
       "content_hash": "sha256:939f97e05b9e4a2a0f866a44bb6f758c030cfd611eaa0a567d5dc3002fa68d4c"
+    },
+    "8.analog": {
+      "file": "signoff/evidence/characterization-report.json",
+      "content_hash": "sha256:9e7e1de4abeeaa2b59a687ac2f7414ee33d4402f7367295daa33606e298f8b92"
     }
   }
 }
