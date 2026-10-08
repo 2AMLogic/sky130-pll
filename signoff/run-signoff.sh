@@ -30,7 +30,8 @@
 #
 # Exit codes:
 #   0  the report was written (default mode), or matches (--check)
-#   1  the committed report is stale (--check), the manifest cites a
+#   1  the committed report is stale (--check), a cited artifact's live
+#      bytes do not match its pinned content_hash, the manifest cites a
 #      superseded evidence record, the manifest cites a `klt yield` report
 #      whose own statistics do not support the row it would grade, or the
 #      manifest/doc is bad
@@ -101,6 +102,23 @@ esac
 #    envelopes name it `file`, while a `klt yield` report names its sample-set
 #    document `samples`. Both are read here, so a yield citation's pin is
 #    re-hashed rather than skipped with a "names no input artifact" warning.
+#
+#    A `"kind": "generic"` envelope (T1 item 8's only accepted kind) is the
+#    third case, and the one the pinned grader verifies least: `klt signoff`
+#    0.6.0 never re-hashes a generic envelope's input at all, so it reports
+#    `input_verified: null` by construction. Its artifact is not committed
+#    beside the envelope either -- this repo's characterization report lives
+#    at `measurements/report.md` -- so the envelope names it in
+#    `provenance.input.path` as `{"path": <repo-relative>, "scope": "repo"}`,
+#    and the guard re-hashes that path from the repo root. That is the opt-in
+#    field klayout-tools#2403 added to later `klt` releases, so a grader newer
+#    than the pin will verify the same path itself (`input_verified: true`).
+#    A generic envelope that names no such path, names an absolute or
+#    escaping one, or names a file that is gone, fails here rather than
+#    warning: at the pin nothing else would ever check its pin. Its own
+#    `provenance.input.content_hash` must also equal the manifest's pin, so
+#    the envelope and the manifest cannot disagree about which bytes were
+#    cited.
 #
 # 2. Superseded record.
 #
@@ -176,6 +194,51 @@ for item, path, pinned in cited:
         mismatched.append(f"item {item}: {path} is unreadable ({exc})")
         continue
     envelopes[item] = (path, envelope)
+    if envelope.get("kind") == "generic":
+        # A generic envelope names its artifact in `provenance.input.path`
+        # (see the header comment). At the pinned klt nothing else re-hashes
+        # it, so every way this could go unchecked is a failure, not a warning.
+        provenance = envelope.get("provenance")
+        input_block = provenance.get("input") if isinstance(provenance, dict) else None
+        named = input_block.get("path") if isinstance(input_block, dict) else None
+        if isinstance(named, dict) and named.get("scope") == "repo":
+            named = named.get("path")
+        if not isinstance(named, str) or not named:
+            mismatched.append(
+                f"item {item}: {path} is a generic envelope that names no "
+                "repo-relative provenance.input.path artifact -- its pinned "
+                "content_hash cannot be re-hashed, and klt signoff at the "
+                "pinned version never re-hashes it either"
+            )
+            continue
+        source_path = pathlib.PurePosixPath(named)
+        if source_path.is_absolute() or ".." in source_path.parts:
+            mismatched.append(
+                f"item {item}: {path} names provenance.input.path '{named}', "
+                "which is not a repo-relative path inside this repository"
+            )
+            continue
+        claimed = input_block.get("content_hash")
+        if claimed != pinned:
+            mismatched.append(
+                f"item {item}: {path} claims provenance.input.content_hash "
+                f"{claimed}, but the manifest pins {pinned}"
+            )
+            continue
+        artifact = pathlib.Path(*source_path.parts)
+        if not artifact.is_file():
+            mismatched.append(
+                f"item {item}: {artifact} is missing -- {path}'s pinned "
+                "content_hash cannot be re-verified because the cited artifact "
+                "is gone, not merely changed"
+            )
+            continue
+        actual = "sha256:" + hashlib.sha256(artifact.read_bytes()).hexdigest()
+        if actual != pinned:
+            mismatched.append(
+                f"item {item}: {artifact} hashes to {actual}, but the manifest pins {pinned}"
+            )
+        continue
     # `klt drc`/`lvs`/`erc` name their input artifact `file`; a `klt yield`
     # report names its sample-set document `samples`. Either is the artifact
     # whose content the manifest's pin claims to fix.
@@ -213,7 +276,10 @@ if mismatched:
     print(
         "       The evidence moved under the claim. Re-run the flow that "
         "produces it, cite the new record, and re-render with "
-        "`bash signoff/run-signoff.sh`.",
+        "`bash signoff/run-signoff.sh`. For a generic envelope (item 8), "
+        "re-read the artifact first: re-pin it in both the envelope and the "
+        "manifest only after its summary still describes the new bytes "
+        "(signoff/README.md).",
         file=sys.stderr,
     )
     sys.exit(1)

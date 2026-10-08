@@ -86,11 +86,14 @@ at the bottom of it.
 prose.** `signoff/tier-report.json` is this block's T1 verdict of record:
 machine-rendered by `klt signoff --manifest` from `signoff/block-manifest.json`
 and re-checked in CI on every push, so it cannot go stale silently. Today it
-reads **2 of 22 T1 rows met** (item 3, DRC clean, once per partition) and
-`tier: null`. No file in this repository hand-maintains a parallel met/unmet
-checklist; if a sentence here or anywhere else claims this block does or does
-not clear a T1 item, that report settles it — and `signoff/README.md` states
-what the one met row does and does not say.
+reads **3 of 22 T1 rows met** (item 3, DRC clean, once per partition; item 8,
+characterization report, analog partition only) and `tier: null`. No file in
+this repository hand-maintains a parallel met/unmet checklist; if a sentence
+here or anywhere else claims this block does or does not clear a T1 item, that
+report settles it — and `signoff/README.md` states what each met row does and
+does not say. Item 8's row in particular means only that
+`measurements/report.md` is the artifact that item names; it does not mean any
+spec row is met, and that report itself records FAIL rows.
 
 ## Private for now
 
@@ -109,7 +112,7 @@ design/        xschem schematics/symbols + SPICE netlist snapshots (4 blocks + t
 sim/           PVT corner harness (stood up) + append-only evidence records; no PLL testbench yet
 layout/        klt-driven DRC/LVS flow (stood up, proven on a trivial cell); PLL-block GDS not yet drawn
 measurements/  per-spec-row report aggregator (rolls up sim/+layout/ evidence) + silicon characterization (the latter empty until there is silicon)
-docs/          environment setup, plus docs/t1-gap.md — where each T1 design-evidence item's evidence and tracking issue live
+docs/          environment setup, plus docs/t1-gap.md — a pointer to signoff/ (the graded T1 verdict) and the detailed read of T1 item 11
 signoff/       block manifest + machine-rendered T1 tier verdict (`klt signoff --manifest`), re-checked in CI
 ```
 

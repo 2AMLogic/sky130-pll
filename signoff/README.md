@@ -6,8 +6,9 @@ and re-checked in CI. Nothing in this repository hand-maintains a parallel
 met/unmet checklist; if a sentence anywhere claims this block does or does not
 clear a T1 item, the report is what settles it.
 
-Today the verdict is **2 of 22 T1 rows met** — item 3 (DRC clean), once per
-partition — and `tier: null`. Every other row is `unmet` with `reason:
+Today the verdict is **3 of 22 T1 rows met** — item 3 (DRC clean), once per
+partition, and item 8 (characterization report) for the analog partition
+only — and `tier: null`. Every other row is `unmet` with `reason:
 "no_evidence"`. That is the correct, expected result for a block at this
 repo's stated maturity (see the root `README.md`'s status section), and an
 almost-entirely-`unmet` report is an honest machine-readable statement of the
@@ -18,9 +19,11 @@ reason this directory exists before the evidence does rather than after.
 
 | File | What it is |
 | --- | --- |
-| `block-manifest.json` | The block manifest: this block's `block` name, its `kind`, and the evidence envelope cited per T1 item. Hand-edited; the only file here a human writes. |
+| `block-manifest.json` | The block manifest: this block's `block` name, its `kind`, and the evidence envelope cited per T1 item. Hand-edited. |
+| `evidence/characterization-report.json` | The `"kind": "generic"` envelope item 8 cites over `measurements/report.md`, with that report's SHA-256 pinned. Hand-edited, like the manifest; its `summary` states what the citation does **not** assert (see "Item 8" below). |
 | `tier-report.json` | `klt signoff --manifest … --format json` output. **Generated — do not edit.** Re-render with `bash signoff/run-signoff.sh`. |
 | `run-signoff.sh` | Renders the report (`bash signoff/run-signoff.sh`) or verifies the committed one (`--check`, which is what CI runs), after three guards `klt signoff` does not apply itself (see "Three guards this repo adds"). |
+| `readme-manifest-consistency.py` | Checks this README and `docs/t1-gap.md` against the manifest and the rendered report: item 3's record IDs, every "N of M T1 rows met" phrase, the block kind, and that item 8's envelope summary names every row its report records as FAIL or without evidence. Needs no `klt`; runs in `npm run check:ci`. |
 | `item6_preconditions.py` | Re-derives, from the repo's own artifacts, which of T1 item 6's preconditions are still outstanding — the facts case **4b** below used to carry only in prose. Needs no `klt`, no PDK and no network; `--check` runs in `npm run check:ci`. |
 | `item6-preconditions.md` | That derivation. **Generated — do not edit.** Re-render with `python3 signoff/item6_preconditions.py --write`. Row 3 also states whether guard 3's `detected` condition is *reachable* over the cited campaign at all, and rows 3 and 5 both name what it would cost to satisfy them together — see `sim/pll-lock-mc/analysis/negative-control/reachability.md`, which measures and derives both. |
 
@@ -51,12 +54,19 @@ the assumption the other moved with it. Both versions are recorded in the
 report — the grader's as `build`, the envelope's inside the citation's own
 provenance — so the two pins never have to be inferred.
 
-Note also that the citation's `input_verified` is committed as `null`. That is
-the value every grading context sees except the exact worktree that produced
-the envelope (which is deleted when its PR merges): the layout flow's envelopes
-record a host-specific absolute path, so the grader cannot resolve the artifact
-and correctly declines to claim it re-hashed it. Guard 1 below is what actually
-re-hashes it, by basename, beside the envelope.
+Note also that both citations' `input_verified` is committed as `null`. For
+item 3 that is the value every grading context sees except the exact worktree
+that produced the envelope (which is deleted when its PR merges): the layout
+flow's envelopes record a host-specific absolute path, so the grader cannot
+resolve the artifact and correctly declines to claim it re-hashed it. For item
+8 it is `null` by construction at the pin: `klt` 0.6.0 never re-hashes a
+`generic` envelope's input. Guard 1 below is what actually re-hashes both:
+item 3's by basename beside the envelope, item 8's at the repo-relative path
+its envelope names in `provenance.input.path`. That field is the opt-in one
+[klayout-tools#2403](https://github.com/2AMLogic/klayout-tools/issues/2403)
+added to later `klt` releases. Rendered with a newer `klt` (not the pin), item
+8's citation already reports `input_verified: true`, so the grader will
+verify it natively once the pin moves (#200).
 
 ## Block kind: `mixed-signal`, and the partition boundary
 
@@ -92,7 +102,7 @@ not by `klt sta`/`klt functional-verification`/`klt place-and-route` outputs
 this repo has no flow to produce — but the *reason* differs from the sub-case
 as written, so it is stated here rather than borrowed.
 
-## The one met row: item 3, and what it does and does not say
+## Item 3 (met, both partitions), and what it does and does not say
 
 Item 3 cites
 `layout/pll/reports/20260924-041509-c53e7c4/drc.json` — the DRC envelope of
@@ -184,9 +194,75 @@ Two further disclosures that belong with the claim:
 - `coverage.voltage_domain_warnings` is empty, which is the expected result
   for a 1.8 V core-device-only design (DR-001).
 
+## Item 8 (met, analog partition only), and what it does and does not say
+
+Item 8 is cited under the key `"8.analog"` at
+`signoff/evidence/characterization-report.json`, a `"kind": "generic"`
+envelope — the only kind item 8 accepts at the pinned `klt` — whose
+`provenance.input.content_hash` and the manifest's pin are both
+`sha256:9e7e1de4abeeaa2b59a687ac2f7414ee33d4402f7367295daa33606e298f8b92`, the
+SHA-256 of the committed `measurements/report.md`. Guard 1 re-hashes that file
+from its live bytes on every run.
+
+**Why the report is the artifact item 8 names, for the analog partition.**
+Item 8's text asks for "one aggregated, current artifact summarizing
+per-spec-row performance across conditions, with the evidence record each
+verdict rests on". `measurements/report.md` is generated by
+`measurements/aggregate.py` from every current `sim/*/records/*.md` and
+`layout/*/reports/*/record.md`. It has one table keyed by
+`spec/target-spec.md` row number, and each row lists every evidence record that
+bears on it, that record's own verdict, and a citation to it.
+`measurements/tests/test_report_freshness.py` fails `npm run test` whenever the
+committed file is not what the aggregator would emit from the evidence on
+`main` today, so "current" is checked rather than asserted. The records it
+cites are this repo's PVT campaigns, so the records carry "across
+conditions". The report itself carries verdicts and citations, not numeric
+figures; the numbers are in the records it points to.
+
+**Why the digital partition is not cited.** Item 8 adds, for a mixed-signal
+digital partition, "Fmax, area, and power across the corner set, not just
+functional pass/fail". The report has no Fmax field at all, and it records
+`No evidence` for row 12 (power) and row 18 (area). Its only digital-partition
+evidence is row 4's divider records, which are functional pass/fail. The
+divider's maximum correct-division frequency exists only as an informal,
+uncommitted per-corner table in `design/divider/DESIGN.md` (see
+`sim/divider/testbench/tb.json`'s `analysis` note), which is not an evidence
+record and is not in the report. So `8.digital` stays `unmet` /
+`no_evidence`. Citing the same envelope for it would produce a green row
+that the checklist text contradicts.
+
+**What `status: "pass"` asserts, and what it does not.** It asserts only that
+the report is the artifact item 8 names. It does **not** assert that any spec
+row is met, and it turns no FAIL and no missing evidence into a pass. From the
+report as pinned:
+
+- **FAIL rows.** Row 3 (reference input: the 1 MHz and 25 MHz closed-loop
+  records), row 8 (lock time: every record), row 9 (period jitter, ratified by
+  DR-006: both deterministic `sim/pll-lock` records; only the
+  `sim/pll-lock-mc` Monte Carlo record passes) and row 14 (output duty cycle:
+  every record).
+- **No-evidence rows.** Rows 0, 1, 10, 11, 12, 15, 16, 17, 18, 19 and 20.
+- **DRAFT rows.** Every row except 0, 1, 9, 19 and 20 is still DRAFT, so a
+  PASS listed against a DRAFT row is evidence bearing on that row, not a
+  verdict against a binding bound.
+
+The envelope's `summary` says the same. `readme-manifest-consistency.py` (in
+`npm run check:ci`) re-derives the FAIL and no-evidence rows from the pinned
+report and fails if the summary stops naming any of them.
+
+**Re-pinning.** `measurements/report.md` changes whenever new evidence lands:
+the freshness test forces the regeneration, and every regeneration changes at
+least the `Generated:` timestamp. Guard 1 then fails `--check` until the
+citation is re-pinned. Re-pinning is more than a hash update. Read the
+regenerated report, update the envelope's `summary` if any row moved, then set
+the new SHA-256 in both the envelope's `provenance.input.content_hash` and the
+manifest's pin, and re-render. A row that newly reads FAIL goes into the
+summary as a FAIL. It is never a reason to drop the citation or soften the
+summary.
+
 ## Why every other row is `unmet`
 
-All 20 remaining T1 rows render `reason: "no_evidence"` — the manifest cites
+All 19 remaining T1 rows render `reason: "no_evidence"` — the manifest cites
 nothing for them. That single machine code covers six materially different
 situations, and the difference is the point of this section.
 
@@ -202,13 +278,11 @@ attempted against it; the routed spot-check under the same record's
 `route-spot-check/` reports a large, honest mismatch, and it is a *different*
 build from the one item 3 cites, so citing it here would be citing the wrong
 artifact for the claim as well as a failing one; closure is issue #18). There
-is no `klt pex` run (item 7,
-issue #21), no aggregated PLL characterization report (item 8, issue #22 —
-`measurements/report.md` exists but rolls up harness-plumbing evidence only,
-not per-spec-row PLL performance, so a `generic` envelope asserting `pass` over
-it would be a false claim). Item 5 additionally needs a
-ratified spec: `spec/target-spec.md` is DRAFT with only row 0 ratified
-(DR-001), so a corner verdict against it is provisional by construction.
+is no `klt pex` run (item 7, issue #21). Item 8's digital-partition row is in
+this case too: the report it would cite has no Fmax, power or area evidence
+for the divider (see "Item 8" above). Item 5 additionally needs a ratified
+spec: `spec/target-spec.md` ratifies only rows 0, 1, 9, 19 and 20, so a corner
+verdict against any other row is provisional by construction.
 
 **3. The tool cannot check what the item claims, and we decline to game it.**
 Items **1** (design sources), **2** (layout), **9** (testbenches shipped) and
@@ -484,6 +558,20 @@ citation's *status* and not its *statistics*. All three are demonstrated below.
    `samples`. Both are read (issue #182). Before that, a yield citation hit the
    "names no input artifact" branch — warn, skip, keep going — so its pin was
    never checked against anything (negative control 7 below).
+
+   **A `"kind": "generic"` envelope (item 8) is checked hardest, because the
+   pinned grader checks it least** (issue #224): `klt` 0.6.0 never re-hashes
+   a generic envelope's input. Its artifact is not beside the envelope
+   either, so the envelope names it in `provenance.input.path` as
+   `{"path": "measurements/report.md", "scope": "repo"}`, and the guard
+   re-hashes it from the repo root. (`source` is informational only; `klt`
+   never reads it, and neither does the guard.) Every way that could go
+   unchecked fails instead of warning. These cases all fail: no
+   `provenance.input.path`, an absolute or `..` path, a missing file, or an
+   envelope whose own `provenance.input.content_hash` disagrees with the
+   manifest's pin (negative control 9 below). For item 8 this part of the
+   guard becomes redundant when the grader pin moves past
+   klayout-tools#2403. It is not redundant before then.
 2. **The cited record must be the one `LATEST` names.** A pinned hash catches
    an artifact that *changed*; it cannot catch one that was *superseded*.
    `layout/` records are append-only, so a fresh flow run mints a new
@@ -520,14 +608,18 @@ citation's *status* and not its *statistics*. All three are demonstrated below.
 
 A gate that cannot fail is not a gate — the same discipline
 `layout/trivial-cell/`'s injected-defect fixtures apply to the DRC/LVS flow.
-All eight properties were demonstrated against a scratch copy of the cited
+All nine properties were demonstrated against a scratch copy of the cited
 record — the first four before this directory was committed, the fifth (the
 missing-artifact case, issue #163) once it was found, the sixth and seventh when
 guard 3 landed (issue #182, against the real committed
-`yield-evidence/klt-yield-report.json` cited from a scratch manifest), and the
+`yield-evidence/klt-yield-report.json` cited from a scratch manifest), the
 eighth when `item6_preconditions.py` landed (issue #182 again — that one is
 demonstrated by `signoff/tests/test_item6_preconditions.py` on every CI run
-rather than once by hand, because unlike the others it needs no `klt`):
+rather than once by hand, because unlike the others it needs no `klt`), and
+the ninth when item 8 was cited (issue #224 — against the real committed
+`measurements/report.md`, then restored; its guard-side cases also run on
+every CI run in `signoff/tests/test_generic_envelope_guard.py` against a stub
+`klt`):
 
 | Injected fault | Result |
 | --- | --- |
@@ -539,6 +631,7 @@ rather than once by hand, because unlike the others it needs no `klt`):
 | Item 6 cited at `yield-evidence/klt-yield-report.json`, pinned correctly to its sample document (the false green §4b measures) | guard 3 fails, exit 1, naming both conditions: `measurement 'period_jitter_rms_pct': sample_size.verdict is 'insufficient' (n = 3, required_n = 183)` and `… no negative_control is declared -- nothing demonstrates these statistics can detect a degraded design`. Without the guard the same manifest renders `t1_met_count` 2 → 4. The converse was checked too, so the guard is a gate and not a blanket refusal: the same citation against a scratch copy of the report with `sample_size.verdict` `sufficient` and a `negative_control.verdict` of `detected` passes all three guards silently and grades item 6 `met` in both columns — exactly the citation #182 is waiting to be able to make. |
 | The same citation pinned to the report's own SHA-256 instead of its sample document's | guard 1 fails: `sim/pll-lock-mc/analysis/yield-evidence/mc-samples.json hashes to sha256:2416e830… but the manifest pins sha256:ccc0b324…`, exit 1. Re-run against the pre-#182 script with the identical manifest, this printed only `warning: … names no input artifact -- its pinned content_hash could not be re-hashed` and rendered anyway: the pin was compared to nothing at all. It survived only because `klt signoff` independently re-hashes what a yield report names (that path is relative, unlike the layout envelopes' — see guard 1) and graded the row `stale_evidence`. A pin nobody checks that happens to be caught by the grader is not a guard. |
 | Any one of item 6's preconditions flipped state (a `negative_control` declared, `sample_size.verdict` → `sufficient`, a `sim/pll-lock` record carrying a period-jitter column, `monte_carlo.process` turned off, the manifest citing item 6 while a row is still `unmet`) | `python3 signoff/item6_preconditions.py --check` exits 1, naming the document as drifted, and `npm run check:ci` fails. Measured on the real repo for the case most likely to arrive first: dropping a scratch `sim/pll-lock` record carrying a `Period jitter` column into `records/` flips row 4b to `met`, takes the summary from `3 of 6 preconditions outstanding` to `2 of 6`, and `--check` exits 1 — removing it again restores `is current.` and exit 0. Both directions are pinned in CI too: `signoff/tests/test_item6_preconditions.py` drives every row from a synthetic fact set in its met **and** its unmet state, so the document is shown to report the repo rather than to hardcode `unmet` — the same objection guard 3 had to answer. It also fails closed: an input artifact that is missing, unparseable, or not the shape claimed raises rather than rendering a document that has quietly dropped a fact. |
+| One byte of `measurements/report.md` changed (the characterization report moves under item 8's pin), either appended or overwritten in place | guard 1 fails, exit 1: `item 8.analog: measurements/report.md hashes to sha256:ac4469c1…, but the manifest pins sha256:9e7e1de4…` (appended space; overwriting the first byte in place instead hashes to `sha256:dbf7a355…` and fails the same way). Restoring the file restores `is current.` and exit 0. **Without the guard the tamper is invisible**: `klt signoff --manifest` run directly on the overwritten file renders a byte-identical report with item 8 still `met`, because the grader compares the pin only with the envelope's own claim and never re-hashes a generic envelope's input. |
 
 ## Why the checklist is not vendored here
 
@@ -564,5 +657,6 @@ ported from the sibling canary `2AMLogic/gf180-pll`
 (`signoff/run-signoff.sh`, `signoff/README.md` at commit `d85287d8`,
 2026-09-20), per `CLAUDE.md`'s instruction to copy the proven patterns rather
 than reinvent them and to record provenance where we do. The evidence, the
-verdict, the partition boundary, the item-3 disclosure, the three guards and
+verdict, the partition boundary, the item-3 disclosure, the item-8 citation
+and its disclosure, the three guards and
 `item6_preconditions.py` are this block's own.

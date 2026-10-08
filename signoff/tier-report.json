@@ -5,7 +5,7 @@
   "tier": null,
   "t1_item_count": 22,
   "build_t1_item_count": 22,
-  "t1_met_count": 2,
+  "t1_met_count": 3,
   "source_doc": "docs/design-evidence-tiers.md",
   "source_doc_content_hash": "sha256:63eeec72e3d849761cf32dcf091af5728b069b1515e32bb3138e9454303671e5",
   "build": {
@@ -371,10 +371,18 @@
       "partition": "analog",
       "text": "one aggregated, current artifact summarizing per-spec-row performance across conditions, with the evidence record each verdict rests on (#309 tracks the aggregation tool). For a digital or mixed-signal digital partition this includes Fmax, area, and power across the corner set, not just functional pass/fail. Unlike every other T1 item, this one names no specific `klt` verb \u2014 there is no dedicated aggregation command, and its evidence may be a hand-assembled record (e.g. a committed Markdown characterization report) rather than one `klt` verb's own JSON output. `klt signoff --manifest` grades it via an opt-in **generic evidence envelope** (`\"kind\": \"generic\"`, issue #1152) \u2014 a minimal, hand-rolled JSON wrapper asserting `status: \"pass\"|\"fail\"` for whatever record backs it \u2014 and, unlike every other item, item 8 is the *only* T1 item this generic kind may satisfy: see `docs/cli/signoff.md`'s \"Generic evidence (opt-in, non-`klt`-native)\" section for the envelope shape and why items 3\u20137 keep rejecting it.",
       "notes": [],
-      "status": "unmet",
-      "reason": "no_evidence",
+      "status": "met",
+      "reason": null,
       "graded_by_build": true,
-      "citation": null
+      "citation": {
+        "file": "signoff/evidence/characterization-report.json",
+        "command": null,
+        "kind": "generic",
+        "check_status": "pass",
+        "content_hash": "sha256:9e7e1de4abeeaa2b59a687ac2f7414ee33d4402f7367295daa33606e298f8b92",
+        "input_verified": null,
+        "exit_status": 0
+      }
     },
     {
       "tier": "T1",
