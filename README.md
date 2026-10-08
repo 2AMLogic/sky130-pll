@@ -20,7 +20,7 @@ in a format designed so you can check that yourself.
 
 This is a **design** canary, not a reverse-engineering one. Nothing here is
 recovered from an existing part, a competitor's netlist, or a decapped die. The
-PLL is designed forward from a ratified target specification, and the whole
+PLL is designed forward from a target specification (ratified row by row), and the whole
 record — spec, decision records, evidence, dead ends — is original work. That
 distinction matters for what the repo is *for*:
 
@@ -34,66 +34,48 @@ distinction matters for what the repo is *for*:
   one block, one PDK — building out the inventory of open-PDK analog/mixed-signal
   blocks the agent fleet can design end to end.
 
-## Status: schematic entry landed (unverified). Pre-spec-ratification, pre-simulation, pre-layout, pre-silicon.
+## Status (as of 2026-10-08)
 
-Being honest about where this actually is: this repository holds the map — a
-DRAFT target spec, the canary rules, a working sim harness and layout DRC/LVS
-flow proven on trivial, PLL-content-free DUTs (issue #2), and, as of issue
-#28, a full PLL schematic + netlist. There is still no PLL verification
-evidence and no PLL layout.
+This repository is a work in progress, and this section is deliberately a
+pointer rather than a scoreboard: it says what kinds of evidence exist and
+where the verdicts live, so it does not have to be re-edited after every
+campaign. For current state, read the linked files, not this prose.
 
-- **Not done** — the target spec is **DRAFT and unratified** (see
-  `spec/target-spec.md` and issue #1). No number in it is binding, and every
-  value is explicitly a starting point carried over from gf180-pll or a
-  published sky130 reference, not a settled sky130 result.
-- **Done (plumbing only)** — the sim harness (`sim/run_corners.py`, an xschem
-  + ngspice PVT corner runner) and the `klt` layout DRC/LVS flow are stood up
-  and proven end to end: `sim/pdk-smoke` runs a trivial resistor-divider DUT
-  across a real process/temperature/supply sweep, and
-  `layout/bin/run-trivial-cell-flow.sh` DRC/LVS-cleans a trivial cell and
-  demonstrably catches an injected DRC/LVS defect (see `sim/README.md` and
-  `layout/README.md` for the checked-in evidence). Seeded from gf180-pll (the
-  PLL testbench/corner-runner structure) and
-  [sky130-bandgap](https://github.com/2AMLogic/sky130-bandgap) (the sky130
-  open-PDK plumbing: `volare` PDK install, `xschemrc`, `spiceinit`, and the
-  sky130 `klt` decks) per issue #2. Neither harness has run against any PLL
-  content yet — that starts once a testbench exists (#23) and the DRAFT spec
-  rows each block targets are ratified.
-- **Done (schematic entry, unverified) — issues #24/#25/#26/#27/#28.** All
-  four PLL blocks (ring-oscillator VCO, tri-state PFD + charge pump, passive
-  loop filter, programmable integer-N feedback divider) are authored as
-  forward-designed xschem schematics against sky130's 1.8 V core devices
-  (`DR-001`) and wired into a single top-level closed-loop schematic
-  (`design/top/top.sch`), each with a connectivity-only SPICE netlist
-  snapshot checked into `design/`. Every design value in these schematics
-  (device sizing, `Icp`, `Kvco`, filter component values, divider bit width)
-  is a documented design-time target or estimate, **not** a simulated or
-  verified result — see each block's own `design/<block>/DESIGN.md` and
-  `design/top/DESIGN.md` (which also documents one known, unresolved
-  coordination gap: the loop filter's `Icp` design point predates, and does
-  not yet match, the charge pump's landed value).
-- **Not started** — PLL verification campaigns (closed-loop testbench, #23,
-  and the PVT campaign that follows) and PLL-block layout. `measurements/`
-  has a per-spec-row rollup report/aggregator (issue #22) that reads
-  `sim/`/`layout/` evidence, but no PLL evidence exists yet for it to report
-  — real silicon characterization still waits on silicon.
+- **Spec** — [`spec/target-spec.md`](spec/target-spec.md) is **partially
+  ratified**. Some rows are bound by decision records in
+  [`spec/decision-records/`](spec/decision-records/); the remaining rows are
+  still DRAFT starting points and are not binding. The spec file itself lists
+  which rows are which.
+- **Design** — forward-designed xschem schematics and SPICE netlist snapshots
+  for the PLL blocks and a top-level closed-loop integration live in
+  [`design/`](design/). Design values there are design-time targets or
+  estimates; a result only counts once a `sim/` record backs it.
+- **Simulation** — `sim/` holds PLL block and closed-loop testbenches, PVT
+  corner sweeps, Monte Carlo campaigns, and the append-only records they
+  produced, alongside the harness's own self-checks.
+- **Layout** — `layout/` holds the `klt` DRC/LVS flow, a trivial proving cell,
+  and a PLL layout record with its checking reports.
+- **Rollup** — [`measurements/report.md`](measurements/report.md) is the
+  machine-rendered per-spec-row rollup of the `sim/` and `layout/` evidence.
+  It **records misses** (FAIL rows) as well as passes; the existence of
+  evidence for a row is not the same as that row being ratified or met.
+- **Silicon** — none. Nothing here has been fabricated or measured on
+  silicon.
 
-The maturity ladder being climbed: spec-ratified → simulation-complete → layout
-DRC/LVS-clean → shuttle seat → measured silicon over temperature. This repo is
-at the bottom of it.
+Evidence existing, a spec row being ratified, and a requirement being met are
+three different things, and none of them means verification is complete.
 
-**Where that stands against the T1 evidence checklist is not settled by this
-prose.** `signoff/tier-report.json` is this block's T1 verdict of record:
-machine-rendered by `klt signoff --manifest` from `signoff/block-manifest.json`
-and re-checked in CI on every push, so it cannot go stale silently. Today it
-reads **3 of 22 T1 rows met** (item 3, DRC clean, once per partition; item 8,
-characterization report, analog partition only) and `tier: null`. No file in
-this repository hand-maintains a parallel met/unmet checklist; if a sentence
-here or anywhere else claims this block does or does not clear a T1 item, that
-report settles it — and `signoff/README.md` states what each met row does and
-does not say. Item 8's row in particular means only that
+**Where the block stands against the T1 evidence checklist is not settled by
+this prose.** [`signoff/tier-report.json`](signoff/tier-report.json) is this
+block's T1 verdict of record: machine-rendered by `klt signoff --manifest` from
+`signoff/block-manifest.json` and re-checked in CI on every push, so it cannot
+go stale silently. [`signoff/README.md`](signoff/README.md) states what each
+met row does and does not say. No file in this repository hand-maintains a
+parallel met/unmet checklist; if a sentence here or anywhere else claims this
+block does or does not clear a T1 item, that report settles it. In particular,
+a met row for the characterization report means only that
 `measurements/report.md` is the artifact that item names; it does not mean any
-spec row is met, and that report itself records FAIL rows.
+spec row is met.
 
 ## Private for now
 
@@ -107,20 +89,20 @@ terms, or the contents of other 2AM Logic repositories belongs in this one.
 ## Repository layout
 
 ```
-spec/          DRAFT target spec + numbered decision records (DR-NNN)
-design/        xschem schematics/symbols + SPICE netlist snapshots (4 blocks + top-level integration, unverified)
-sim/           PVT corner harness (stood up) + append-only evidence records; no PLL testbench yet
-layout/        klt-driven DRC/LVS flow (stood up, proven on a trivial cell); PLL-block GDS not yet drawn
-measurements/  per-spec-row report aggregator (rolls up sim/+layout/ evidence) + silicon characterization (the latter empty until there is silicon)
+spec/          target spec (partially ratified) + numbered decision records (DR-NNN)
+design/        xschem schematics/symbols + SPICE netlist snapshots (PLL blocks + top-level integration)
+sim/           PVT corner harness, PLL block and closed-loop testbenches, append-only evidence records
+layout/        klt-driven DRC/LVS flow, a trivial proving cell, and a PLL layout record with checking reports
+measurements/  per-spec-row report aggregator and its rendered report (rolls up sim/+layout/ evidence); silicon characterization slot, empty until there is silicon
 docs/          environment setup, plus docs/t1-gap.md — a pointer to signoff/ (the graded T1 verdict) and the detailed read of T1 item 11
 signoff/       block manifest + machine-rendered T1 tier verdict (`klt signoff --manifest`), re-checked in CI
 ```
 
-Start with `spec/target-spec.md` for *what is being targeted and why nothing is
-settled yet*, and `sim/README.md` / `layout/README.md` for *how results are
-recorded and how to reproduce them*.
+Start with `spec/target-spec.md` for *what is being targeted, which rows are
+ratified, and which are still DRAFT*, and `sim/README.md` / `layout/README.md`
+for *how results are recorded and how to reproduce them*.
 
-## How verification will work here
+## How verification works here
 
 Two rules govern the repository, and most of its structure follows from them:
 
