@@ -73,8 +73,10 @@ artifacts it is derived from.
 
 ## `klt yield` is not reachable from this repo's pin (verified, not assumed)
 
-`layout/requirements.txt` pins `klayout-tools==0.6.0`, and `signoff/README.md`'s
-"Reproducing" section installs exactly that. `klt yield --help` works at that
+`layout/requirements.txt` pins `klayout-tools==0.6.0` (the signoff *grader* in
+`.github/workflows/ci.yml` and `signoff/README.md`'s "Reproducing" section moved
+on to 0.7.0 in issue #200; the two pins are independent, and every `klt yield`
+artifact in this directory was produced at 0.6.0, as stated below). `klt yield --help` works at that
 pin and documents the verb fully. **Running it does not**: the statistics live
 in a Rust extension (`klt_yield_native`) that upstream does not publish as a
 wheel. Confirmed in a clean virtualenv at the exact pin before any of the work
@@ -145,9 +147,13 @@ Filed upstream per `CLAUDE.md`'s friction protocol, described generically:
   hand-built extension is not reproducible under that pin). Successor to
   upstream #1061, which closed the *discoverability* half of the same gap.
 - [klayout-tools#2467](https://github.com/2AMLogic/klayout-tools/issues/2467) —
-  `klt signoff` grades a yield citation on `status` alone, consulting neither
+  `klt signoff` graded a yield citation on `status` alone, consulting neither
   the report's own `sample_size.verdict` nor its missing-negative-control
-  warning. This is the gap behind the citation decision below.
+  warning. **Fixed in `klt` 0.7.0** (issue #200 moved the signoff grader pin
+  there): an insufficient sample now renders `unmet` / `undersized_sample` and
+  a declared control that did not fire `unmet` / `negative_control_not_detected`.
+  A campaign that declares no control still renders `met`. This was the gap
+  behind the citation decision below.
 - [klayout-tools#2468](https://github.com/2AMLogic/klayout-tools/issues/2468) —
   no category for a draw censored by a conditioning event, which is what forced
   the two mappings below.
@@ -391,8 +397,8 @@ matter for what to spend next:
   precondition as a side effect.
 - **183 measurable draws in which *every* one meets row 9, against a 2-draw
   control**: `detected` — and `sample_size.verdict` `sufficient`. It is the only
-  committed population where both of guard 3's conditions hold at once, i.e. the
-  cheapest campaign the guard would actually accept.
+  committed population that is both sized and `detected`, i.e. the cheapest
+  campaign that would render item 6 `met` with its control fired.
 
 The other eight straddle three thresholds one draw apart each (8 vs 9 passing at
 a 183-draw control; 20 vs 21 at a 50-draw one; a 5-of-5 nominal against a 5- vs
@@ -440,14 +446,26 @@ rather than in prose here.
 
 ## Why `signoff/block-manifest.json` does not cite this report
 
-It would turn T1 item 6 green. `klt signoff` grades a yield citation as passing
-when `status` is `"pass"` or `"reported"` — and `"reported"` is exactly what a
-measurement with no `target_yield` produces — while consulting neither
-`sample_size.verdict` nor the missing-negative-control warning
-(klayout-tools#2467). Citing this report today would therefore render item 6
-`met` on a campaign whose own artifact says its yield estimate is unsized, whose
-measured yield is 0 %, and which has no self-check demonstrating the statistics
-can detect a bad design.
+Under the pre-0.7.0 grader (`klt` 0.6.0) it would have turned T1 item 6 green:
+`klt signoff` graded a yield citation as passing when `status` was `"pass"` or
+`"reported"` — and `"reported"` is exactly what a measurement with no
+`target_yield` produces — while consulting neither `sample_size.verdict` nor
+the missing-negative-control warning (klayout-tools#2467). That citation would
+have rendered `met` on a campaign whose own artifact says its yield estimate is
+unsized, whose measured yield is 0 %, and which has no self-check demonstrating
+the statistics can detect a bad design.
+
+**That is no longer the whole story (issue #200).** The grader is now `klt`
+0.7.0, which carries the #2467 fix. Measured on the release over this report,
+the row would render `unmet` / `undersized_sample` — "evidence exists and is
+undersized", said by the tool — rather than `met`. The citation is still not
+made, for a reason that did not depend on the grader: the report declares
+**no** `negative_control` (`measurements[0].negative_control` is `null`), and
+the 0.7.0 grader still renders a campaign with no declared control `met`
+(`negative_control: "not_declared"`), so `run-signoff.sh`'s guard 3 — narrowed,
+not retired — still refuses the citation. It becomes makeable as an honest
+`unmet` once a report that declares a control exists (#215). Citing it is #182's
+change, not this one.
 
 That is the trade `signoff/README.md` declines twice already — for the four
 items with no `klt` verb behind them, and for item 11's real, clean `klt erc`
@@ -456,26 +474,27 @@ the same reasoning, and it is recorded in `signoff/README.md` § "Why every othe
 row is `unmet`" rather than only here. The report is committed regardless: the
 gap it documents is worth more as a measured artifact than as a sentence.
 
-**The decline is enforced, not merely argued (issue #182).**
-`signoff/run-signoff.sh`'s guard 3 refuses to render a manifest that cites a
-`klt yield` report whose measurements are not sized (`sample_size.verdict` ≠
-`sufficient`) or declare no negative control that fired (`negative_control` →
-`verdict` ≠ `detected`). Citing this report today therefore fails the signoff
-run with both conditions named, rather than producing a green row and a README
-that has to be re-read to notice. Measured, not assumed: without the guard the
-same manifest entry takes `t1_met_count` from 2 to 4, and with a scratch copy
-of this report patched to `sufficient` + `detected` it passes cleanly — so the
-guard blocks exactly this campaign's citation and not the sized one that
-replaces it. The guard retires when
-[klayout-tools#2467](https://github.com/2AMLogic/klayout-tools/issues/2467)
-lands and `klt signoff` applies the same two checks itself.
+**The decline is enforced, not merely argued (issue #182), and the enforcement
+was narrowed when the grader caught up (issue #200).**
+`signoff/run-signoff.sh`'s guard 3 originally refused to render a manifest that
+cited a `klt yield` report whose measurements were not sized (`sample_size.verdict`
+≠ `sufficient`) or declared no negative control that fired. With `klt` 0.7.0
+the grader makes those two judgements itself (`undersized_sample`,
+`negative_control_not_detected`), so guard 3 no longer refuses an undersized
+sample or a declared control that did not fire; it keeps refusing what the
+grader still passes as `met` — a measurement with **no** declared
+`negative_control`, and a malformed `sample_size`. Citing *this* report
+therefore still fails the signoff run, now naming the missing control only.
+Measured on the 0.7.0 release rather than assumed:
+`signoff/tests/test_yield_citation_guard.py` renders disposable copies of this
+report through the real grader and asserts each status and reason.
 
 What that leaves as the remaining work on item 6 has **changed**, and not in the
 direction this section used to point. It named two things: a known-bad control
 and a sized population. Both are still outstanding, and neither is a re-reading
 of this report — but "Can a negative control fire here at all?" above shows that
-*buying either one first would not close the item*. The guard's `detected`
-condition is unreachable over a campaign whose empirical yield is zero, and
+*buying either one first would not close the item*. The control's `detected`
+verdict is unreachable over a campaign whose empirical yield is zero, and
 sizing the population does not lift it. The first thing item 6 now needs is
 design work on ratified row 9 (**#202**) — and the bar is not "enough draws",
 it is **essentially every draw**: the cheapest population that is both sized and

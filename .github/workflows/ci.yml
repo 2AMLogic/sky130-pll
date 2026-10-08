@@ -83,7 +83,7 @@ jobs:
         # layout/requirements.txt's (the flow that produces evidence moves on
         # its own schedule from the grader that reads it); both versions are
         # recorded in the report.
-        run: pip install 'klayout-tools==0.6.0'
+        run: pip install 'klayout-tools==0.7.0'
 
       - name: signoff/run-signoff.sh --check (T1 tier verdict vs. the committed report)
         # signoff/tier-report.json is this block's T1 verdict of record --

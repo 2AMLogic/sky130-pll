@@ -24,7 +24,7 @@ manifest.
 
 The checklist is `klayout-tools`'
 [`docs/design-evidence-tiers.md`](https://github.com/2AMLogic/klayout-tools/blob/main/docs/design-evidence-tiers.md),
-graded at the version this repo pins (`klayout-tools==0.6.0`, eleven items).
+graded at the version this repo pins for signoff (`klayout-tools==0.7.0`, eleven items).
 The report records which copy of the checklist it graded against
 (`source_doc`, `source_doc_content_hash`).
 

@@ -10,9 +10,13 @@ four things a Monte Carlo campaign must carry:
     MC runs need a recorded seed, sample count, a deterministic negative
     control, and results combined with (not instead of) process corners
 
--- and `signoff/run-signoff.sh`'s guard 3 adds the fifth condition the cited
-report's own statistics have to satisfy (a `sample_size.verdict` of
-`sufficient`).
+-- and the cited report's own statistics add a fifth condition (a
+`sample_size.verdict` of `sufficient`). Since `klt` 0.7.0 (klayout-tools#2467)
+the grader itself renders an insufficient sample `unmet` / `undersized_sample`
+and a declared control that did not fire `unmet` /
+`negative_control_not_detected`; `signoff/run-signoff.sh`'s guard 3 is narrowed
+to what the grader still passes as `met` (an undeclared control, a malformed
+`sample_size`).
 
 Until this script existed, which of those were outstanding lived **only** in
 that README's prose, and it went stale: case 4b said "`sim/pll-lock`'s manifest
@@ -45,8 +49,8 @@ What it reads, and what each artifact settles:
   * `sim/pll-lock-mc/analysis/yield-evidence/klt-yield-report.json` -- the
     declared negative control (`measurements[].negative_control`, requirement 3)
     and the sample-size verdict (`measurements[].sample_size.verdict`,
-    guard 3's second condition). These come from the report rather than from
-    prose about which control exists, because the report's own field is what
+    the sizing condition). These come from the report rather than from prose
+    about which control exists, because the report's own fields are what
     `klt signoff` and guard 3 read.
   * `sim/pll-lock/testbench/tb.json` + `sim/pll-lock/records/*.md` -- whether
     the deterministic PVT grid the statistical axis must be combined *with* has
@@ -93,7 +97,7 @@ BLOCK_MANIFEST = "signoff/block-manifest.json"
 REACHABILITY = "sim/pll-lock-mc/analysis/negative-control/reachability.md"
 
 #: The four requirements item 6's checklist text names, in its own order and
-#: its own words (`docs/design-evidence-tiers.md` item 6, `klt` 0.6.0). Each
+#: its own words (`docs/design-evidence-tiers.md` item 6, `klt` 0.7.0). Each
 #: entry's value is the phrase `--tiers-doc` asserts is still present.
 CHECKLIST_REQUIREMENTS = {
     "1": "a recorded seed",
@@ -350,10 +354,12 @@ def _verdicts(facts: dict) -> list[dict]:
                     f"({facts['nominal_yield_ci_low']}), and a control's own "
                     "estimate and interval upper bound are proportions of a draw "
                     "count, so neither can be negative -- measured in "
-                    f"`{REACHABILITY}`. What is left is guard 3's own escape hatch, "
-                    "an argued record that `not_detected` is the honest outcome, and "
-                    "even that needs a `klt yield` run to declare the control at all, "
-                    "which this repo's pin cannot produce (klayout-tools#2466). What "
+                    f"`{REACHABILITY}`. What is left is declaring a control that "
+                    "does not fire, which `klt signoff` (>= 0.7.0) now renders `unmet` / "
+                    "`negative_control_not_detected` rather than `run-signoff.sh` "
+                    "refusing it -- an honest outcome, but one that still needs a "
+                    "`klt yield` run to declare the control at all, which this repo's "
+                    "pin cannot produce (klayout-tools#2466). What "
                     "moves this row is the design meeting row 9 (**#202**) -- and on "
                     "essentially *every* draw, not merely more of them: the cheapest "
                     "population that satisfies this row and row 5 at once is 183 "
@@ -371,8 +377,8 @@ def _verdicts(facts: dict) -> list[dict]:
                     f"interval lower bound {facts['nominal_yield_ci_low']}), see "
                     f"`{REACHABILITY}` for the population sizes it takes -- or a "
                     "committed record arguing that `not_detected` is the honest "
-                    "outcome, which `run-signoff.sh`'s guard 3 names as its own "
-                    "escape hatch. `klt yield` is not reachable from this repo's pin "
+                    "outcome, which `klt signoff` (>= 0.7.0) grades `unmet` / "
+                    "`negative_control_not_detected`. `klt yield` is not reachable from this repo's pin "
                     "(klayout-tools#2466), so the re-run is gated on that too"
                 )
             ),
@@ -442,7 +448,7 @@ def _verdicts(facts: dict) -> list[dict]:
             "id": "5",
             "requirement": (
                 "the cited report's estimate is sized "
-                "(`run-signoff.sh` guard 3, not item 6's checklist text)"
+                "(graded by `klt signoff` >= 0.7.0 as `undersized_sample`)"
             ),
             "met": facts["sample_size_verdict"] == "sufficient",
             "source": (
@@ -492,8 +498,9 @@ def render(facts: dict) -> str:
         f"T1 item {ITEM} is *Statistical claims carry Monte Carlo evidence*. Its "
         "checklist text names four requirements -- "
         + ", ".join(f"*{phrase}*" for phrase in CHECKLIST_REQUIREMENTS.values())
-        + f" -- and `signoff/run-signoff.sh`'s guard 3 adds a fifth the cited "
-        "report's own statistics must satisfy. Requirement 4 is split into two "
+        + f" -- and the cited report's own statistics add a fifth (`klt signoff` "
+        "0.7.0 grades it; `signoff/run-signoff.sh`'s guard 3 separately refuses "
+        "a report that declares no control). Requirement 4 is split into two "
         "rows because its two halves live in different artifacts and are in "
         "different states."
     )

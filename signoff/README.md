@@ -25,12 +25,12 @@ reason this directory exists before the evidence does rather than after.
 | `run-signoff.sh` | Renders the report (`bash signoff/run-signoff.sh`) or verifies the committed one (`--check`, which is what CI runs), after three guards `klt signoff` does not apply itself (see "Three guards this repo adds"). |
 | `readme-manifest-consistency.py` | Checks this README and `docs/t1-gap.md` against the manifest and the rendered report: item 3's record IDs, every "N of M T1 rows met" phrase, the block kind, and that item 8's envelope summary names every row its report records as FAIL or without evidence. Needs no `klt`; runs in `npm run check:ci`. |
 | `item6_preconditions.py` | Re-derives, from the repo's own artifacts, which of T1 item 6's preconditions are still outstanding — the facts case **4b** below used to carry only in prose. Needs no `klt`, no PDK and no network; `--check` runs in `npm run check:ci`. |
-| `item6-preconditions.md` | That derivation. **Generated — do not edit.** Re-render with `python3 signoff/item6_preconditions.py --write`. Row 3 also states whether guard 3's `detected` condition is *reachable* over the cited campaign at all, and rows 3 and 5 both name what it would cost to satisfy them together — see `sim/pll-lock-mc/analysis/negative-control/reachability.md`, which measures and derives both. |
+| `item6-preconditions.md` | That derivation. **Generated — do not edit.** Re-render with `python3 signoff/item6_preconditions.py --write`. Row 3 also states whether the control's `detected` verdict is *reachable* over the cited campaign at all, and rows 3 and 5 both name what it would cost to satisfy them together — see `sim/pll-lock-mc/analysis/negative-control/reachability.md`, which measures and derives both. |
 
 ## Reproducing
 
 ```sh
-pip install 'klayout-tools==0.6.0'
+pip install 'klayout-tools==0.7.0'
 bash signoff/run-signoff.sh --check    # verify the committed report
 bash signoff/run-signoff.sh            # re-render it after changing the manifest
 
@@ -46,27 +46,26 @@ rotting — see "Negative controls" below for the eight ways it is demonstrated 
 fail rather than rot.
 
 The two pins here remain deliberately **independent**: the **grader** is `klt`
-0.6.0 (pinned in `.github/workflows/ci.yml`), and the DRC envelope it grades is
+0.7.0 (pinned in `.github/workflows/ci.yml`), and the DRC envelope it grades is
 produced by whatever `layout/requirements.txt` pins, which moves on the layout
-flow's own schedule. They happen to coincide at 0.6.0 as of issue #157 — that
-is a coincidence of timing, not a coupling, and neither pin may be bumped on
+flow's own schedule. They coincided at 0.6.0 as of issue #157 and diverged when the grader
+moved to 0.7.0 (issue #200) — a coincidence of timing, never a coupling, and neither pin may be bumped on
 the assumption the other moved with it. Both versions are recorded in the
 report — the grader's as `build`, the envelope's inside the citation's own
 provenance — so the two pins never have to be inferred.
 
-Note also that both citations' `input_verified` is committed as `null`. For
-item 3 that is the value every grading context sees except the exact worktree
+Note also that item 3's `input_verified` is committed as `null`. That is the value every grading context sees except the exact worktree
 that produced the envelope (which is deleted when its PR merges): the layout
 flow's envelopes record a host-specific absolute path, so the grader cannot
 resolve the artifact and correctly declines to claim it re-hashed it. For item
-8 it is `null` by construction at the pin: `klt` 0.6.0 never re-hashes a
-`generic` envelope's input. Guard 1 below is what actually re-hashes both:
-item 3's by basename beside the envelope, item 8's at the repo-relative path
-its envelope names in `provenance.input.path`. That field is the opt-in one
+item 8 it was `null` by construction at the 0.6.0 pin (`klt` 0.6.0 never
+re-hashed a `generic` envelope's input) and is `true` since the grader moved to
+0.7.0 (issue #200), which verifies the repo-relative path an envelope names in
+`provenance.input.path` — the opt-in field
 [klayout-tools#2403](https://github.com/2AMLogic/klayout-tools/issues/2403)
-added to later `klt` releases. Rendered with a newer `klt` (not the pin), item
-8's citation already reports `input_verified: true`, so the grader will
-verify it natively once the pin moves (#200).
+added. Guard 1 below still re-hashes both: item 3's by basename beside the
+envelope, item 8's at that repo-relative path. For item 8 it is now defence in
+depth rather than the only check.
 
 ## Block kind: `mixed-signal`, and the partition boundary
 
@@ -328,13 +327,13 @@ silently skipped, leaving the new citation with no superseded-record check at
 all. Extending the pattern is part of the work of citing item 11, not a
 follow-up to it.
 
-**4b. A real `klt` envelope exists, citing it would grade the row green
-against what the envelope itself says — and guard 3 now refuses to render
-that citation at all.** Item **6** (statistical claims carry Monte Carlo
+**4b. A real `klt` envelope exists, but it declares no negative control — so
+citing it is still refused, now by guard 3's narrowed form, while the grader
+itself says "undersized".** Item **6** (statistical claims carry Monte Carlo
 evidence) is the second instance of §4's trade, arriving from the opposite
 direction: item 11's envelope is *clean* and answers two thirds of its claim,
 while item 6's envelope is an honest report of a **failing, unsized** campaign
-that `klt signoff` would nonetheless grade as passing. It is also the one
+that the pre-0.7.0 grader graded as passing. It is also the one
 instance of the trade this repo stopped taking on trust: §3's and §4's
 declines are prose, enforced only by whoever reads them, while this one is a
 check (issue #182 — see "Three guards this repo adds" below, guard 3).
@@ -356,35 +355,53 @@ only kind item 6 accepts. What that envelope says:
   be failed), and **no measurement declared a `negative_control`** — the
   deterministic negative control item 6's own checklist text requires.
 
-`klt signoff` grades a yield citation passing when `status` is `"pass"` or
-`"reported"`, and `"reported"` is exactly what a measurement with no
-`target_yield` produces. It consults neither `sample_size.verdict` nor the
-negative-control warning (filed generically as
-[klayout-tools#2467](https://github.com/2AMLogic/klayout-tools/issues/2467)).
-Citing this report would therefore render item 6 **`met`** on a campaign whose
-own artifact says its estimate is unsized, whose measured yield is zero, and
-which carries no self-check that the statistics can detect a bad design. That is
-§3's trade again, so it gets §3's answer: nothing is cited, and the row stays
-`unmet` / `no_evidence`.
+**What changed with the grader (issue #200).** Up to `klt` 0.6.0, `klt signoff`
+graded a yield citation passing when `status` was `"pass"` or `"reported"` —
+and `"reported"` is exactly what a measurement with no `target_yield` produces
+— while consulting neither `sample_size.verdict` nor the missing-negative-control
+warning
+([klayout-tools#2467](https://github.com/2AMLogic/klayout-tools/issues/2467)).
+Citing this report then rendered item 6 **`met`** on a campaign whose own
+artifact says its estimate is unsized and which carries no self-check, so §3's
+trade applied and nothing was cited. `klt` 0.7.0 (the release this repo now
+pins, which carries the fix) reads the self-report. Measured on the 0.7.0
+release over disposable copies of this report with its `sample_size.verdict` and
+`negative_control` varied (`signoff/tests/test_yield_citation_guard.py` re-runs
+this on every CI run), item 6's analog row renders:
 
-**That paragraph is measured, not predicted.** Adding
+| `sample_size.verdict` | `negative_control` | rendered by `klt` 0.7.0 |
+| --- | --- | --- |
+| `insufficient` | none, or any verdict | `unmet` / `undersized_sample` |
+| `sufficient` | `verdict: not_detected` | `unmet` / `negative_control_not_detected` |
+| `sufficient` | `verdict: detected` | `met` |
+| `sufficient` | none declared | **`met`**, `yield_campaign.negative_control` = `"not_declared"` |
+| absent, or a verdict other than the two the verb emits | `detected` | **`met`**, `yield_campaign.sample_size` = `null` |
 
-```json
-"6": {
-  "file": "sim/pll-lock-mc/analysis/yield-evidence/klt-yield-report.json",
-  "content_hash": "sha256:2416e83066dc3942975d063555f117b5126724d1e3b57ce0c3753690547feea3"
-}
-```
+The first two rows are the grader's to render now, which is the "evidence exists
+and is undersized" outcome #182's second acceptance path asked for: an honest
+`unmet` row said by the tool rather than by a README. The last two rows are the
+**asymmetry #2467 does not close**, and they are why guard 3 is narrowed rather
+than retired: the grader leaves a campaign that declares no control at all, and
+a malformed `sample_size`, as `met`. Item 6's checklist text asks for a
+deterministic negative control, so this repo refuses the first, and a
+self-report the grader cannot read is refused rather than passed through.
 
-to the manifest and rendering at the pinned `klt` 0.6.0 takes `t1_met_count`
-from **2 to 4** — item 6 `met` in *both* partition columns, `citation.kind`
-`"yield"`, `check_status` `"reported"`, `input_verified` `true` — over the
-report quoted above. Note which artifact that hash pins: a `klt yield` report
-names its input as `samples`, so the pin is the SHA-256 of
-`yield-evidence/mc-samples.json`, not of the report file. Pinning the report's
-own hash instead renders `unmet` / `stale_evidence`, which looks like the
-decline this section argues for but is really just a mis-pinned citation — a
-green row one corrected hash away, not a gate.
+**Can #182's second reading be cited today? No — for a reason this section did
+not anticipate.** The committed report
+(`yield-evidence/klt-yield-report.json`) declares **no** `negative_control`
+(`measurements[0].negative_control` is `null`), so guard 3 still refuses to
+render a manifest that cites it, even though the grader would now render the
+row `unmet` / `undersized_sample` rather than `met`. The citation becomes
+makeable once a `klt yield` report that declares a control exists (#215's
+control campaign; `klt yield` itself is still not runnable from this repo's pin,
+[klayout-tools#2466](https://github.com/2AMLogic/klayout-tools/issues/2466)).
+At that point an undersized-but-controlled report is citable as an honest
+`unmet`, with no guard edit needed. This PR changes no production citation;
+#182 owns that change.
+
+The 0.7.0 re-render of `tier-report.json` (item 6 uncited) is otherwise a
+checklist-text-and-provenance diff: `t1_met_count` stays **3**; the only
+behavioural difference is item 8's `input_verified`, now `true` (see above).
 
 What makes the decline the honest call rather than a technicality is item 6's
 own checklist text, which asks for four things: a recorded seed, a sample count,
@@ -448,7 +465,7 @@ section's to make rather than that document's to report:
   from the same two fields and checked against every committed probe's own
   interval bounds, verdict, `required_n` and sample-size state before the
   document will render. Two results change what this repo should expect to
-  spend. First, **guard 3's two conditions pull against each other**:
+  spend. First, **the sizing and `detected` conditions pull against each other**:
   `klt yield` sizes an estimate with an exact zero-failures interval at a pass
   rate of exactly 0 or exactly 1 and a normal approximation in between, so
   `required_n` *peaks in the middle* — this campaign is "sized" at 183 today
@@ -478,8 +495,8 @@ section's to make rather than that document's to report:
   `sim/lf-c2-jitter-sensitivity`'s own measurement of what that does to period
   jitter. **It has no record yet**, so every verdict in this section stands
   exactly as written and item 6 stays `unmet` — and it would stay `unmet` even
-  with the control fired, because guard 3's *other* condition (a sized estimate)
-  is untouched by it. What the control closes is one of two preconditions, which
+  with the control fired, because the *other* condition (a sized estimate, graded
+  `undersized_sample` by the 0.7.0 grader) is untouched by it. What the control closes is one of two preconditions, which
   is what `signoff/item6-preconditions.md` row 3 tracks.
 - **Whether to size the campaign.** `sim/pll-lock-mc/analysis/README.md` is the
   full read: ≈ 400 h of simulator time to sharpen an interval around an
@@ -499,19 +516,21 @@ section's to make rather than that document's to report:
   (`sim/pll-lock-mc/analysis/klt-yield-env.sh`) that regenerates and diffs them,
   so "built by hand" is no longer the recipe even while CI still cannot run it.
 
-Item 6 becomes citable when every precondition in that document reads `met` —
-not before, and not by re-reading the same report more generously. **Guard 3 is
-what makes that sentence binding** for the two the report itself carries: a
-manifest that cites this report today does not render a green row and a stale
-README to be caught in review — `run-signoff.sh` exits 1 and names both missing
-conditions, in the report's own fields (`sample_size.verdict` → `sufficient`,
-`negative_control.verdict` → `detected`). So nothing here has to be re-argued
-when they arrive; the citation becomes the mechanical manifest edit #182 always
-said it would be. What the reachability finding changes is the *order* the two
+Item 6 becomes citable *as a green row* when every precondition in that document
+reads `met` — not before, and not by re-reading the same report more generously.
+It becomes citable *as an honest `unmet`* sooner: once the report declares a
+control. The split is the grader's and guard 3's: since `klt` 0.7.0 the grader
+renders an undersized sample or a control that did not fire `unmet`, so no green
+row can rest on them; **guard 3 is what stays binding** for the one thing the
+grader waves through — `run-signoff.sh` exits 1 on a report with no
+`negative_control` block (or a malformed `sample_size`), naming the measurement.
+So nothing here has to be re-argued when the control arrives; the citation
+becomes the mechanical manifest edit #182 always said it would be. What the reachability finding changes is the *order* the two
 arrive in, not the gate: the design work on row 9 (#202) comes first, because
-until it lands guard 3's `detected` condition is unreachable rather than merely
-unmet, and the escape hatch guard 3 names (an argued `not_detected`) still needs
-a `klt yield` run to declare a control at all. And the two do not arrive
+until it lands the control's `detected` verdict is unreachable rather than
+merely unmet, and a declared control that does not fire (graded `unmet` /
+`negative_control_not_detected` by 0.7.0) still needs a `klt yield` run to
+declare a control at all. And the two do not arrive
 separately: the derivation above shows they are satisfied together, at a pass
 rate of essentially 100 %, or not at all without paying an order of magnitude
 more for the campaign.
@@ -530,8 +549,8 @@ production data, none of which this repo has a mechanism to check.
 
 `run-signoff.sh` runs three checks before rendering. The first two exist
 because the grader's freshness model leaves two doors open that matter for an
-append-only evidence repo; the third because the grader reads a `klt yield`
-citation's *status* and not its *statistics*. All three are demonstrated below.
+append-only evidence repo; the third because, even at `klt` 0.7.0, the grader renders a `klt yield`
+citation with no declared negative control (or a malformed `sample_size`) `met`. All three are demonstrated below.
 
 1. **The cited artifact is re-hashed.** `klt signoff` does re-hash a citation's
    input artifact when it can find it, and discloses the answer as the
@@ -560,8 +579,8 @@ citation's *status* and not its *statistics*. All three are demonstrated below.
    never checked against anything (negative control 7 below).
 
    **A `"kind": "generic"` envelope (item 8) is checked hardest, because the
-   pinned grader checks it least** (issue #224): `klt` 0.6.0 never re-hashes
-   a generic envelope's input. Its artifact is not beside the envelope
+   pinned grader checked it least** (issue #224): `klt` 0.6.0 never re-hashed
+   a generic envelope's input (0.7.0 does, via the opt-in path below). Its artifact is not beside the envelope
    either, so the envelope names it in `provenance.input.path` as
    `{"path": "measurements/report.md", "scope": "repo"}`, and the guard
    re-hashes it from the repo root. (`source` is informational only; `klt`
@@ -570,8 +589,9 @@ citation's *status* and not its *statistics*. All three are demonstrated below.
    `provenance.input.path`, an absolute or `..` path, a missing file, or an
    envelope whose own `provenance.input.content_hash` disagrees with the
    manifest's pin (negative control 9 below). For item 8 this part of the
-   guard becomes redundant when the grader pin moves past
-   klayout-tools#2403. It is not redundant before then.
+   guard became redundant with the grader once the pin moved past
+   klayout-tools#2403 (0.7.0, issue #200); it is kept as defence in depth, and
+   its tests still pin the failure cases.
 2. **The cited record must be the one `LATEST` names.** A pinned hash catches
    an artifact that *changed*; it cannot catch one that was *superseded*.
    `layout/` records are append-only, so a fresh flow run mints a new
@@ -585,24 +605,28 @@ citation's *status* and not its *statistics*. All three are demonstrated below.
    future citation under a differently-named sibling record tree (the live
    example is `layout/pll/erc-reports/`, item 11's, see §4 above) gets no
    superseded-record check until the pattern is widened to cover it.
-3. **A cited `klt yield` report must be one its own statistics stand behind.**
-   The grader reads such a citation's `status` and nothing else — and `status`
-   is `"reported"`, which it grades as passing, for any measurement that
-   declares no `target_yield`, i.e. for a measurement that *can never fail*
-   (klayout-tools#2467). So a report that says in its own body "this estimate
-   is unsized" and "nothing here demonstrates these statistics can detect a
-   degraded design" still renders item 6 `met`; §4b above is that false green,
-   measured. Two of item 6's four checklist requirements are machine-readable
-   in the report itself, so the guard checks them rather than trusting a
-   reviewer: every measurement's `sample_size.verdict` must be `sufficient`,
-   and every measurement must declare a `negative_control` whose `verdict` is
-   `detected`. Nothing else about the report is judged — a *failing* campaign
-   is still citable, and should be: the guard is about whether the statistics
-   support a claim, not about whether the claim is good news. If `not_detected`
-   is a campaign's honest outcome, the argument for it belongs in a committed
-   record beside the report, and relaxing this guard is part of making that
-   argument rather than a way around it. The guard retires when
-   klayout-tools#2467 lands and `klt signoff` applies both checks itself.
+3. **A cited `klt yield` report must be well-formed and declare a negative
+   control** (narrowed in issue #200; its original, wider form is issue #182's).
+   Up to `klt` 0.6.0 the grader read such a citation's `status` and nothing
+   else — and `status` is `"reported"`, graded as passing, for any measurement
+   that declares no `target_yield` (klayout-tools#2467) — so guard 3 refused
+   any report that was undersized or whose control had not fired. `klt` 0.7.0
+   grades both itself (`unmet` / `undersized_sample`, `unmet` /
+   `negative_control_not_detected`), so those refusals are retired: an honest
+   "evidence exists and is undersized" is allowed to render as an `unmet` row.
+   Two things the 0.7.0 grader still passes as `met` stay this guard's, because
+   retiring the guard wholesale would re-open them: **(a)** a measurement that
+   declares no `negative_control` block (the grader reports it as
+   `negative_control: "not_declared"` and leaves acceptability to "the
+   claimant's call"; item 6's checklist asks for a deterministic negative
+   control, so this repo's call is that it is not acceptable), and **(b)** a
+   malformed `sample_size` — absent, or a `verdict` other than the verb's
+   `sufficient`/`insufficient` — which 0.7.0 grades `met` with
+   `sample_size: null`. Nothing else about the report is judged: a *failing*
+   campaign is still citable, and should be. The guard's retirement condition
+   is now narrower too: it retires when the grader renders an undeclared control
+   `unmet` itself. Its cases are exercised against the real 0.7.0 grader and a
+   stub in `signoff/tests/test_yield_citation_guard.py`.
 
 ## Negative controls
 
@@ -628,7 +652,7 @@ every CI run in `signoff/tests/test_generic_envelope_guard.py` against a stub
 | The envelope's own `provenance.input.content_hash` changed (it ran against a different revision than the claim) | `klt signoff` re-grades item 3 `unmet` / `stale_evidence`, `t1_met_count` 2 → 0, the committed report no longer matches, `--check` exits 1 |
 | One field of the committed `tier-report.json` hand-edited | `--check` prints the diff (`"t1_met_count": 99` → `2`) and exits 1 |
 | `pll_top.gds` deleted outright (not edited — the cited artifact is simply gone) | guard 1 fails: `layout/pll/reports/<record>/pll_top.gds is missing -- layout/pll/reports/<record>/drc.json's pinned content_hash cannot be re-verified because the cited artifact is gone, not merely changed`, exit 1. This is the one case guard 1 used to let through (issue #163): re-run against the pre-fix script with the identical scratch record, `rm pll_top.gds` printed only `warning: … not found` and `--check` still reported `signoff/tier-report.json is current.` and exited 0 — the exact false-pass the fix above closes. |
-| Item 6 cited at `yield-evidence/klt-yield-report.json`, pinned correctly to its sample document (the false green §4b measures) | guard 3 fails, exit 1, naming both conditions: `measurement 'period_jitter_rms_pct': sample_size.verdict is 'insufficient' (n = 3, required_n = 183)` and `… no negative_control is declared -- nothing demonstrates these statistics can detect a degraded design`. Without the guard the same manifest renders `t1_met_count` 2 → 4. The converse was checked too, so the guard is a gate and not a blanket refusal: the same citation against a scratch copy of the report with `sample_size.verdict` `sufficient` and a `negative_control.verdict` of `detected` passes all three guards silently and grades item 6 `met` in both columns — exactly the citation #182 is waiting to be able to make. |
+| Item 6 cited at `yield-evidence/klt-yield-report.json`, pinned correctly to its sample document | guard 3 fails, exit 1: `measurement 'period_jitter_rms_pct': no negative_control is declared -- nothing demonstrates these statistics can detect a degraded design`. (Before the grader moved to 0.7.0 it also named `sample_size.verdict is 'insufficient'`; that is now the grader's `unmet` / `undersized_sample`, and the guard no longer refuses it.) Without the guard the same manifest renders item 6 `unmet` / `undersized_sample` under 0.7.0 — the pre-0.7.0 false green (`t1_met_count` 2 → 4) is gone for this report, but a *sized* report with no control would render `met`. The converse is checked too, so the guard is a gate and not a blanket refusal: `signoff/tests/test_yield_citation_guard.py` cites scratch copies with a declared control (sized or not, `detected` or `not_detected`) and all pass the guard, while an undeclared or non-block control, an absent `sample_size`, and an unknown verdict are refused. |
 | The same citation pinned to the report's own SHA-256 instead of its sample document's | guard 1 fails: `sim/pll-lock-mc/analysis/yield-evidence/mc-samples.json hashes to sha256:2416e830… but the manifest pins sha256:ccc0b324…`, exit 1. Re-run against the pre-#182 script with the identical manifest, this printed only `warning: … names no input artifact -- its pinned content_hash could not be re-hashed` and rendered anyway: the pin was compared to nothing at all. It survived only because `klt signoff` independently re-hashes what a yield report names (that path is relative, unlike the layout envelopes' — see guard 1) and graded the row `stale_evidence`. A pin nobody checks that happens to be caught by the grader is not a guard. |
 | Any one of item 6's preconditions flipped state (a `negative_control` declared, `sample_size.verdict` → `sufficient`, a `sim/pll-lock` record carrying a period-jitter column, `monte_carlo.process` turned off, the manifest citing item 6 while a row is still `unmet`) | `python3 signoff/item6_preconditions.py --check` exits 1, naming the document as drifted, and `npm run check:ci` fails. Measured on the real repo for the case most likely to arrive first: dropping a scratch `sim/pll-lock` record carrying a `Period jitter` column into `records/` flips row 4b to `met`, takes the summary from `3 of 6 preconditions outstanding` to `2 of 6`, and `--check` exits 1 — removing it again restores `is current.` and exit 0. Both directions are pinned in CI too: `signoff/tests/test_item6_preconditions.py` drives every row from a synthetic fact set in its met **and** its unmet state, so the document is shown to report the repo rather than to hardcode `unmet` — the same objection guard 3 had to answer. It also fails closed: an input artifact that is missing, unparseable, or not the shape claimed raises rather than rendering a document that has quietly dropped a fact. |
 | One byte of `measurements/report.md` changed (the characterization report moves under item 8's pin), either appended or overwritten in place | guard 1 fails, exit 1: `item 8.analog: measurements/report.md hashes to sha256:ac4469c1…, but the manifest pins sha256:9e7e1de4…` (appended space; overwriting the first byte in place instead hashes to `sha256:dbf7a355…` and fails the same way). Restoring the file restores `is current.` and exit 0. **Without the guard the tamper is invisible**: `klt signoff --manifest` run directly on the overwritten file renders a byte-identical report with item 8 still `met`, because the grader compares the pin only with the envelope's own claim and never re-hashes a generic envelope's input. |
@@ -639,7 +663,7 @@ The sibling canary `2AMLogic/gf180-pll` vendors a pinned copy of
 `design-evidence-tiers.md` and passes `--tiers-doc`, because the `klt` release
 available when it was written (0.5.0) bundled a **ten**-item checklist and T1
 item 11 had landed upstream days earlier. That bridge is unnecessary here:
-`klayout-tools` 0.6.0 bundles the eleven-item checklist, so this repo grades
+`klayout-tools` 0.7.0 bundles the eleven-item checklist, so this repo grades
 against the copy inside the pinned wheel and vendors nothing. The report
 records which document it used and pins its content
 (`source_doc` plus `source_doc_content_hash`), so a checklist that changes

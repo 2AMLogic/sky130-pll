@@ -31,7 +31,7 @@ REPO_ROOT = SIGNOFF_DIR.parent
 
 STUB_KLT = """#!/usr/bin/env bash
 case "${1-}" in
-  --version) echo "klt 0.6.0" ;;
+  --version) echo "klt 0.7.0" ;;
   signoff) cat signoff/tier-report.json; exit 3 ;;
   *) echo "stub klt: unexpected arguments: $*" >&2; exit 64 ;;
 esac
