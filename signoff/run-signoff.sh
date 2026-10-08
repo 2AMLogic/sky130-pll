@@ -48,7 +48,7 @@ REPORT="signoff/tier-report.json"
 # checklist revision or render a different report shape, which shows up as a
 # confusing `--check` diff rather than an obvious version mismatch -- hence
 # the warning below.
-KLT_PIN="0.6.0"
+KLT_PIN="0.7.0"
 
 mode="write"
 case "${1-}" in
@@ -133,36 +133,52 @@ esac
 # what gets checked: every cited path under `layout/<dir>/reports/<record-id>/`
 # must name the record `layout/<dir>/reports/LATEST` points at.
 #
-# 3. A cited `klt yield` report must be one its own statistics stand behind.
+# 3. A cited `klt yield` report must be well-formed and must declare a
+#    negative control.
 #
-# `klt signoff` grades a yield citation on the report's `status` alone, and
-# `status` is `"reported"` -- which it grades as passing -- for any measurement
-# that declares no `target_yield`, i.e. for a measurement that *can never fail*.
-# It consults neither the report's own `sample_size.verdict` nor its
-# missing-negative-control warning (filed generically as
-# klayout-tools#2467). So a report that says, in its own body, "this estimate
-# is unsized" and "nothing here demonstrates these statistics can detect a
-# degraded design" still renders T1 item 6 `met`. That is a green row over an
-# artifact that contradicts it, and it is the exact false pass issue #182
-# exists to keep out of this manifest.
+# History. Up to `klt` 0.6.0 the grader scored a yield citation on the report's
+# `status` alone, and `status` is `"reported"` -- graded as passing -- for any
+# measurement that declares no `target_yield`, i.e. one that *can never fail*.
+# Neither the report's `sample_size.verdict` nor its missing-negative-control
+# warning was consulted (klayout-tools#2467), so a report saying in its own body
+# "this estimate is unsized" and "nothing here demonstrates these statistics can
+# detect a degraded design" still rendered T1 item 6 `met` -- the false pass
+# issue #182 exists to keep out of this manifest. This guard refused all of it.
 #
-# T1 item 6's checklist text asks for a recorded seed, a sample count, a
-# *deterministic negative control*, and results combined with process corners.
-# Two of those are machine-readable in the report the manifest would cite, so
-# they are checked here rather than trusted to a reviewer:
+# Today (`klt` 0.7.0, which carries #2467/PR #2480). The grader now reads the
+# campaign's self-report. Measured against the 0.7.0 release (see
+# signoff/README.md case 4b and signoff/tests/test_yield_citation_guard.py):
 #
-#   * every measurement's `sample_size.verdict` must be `sufficient` (the verb
-#     reports only `sufficient`/`insufficient`, and an absent verdict is not a
-#     pass either);
-#   * every measurement must declare a `negative_control` whose `verdict` is
-#     `detected`.
+#   sample_size.verdict   negative_control      item 6 renders
+#   -------------------   -------------------   --------------------------------
+#   insufficient          any                   unmet / undersized_sample
+#   sufficient            verdict not_detected  unmet / negative_control_not_detected
+#   sufficient            verdict detected      met
+#   sufficient            none declared         met, negative_control "not_declared"
 #
-# If a campaign's honest outcome is a `not_detected` negative control -- a real
-# possibility, and one issue #182's acceptance criteria explicitly allow -- the
-# argument for that belongs in a committed record beside the report, and
-# relaxing this guard is part of making it, not a workaround for it. This guard
-# retires when klayout-tools#2467 lands and `klt signoff` applies the same two
-# checks itself.
+# So the first two refusals this guard used to make are now the grader's to
+# make, and an honest "evidence exists and is undersized" or "the control did
+# not fire" is allowed to render as an `unmet` row instead of being blocked here.
+# Two things the grader does NOT do remain this guard's:
+#
+#   * a campaign that declares NO negative control still renders `met` (the
+#     grader leaves whether that is acceptable "the claimant's call"). Item 6's
+#     checklist text asks for a deterministic negative control, and this repo's
+#     call is that an undeclared one is not acceptable: every measurement must
+#     declare a `negative_control` block, else the citation is refused;
+#   * a report whose `sample_size` is absent or whose `verdict` is not one of
+#     the verb's two values (`sufficient`, `insufficient`) is malformed, and
+#     0.7.0 grades it `met` with `sample_size: null` rather than failing it.
+#     Malformed self-report is refused here, not passed through to the grader.
+#
+# What this guard no longer checks, deliberately: that the verdicts are
+# `sufficient`/`detected`. Those are graded by `klt signoff` itself, and
+# duplicating them would only stop the tool from saying "evidence exists and is
+# undersized" (issue #200). The `negative_control.verdict` of a *declared*
+# control is likewise the grader's to judge. Note that a control over a
+# zero-yield campaign cannot reach `detected` (see
+# sim/pll-lock-mc/analysis/negative-control/reachability.md); the grader now
+# reports that as `unmet` rather than this guard refusing it.
 python3 - "$MANIFEST" <<'PY'
 import hashlib
 import json
@@ -314,22 +330,25 @@ if stale:
     )
     sys.exit(1)
 
-# Guard 3: a cited `klt yield` report must be one its own statistics stand
-# behind -- sized, and self-checked by a negative control that fired.
+# Guard 3: a cited `klt yield` report must be well-formed and must declare a
+# negative control. Sizing, and whether a declared control fired, are graded by
+# `klt signoff` (>= 0.7.0), not here.
 def yield_measurements(envelope):
     """The measurements of a `klt yield` report, or None if not one.
 
     A yield report is identified by shape rather than by a `command` field,
     which `klt yield`'s JSON does not carry at this version: its measurements
-    each own a `sample_size` verdict block, which no other envelope this repo
-    cites produces.
+    each own a `sample_size` verdict block (or a `yield` / `negative_control`
+    block, so a report with the sizing block stripped is still recognised and
+    refused as malformed), which no other envelope this repo cites produces.
     """
     measurements = envelope.get("measurements")
     if not isinstance(measurements, list) or not measurements:
         return None
     if not all(isinstance(m, dict) for m in measurements):
         return None
-    if not any("sample_size" in m for m in measurements):
+    markers = ("sample_size", "negative_control", "yield")
+    if not any(key in m for m in measurements for key in markers):
         return None
     return measurements
 
@@ -343,25 +362,18 @@ for item, (path, envelope) in envelopes.items():
         name = measurement.get("name") or f"#{index}"
         sample_size = measurement.get("sample_size")
         verdict = sample_size.get("verdict") if isinstance(sample_size, dict) else None
-        if verdict != "sufficient":
-            detail = f"sample_size.verdict is {verdict!r}"
-            if isinstance(sample_size, dict) and sample_size.get("required_n") is not None:
-                detail += (
-                    f" (n = {sample_size.get('n')}, "
-                    f"required_n = {sample_size['required_n']})"
-                )
-            unsupported.append(f"item {item}: {path}: measurement '{name}': {detail}")
+        if verdict not in ("sufficient", "insufficient"):
+            unsupported.append(
+                f"item {item}: {path}: measurement '{name}': sample_size.verdict is "
+                f"{verdict!r}, not 'sufficient' or 'insufficient' -- malformed "
+                "self-report, which the grader would pass through"
+            )
         control = measurement.get("negative_control")
         if not isinstance(control, dict):
             unsupported.append(
                 f"item {item}: {path}: measurement '{name}': no negative_control is "
                 "declared -- nothing demonstrates these statistics can detect a "
                 "degraded design"
-            )
-        elif control.get("verdict") != "detected":
-            unsupported.append(
-                f"item {item}: {path}: measurement '{name}': negative_control.verdict "
-                f"is {control.get('verdict')!r}, not 'detected'"
             )
 
 if unsupported:
@@ -372,13 +384,12 @@ if unsupported:
     for line in unsupported:
         print(f"  {line}", file=sys.stderr)
     print(
-        "       `klt signoff` grades a yield citation on the report's `status` "
-        "alone -- and `reported` (a measurement with no target_yield, which can "
-        "never fail) passes -- so citing this would render T1 item 6 `met` over "
-        "an artifact that contradicts it (klayout-tools#2467). Size the campaign "
-        "and declare a negative control that fires, or cite nothing. If "
-        "`not_detected` is the honest outcome, argue it in a committed record "
-        "beside the report and relax this guard in the same change.",
+        "       `klt signoff` (>= 0.7.0) grades an undersized sample or a declared "
+        "control that did not fire as `unmet`, but still renders a campaign that "
+        "declares no negative control, or a report with a malformed sample_size, "
+        "`met` -- so citing this would green item 6 over an artifact that "
+        "contradicts it. Declare a negative_control on every measurement (its "
+        "verdict is graded upstream) and re-run `klt yield`, or cite nothing.",
         file=sys.stderr,
     )
     sys.exit(1)
