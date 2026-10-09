@@ -1,0 +1,148 @@
+{
+  "schema": "sky130-pll.power.stages/1",
+  "block": "vco",
+  "align_node": "v(clk)",
+  "tran_stop_s": 3.35e-06,
+  "stages": [
+    {
+      "id": "idle",
+      "kind": "idle",
+      "label": "VCTRL=0.00V (idle)",
+      "vctrl": 0.0,
+      "t0": 0.0,
+      "t1": 1.0000000000000001e-07,
+      "settle": 6.000000000000001e-08
+    },
+    {
+      "id": "v0700",
+      "kind": "active",
+      "label": "VCTRL=0.700V",
+      "vctrl": 0.7,
+      "t0": 1.0000000000000001e-07,
+      "t1": 3.5000000000000004e-07,
+      "settle": 1.0000000000000001e-07,
+      "cycles": 3
+    },
+    {
+      "id": "v0725",
+      "kind": "active",
+      "label": "VCTRL=0.725V",
+      "vctrl": 0.725,
+      "t0": 3.5000000000000004e-07,
+      "t1": 6.000000000000001e-07,
+      "settle": 1.0000000000000001e-07,
+      "cycles": 3
+    },
+    {
+      "id": "v0750",
+      "kind": "active",
+      "label": "VCTRL=0.750V",
+      "vctrl": 0.75,
+      "t0": 6.000000000000001e-07,
+      "t1": 8.5e-07,
+      "settle": 1.0000000000000001e-07,
+      "cycles": 3
+    },
+    {
+      "id": "v0775",
+      "kind": "active",
+      "label": "VCTRL=0.775V",
+      "vctrl": 0.775,
+      "t0": 8.5e-07,
+      "t1": 1.1e-06,
+      "settle": 1.0000000000000001e-07,
+      "cycles": 3
+    },
+    {
+      "id": "v0800",
+      "kind": "active",
+      "label": "VCTRL=0.800V",
+      "vctrl": 0.8,
+      "t0": 1.1e-06,
+      "t1": 1.35e-06,
+      "settle": 1.0000000000000001e-07,
+      "cycles": 3
+    },
+    {
+      "id": "v0825",
+      "kind": "active",
+      "label": "VCTRL=0.825V",
+      "vctrl": 0.825,
+      "t0": 1.35e-06,
+      "t1": 1.6000000000000001e-06,
+      "settle": 1.0000000000000001e-07,
+      "cycles": 3
+    },
+    {
+      "id": "v0850",
+      "kind": "active",
+      "label": "VCTRL=0.850V",
+      "vctrl": 0.85,
+      "t0": 1.6000000000000001e-06,
+      "t1": 1.85e-06,
+      "settle": 1.0000000000000001e-07,
+      "cycles": 3
+    },
+    {
+      "id": "v0875",
+      "kind": "active",
+      "label": "VCTRL=0.875V",
+      "vctrl": 0.875,
+      "t0": 1.85e-06,
+      "t1": 2.1000000000000002e-06,
+      "settle": 1.0000000000000001e-07,
+      "cycles": 3
+    },
+    {
+      "id": "v0900",
+      "kind": "active",
+      "label": "VCTRL=0.900V",
+      "vctrl": 0.9,
+      "t0": 2.1000000000000002e-06,
+      "t1": 2.35e-06,
+      "settle": 1.0000000000000001e-07,
+      "cycles": 3
+    },
+    {
+      "id": "v0950",
+      "kind": "active",
+      "label": "VCTRL=0.950V",
+      "vctrl": 0.95,
+      "t0": 2.35e-06,
+      "t1": 2.6e-06,
+      "settle": 1.0000000000000001e-07,
+      "cycles": 3
+    },
+    {
+      "id": "v1000",
+      "kind": "active",
+      "label": "VCTRL=1.000V",
+      "vctrl": 1.0,
+      "t0": 2.6e-06,
+      "t1": 2.8500000000000002e-06,
+      "settle": 1.0000000000000001e-07,
+      "cycles": 3
+    },
+    {
+      "id": "v1200",
+      "kind": "active",
+      "label": "VCTRL=1.200V",
+      "vctrl": 1.2,
+      "t0": 2.8500000000000002e-06,
+      "t1": 3.1000000000000004e-06,
+      "settle": 1.0000000000000001e-07,
+      "cycles": 3
+    },
+    {
+      "id": "v1600",
+      "kind": "active",
+      "label": "VCTRL=1.600V",
+      "vctrl": 1.6,
+      "t0": 3.1000000000000004e-06,
+      "t1": 3.35e-06,
+      "settle": 1.0000000000000001e-07,
+      "cycles": 3
+    }
+  ],
+  "note": "design/vco/vco_ring5.sch driven open-loop by a staged VCTRL ladder; i(V1) is the VCO's own VDD current (VCTRL source, .ic card and the absent CLK load draw nothing from V1)"
+}
