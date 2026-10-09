@@ -2,7 +2,8 @@
 
     python3 sim/run_fmax.py divider-fmax --dry-run
     python3 sim/run_fmax.py divider-fmax --executor remote --subset-reason ... # subset
-    python3 sim/run_fmax.py divider-fmax --executor remote                     # full grid
+    python3 sim/run_fmax.py divider-fmax --executor batch                      # full grid
+    python3 sim/run_fmax.py divider-fmax --executor remote                     # full grid (SSH fleet)
 
 The full DR-003 grid x the declared modulus set is thousands of ngspice runs
 and belongs on the Spot batch fleet. This driver therefore never silently runs
@@ -25,6 +26,7 @@ from pathlib import Path
 from . import corners as corners_mod
 from . import executor as executor_mod
 from . import fmax as fmax_mod
+from . import fmax_klt
 from . import fmax_report
 from . import measure as measure_mod
 from . import pdk as pdk_mod
@@ -118,9 +120,42 @@ def _sha_file(path: Path) -> str | None:
         return None
 
 
+def _probe_dict(pid, stage_no, cell, freq, plan, verdict, netlist_sha, log_file, log_sha):
+    return {
+        "probe_id": pid,
+        "stage": stage_no,
+        "modulus": cell.modulus.n,
+        "corner": cell.point.corner,
+        "temp_c": cell.point.temp_c,
+        "supply_v": cell.point.supply_v,
+        "freq_hz": freq,
+        "clk_period_s": plan.clk_period_s,
+        "clk_pulse_width_s": plan.clk_width_s,
+        "expected_out_period_s": plan.expected_out_period_s,
+        "tran_stop_s": plan.tran_stop_s,
+        "status": verdict.status,
+        "reason": verdict.reason,
+        "edges": verdict.edges,
+        "periods": verdict.periods,
+        "worst_dev_frac": verdict.worst_dev_frac,
+        "netlist_sha256": netlist_sha,
+        "log_file": log_file,
+        "log_sha256": log_sha,
+    }
+
+
 def run_batch(requests, *, manifest, spec, netlists, work_dir, backend, jobs, stage_no, log):
     """Run [(cell, grid_index, freq_hz)] as one staged unit set and record each
     probe's verdict and provenance on its cell."""
+    if isinstance(backend, fmax_klt.KltBatchBackend):
+        for r in backend.run(requests, netlists=netlists, stage_no=stage_no, probe_id=probe_id):
+            r.cell.observed[r.idx] = r.verdict.status
+            d = _probe_dict(r.probe_id, stage_no, r.cell, r.freq, r.plan, r.verdict,
+                            r.netlist_sha256, r.log_file, r.log_sha256)
+            d.update(r.extra)
+            r.cell.probes.append(d)
+            log(f"  {r.probe_id}: {r.verdict.status}: {r.verdict.reason}")
+        return backend
     built = []
     for cell, idx, freq in requests:
         unit, plan, mspec = build_probe_unit(
@@ -138,27 +173,11 @@ def run_batch(requests, *, manifest, spec, netlists, work_dir, backend, jobs, st
         for item, outcome, verdict in pool.map(work, built):
             cell, idx, freq, unit, plan, _ = item
             cell.observed[idx] = verdict.status
-            cell.probes.append({
-                "probe_id": unit.corner_id,
-                "stage": stage_no,
-                "modulus": cell.modulus.n,
-                "corner": cell.point.corner,
-                "temp_c": cell.point.temp_c,
-                "supply_v": cell.point.supply_v,
-                "freq_hz": freq,
-                "clk_period_s": plan.clk_period_s,
-                "clk_pulse_width_s": plan.clk_width_s,
-                "expected_out_period_s": plan.expected_out_period_s,
-                "tran_stop_s": plan.tran_stop_s,
-                "status": verdict.status,
-                "reason": verdict.reason,
-                "edges": verdict.edges,
-                "periods": verdict.periods,
-                "worst_dev_frac": verdict.worst_dev_frac,
-                "netlist_sha256": fmax_mod.sha256_text(unit.netlist_text),
-                "log_file": outcome.log_path.name,
-                "log_sha256": _sha_file(outcome.log_path),
-            })
+            cell.probes.append(_probe_dict(
+                unit.corner_id, stage_no, cell, freq, plan, verdict,
+                fmax_mod.sha256_text(unit.netlist_text), outcome.log_path.name,
+                _sha_file(outcome.log_path),
+            ))
             log(f"  {unit.corner_id}: {verdict.status}: {verdict.reason}")
     return backend
 
@@ -247,7 +266,7 @@ def cmd(args) -> int:
 
     n_requested = 1 if args.probe_mhz is not None else n_stage1
     name = executor_mod.resolve_name(args.executor, manifest)
-    if name not in executor_mod.EXECUTORS:
+    if name not in executor_mod.EXECUTORS and name != fmax_klt.BATCH_EXECUTOR:
         print(f"run_fmax.py: unknown executor {name!r}", file=sys.stderr)
         return 1
     if name == "local" and n_requested > args.max_local_probes:
@@ -279,8 +298,20 @@ def cmd(args) -> int:
                 print(f"run_fmax.py: {e}", file=sys.stderr)
                 return 1
 
-        backend = executor_mod.build(name, pdk=pdk, spiceinit=spiceinit, jobs=jobs,
-                                     manifest=manifest, log=print)
+        if name == fmax_klt.BATCH_EXECUTOR:
+            backend = fmax_klt.KltBatchBackend(
+                spec=spec, manifest=manifest, work_dir=work_dir,
+                cache_dir=Path(args.klt_cache) if args.klt_cache else None, log=print,
+                max_jobs=args.klt_jobs,
+            )
+            try:
+                backend.preflight()
+            except fmax_klt.KltBatchError as e:
+                print(f"run_fmax.py: {e}", file=sys.stderr)
+                return 1
+        else:
+            backend = executor_mod.build(name, pdk=pdk, spiceinit=spiceinit, jobs=jobs,
+                                         manifest=manifest, log=print)
         if name == "remote":
             # A fleet-backed stage may silently fall back to local execution;
             # for a grid that is exactly what this host must not do.
@@ -297,7 +328,7 @@ def cmd(args) -> int:
             backend = run_campaign(cells, grid_hz, manifest=manifest, spec=spec,
                                    netlists=netlists, work_dir=work_dir, backend=backend,
                                    jobs=jobs, log=print)
-        except _LocalFallbackRefused as e:
+        except (_LocalFallbackRefused, fmax_klt.KltBatchError) as e:
             print(f"run_fmax.py: {e}", file=sys.stderr)
             return 1
 
@@ -326,12 +357,17 @@ def cmd(args) -> int:
                 shutil.copy2(src, corners_dir / p["log_file"])
         (corners_dir / "probes.json").write_text(json.dumps(probes, indent=1, sort_keys=True) + "\n")
         prov = backend.provenance() if hasattr(backend, "provenance") else None
+        if name == fmax_klt.BATCH_EXECUTOR:
+            backend.export_jobs(corners_dir / "jobs")
+            note = fmax_klt.execution_note(prov)
+        else:
+            note = _note(prov)
         text = fmax_report.render(
             record_id=record_id, slug=slug, manifest=manifest, spec=spec, pdk=pdk,
             tool_versions=pdk_mod.tool_versions(), repo_root=REPO_ROOT,
             netlist_snapshot=snapshot, cells=results, probe_count=len(probes),
             subset_reason=args.subset_reason, supersedes=args.supersedes,
-            execution_note=_note(prov),
+            execution_note=note,
         )
         record_path.parent.mkdir(parents=True, exist_ok=True)
         record_path.write_text(text)
@@ -386,7 +422,13 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--supply-tol", type=float)
     p.add_argument("--subset-reason")
     p.add_argument("--supersedes", help="record-id this run's record supersedes")
-    p.add_argument("--executor", choices=executor_mod.EXECUTORS, help="default: the manifest's, else local")
+    p.add_argument("--executor", choices=executor_mod.EXECUTORS + (fmax_klt.BATCH_EXECUTOR,),
+                   help="default: the manifest's, else local. `batch` submits through "
+                        "`klt sim --backend batch` (S3 job contract); `remote` needs the SSH fleet")
+    p.add_argument("--klt-jobs", type=int, default=2,
+                   help="concurrent `klt sim` submissions for the batch executor (default 2)")
+    p.add_argument("--klt-cache", help="directory for per-job requests/reports of the batch "
+                   "executor; re-running with the same directory reuses collected reports")
     p.add_argument("-j", "--jobs", type=int, default=1, help=f"local workers (capped at {MAX_JOBS})")
     p.add_argument("--max-local-probes", type=int, default=1,
                    help="most probes this host may simulate itself (default 1)")
