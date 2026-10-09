@@ -4,6 +4,8 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 ### 2026-10-08
 
+- **PR #234**: signoff: bump grader to klayout-tools 0.7.0 and narrow guard 3 (#200)
+- **Issue #200** (closed): signoff: klayout-tools#2467 has landed — bump the grader pin and decide what guard 3 becomes
 - **PR #229**: README: dated, pointer-based status summary (fix stale claims)
 - **PR #226**: signoff: cite the characterization report for T1 item 8 (analog partition)
 - **Issue #227** (closed): README status section is stale: claims no PLL sim or layout evidence
