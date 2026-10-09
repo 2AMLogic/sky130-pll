@@ -474,5 +474,42 @@ class RealRepoSmokeTest(unittest.TestCase):
         json.loads(aggregate.render_json(data))
 
 
+class FmaxRollupTests(unittest.TestCase):
+    """Issue #244: per-corner divider Fmax bounds in the rollup."""
+
+    def _data(self, cells):
+        rec = aggregate.EvidenceRecord(
+            record_id="20260101-000000-abcdef0", kind="sim", block="divider-fmax",
+            claim="c", verdict="PASS", detail="", spec_rows=[4],
+            path=Path("sim/divider-fmax/records/20260101-000000-abcdef0.md"),
+        )
+        return aggregate.ReportData(
+            generated_at="t", spec_rows=[], rows={}, unmapped=[], total_scanned=1,
+            superseded_count=0, fmax=[(rec, cells)],
+        )
+
+    def test_empty_section_says_so_and_does_not_claim_item_8(self):
+        md = aggregate.render_markdown(self._data([]).__class__(
+            generated_at="t", spec_rows=[], rows={}, unmapped=[], total_scanned=0, superseded_count=0))
+        self.assertIn("No Fmax record has been committed yet.", md)
+        self.assertIn("does not make item 8 met", md)
+
+    def test_worst_cell_is_a_bracket_and_censored_cells_are_counted_not_folded(self):
+        C = aggregate.FmaxCell
+        cells = [
+            C(25, "ss", "-40", "1.62", "BRACKETED", 1150.0, 1175.0),
+            C(25, "tt", "27", "1.80", "BRACKETED", 1325.0, 1350.0),
+            C(25, "ff", "125", "1.98", "CENSORED_HIGH", 2600.0, None),
+            C(4, "tt", "27", "1.80", "INCONCLUSIVE", None, None),
+        ]
+        md = aggregate.render_markdown(self._data(cells))
+        self.assertIn("| 25 | 3 | BRACKETED: 2, CENSORED_HIGH: 1 | 1150 | ss / -40 / 1.62 | 1175 |", md)
+        self.assertIn("| 4 | 1 | INCONCLUSIVE: 1 | -- | -- | -- |", md)
+        self.assertIn("`sim/divider-fmax/records/20260101-000000-abcdef0.md`", md)
+
+    def test_parse_ignores_records_without_the_table(self):
+        self.assertEqual(aggregate.parse_fmax_cells("# Record\n- **Overall: PASS**\n"), [])
+
+
 if __name__ == "__main__":
     unittest.main()

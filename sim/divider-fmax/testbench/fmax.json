@@ -1,0 +1,44 @@
+{
+  "schema": "sky130-pll.harness.fmax/1",
+  "claim": "what is the highest CLK frequency at which design/divider/divider_intN.sch (the standalone programmable integer-N feedback divider, dual-modulus /2-/3 prescaler front-end, issues #27/#114) still divides correctly -- every individual steady-state output period within tolerance of N/f_CLK -- at each DR-003 PVT point, for the declared modulus set (N=4, 5, 25, 63, 64), reported per cell as the highest verified passing grid probe with its adjacent failing grid probe, or as an explicit censored/inconclusive status. This is a design-input characterization of an ideal-input divider, not a spec/target-spec.md ratification and not a guarantee for the real VCO waveform: row 4 (multiplication ratio) stays DRAFT, and the digital T1 item 8 stays unmet until power and area also have evidence.",
+  "spec_rows": [4],
+  "spec_rows_note": "spec/target-spec.md row 4 (multiplication ratio, DRAFT N = 4-64): the divider's maximum correct-division frequency is the evidence row 4's sky130 open question ('confirm divider retiming closes at the sky130 top frequency') asks for. Citing the row is not claiming it; ratification is a separate decision-record act. This record supplies the Fmax component only of the digital characterization named by signoff item 8; power and area remain missing.",
+  "corner_pattern": "(\\.lib\\s+\\S*sky130\\.lib\\.spice\\s+)(\\w+)",
+  "supply_pattern": "(V1 VDD GND )([0-9.]+)",
+  "process_corners": ["tt", "ff", "ss", "sf", "fs"],
+  "temps_c": [-40, 27, 125],
+  "supply_nominal": 1.8,
+  "supply_tolerance": 0.1,
+  "search": {
+    "f_min_hz": 800e6,
+    "f_max_hz": 2600e6,
+    "resolution_hz": 25e6,
+    "coarse_stride": 8
+  },
+  "stimulus": {
+    "rise_s": 12.5e-12,
+    "duty": 0.5,
+    "reset_low_until_s": 5e-9,
+    "reset_high_at_s": 6e-9,
+    "amplitude": "supply"
+  },
+  "criterion": {
+    "skip_output_periods": 2,
+    "min_periods": 8,
+    "margin_periods": 2,
+    "tolerance_frac": 0.02,
+    "threshold_frac": 0.5,
+    "hysteresis_frac": 0.15,
+    "tran_step_s": 10e-12,
+    "timeout_s": 1800
+  },
+  "moduli": [
+    {"n": 4, "schematic": "../../divider-n4/testbench/tb_divider_n4.sch", "note": "DRAFT range floor, even decode path"},
+    {"n": 5, "schematic": "../../divider-n5/testbench/tb_divider_n5.sch", "note": "smallest odd modulus, odd decode path"},
+    {"n": 25, "schematic": "../../divider/testbench/tb_divider.sch", "note": "the design's 250 MHz lock-target modulus"},
+    {"n": 63, "schematic": "../../divider-n63/testbench/tb_divider_n63.sch", "note": "largest odd modulus, odd decode path"},
+    {"n": 64, "schematic": "../../divider-n64/testbench/tb_divider_n64.sch", "note": "DRAFT range ceiling, even decode path"}
+  ],
+  "methodology_note": "Each probe reuses an existing fixed-frequency divider testbench schematic (NSEL strapped statically for its N, open loop: no VCO, PFD/charge pump or loop filter), netlists it once per modulus, and rewrites only the CLK pulse source and the RESETB pwl source per probe from the single probe frequency. The declared waveform assumptions are: ideal rail-to-rail CLK whose high level tracks each point's own supply (the fixed-frequency records hold it at 1.8 V regardless of supply), 12.5 ps rise and fall, 50% duty at the 50% points, RESETB low until 5 ns and ramping to the supply by 6 ns, NSEL static. Modulus coverage justification: N=4/64 are the DRAFT range floor/ceiling on the even decode path, N=5/63 the smallest/largest odd moduli on the odd decode path, and N=25 is the design's lock-target modulus. Untested moduli are NOT claimed to share these bounds.",
+  "analysis": "transient per probe (`tran 10p <stop>`, injected by the Fmax driver); stop = reset release + (skip + min_periods + margin) expected output periods, so the window scales with N and the probe frequency. Search is a two-stage grid search on the declared resolution grid: stage 1 probes every coarse_stride-th grid point (plus the top of the range); stage 2 probes every grid point strictly inside the lowest coarse pass-to-fail transition. A pass island hidden between two coarse probes would be missed and is a stated limitation."
+}
