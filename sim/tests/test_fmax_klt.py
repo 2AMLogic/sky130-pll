@@ -62,6 +62,13 @@ class FakeKlt:
                         "artifacts": {}} for p in req["corners"]["process"]
                        for t in req["corners"]["temperature_c"]]
             return SimpleNamespace(returncode=4, stdout=json.dumps({"corners": corners}), stderr="")
+        if self.mode == "capacity_then_ok" and len(self.calls) <= 2:
+            return SimpleNamespace(returncode=1, stderr="", stdout=json.dumps({"error": {
+                "message": "batch backend failed: error: 8 instance(s) already running + 1 "
+                           "requested exceeds BATCH_MAX_CONCURRENT_INSTANCES=8"}}))
+        if self.mode == "capacity_forever":
+            return SimpleNamespace(returncode=1, stderr="", stdout=json.dumps({"error": {
+                "message": "batch_no_capacity", "code": "batch_no_capacity"}}))
         if self.mode == "no_json":
             return SimpleNamespace(returncode=1, stdout="", stderr="boom: no credentials")
         n = int(re.search(r"n(\d+)_", req_path.parent.name).group(1))
@@ -242,6 +249,32 @@ class CampaignViaFakeKlt(unittest.TestCase):
             with self.assertRaises(K.KltBatchError) as cm:
                 run_campaign(cells, FakeKlt(mode="version_refusal"), tmp)
         self.assertIn("fleet runner runs klt 0.5.0", str(cm.exception))
+
+    def test_capacity_refusal_is_retried_then_succeeds(self):
+        cells = make_cells(ns=(25,), corners=("tt",))
+        fake = FakeKlt(mode="capacity_then_ok")
+        with tempfile.TemporaryDirectory() as tmp:
+            backend = backend_for(tmp, fake)
+            backend.sleep = lambda s: None
+            backend.preflight = lambda: None
+            C.run_campaign(cells, F.grid(SPEC.search), manifest=MANIFEST, spec=SPEC,
+                           netlists={25: NETLIST}, work_dir=Path(tmp), backend=backend,
+                           jobs=1, log=lambda *_: None)
+        self.assertTrue(any(F.PASS in c.observed.values() for c in cells))
+        self.assertGreater(len(fake.calls), 2)
+
+    def test_persistent_capacity_refusal_aborts_without_local_fallback(self):
+        cells = make_cells(ns=(25,), corners=("tt",))
+        with tempfile.TemporaryDirectory() as tmp:
+            backend = backend_for(tmp, FakeKlt(mode="capacity_forever"))
+            backend.sleep = lambda s: None
+            backend.capacity_retries = 2
+            backend.preflight = lambda: None
+            with self.assertRaises(K.KltBatchError) as cm:
+                C.run_campaign(cells, F.grid(SPEC.search), manifest=MANIFEST, spec=SPEC,
+                               netlists={25: NETLIST}, work_dir=Path(tmp), backend=backend,
+                               jobs=1, log=lambda *_: None)
+        self.assertIn("batch_no_capacity", str(cm.exception))
 
     def test_missing_report_aborts(self):
         cells = make_cells(ns=(25,), corners=("tt",))

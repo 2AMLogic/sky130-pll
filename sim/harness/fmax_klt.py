@@ -52,6 +52,7 @@ import re
 import shutil
 import subprocess
 import threading
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -225,6 +226,15 @@ def clip_trace(times: list, values: list, stop_s: float) -> tuple:
     return t_out, v_out
 
 
+_CAPACITY_MARKERS = ("BATCH_MAX_CONCURRENT_INSTANCES", "batch_no_capacity", "no capacity in any")
+
+
+def is_capacity_refusal(text: str) -> bool:
+    """True when a `klt sim` failure is the fleet refusing to launch for lack of
+    capacity (the job never started), as opposed to a job that ran and failed."""
+    return any(m in text for m in _CAPACITY_MARKERS)
+
+
 def corner_dir_key(process: str, temp_c: float) -> str:
     return f"{process}_{temp_c:g}C"
 
@@ -310,7 +320,8 @@ class KltBatchBackend:
 
     def __init__(self, *, spec, manifest, work_dir: Path, cache_dir: Path | None = None,
                  klt: str | None = None, runner=None, log=print, max_jobs: int = 2,
-                 chunk_size: int = 4):
+                 chunk_size: int = 4, capacity_retries: int = 30,
+                 capacity_wait_s: float = 120.0, sleep=time.sleep):
         self.spec, self.manifest = spec, manifest
         self.work_dir = Path(work_dir)
         self.cache_dir = Path(cache_dir) if cache_dir else self.work_dir / "klt"
@@ -319,6 +330,7 @@ class KltBatchBackend:
         self.log = log
         self.max_jobs = max(1, max_jobs)
         self.chunk_size = max(1, chunk_size)
+        self.capacity_retries, self.capacity_wait_s, self.sleep = capacity_retries, capacity_wait_s, sleep
         self._lock = threading.Lock()
         self.jobs: list = []  # per-group provenance
 
@@ -400,11 +412,24 @@ class KltBatchBackend:
                      f"to the batch fleet")
             cmd = [self.klt, "sim", str(gdir / REQUEST_NAME), "-o", str(gdir / "out"),
                    "--backend", "batch", "--format", "json"]
-            try:
-                proc = self.runner(cmd, capture_output=True, text=True,
-                                   timeout=timeout_s + 3600 + 1800)
-            except (OSError, subprocess.TimeoutExpired) as e:
-                raise KltBatchError(f"{gkey}: klt sim did not complete: {e}") from e
+            attempt = 0
+            while True:
+                try:
+                    proc = self.runner(cmd, capture_output=True, text=True,
+                                       timeout=timeout_s + 3600 + 1800)
+                except (OSError, subprocess.TimeoutExpired) as e:
+                    raise KltBatchError(f"{gkey}: klt sim did not complete: {e}") from e
+                # The fleet is shared and capped; a launch refused for capacity
+                # ran nothing, so waiting and resubmitting the same job is safe
+                # (never a local fallback). Any other failure aborts below.
+                if (proc.returncode not in _USABLE_EXIT and attempt < self.capacity_retries
+                        and is_capacity_refusal((proc.stdout or "") + (proc.stderr or ""))):
+                    attempt += 1
+                    self.log(f"  {gkey}: fleet at capacity; retry {attempt}/"
+                             f"{self.capacity_retries} in {self.capacity_wait_s:g}s")
+                    self.sleep(self.capacity_wait_s)
+                    continue
+                break
             (gdir / "stderr.log").write_text(proc.stderr or "")
             try:
                 report = json.loads(proc.stdout)
