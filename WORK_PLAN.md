@@ -23,7 +23,7 @@ _None._
 
 Issues currently being built (`loom:building`).
 
-- **#233**: sim: no sky130 power measurement exists, so spec row 12 cannot be re-budgeted
+_None._
 
 ## PRs Awaiting Review
 
@@ -50,6 +50,7 @@ Issues carrying `loom:curated`.
 - **#182**: signoff: cite T1 item 6 once row 9's Monte Carlo campaign has a negative control and a sized population *(curated)*
 - **#215**: sim(pll-lock-mc-negative-control): draw the six-trial control campaign and grade it with klt yield *(curated)*
 - **#233**: sim: no sky130 power measurement exists, so spec row 12 cannot be re-budgeted *(curated)*
+- **#239**: Guard: recognize bounded explicit /tmp mktemp templates while preserving containment *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -67,10 +68,10 @@ _None._
 | Operator merge-risk holds | 0 |
 | Operator priority | 0 |
 | Ready (`loom:issue`) | 0 |
-| In Progress (`loom:building`) | 1 |
+| In Progress (`loom:building`) | 0 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
-| Curated | 9 |
+| Curated | 10 |
 | Architect / Hermit proposals | 2 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->

@@ -2,6 +2,12 @@
 
 Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
+### 2026-10-09
+
+- **PR #241**: design: regenerate stale top snapshot and guard hierarchical consistency
+- **Issue #240** (closed): design: regenerate the stale top-level loop-filter snapshot and guard hierarchical consistency
+- **PR #238**: sim: supply-current/power campaign harness (part of #233)
+
 ### 2026-10-08
 
 - **PR #234**: signoff: bump grader to klayout-tools 0.7.0 and narrow guard 3 (#200)
