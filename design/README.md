@@ -108,6 +108,12 @@ clears the tiered signoff checklist is settled only by
 [`signoff/README.md`](../signoff/README.md)). This file deliberately repeats
 none of those results.
 
+`lock-detector/` currently holds no circuit. It holds the executable
+behavioral reference and tests for the proposed `LOCK` contract (`DR-007`,
+issue #237). The schematic, symbol and netlist files are owed by #231 and
+will follow the shape above. Its tests are behavioral-reference evidence,
+not `sim/` evidence records.
+
 `sim/pdk-smoke` is unrelated plumbing (harness self-test, not a PLL block) and
 predates this convention; its own throwaway testbench circuit intentionally
 stays under `sim/pdk-smoke/testbench/`, not `design/`.

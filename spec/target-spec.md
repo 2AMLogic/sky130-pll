@@ -109,7 +109,7 @@ ratified** until its own decision record closes.
 | 13 | [Supply sensitivity](#supply-sensitivity) | supply-ripple limit + a DC-excursion Vctrl budget — **DRAFT by explicit decision (DR-006, #151)**, not by omission, both budgets | gf180-pll row 12 | **Deliberately left open, per budget.** *AC*: gf180-pll's limit is written against a dedicated `vdd_vco` rail, which ratified row 1 (single supply domain) does not provide — and a shared-rail limit is partly self-imposed, needing a transient measurement that does not exist. *DC*: the budget divides by `Kvco/f_out` (row 5, DRAFT) and by an unmeasured usable `VCTRL` window. `DR-006` records the structural `1/VDD` pushing floor (55.6 %/V at 1.8 V vs. 30.3 %/V at 3.3 V) as the anchor a future derivation starts from |
 | 14 | [Output duty cycle](#output-duty-cycle) | 45 – 55 % at CLK, whole band, all corners | gf180-pll row 13 | port target; owed a measurement |
 | 15 | [Output levels and drive](#output-levels-and-drive) | rail-to-rail CMOS, V_OH ≥ 0.9·VDD / V_OL ≤ 0.1·VDD into a stated load | gf180-pll row 14 | confirm the load and rail for the ratified supply |
-| 16 | [Lock detector](#lock-detector) | digital `lock` output; assert window + hysteresis criteria | gf180-pll row 16 | port the behavioral contract; re-verify the window on sky130 |
+| 16 | [Lock detector](#lock-detector) | digital `lock` output; assert window + hysteresis criteria | gf180-pll row 16 | port the behavioral contract; re-verify the window on sky130. A **proposed** (not ratified) numeric contract is in `DR-007` (#237); the row stays DRAFT |
 | 17 | [Standby / power-down](#standby) | no power-down mode in v1 (always-on) | gf180-pll row 11 | confirm the same v1 scope call |
 | 18 | [Area](#area) | a budget, not a result (no layout exists) | gf180-pll row 15 | sky130 area differs from gf180 — set a sky130 budget at ratification |
 | 19 | [Process corners](#process-corners) | sky130's five standard MOS/BJT process corners: `tt`, `ff`, `ss`, `sf`, `fs` — **RATIFIED 2026-08-27 (DR-003, #77)** | `sky130.lib.spice`'s own `.lib` corner sections (`sim/pdk.json`'s provenance note); re-derived for this PLL's PFD/charge-pump topology in `DR-003`, not ported from gf180-pll or silently inherited from `tb.json`'s prior `tt`/`ss`/`ff`-only convention | **Settled.** The mixed-skew corners `sf`/`fs` — absent from the prior harness convention — are included because they stress this design's un-cascoded PFD/charge-pump `UP`/`DN` current mirror; interconnect R/C skew corners (`ll`/`hh`) and mismatch Monte Carlo (`_mm`) are separate axes, out of scope here (`DR-003` *Alternatives considered*) |
@@ -362,6 +362,12 @@ to the ratified supply flavor.
 **DRAFT — to be ratified.** A digital `lock` output with an assert window and
 hysteresis criteria (gf180-pll row 16). Behavioral contract ported; the window
 re-verified on sky130.
+
+A **proposed** contract with provisional numbers (phase windows, qualification
+and release counts, reset, missing-clock timeouts) is in
+`spec/decision-records/DR-007-lock-detector-provisional-contract.md`, with an
+executable behavioral reference under `design/lock-detector/`. It does not
+ratify this row, which stays DRAFT and has no hardware evidence (#231).
 
 ## Standby
 
