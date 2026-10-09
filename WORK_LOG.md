@@ -4,7 +4,9 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 ### 2026-10-08
 
+- **PR #229**: README: dated, pointer-based status summary (fix stale claims)
 - **PR #226**: signoff: cite the characterization report for T1 item 8 (analog partition)
+- **Issue #227** (closed): README status section is stale: claims no PLL sim or layout evidence
 - **Issue #224** (closed): T1 item 8: decide and record the characterization-report citation now that #22 has closed
 
 ### 2026-10-07
