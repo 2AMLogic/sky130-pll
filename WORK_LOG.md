@@ -4,6 +4,10 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 ### 2026-10-09
 
+- **PR #254**: spec: propose the provisional LOCK detector contract with an executable reference (#237)
+- **Issue #237** (closed): Specify and test the provisional LOCK detector contract before hardware integration
+- **PR #252**: docs: refresh stale status prose in design/ and sim/ READMEs
+- **Issue #230** (closed): Refresh stale status statements in design/README.md and sim/README.md
 - **PR #245**: sim: divider Fmax characterization campaign (part of #244)
 - **PR #243**: verification: inert guard reproduction for /tmp mktemp templates (part of #239)
 - **PR #241**: design: regenerate stale top snapshot and guard hierarchical consistency
