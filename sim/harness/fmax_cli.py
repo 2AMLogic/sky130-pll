@@ -302,6 +302,7 @@ def cmd(args) -> int:
             backend = fmax_klt.KltBatchBackend(
                 spec=spec, manifest=manifest, work_dir=work_dir,
                 cache_dir=Path(args.klt_cache) if args.klt_cache else None, log=print,
+                max_jobs=args.klt_jobs,
             )
             try:
                 backend.preflight()
@@ -424,6 +425,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--executor", choices=executor_mod.EXECUTORS + (fmax_klt.BATCH_EXECUTOR,),
                    help="default: the manifest's, else local. `batch` submits through "
                         "`klt sim --backend batch` (S3 job contract); `remote` needs the SSH fleet")
+    p.add_argument("--klt-jobs", type=int, default=2,
+                   help="concurrent `klt sim` submissions for the batch executor (default 2)")
     p.add_argument("--klt-cache", help="directory for per-job requests/reports of the batch "
                    "executor; re-running with the same directory reuses collected reports")
     p.add_argument("-j", "--jobs", type=int, default=1, help=f"local workers (capped at {MAX_JOBS})")
