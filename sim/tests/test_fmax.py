@@ -381,9 +381,10 @@ class CampaignWithFakeBackend(unittest.TestCase):
         # per-period criterion must see the skipped cycles.
         cells = make_cells()
         run_cells = FakeBackend(lambda n, c: 1000e6)
-        unit, plan, mspec = C.build_probe_unit(MANIFEST, SPEC, cells[0], 1100e6, NETLIST, Path(tempfile.mkdtemp()))
-        outcome = run_cells.execute(unit)
-        v = C.judge_probe(unit, outcome, plan, mspec, SPEC)
+        with tempfile.TemporaryDirectory() as tmp:
+            unit, plan, mspec = C.build_probe_unit(MANIFEST, SPEC, cells[0], 1100e6, NETLIST, Path(tmp))
+            outcome = run_cells.execute(unit)
+            v = C.judge_probe(unit, outcome, plan, mspec, SPEC)
         self.assertEqual(v.status, F.FAIL)
 
 

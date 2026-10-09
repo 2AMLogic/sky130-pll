@@ -199,7 +199,7 @@ Item 8 is cited under the key `"8.analog"` at
 `signoff/evidence/characterization-report.json`, a `"kind": "generic"`
 envelope — the only kind item 8 accepts at the pinned `klt` — whose
 `provenance.input.content_hash` and the manifest's pin are both
-`sha256:9e7e1de4abeeaa2b59a687ac2f7414ee33d4402f7367295daa33606e298f8b92`, the
+`sha256:f5a9379a620f309c2d14e188fc50e5271e404b4cd047a16511cc5df6739414a4`, the
 SHA-256 of the committed `measurements/report.md`. Guard 1 re-hashes that file
 from its live bytes on every run.
 
@@ -220,7 +220,8 @@ figures; the numbers are in the records it points to.
 
 **Why the digital partition is not cited.** Item 8 adds, for a mixed-signal
 digital partition, "Fmax, area, and power across the corner set, not just
-functional pass/fail". The report has no Fmax field at all, and it records
+functional pass/fail". The report's Fmax section holds no committed Fmax
+record yet, and it records
 `No evidence` for row 12 (power) and row 18 (area). Its only digital-partition
 evidence is row 4's divider records, which are functional pass/fail. The
 divider's maximum correct-division frequency exists only as an informal,
