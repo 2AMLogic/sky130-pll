@@ -34,7 +34,7 @@ import argparse
 import json
 import re
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -393,6 +393,55 @@ def compute_superseded_ids(repo_root: Path, records: list[EvidenceRecord]) -> se
     return superseded
 
 
+# Divider Fmax records (issue #244; sim/harness/fmax_report.py) carry a
+# per-cell boundary table under this heading. The columns are a contract with
+# the renderer -- change them together.
+FMAX_TABLE_HEADING = "### Fmax boundary per cell"
+FMAX_CELL_STATUSES = ("BRACKETED", "NON_MONOTONIC", "CENSORED_HIGH", "CENSORED_LOW", "INCONCLUSIVE")
+
+
+@dataclass
+class FmaxCell:
+    modulus: int
+    corner: str
+    temp_c: str
+    supply_v: str
+    status: str
+    pass_mhz: float | None
+    fail_mhz: float | None
+
+
+def parse_fmax_cells(text: str) -> list[FmaxCell]:
+    """The per-cell boundary rows of an Fmax record, or [] for any other record."""
+    lines = text.splitlines()
+    try:
+        start = lines.index(FMAX_TABLE_HEADING)
+    except ValueError:
+        return []
+
+    def num(cell: str) -> float | None:
+        try:
+            return float(cell.strip())
+        except ValueError:
+            return None
+
+    cells: list[FmaxCell] = []
+    seen_table = False
+    for line in lines[start + 1 :]:
+        if not line.startswith("|"):
+            if seen_table:
+                break
+            continue
+        seen_table = True
+        cols = [c.strip() for c in line.strip().strip("|").split("|")]
+        if len(cols) < 9 or not cols[0].isdigit() or cols[4] not in FMAX_CELL_STATUSES:
+            continue
+        cells.append(
+            FmaxCell(int(cols[0]), cols[1], cols[2], cols[3], cols[4], num(cols[5]), num(cols[6]))
+        )
+    return cells
+
+
 @dataclass
 class ReportData:
     generated_at: str
@@ -401,6 +450,8 @@ class ReportData:
     unmapped: list[EvidenceRecord]
     total_scanned: int
     superseded_count: int
+    # (record, cells) for every current Fmax record, in discovery order.
+    fmax: list = field(default_factory=list)
 
 
 def build_report(spec_rows: list[SpecRow], records: list[EvidenceRecord], *, repo_root: Path) -> ReportData:
@@ -418,6 +469,15 @@ def build_report(spec_rows: list[SpecRow], records: list[EvidenceRecord], *, rep
         if not matched_any:
             unmapped.append(rec)
 
+    fmax = []
+    for rec in current:
+        record_file = repo_root / rec.path
+        if rec.kind != "sim" or not record_file.is_file():
+            continue
+        cells = parse_fmax_cells(record_file.read_text())
+        if cells:
+            fmax.append((rec, cells))
+
     return ReportData(
         generated_at=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         spec_rows=spec_rows,
@@ -425,6 +485,7 @@ def build_report(spec_rows: list[SpecRow], records: list[EvidenceRecord], *, rep
         unmapped=unmapped,
         total_scanned=len(records),
         superseded_count=len(superseded_ids),
+        fmax=fmax,
     )
 
 
@@ -437,6 +498,60 @@ def _all_current(data: ReportData) -> list[EvidenceRecord]:
         for rec in recs:
             seen.setdefault(f"{rec.kind}:{rec.path.as_posix()}", rec)
     return list(seen.values())
+
+
+def _fmax_mhz(value: float | None) -> str:
+    return "--" if value is None else f"{value:g}"
+
+
+def _render_fmax_section(a, data: ReportData) -> None:
+    """Per-modulus Fmax bounds across each current Fmax record's PVT cells.
+
+    Every figure is a bracket end, never a bare maximum: the lowest *verified
+    passing* probe across the BRACKETED/NON_MONOTONIC cells, with the failing
+    probe adjacent to it in that same cell. Cells that are censored or
+    inconclusive are counted and named, not folded into a number.
+    """
+    a("## Divider Fmax boundaries (digital characterization, Fmax component only)")
+    a("")
+    a(
+        "Rolled up from `sim/*/records/*.md` Fmax records (`### Fmax boundary per "
+        "cell` tables). This is the Fmax component of the digital characterization "
+        "that `signoff` item 8 names for a mixed-signal digital partition. It "
+        "**does not make item 8 met**: power (row 12) and area (row 18) still have "
+        "no evidence, and spec row 4 stays DRAFT. Each bound is an ideal-input "
+        "result over a stated search grid and is only ever a verified-pass / "
+        "adjacent-fail bracket, or a censored/inconclusive count."
+    )
+    a("")
+    if not data.fmax:
+        a("No Fmax record has been committed yet.")
+        a("")
+        return
+    a(
+        "| Modulus N | Cells | Status counts | Lowest verified pass across bracketed cells (MHz) "
+        "| At corner (process / deg C / V) | Adjacent failing probe in that cell (MHz) | Citation |"
+    )
+    a("|---|---|---|---|---|---|---|")
+    for rec, cells in data.fmax:
+        for n in sorted({c.modulus for c in cells}):
+            mine = [c for c in cells if c.modulus == n]
+            counts = ", ".join(
+                f"{s}: {sum(1 for c in mine if c.status == s)}"
+                for s in FMAX_CELL_STATUSES
+                if any(c.status == s for c in mine)
+            )
+            bracketed = [
+                c for c in mine if c.status in ("BRACKETED", "NON_MONOTONIC") and c.pass_mhz is not None
+            ]
+            if bracketed:
+                w = min(bracketed, key=lambda c: (c.pass_mhz, c.corner, c.temp_c, c.supply_v))
+                where = f"{w.corner} / {w.temp_c} / {w.supply_v}"
+                lo, fail = _fmax_mhz(w.pass_mhz), _fmax_mhz(w.fail_mhz)
+            else:
+                where, lo, fail = "--", "--", "--"
+            a(f"| {n} | {len(mine)} | {counts} | {lo} | {where} | {fail} | {rec.citation()} |")
+    a("")
 
 
 def render_markdown(data: ReportData) -> str:
@@ -522,6 +637,7 @@ def render_markdown(data: ReportData) -> str:
                 f"{why} | {rec.citation()} |"
             )
     a("")
+    _render_fmax_section(a, data)
     a("## Scan summary")
     a("")
     a(f"- Evidence records scanned: {data.total_scanned}")

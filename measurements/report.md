@@ -1,6 +1,6 @@
 # PLL characterization report
 
-Generated: 2026-09-27T11:13:56Z by `measurements/aggregate.py` -- this file is a **derived rollup**, not append-only evidence itself; re-run the aggregator to refresh it (see `measurements/README.md`).
+Generated: 2026-10-09T13:01:52Z by `measurements/aggregate.py` -- this file is a **derived rollup**, not append-only evidence itself; re-run the aggregator to refresh it (see `measurements/README.md`).
 
 Rolls up every `sim/*/records/*.md` and `layout/*/reports/*/record.md` evidence record into one table, keyed by `spec/target-spec.md` row number. **A populated row is not a passing row.** Rows 0, 1, 9, 19 and 20 of `spec/target-spec.md` are ratified (`DR-001`/`DR-002`/`DR-003`/`DR-006`); every other numeric row an evidence record appears against is still DRAFT. For a DRAFT row, a record listed against it is *evidence bearing on that row* -- the measured input a future decision record would argue the row from -- never a verdict on it, and never a substitute for the ratification act itself. For a **ratified** row the record's verdict does grade against a binding bound, and a FAIL there is a recorded miss against the spec (never a reason to relax it -- see `CLAUDE.md`). Read each record before quoting it either way: its own `Verdict` column here is the record's overall pass/fail, which for several campaigns means "the harness ran and recorded what happened", including recorded non-lock.
 
@@ -107,6 +107,12 @@ Harness-plumbing evidence, negative controls, and anything whose citation does n
 | sim | vco-clk-transition | 20260925-110645-810cd82 | design/vco's own CLK transition (10-90% rise/fall) time, measured open-loop from design/vco/vco_ring5.sch at a single fixed VCTRL near the row-9 operating poin… | PASS | 1/1 points passed | declares it measures no spec row (cited by the record itself) | `sim/vco-clk-transition/records/20260925-110645-810cd82.md` |
 | layout | pll | 20260924-041509-c53e7c4 | Device-level layout of the closed-loop PLL schematic (`design/top/netlist/top.spice`), drawn by `layout/bin/run-pll-layout-flow.sh` (issue #16). Read this file… | PASS | 8/8 checks passed | declares it measures no spec row (cited by the record itself) | `layout/pll/reports/20260924-041509-c53e7c4/record.md` |
 | layout | trivial-cell | 20260924-041449-c53e7c4 | Trivial-cell proof of the `klt`-driven DRC/LVS flow (issue #2) -- **not** PLL-block layout, which is a later issue's scope (there is no PLL schematic yet). - *… | PASS | 6/6 checks passed | declares it measures no spec row (cited by the record itself) | `layout/trivial-cell/reports/20260924-041449-c53e7c4/record.md` |
+
+## Divider Fmax boundaries (digital characterization, Fmax component only)
+
+Rolled up from `sim/*/records/*.md` Fmax records (`### Fmax boundary per cell` tables). This is the Fmax component of the digital characterization that `signoff` item 8 names for a mixed-signal digital partition. It **does not make item 8 met**: power (row 12) and area (row 18) still have no evidence, and spec row 4 stays DRAFT. Each bound is an ideal-input result over a stated search grid and is only ever a verified-pass / adjacent-fail bracket, or a censored/inconclusive count.
+
+No Fmax record has been committed yet.
 
 ## Scan summary
 

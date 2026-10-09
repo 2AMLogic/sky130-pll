@@ -508,6 +508,60 @@ docstring for the full scoping rationale (issue #52 explicitly allows
 deferring this to a dedicated AC/linearized-model testbench). That
 testbench now exists — see the `ac` block below.
 
+## Divider Fmax campaign (`sim/run_fmax.py`, issue #244)
+
+`sim/divider-fmax/testbench/fmax.json` declares a frequency-boundary
+characterization of the standalone divider, separate from the fixed-frequency
+`sim/divider*/` campaigns (which are unchanged). It is not a `tb.json`
+experiment: the harness `sweep` mechanism alters a DC source and cannot move a
+pulse period, so this campaign has its own manifest schema
+(`sky130-pll.harness.fmax/1`) and driver, reusing the harness's netlisting,
+corner patching, executor seam, judge and edge reducer.
+
+- **One frequency drives everything.** A probe at CLK frequency `f` derives the
+  CLK `pulse(...)` period, pulse width, supply-tracking amplitude, the RESETB
+  `pwl`, the expected division period `N/f` and the transient window from that
+  one number (`harness/fmax.py: stimulus_for`), then rewrites exactly one CLK
+  source and one RESETB source in the netlisted modulus testbench.
+- **Declared in the manifest:** search bounds, grid resolution, coarse stride,
+  edge time, duty, reset sequence, modulus set (each pointing at an existing
+  `sim/divider*/` schematic), and the per-period criterion.
+- **Search:** stage 1 probes every `coarse_stride`-th grid point (plus the top);
+  stage 2 probes the grid points inside the lowest pass-to-fail transition.
+  Monotonicity is observed, never assumed.
+- **Verdicts:** a probe is PASS (every steady-state output period within
+  tolerance of `N/f`, no leading/trailing silence), FAIL (a completed
+  simulation whose output misses that, including too few edges) or
+  INCONCLUSIVE (timeout, `Error:`, missing marker, missing/unreadable/truncated
+  dump). A cell is BRACKETED (highest verified pass + adjacent failing grid
+  probe), NON_MONOTONIC, CENSORED_HIGH/CENSORED_LOW, or INCONCLUSIVE; there is
+  never an unbracketed maximum. A record is FAIL if any cell is INCONCLUSIVE or
+  CENSORED_LOW.
+- **Provenance:** `sim/divider-fmax/corners/<record-id>/probes.json` holds one
+  entry per probe (frequency, derived period/width/target, verdict and reason,
+  netlist SHA-256, log SHA-256) next to the raw per-probe logs; waveform dumps
+  follow the usual no-commit retention policy.
+
+```bash
+# plan only, no PDK needed
+python3 sim/run_fmax.py divider-fmax --dry-run
+# the full-grid campaign (5 moduli x 45 PVT points, ~2250 coarse probes plus
+# refinement) -- Spot batch fleet only
+python3 sim/run_fmax.py divider-fmax --executor remote
+# one cell / one probe, locally (a probe writes no record)
+python3 sim/run_fmax.py divider-fmax --no-write --executor local --moduli 25 \
+    --corners tt --temps 27 --supply-tol 0 --probe-mhz 1100
+```
+
+The driver refuses to simulate a grid on the host it was started on: if the
+remote executor falls back to local (for example `klayout_tools` is not
+importable), or `--executor local` is asked for more than `--max-local-probes`
+(default 1) units, it stops before running ngspice. Any subset run that is
+recorded needs `--subset-reason`. The per-cell bounds roll up into
+`measurements/report.md` ("Divider Fmax boundaries"); that section does not
+make signoff item 8 met (power and area have no evidence) and does not ratify
+spec row 4.
+
 ## Loop-dynamics campaigns (`ac` manifest block)
 
 A manifest that declares a top-level `ac` block instead of a `measure`
