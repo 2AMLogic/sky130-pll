@@ -23,14 +23,13 @@ _None._
 
 Issues currently being built (`loom:building`).
 
-- **#200**: signoff: klayout-tools#2467 has landed — bump the grader pin and decide what guard 3 becomes
 - **#233**: sim: no sky130 power measurement exists, so spec row 12 cannot be re-budgeted
 
 ## PRs Awaiting Review
 
 PRs waiting on Judge (`loom:review-requested`).
 
-- **#234**: signoff: bump grader to klayout-tools 0.7.0 and narrow guard 3 (#200)
+_None._
 
 ## Approved (Awaiting Merge)
 
@@ -49,7 +48,6 @@ Issues carrying `loom:curated`.
 - **#159**: sim: no VCO supply-pushing or transient rail-ripple campaign exists, so spec row 13 cannot be derived *(curated)*
 - **#166**: sim: measure transient VDD/VCTRL ripple-in-lock of the assembled loop (DR-006 row 13 Budget 1, part 2) *(curated)*
 - **#182**: signoff: cite T1 item 6 once row 9's Monte Carlo campaign has a negative control and a sized population *(curated)*
-- **#200**: signoff: klayout-tools#2467 has landed — bump the grader pin and decide what guard 3 becomes *(curated)*
 - **#215**: sim(pll-lock-mc-negative-control): draw the six-trial control campaign and grade it with klt yield *(curated)*
 - **#233**: sim: no sky130 power measurement exists, so spec row 12 cannot be re-budgeted *(curated)*
 
@@ -69,10 +67,10 @@ _None._
 | Operator merge-risk holds | 0 |
 | Operator priority | 0 |
 | Ready (`loom:issue`) | 0 |
-| In Progress (`loom:building`) | 2 |
-| PRs awaiting review | 1 |
+| In Progress (`loom:building`) | 1 |
+| PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
-| Curated | 10 |
+| Curated | 9 |
 | Architect / Hermit proposals | 2 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
