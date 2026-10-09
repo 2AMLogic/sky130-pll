@@ -23,7 +23,7 @@ _None._
 
 Issues currently being built (`loom:building`).
 
-_None._
+- **#244**: sim: record divider Fmax boundaries across PVT for digital T1 characterization
 
 ## PRs Awaiting Review
 
@@ -56,6 +56,7 @@ Issues carrying `loom:curated`.
 
 - **#231**: design: add the digital lock output spec row 16 asks for (top-level has no LOCK port) *(architect)*
 - **#232**: design: CLK is the raw VCO node — add an output stage so rows 14/15 have a pin to measure *(architect)*
+- **#247**: sim: add a standalone PFD/charge-pump characterization campaign (UP/DN asymmetry, Icp, compliance) *(architect)*
 
 ## Epics
 
@@ -68,10 +69,10 @@ _None._
 | Operator merge-risk holds | 0 |
 | Operator priority | 0 |
 | Ready (`loom:issue`) | 0 |
-| In Progress (`loom:building`) | 0 |
+| In Progress (`loom:building`) | 1 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
 | Curated | 10 |
-| Architect / Hermit proposals | 2 |
+| Architect / Hermit proposals | 3 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
