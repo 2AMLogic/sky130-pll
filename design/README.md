@@ -68,6 +68,24 @@ design/
   `sim/README.md`), where a netlist is frozen alongside the evidence it
   produced.
 
+### Regenerating parents after a child changes
+
+`design/top/netlist/top.spice` embeds a copy of every child block's netlist
+(`pfd_cp`, `loop_filter`, `vco_ring5`, `divider_intN`). xschem does not
+refresh a parent when only a child schematic is saved, so after changing any
+child, regenerate every ancestor with the same command (for the top level,
+`design/top/top.sch -o design/top/netlist`), and commit the changed snapshots
+together. The layout flow reads the top snapshot, so a stale embedded copy
+silently changes the device plan and LVS reference.
+
+`python3 signoff/design-snapshot-consistency.py` (part of `npm run check:ci`,
+and run by `layout/bin/run-pll-layout-flow.sh` before a record is minted)
+compares each embedded block with its standalone snapshot: pin order, device
+connections, model names and parameter values, ignoring generated path
+comments and formatting. It needs neither xschem nor a PDK. It establishes
+snapshot-to-snapshot consistency only; it does not prove that a snapshot
+matches its `.sch`, which only regenerating with xschem does.
+
 ## Relationship to `sim/`
 
 `design/<block>/<block>.sch` is the DUT a `sim/<experiment-slug>/testbench/`

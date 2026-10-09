@@ -47,6 +47,16 @@ if [[ ! -f "$NETLIST" ]]; then
   exit 1
 fi
 
+# The top snapshot's embedded blocks must agree with the standalone block
+# snapshots before any record is minted (issue #240). PDK-free; this checks
+# snapshot-to-snapshot consistency only, not equivalence with the .sch files.
+if ! python3 "$REPO_ROOT/signoff/design-snapshot-consistency.py" \
+    --repo-root "$REPO_ROOT"; then
+  echo "$SCRIPT_NAME: top snapshot is stale relative to its block snapshots;" \
+    "regenerate parents per design/README.md before minting a layout record" >&2
+  exit 1
+fi
+
 flow_require_pdk "$SCRIPT_NAME"
 
 flow_new_record_id
