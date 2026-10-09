@@ -4,6 +4,9 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 ### 2026-10-09
 
+- **PR #257**: sim: klt batch route for the divider Fmax campaign with capacity retry (part of #244)
+- **PR #256**: Add opt-in headless audit bootstrap wrapper
+- **Issue #253** (closed): Auditor Capability Request: Python 3 unavailable for headless repository checks
 - **PR #254**: spec: propose the provisional LOCK detector contract with an executable reference (#237)
 - **Issue #237** (closed): Specify and test the provisional LOCK detector contract before hardware integration
 - **PR #252**: docs: refresh stale status prose in design/ and sim/ READMEs
