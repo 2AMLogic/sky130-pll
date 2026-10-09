@@ -1,0 +1,112 @@
+{
+  "netlist": "vco.body.spice",
+  "engine": "ngspice",
+  "models": {
+    "pdk": "sky130A",
+    "lib": "libs.tech/ngspice/sky130.lib.spice"
+  },
+  "corners": {
+    "process": [
+      "tt",
+      "ff",
+      "ss",
+      "sf",
+      "fs"
+    ],
+    "supply_v": {
+      "v1": [
+        1.62,
+        1.8,
+        1.98
+      ]
+    },
+    "temperature_c": [
+      -40,
+      27,
+      125
+    ]
+  },
+  "analysis": {
+    "kind": "tran",
+    "args": "50p 3350n uic"
+  },
+  "measurements": [
+    {
+      "name": "i_xchk_idle",
+      "spice": ".meas tran i_xchk_idle AVG i(v1) FROM=50n TO=100n",
+      "unit": "A"
+    },
+    {
+      "name": "i_xchk_v0700",
+      "spice": ".meas tran i_xchk_v0700 AVG i(v1) FROM=225n TO=350n",
+      "unit": "A"
+    },
+    {
+      "name": "i_xchk_v0725",
+      "spice": ".meas tran i_xchk_v0725 AVG i(v1) FROM=475n TO=600n",
+      "unit": "A"
+    },
+    {
+      "name": "i_xchk_v0750",
+      "spice": ".meas tran i_xchk_v0750 AVG i(v1) FROM=725n TO=850n",
+      "unit": "A"
+    },
+    {
+      "name": "i_xchk_v0775",
+      "spice": ".meas tran i_xchk_v0775 AVG i(v1) FROM=975n TO=1100n",
+      "unit": "A"
+    },
+    {
+      "name": "i_xchk_v0800",
+      "spice": ".meas tran i_xchk_v0800 AVG i(v1) FROM=1225n TO=1350n",
+      "unit": "A"
+    },
+    {
+      "name": "i_xchk_v0825",
+      "spice": ".meas tran i_xchk_v0825 AVG i(v1) FROM=1475n TO=1600n",
+      "unit": "A"
+    },
+    {
+      "name": "i_xchk_v0850",
+      "spice": ".meas tran i_xchk_v0850 AVG i(v1) FROM=1725n TO=1850n",
+      "unit": "A"
+    },
+    {
+      "name": "i_xchk_v0875",
+      "spice": ".meas tran i_xchk_v0875 AVG i(v1) FROM=1975n TO=2100n",
+      "unit": "A"
+    },
+    {
+      "name": "i_xchk_v0900",
+      "spice": ".meas tran i_xchk_v0900 AVG i(v1) FROM=2225n TO=2350n",
+      "unit": "A"
+    },
+    {
+      "name": "i_xchk_v0950",
+      "spice": ".meas tran i_xchk_v0950 AVG i(v1) FROM=2475n TO=2600n",
+      "unit": "A"
+    },
+    {
+      "name": "i_xchk_v1000",
+      "spice": ".meas tran i_xchk_v1000 AVG i(v1) FROM=2725n TO=2850n",
+      "unit": "A"
+    },
+    {
+      "name": "i_xchk_v1200",
+      "spice": ".meas tran i_xchk_v1200 AVG i(v1) FROM=2975n TO=3100n",
+      "unit": "A"
+    },
+    {
+      "name": "i_xchk_v1600",
+      "spice": ".meas tran i_xchk_v1600 AVG i(v1) FROM=3225n TO=3350n",
+      "unit": "A"
+    }
+  ],
+  "options": {
+    "timeout_s": 3600,
+    "keep_artifacts": true,
+    "waveforms": true,
+    "save_mode": "netlist"
+  },
+  "backend": "batch"
+}

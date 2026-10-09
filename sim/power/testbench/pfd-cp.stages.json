@@ -1,0 +1,62 @@
+{
+  "schema": "sky130-pll.power.stages/1",
+  "block": "pfd-cp",
+  "align_node": "v(ref)",
+  "tran_stop_s": 1.3952000000000001e-05,
+  "stages": [
+    {
+      "id": "idle",
+      "kind": "idle",
+      "label": "REF and DIV held low (idle)",
+      "f_ref_hz": 0.0,
+      "t0": 0.0,
+      "t1": 1.1200000000000001e-07,
+      "settle": 6.000000000000001e-08
+    },
+    {
+      "id": "25m_lock",
+      "kind": "active",
+      "label": "25 MHz ref, DIV lag 0.1 ns",
+      "f_ref_hz": 25000000.0,
+      "lag_s": 1.0000000000000002e-10,
+      "t0": 1.1200000000000001e-07,
+      "t1": 1.032e-06,
+      "settle": 4.0000000000000003e-07,
+      "cycles": 12
+    },
+    {
+      "id": "25m_acq",
+      "kind": "active",
+      "label": "25 MHz ref, DIV lag 10 ns",
+      "f_ref_hz": 25000000.0,
+      "lag_s": 1e-08,
+      "t0": 1.032e-06,
+      "t1": 1.952e-06,
+      "settle": 4.0000000000000003e-07,
+      "cycles": 12
+    },
+    {
+      "id": "1m_lock",
+      "kind": "active",
+      "label": "1 MHz ref, DIV lag 0.1 ns",
+      "f_ref_hz": 1000000.0,
+      "lag_s": 1.0000000000000002e-10,
+      "t0": 1.952e-06,
+      "t1": 7.952000000000001e-06,
+      "settle": 2.0000000000000003e-06,
+      "cycles": 3
+    },
+    {
+      "id": "1m_acq",
+      "kind": "active",
+      "label": "1 MHz ref, DIV lag 250 ns",
+      "f_ref_hz": 1000000.0,
+      "lag_s": 2.5000000000000004e-07,
+      "t0": 7.952000000000001e-06,
+      "t1": 1.3952000000000001e-05,
+      "settle": 2.0000000000000003e-06,
+      "cycles": 3
+    }
+  ],
+  "note": "design/pfd-cp/pfd_cp.sch with ideal REF/DIV trains and CP held at 0.9 V by an ideal source (VCP): the charge-pump output current is drawn from V1 on UP and returned to GND on DN, so i(V1) includes the pump's delivered current; the loop filter is not present"
+}

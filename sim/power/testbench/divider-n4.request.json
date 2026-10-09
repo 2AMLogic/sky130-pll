@@ -1,0 +1,57 @@
+{
+  "netlist": "divider-n4.body.spice",
+  "engine": "ngspice",
+  "models": {
+    "pdk": "sky130A",
+    "lib": "libs.tech/ngspice/sky130.lib.spice"
+  },
+  "corners": {
+    "process": [
+      "tt",
+      "ff",
+      "ss",
+      "sf",
+      "fs"
+    ],
+    "supply_v": {
+      "v1": [
+        1.62,
+        1.8,
+        1.98
+      ]
+    },
+    "temperature_c": [
+      -40,
+      27,
+      125
+    ]
+  },
+  "analysis": {
+    "kind": "tran",
+    "args": "20p 287n"
+  },
+  "measurements": [
+    {
+      "name": "i_xchk_idle",
+      "spice": ".meas tran i_xchk_idle AVG i(v1) FROM=53.5n TO=107n",
+      "unit": "A"
+    },
+    {
+      "name": "i_xchk_f100m",
+      "spice": ".meas tran i_xchk_f100m AVG i(v1) FROM=167n TO=227n",
+      "unit": "A"
+    },
+    {
+      "name": "i_xchk_f250m",
+      "spice": ".meas tran i_xchk_f250m AVG i(v1) FROM=257n TO=287n",
+      "unit": "A"
+    }
+  ],
+  "options": {
+    "timeout_s": 7200,
+    "keep_artifacts": true,
+    "waveforms": true,
+    "save_mode": "netlist"
+  },
+  "backend": "batch"
+}

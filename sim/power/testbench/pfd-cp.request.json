@@ -1,0 +1,67 @@
+{
+  "netlist": "pfd-cp.body.spice",
+  "engine": "ngspice",
+  "models": {
+    "pdk": "sky130A",
+    "lib": "libs.tech/ngspice/sky130.lib.spice"
+  },
+  "corners": {
+    "process": [
+      "tt",
+      "ff",
+      "ss",
+      "sf",
+      "fs"
+    ],
+    "supply_v": {
+      "v1": [
+        1.62,
+        1.8,
+        1.98
+      ]
+    },
+    "temperature_c": [
+      -40,
+      27,
+      125
+    ]
+  },
+  "analysis": {
+    "kind": "tran",
+    "args": "100p 13952n"
+  },
+  "measurements": [
+    {
+      "name": "i_xchk_idle",
+      "spice": ".meas tran i_xchk_idle AVG i(v1) FROM=56n TO=112n",
+      "unit": "A"
+    },
+    {
+      "name": "i_xchk_25m_lock",
+      "spice": ".meas tran i_xchk_25m_lock AVG i(v1) FROM=572n TO=1032n",
+      "unit": "A"
+    },
+    {
+      "name": "i_xchk_25m_acq",
+      "spice": ".meas tran i_xchk_25m_acq AVG i(v1) FROM=1492n TO=1952n",
+      "unit": "A"
+    },
+    {
+      "name": "i_xchk_1m_lock",
+      "spice": ".meas tran i_xchk_1m_lock AVG i(v1) FROM=4952n TO=7952n",
+      "unit": "A"
+    },
+    {
+      "name": "i_xchk_1m_acq",
+      "spice": ".meas tran i_xchk_1m_acq AVG i(v1) FROM=10952n TO=13952n",
+      "unit": "A"
+    }
+  ],
+  "options": {
+    "timeout_s": 7200,
+    "keep_artifacts": true,
+    "waveforms": true,
+    "save_mode": "netlist"
+  },
+  "backend": "batch"
+}

@@ -1,0 +1,40 @@
+{
+  "schema": "sky130-pll.power.stages/1",
+  "block": "divider-n4",
+  "align_node": "v(fbclk)",
+  "tran_stop_s": 2.87e-07,
+  "stages": [
+    {
+      "id": "idle",
+      "kind": "idle",
+      "label": "clock gated off (idle)",
+      "f_in_hz": 0.0,
+      "t0": 0.0,
+      "t1": 1.07e-07,
+      "settle": 6.000000000000001e-08
+    },
+    {
+      "id": "f100m",
+      "kind": "active",
+      "label": "100 MHz input, N=4",
+      "f_in_hz": 100000000.0,
+      "t0": 1.07e-07,
+      "t1": 2.27e-07,
+      "settle": 4e-08,
+      "cycles": 1,
+      "div_n": 4
+    },
+    {
+      "id": "f250m",
+      "kind": "active",
+      "label": "250 MHz input, N=4",
+      "f_in_hz": 250000000.0,
+      "t0": 2.27e-07,
+      "t1": 2.87e-07,
+      "settle": 1.6e-08,
+      "cycles": 1,
+      "div_n": 4
+    }
+  ],
+  "note": "design/divider/divider_intN.sch configured N=4 (NSEL=3); the input clock is an ideal rail-to-rail source gated per stage; FBCLK is unloaded"
+}
