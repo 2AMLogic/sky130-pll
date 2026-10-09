@@ -4,10 +4,10 @@ This directory holds the PLL's own schematics (xschem), symbols, generated
 netlists, and per-block design-rationale notes — the design content itself,
 as distinct from `sim/` (evidence records) and `layout/` (DRC/LVS flow).
 
-No convention existed here before issue #24 (this directory previously held
-only a `.gitkeep`). This file documents the convention that issue set, so
+Historically, no convention existed here before issue #24 (this directory held
+only a `.gitkeep`). This file documents the convention that issue set, which
 the sibling block sub-issues of #14 (PFD/charge pump, loop filter, divider)
-and the eventual integration sub-issue follow the same shape.
+and the integration schematic (`top/`) follow.
 
 ## Directory / naming convention
 
@@ -23,8 +23,8 @@ design/
     DESIGN.md                   # topology choice, sizing rationale, and
                                  # the design targets this block is built
                                  # toward (not verified results — those are
-                                 # sim/ evidence, produced by a later
-                                 # testbench issue)
+                                 # sim/ evidence, produced by the block's
+                                 # testbenches)
     netlist/
       <block>.spice              # ngspice-compatible netlist snapshot,
                                    # generated from <block>.sch and
@@ -34,8 +34,8 @@ design/
 
 - **`<block>`** — a short slug for the sub-block. First instance:
   `vco` (issue #24, the ring-oscillator VCO core). Sibling blocks (PFD/charge
-  pump, loop filter, feedback divider) get their own `<block>/` directory
-  when their sub-issue lands. `top` (issue #28) is the one exception to
+  pump, loop filter, feedback divider) each have their own `<block>/`
+  directory. `top` (issue #28) is the one exception to
   "sub-block": it is the integration schematic that hierarchically
   instantiates all four sibling blocks into the closed PLL loop, following
   the same internal file shape (`top.sch`/`top.sym`/`DESIGN.md`/
@@ -89,17 +89,42 @@ matches its `.sch`, which only regenerating with xschem does.
 ## Relationship to `sim/`
 
 `design/<block>/<block>.sch` is the DUT a `sim/<experiment-slug>/testbench/`
-schematic instantiates (once a testbench exists for that block — none does
-yet for `vco`, that is a later issue, see #23). `sim/pdk-smoke` is unrelated
-plumbing (harness self-test, not a PLL block) and predates this convention;
-its own throwaway testbench circuit intentionally stays under
-`sim/pdk-smoke/testbench/`, not `design/`.
+schematic instantiates. Testbenches and their append-only evidence records
+exist under `sim/` for several of these designs, including the VCO
+([`sim/vco/`](../sim/vco/)), the feedback divider
+([`sim/divider/`](../sim/divider/)), the loop filter's linearized dynamics
+([`sim/loop-ac/`](../sim/loop-ac/)) and the closed-loop top level
+([`sim/pll/`](../sim/pll/), [`sim/pll-lock/`](../sim/pll-lock/)). The
+campaign list, with each campaign's claim and issue, is the table in
+[`sim/README.md`](../sim/README.md); a testbench or record being present does
+not mean the block meets any spec row.
+
+Where each spec row stands is settled by
+[`spec/target-spec.md`](../spec/target-spec.md) (ratified versus DRAFT) and
+the evidence is rolled up, row by row and without a verdict of its own, in
+[`measurements/report.md`](../measurements/report.md). Whether the block
+clears the tiered signoff checklist is settled only by
+[`signoff/tier-report.json`](../signoff/tier-report.json) (see
+[`signoff/README.md`](../signoff/README.md)). This file deliberately repeats
+none of those results.
+
+`sim/pdk-smoke` is unrelated plumbing (harness self-test, not a PLL block) and
+predates this convention; its own throwaway testbench circuit intentionally
+stays under `sim/pdk-smoke/testbench/`, not `design/`.
 
 ## Relationship to `layout/`
 
-`layout/` (klayout-tools DRC/LVS flow) is unrelated at this stage — no block
-here has layout yet. When a block gets one, `layout/<block>/` is expected to
-mirror this same `<block>` slug for cross-referencing.
+`layout/` (klayout-tools DRC/LVS flow) holds the physical side. The PLL
+layout drawn from `design/top/netlist/top.spice` lives in
+[`layout/pll/`](../layout/pll/) (start at its
+[`README.md`](../layout/pll/README.md); the record `reports/LATEST` names is
+the pass/fail evidence), and the flow reads the top-level snapshot described
+under "Regenerating parents after a child changes" above. Layout is organised
+around the composed `pll_top` cell rather than one directory per block, so
+there is no `layout/<block>/` mirroring this directory's slugs. A layout
+record's presence does not establish LVS or signoff completion: the layout
+records and [`signoff/tier-report.json`](../signoff/tier-report.json) say what
+was checked.
 
 ## Provenance
 

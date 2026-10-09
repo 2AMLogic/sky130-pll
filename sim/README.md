@@ -21,13 +21,15 @@ adapts the convention `2AMLogic/gf180-bandgap` ratified. Per this repo's
 `CLAUDE.md` harness-bootstrap rule (copy the sister-repo pattern rather than
 reinventing).
 
-**Scoped down for issue #2.** gf180-pll's version documents an entire mature
-PLL verification campaign table (lock-time, jitter, divider-ratio, ...) —
-none of that exists here yet. This file keeps the schema and the
-append-only/retention/no-fabricated-evidence rules gf180-pll ratified, and
-drops the campaign-specific sections (closed-loop assembly paths, the PFD
-internal-timestep bound, etc.) that do not apply until there is a PLL
-schematic. Those return, adapted, when the campaigns that need them land.
+**Historical: scoped down for issue #2.** At bootstrap, gf180-pll's version
+documented an entire mature PLL verification campaign table (lock-time,
+jitter, divider-ratio, ...) that had no counterpart here yet. This file kept
+the schema and the append-only/retention/no-fabricated-evidence rules
+gf180-pll ratified, and dropped the campaign-specific sections (closed-loop
+assembly paths, the PFD internal-timestep bound, etc.) that did not apply
+before there was a PLL schematic. PLL campaigns have since been added; the
+table below lists them, and each campaign's own `testbench/tb.json` manifest
+carries its method.
 
 ## Directory / naming convention
 
@@ -117,7 +119,7 @@ sim/
   |---|---|---|
   | `pdk-smoke` | does xschem+ngspice+sky130 run this DUT to completion across a real process/temperature/supply sweep — the harness's own plumbing self-test, not a PLL design claim | #2 |
   | `pdk-smoke` (`--mc`) | does the sky130 `MC_MM_SWITCH`/`MC_PR_SWITCH` statistical-sampling mechanism run this DUT to completion, seed by seed — the Monte Carlo harness's own plumbing self-test, not a PLL statistical-spec claim | #20 |
-  | `pll` | does the four-block closed-loop PLL netlist (`design/top/top.sch` — VCO + PFD/charge pump + loop filter + divider) netlist and simulate to completion across a real process/temperature/supply sweep — the first PLL-specific campaign, still a plumbing claim (no `spec/target-spec.md` row is ratified yet, and the transient window is far short of the loop's cold-start lock time), not a lock-time, frequency, or jitter claim | #23 |
+  | `pll` | does the four-block closed-loop PLL netlist (`design/top/top.sch` — VCO + PFD/charge pump + loop filter + divider) netlist and simulate to completion across a real process/temperature/supply sweep — the first PLL-specific campaign, still a plumbing claim (its manifest cites no `spec/target-spec.md` row, and the transient window is far short of the loop's cold-start lock time), not a lock-time, frequency, or jitter claim | #23 |
   | `pll-lock` | does the closed-loop PLL, driven cold-start from `design/top/top.sch`'s own power-on reset, lock its output to `N * Fref` within a real (multi-microsecond, not 200 ns) transient window — a measurement claim (output frequency, duty cycle, time-to-lock, or explicit no-lock), extracted via `sim/harness/measure.py`. Drives a 10 MHz reference, `NSEL[5:0]`=`N`=25 (target 250 MHz). **Re-tuned by issue #210's ngspice-tolerance audit, not yet re-run**: the manifest now declares `.options reltol=1e-4` with a 20 ps dump grid and TMAX pinned at 200 ps — the triple its own Monte Carlo sibling `pll-lock-mc` and the `lf-c1`/`lf-c2` sizing campaigns already run this identical four-block DUT under — because this campaign *gates* on **ratified** row 9 (`jitter.gate_on_bound` is true) and `integrator-floor` measured **1.543 % RMS of pure simulator error** on this design's own ring, at this campaign's own former 200 ps grid, through this campaign's own reducer, for a DUT whose true period jitter is zero. That is more than row 9's whole 1.0 % budget, so a gated verdict read off the old settings was not a verdict about the circuit. The standing `20260905-193322-0f1934d.md` record is **not** edited and **not** superseded — only a fresh record can supersede it, and the full-grid re-run at these settings is still owed. See `sim/tolerance-audit/README.md` | #52, #210 |
   | `pll-lock-1mhz` | sibling of `pll-lock`, same DUT and measurement layer, driven at spec row 3's DRAFT low reference-frequency band edge (1 MHz) instead of 10 MHz — `NSEL[5:0]`=`N`=64 (the divider's maximum representable ratio, target 64 MHz), the closest achievable target to `sim/vco/records/`'s characterized VCO tuning floor (~145.1 MHz) given the divider's `N<=64` ceiling; exercises spec row 3's frequency-range claim at more than the single 10 MHz point `pll-lock` drives | #55 |
   | `pll-lock-25mhz` | sibling of `pll-lock`, same DUT and measurement layer, driven at spec row 3's DRAFT high reference-frequency band edge (25 MHz) instead of 10 MHz — `NSEL[5:0]`=`N`=10 (target 250 MHz, deliberately the same target `pll-lock` uses, isolating the effect of reference frequency alone) | #55 |
@@ -171,15 +173,19 @@ pins the process-corner names the installed sky130 PDK actually defines
 `.lib` sections for (`tt`, `ss`, `ff`, `sf`, `fs`, plus the passive-only `ll`/
 `hh` axis); a manifest's `process_corners` must be a subset of that list.
 
-**This repo has no ratified supply flavor yet (#1, `DR-001` — `proposed`).**
-A testbench manifest's `supply_nominal`/`supply_tolerance` are that
-testbench's own bias, not a spec claim, until #1 ratifies row 0/1 of
-`spec/target-spec.md`. Nothing in this harness reads a spec value or gates
-pass/fail on one: the corner matrix comes from each manifest, and the
-per-point criterion is "did the simulator complete this point". Once #1
-ratifies, PLL campaigns state their corner matrix against the ratified
-supply range the same way gf180-pll states its 3.3 V ±10 % grid, and cite
-the ratifying `DR-NNN` in their records.
+The supply flavor and supply range are settled by ratified rows 0 and 1 of
+[`spec/target-spec.md`](../spec/target-spec.md) (`DR-001`, `DR-002`), and rows
+19 and 20 (`DR-003`) settle the process-corner and temperature grid; the spec
+is the authority for current row status. Historically this README was written
+while those rows were still proposed, and the bootstrap-era campaigns
+(`pdk-smoke`) keep the plumbing claim they were minted with. The harness never
+reads `spec/target-spec.md` itself: the corner matrix comes from each
+manifest, and the default per-point criterion is "did the simulator complete
+this point". A manifest may additionally declare a measurement bound for a
+**ratified** row and gate its verdict on it (`measure.jitter.gate_on_bound`,
+see `sim/harness/README.md`); a manifest's `supply_nominal`/`supply_tolerance`
+are otherwise that testbench's own bias, and a record cites the ratifying
+`DR-NNN` for any bound it applies.
 
 Any subset of a manifest's default grid (fewer temperatures, one supply, a
 single process corner) is allowed **only** with an in-record justification —
@@ -305,17 +311,17 @@ mode.** There are exactly two kinds:
   misses fails that trial. See `sim/harness/README.md`'s Monte Carlo section
   → "Per-trial criterion".
 
-Of `spec/target-spec.md`'s statistical-shaped rows, **row 9 (period jitter) is
-now RATIFIED** (`DR-006`, #151) — ≤ 1.0 % of the output period, RMS, at `CLK`
-in lock — while reference spur (row 10) and supply sensitivity (row 13) remain
-DRAFT. Row 9's extractor landed with #158 (`measure.period_jitter`, wired in
+Of `spec/target-spec.md`'s statistical-shaped rows, **row 9 (period jitter) was
+ratified by `DR-006`** (#151) — ≤ 1.0 % of the output period, RMS, at `CLK`
+in lock — while `DR-006` explicitly left reference spur (row 10) and supply
+sensitivity (row 13) DRAFT; the spec carries each row's current status. Row 9's extractor landed with #158 (`measure.period_jitter`, wired in
 through the manifest's `measure.jitter` block) and the first campaign to use it
 is **`pll-lock-mc`** (#20) — the statistical half of the verification `DR-006`
 names for that row, a local-mismatch + process draw population at one fixed PVT
 point.
 
-`sim/pll-lock-mc/records/20260924-222341-a9375a5.md` is that first record, and
-**it records a miss**: of 5 draws at `tt`/125 °C/1.80 V, 3 lock (at 26.32,
+`sim/pll-lock-mc/records/20260924-222341-a9375a5.md` is that first record
+(historical: later superseded, as described below), and **it recorded a miss**: of 5 draws at `tt`/125 °C/1.80 V, 3 lock (at 26.32,
 38.68 and 48.88 µs) and all 3 measure period jitter *above* the ratified
 1.0 % bound — 1.584 %, 1.851 % and 3.073 % RMS. Per `CLAUDE.md` a result that
 misses the spec is recorded as a miss; the bound is not relaxed to make it
@@ -401,8 +407,14 @@ Two limits of that record a reader is owed, both argued in the manifest's own
   5/5 meet row 9** (0.554–0.717 % RMS).
 
 Row 9's **deterministic** axis — a jitter column across the ratified
-rows 19 × 20 × 1 PVT grid — is still owed; `pll-lock`'s manifest does not yet
-declare a `measure.jitter` block.
+rows 19 × 20 × 1 PVT grid — is declared by `pll-lock`'s manifest
+([`pll-lock/testbench/tb.json`](pll-lock/testbench/tb.json), `measure.jitter`,
+gated on the ratified bound). Manifest support is not evidence: the committed
+[`pll-lock/records/`](pll-lock/records/) predate the manifest's current
+settings, and `pll-lock`'s row above says that the full-grid re-run at those
+settings is still owed. Do not infer that full-grid jitter evidence exists, or
+that it meets row 9, from the manifest; read the records themselves, and
+[`measurements/report.md`](../measurements/report.md) for how they roll up.
 
 ## Summary record format
 
@@ -412,9 +424,10 @@ report.py`) with these mandatory fields:
 - **Record ID** — matches the filename and the corresponding
   `netlist-snapshots/`/`corners/` subdirectory.
 - **Claim** — what this record substantiates, taken from the manifest's own
-  `claim` field. Until #1 ratifies the spec, no record here can state a
-  `spec/target-spec.md` claim (there is nothing ratified to check against
-  yet) — every record's claim is a plumbing or design-input claim.
+  `claim` field. A record's claim is limited to what its method supports: a
+  plumbing or design-input claim for most campaigns, and a verdict against a
+  `spec/target-spec.md` bound only where the manifest states a bound for a
+  **ratified** row. Evidence toward a DRAFT row is never a verdict on it.
 - **Spec row(s)** — which `spec/target-spec.md` row(s) this record supplies
   evidence *toward*, taken from the manifest's own **required** `spec_rows`
   field, or the literal `none -- <why>` when the experiment measures no spec
@@ -424,8 +437,14 @@ report.py`) with these mandatory fields:
   every record by construction (issue #152 — see `measurements/README.md`).
   `sim/run_corners.py` refuses to run an experiment whose manifest omits it,
   before resolving the PDK or simulating a point. **Citing a row is not
-  claiming it**: rows stay DRAFT until a decision record ratifies them, and
-  no record here may state a verdict on a spec row.
+  claiming it**: rows stay DRAFT until a decision record ratifies them, and a
+  record states a verdict on a row only against a bound that row's ratified
+  decision record supplies. Ratified criteria, DRAFT evidence and signoff
+  completion are three different things: a record meeting a ratified bound
+  does not clear a signoff item, which is graded only by
+  [`signoff/tier-report.json`](../signoff/tier-report.json); the spec is
+  [`spec/target-spec.md`](../spec/target-spec.md), and the row-by-row rollup of
+  records is [`measurements/report.md`](../measurements/report.md).
 - **Netlist provenance** — schematic path plus the SHA-256 of the frozen
   `netlist-snapshots/<record-id>.spice`.
 - **Environment provenance** — PDK variant + pinned open_pdks hash, model
