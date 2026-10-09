@@ -115,6 +115,25 @@ Two rules govern the repository, and most of its structure follows from them:
    that names the record it supersedes. So the repository keeps its own
    mistakes, in order, with the corrections attached.
 
+## Headless audit
+
+On a machine with bash, Node/npm and [uv](https://docs.astral.sh/uv/) but no
+system Python or `klt`, reproduce the PDK-free CI checks with one command from
+any directory:
+
+```
+bash scripts/audit-headless.sh
+```
+
+The wrapper creates (or reuses) a Python 3.11 + `klayout-tools==0.7.0`
+environment under `${XDG_CACHE_HOME:-~/.cache}/sky130-pll-audit-headless`
+(override with `AUDIT_HEADLESS_CACHE`), then runs `npm run check:ci` followed by
+`bash signoff/run-signoff.sh --check`, and prints the commit, tool versions and
+both statuses. An environment with the wrong versions is refused unless
+`AUDIT_HEADLESS_RECREATE=1`. Exit codes: 0 pass, 1 check failure or
+incompatible environment, 2 missing prerequisite, 3 provisioning failure. It
+runs no simulation and does not need the PDK.
+
 ## License
 
 Apache License 2.0 — see [LICENSE](LICENSE). Copyright 2026 2AM Logic.

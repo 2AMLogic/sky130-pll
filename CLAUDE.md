@@ -45,6 +45,23 @@ Apache-2.0.
   `2AMLogic/sky130-bandgap`. Copy the proven patterns rather than reinventing;
   record provenance (source repo, file, commit) where you do.
 
+## Headless audit entry command
+
+Auditors on a host without Python 3 or `klt` run the PDK-free checks with:
+
+```
+bash scripts/audit-headless.sh
+```
+
+It uses `uv` (a prerequisite it never installs; so are bash, node and npm) to
+build a cached Python 3.11 + `klayout-tools==0.7.0` environment outside the
+checkout, then runs `npm run check:ci` and `bash signoff/run-signoff.sh --check`
+with that environment on PATH, stopping at the first failure. It never runs
+simulation, installs the PDK or regenerates signoff evidence. When reporting,
+quote its summary block (commit, tool versions, both statuses); a missing
+prerequisite (exit 2) or provisioning failure (exit 3) is a host capability
+gap, not a repository regression. Do not call this wrapper from `check:ci`.
+
 <!-- BEGIN LOOM ORCHESTRATION -->
 This repository uses [Loom](https://github.com/rjwalters/loom) for AI-powered development orchestration — see the Loom repository for the full guide (roles, labels, worktrees, configuration). When installed, Loom also writes a locally-substituted copy of that guide to `.loom/CLAUDE.md`.
 <!-- END LOOM ORCHESTRATION -->
