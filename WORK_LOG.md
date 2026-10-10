@@ -4,6 +4,8 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 ### 2026-10-10
 
+- **PR #263**: sim: implement signed charge-pump analysis and synthetic reducers
+- **Issue #248** (closed): sim: implement signed charge-pump analysis and synthetic reducers
 - **Issue #246** (closed): sim: run and commit the divider Fmax full-grid record (follow-up to #244)
 
 ### 2026-10-09
