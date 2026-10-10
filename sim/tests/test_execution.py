@@ -24,6 +24,7 @@ simulations that never ran:
 from __future__ import annotations
 
 import json
+import re
 import sys
 import threading
 import time
@@ -33,6 +34,7 @@ from unittest import mock
 
 SIM_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(SIM_DIR))
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # sibling test modules
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
@@ -41,9 +43,12 @@ from harness import acmeasure as ac_mod  # noqa: E402
 from harness import checkpoint as checkpoint_mod  # noqa: E402
 from harness import cli  # noqa: E402
 from harness import corners  # noqa: E402
+from harness import cpmeasure as cp_mod  # noqa: E402
+from harness import executor as executor_mod  # noqa: E402
 from harness import measure as measure_mod  # noqa: E402
 from harness import montecarlo as mc_mod  # noqa: E402
 from harness import runner  # noqa: E402
+import test_cpmeasure as cpt  # noqa: E402
 
 RECORD_ID = "20260101-000000-abc1234"
 
@@ -86,6 +91,81 @@ NETLIST = (
 
 def _point_result(point, reason="ok", passed=True):
     return runner.PointResult(point=point, passed=passed, reason=reason)
+
+
+# --------------------------------------------------------------------------
+# Charge-pump (`cp`) fixtures -- shared with test_executor.py / test_harness.py
+# --------------------------------------------------------------------------
+
+CP_LOG = "ngspice-46\n" + cp_mod.COMPLETION_MARKER + "\n"
+CP_OP_TEXT = "0 0.62 1.1 2.5e-5\n"
+
+
+def _cp_block() -> dict:
+    """The test_cpmeasure `cp` block on a 3-point VCTRL grid (kept small)."""
+    import copy
+
+    block = copy.deepcopy(cpt.MANIFEST["cp"])
+    block["vctrl_fractions"] = [0.3, 0.5, 0.7]
+    return block
+
+
+CP_MANIFEST = {
+    **MANIFEST,
+    "claim": "charge-pump integration fixture -- not a design claim",
+    "spec_rows": [10],
+    "spec_rows_note": (
+        "partial mechanism evidence only (charge-asymmetry mechanism of "
+        "the reference spur); row 10 stays DRAFT"
+    ),
+    "cp": _cp_block(),
+}
+
+
+def cp_spec() -> "cp_mod.CpSpec":
+    return cp_mod.CpSpec.from_manifest(CP_MANIFEST)
+
+
+def cp_dump_texts(spec, prefix: str, *, iup: float = 100e-6, drop=()) -> dict:
+    """{filename: text} for every dump the control block promises."""
+    out = {}
+    for name in cp_mod.waveform_names(spec, prefix):
+        if name in drop:
+            continue
+        if name == cp_mod.op_dump_name(prefix):
+            out[name] = CP_OP_TEXT
+            continue
+        m = re.search(r"_v(\d\d)_p(\d\d)\.raw$", name)
+        pj = int(m.group(2))
+        out[name] = cpt.synth_dump(spec, spec.phase_offsets_s[pj], iup=iup, idn=100e-6)
+    return out
+
+
+def cp_execute(*, iup: float = 100e-6, drop=(), log: str = CP_LOG, rc: int = 0, timed_out: bool = False):
+    """An executor-seam callable that "runs ngspice" by writing synthetic dumps."""
+    spec = cp_spec()
+
+    def execute(unit):
+        unit.work_dir.mkdir(parents=True, exist_ok=True)
+        runner.purge_unit_artifacts(unit.work_dir, unit.corner_id)
+        if not timed_out:
+            for name, text in cp_dump_texts(
+                spec, f"{unit.corner_id}-", iup=iup, drop=drop
+            ).items():
+                (unit.work_dir / name).write_text(text)
+        unit.spice_path.write_text(unit.netlist_text)
+        unit.log_path.write_text(log)
+        return executor_mod.NgspiceOutcome(
+            corner_id=unit.corner_id,
+            returncode=rc,
+            log_text=log,
+            log_path=unit.log_path,
+            spice_path=unit.spice_path,
+            timed_out=timed_out,
+        )
+
+    return execute
+
 
 
 class _Harness:
@@ -828,6 +908,337 @@ class StaleArtifactTests(unittest.TestCase):
             self.assertFalse(passed)
             self.assertIn("timeout", reason)
             self.assertFalse(stale.exists())
+
+
+class CpDispatchTests(unittest.TestCase):
+    """`cp` is a third, mutually exclusive analysis branch of prepare/run_point."""
+
+    POINT = corners.PvtPoint(corner="tt", temp_c=27.0, supply_v=1.8)
+
+    def _run(self, work, **kw):
+        return runner.run_point(
+            _StubPdk(), Path("/unused"), CP_MANIFEST, NETLIST, self.POINT, work,
+            execute=cp_execute(**kw),
+        )
+
+    def test_prepare_point_injects_the_cp_control_block_with_the_unit_prefix(self):
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            unit = runner.prepare_point(CP_MANIFEST, NETLIST, self.POINT, Path(tmp))
+        spec = cp_spec()
+        self.assertEqual(unit.completion_marker, cp_mod.COMPLETION_MARKER)
+        self.assertEqual(unit.timeout_s, spec.timeout_s)
+        self.assertIn(cp_mod.COMPLETION_MARKER, unit.netlist_text)
+        for name in cp_mod.waveform_names(spec, f"{self.POINT.corner_id}-"):
+            self.assertIn(name, unit.netlist_text)
+        # supply is patched per point and the control block uses that supply
+        self.assertIn(".temp 27", unit.netlist_text)
+        self.assertTrue(unit.netlist_text.index(".endc") < unit.netlist_text.rindex(".end"))
+
+    def test_prepare_point_is_pure(self):
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            a = runner.prepare_point(CP_MANIFEST, NETLIST, self.POINT, Path(tmp))
+            b = runner.prepare_point(CP_MANIFEST, NETLIST, self.POINT, Path(tmp))
+        self.assertEqual(a, b)
+
+    def test_conflicting_analysis_blocks_are_rejected_before_any_run(self):
+        import copy
+        import tempfile
+
+        for other, block in (
+            ("measure", {"node": "x", "tran_step": "1n", "tran_stop": "1u"}),
+            ("ac", {"node": "x"}),
+        ):
+            m = copy.deepcopy(CP_MANIFEST)
+            m[other] = block
+            with self.subTest(other=other), tempfile.TemporaryDirectory() as tmp:
+                with self.assertRaises(cp_mod.CpError) as ctx:
+                    runner.prepare_point(m, NETLIST, self.POINT, Path(tmp))
+                self.assertIn("exactly one analysis block", str(ctx.exception))
+                with self.assertRaises(cp_mod.CpError):
+                    runner.run_point(
+                        _StubPdk(), Path("/unused"), m, NETLIST, self.POINT, Path(tmp),
+                        execute=cp_execute(),
+                    )
+
+    def test_a_cp_manifest_is_not_silently_run_as_a_monte_carlo_plumbing_check(self):
+        import tempfile
+
+        trial = mc_mod.McTrial(
+            trial=1, seed=1, corner="tt", temp_c=27.0, supply_v=1.8,
+            mismatch=True, process=False,
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaises(cp_mod.CpError):
+                runner.prepare_mc_trial(CP_MANIFEST, NETLIST, trial, Path(tmp))
+            with self.assertRaises(cp_mod.CpError):
+                runner.run_mc_trial(
+                    _StubPdk(), Path("/unused"), CP_MANIFEST, NETLIST, trial, Path(tmp)
+                )
+
+    def test_complete_run_reduces_every_dump_through_the_seam(self):
+        import tempfile
+
+        spec = cp_spec()
+        with tempfile.TemporaryDirectory() as tmp:
+            work = Path(tmp)
+            res = self._run(work)
+            self.assertTrue(res.passed, res.reason)
+            self.assertEqual(res.reason, "ok")
+            (sweep,) = res.measurements
+            self.assertIsInstance(sweep, cp_mod.CpSweepResult)
+            self.assertAlmostEqual(sweep.vdd, 1.8)
+            # reduction == reducing the very same files directly
+            prefix = f"{self.POINT.corner_id}-"
+            dumps = {n: (work / n).read_text() for n in cp_mod.waveform_names(spec, prefix)}
+            self.assertEqual(sweep, cp_mod.reduce_cp_sweep(spec, 1.8, dumps, prefix))
+            self.assertTrue(sweep.op.available)
+            self.assertEqual(len(sweep.points), 3 * 5)
+            self.assertEqual(len(sweep.diagnostic_points), 3)
+            self.assertEqual(len(sweep.resolution), 3)
+
+    def test_missing_dump_fails_the_unit_and_keeps_coordinates(self):
+        import tempfile
+
+        spec = cp_spec()
+        prefix = f"{self.POINT.corner_id}-"
+        gone = cp_mod.sweep_dump_name(1, 3, prefix)
+        with tempfile.TemporaryDirectory() as tmp:
+            res = self._run(Path(tmp), drop={gone})
+        self.assertFalse(res.passed)
+        self.assertIn(gone, res.reason)
+        (sweep,) = res.measurements
+        bad = sweep.point(1, 3)
+        self.assertFalse(bad.available)
+        self.assertEqual(bad.coord.vctrl_fraction, 0.5)
+        self.assertAlmostEqual(bad.coord.offset_s, spec.phase_offsets_s[3])
+        self.assertTrue(sweep.point(1, 2).available)
+
+    def test_missing_op_or_diagnostic_dump_also_fails_the_unit(self):
+        import tempfile
+
+        spec = cp_spec()
+        prefix = f"{self.POINT.corner_id}-"
+        vi, pj = spec.diagnostic_coordinates()[0]
+        for gone in (
+            cp_mod.op_dump_name(prefix),
+            cp_mod.sweep_dump_name(vi, pj, prefix, diagnostic=True),
+        ):
+            with self.subTest(gone=gone), tempfile.TemporaryDirectory() as tmp:
+                res = self._run(Path(tmp), drop={gone})
+                self.assertFalse(res.passed)
+                self.assertIn(gone, res.reason)
+
+    def test_unparseable_dump_fails_with_its_reason(self):
+        import tempfile
+
+        spec = cp_spec()
+        prefix = f"{self.POINT.corner_id}-"
+        victim = cp_mod.sweep_dump_name(0, 0, prefix)
+        base = cp_execute()
+
+        def execute(unit):
+            out = base(unit)
+            (unit.work_dir / victim).write_text("0 nan 0 0\n1 2 3 4\n")
+            return out
+
+        with tempfile.TemporaryDirectory() as tmp:
+            res = runner.run_point(
+                _StubPdk(), Path("/unused"), CP_MANIFEST, NETLIST, self.POINT,
+                Path(tmp), execute=execute,
+            )
+        self.assertFalse(res.passed)
+        self.assertIn("incomplete", res.reason)
+        self.assertFalse(res.measurements[0].point(0, 0).available)
+        self.assertEqual(spec.vctrl_fractions[0], res.measurements[0].point(0, 0).coord.vctrl_fraction)
+
+    def test_timeout_and_ngspice_errors_keep_the_shared_judge(self):
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            res = self._run(Path(tmp), timed_out=True, rc=-1, log="")
+            self.assertFalse(res.passed)
+            self.assertIn(f"{cp_spec().timeout_s} s per-point timeout", res.reason)
+            self.assertEqual(res.measurements, ())
+        with tempfile.TemporaryDirectory() as tmp:
+            res = self._run(Path(tmp), log="Error: singular matrix\n" + CP_LOG)
+            self.assertFalse(res.passed)
+            self.assertIn("singular matrix", res.reason)
+            self.assertEqual(res.measurements, ())
+        with tempfile.TemporaryDirectory() as tmp:
+            res = self._run(Path(tmp), log="Total analysis time = 1\n")  # wrong marker
+            self.assertFalse(res.passed)
+            self.assertIn(cp_mod.COMPLETION_MARKER, res.reason)
+
+    def test_unavailable_plateau_is_reported_but_is_not_an_execution_failure(self):
+        import tempfile
+
+        # A flat zero current never produces a valid plateau/compliance window,
+        # yet the dumps are complete: execution passes, availability says no.
+        with tempfile.TemporaryDirectory() as tmp:
+            res = self._run(Path(tmp), iup=0.0)
+            (sweep,) = res.measurements
+            self.assertTrue(res.passed, res.reason)
+            self.assertFalse(sweep.compliance.both.available)
+
+    def test_stale_dumps_of_an_interrupted_attempt_cannot_satisfy_a_rerun(self):
+        import subprocess
+        import tempfile
+
+        spec = cp_spec()
+        prefix = f"{self.POINT.corner_id}-"
+        gone = cp_mod.sweep_dump_name(2, 4, prefix)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            work = Path(tmp)
+            (work / "spiceinit-src").write_text("* stub\n")
+            # The interrupted attempt left a complete, different set behind.
+            for name, text in cp_dump_texts(spec, prefix, iup=50e-6).items():
+                (work / name).write_text(text)
+            self.assertTrue((work / gone).is_file())
+
+            def fake_ngspice(cmd, **kw):
+                # the rerun writes everything except one dump
+                for name, text in cp_dump_texts(spec, prefix, drop={gone}).items():
+                    (Path(kw["cwd"]) / name).write_text(text)
+                return subprocess.CompletedProcess(cmd, 0, stdout=CP_LOG, stderr="")
+
+            backend = executor_mod.LocalBackend(pdk=_StubPdk(), spiceinit=work / "spiceinit-src")
+            with mock.patch.object(runner.subprocess, "run", side_effect=fake_ngspice):
+                res = runner.run_point(
+                    _StubPdk(), work / "spiceinit-src", CP_MANIFEST, NETLIST, self.POINT,
+                    work, execute=backend.execute,
+                )
+            self.assertFalse(res.passed)
+            self.assertIn(gone, res.reason)
+            (sweep,) = res.measurements
+            self.assertFalse(sweep.point(2, 4).available)
+            self.assertIn("dump missing", sweep.point(2, 4).reason)
+            # the rest is the new attempt's data (100 uA), not the stale 50 uA
+            pl = sweep.point(1, spec.offset_index(25e-9)).plateau
+            self.assertAlmostEqual(pl.current_a, 100e-6, delta=1e-9)
+
+
+class CpResumeTests(unittest.TestCase):
+    """Interrupted CP campaign resumes to the same reduced output as an
+    uninterrupted one, through the real checkpoint file."""
+
+    def _stub(self, seen, kill_after=None, stale_first=False):
+        real = runner.run_point
+        state = {"done": 0}
+
+        def run_point(pdk, spiceinit, manifest, netlist_text, point, work_dir):
+            if kill_after is not None and state["done"] >= kill_after:
+                if stale_first:
+                    # a half-written attempt at the next unit: some dumps, no result
+                    work_dir.mkdir(parents=True, exist_ok=True)
+                    for name, text in list(
+                        cp_dump_texts(cp_spec(), f"{point.corner_id}-", iup=50e-6).items()
+                    )[:5]:
+                        (work_dir / name).write_text(text)
+                raise KeyboardInterrupt("simulated host kill, mid-unit")
+            state["done"] += 1
+            res = real(pdk, spiceinit, manifest, netlist_text, point, work_dir,
+                       execute=cp_execute())
+            seen[point.corner_id] = res
+            return res
+
+        return run_point
+
+    def test_resumed_results_equal_uninterrupted_results(self):
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp_a, tempfile.TemporaryDirectory() as tmp_b:
+            clean = {}
+            ha = _Harness(Path(tmp_a), manifest=CP_MANIFEST)
+            rc, out = ha.run([], self._stub(clean))
+            self.assertEqual(rc, 0, out)
+            self.assertEqual(len(clean), 6)
+
+            hb = _Harness(Path(tmp_b), manifest=CP_MANIFEST)
+            first = {}
+            with self.assertRaises(KeyboardInterrupt):
+                hb.run([], self._stub(first, kill_after=2, stale_first=True))
+            self.assertFalse(hb.record_path.exists())
+            _hdr, done = checkpoint_mod.load(hb.checkpoint_path)
+            self.assertEqual(sorted(done), sorted(first))
+            # nested CP dataclass types were restored, not flattened
+            sweep = next(iter(done.values())).measurements[0]
+            self.assertIsInstance(sweep, cp_mod.CpSweepResult)
+            self.assertIsInstance(sweep.points[0].coord, cp_mod.CpCoordinate)
+            self.assertIsInstance(sweep.compliance.up, cp_mod.ComplianceWindow)
+
+            second = {}
+            rc, out = hb.run(["--resume", RECORD_ID], self._stub(second))
+            self.assertEqual(rc, 0, out)
+            self.assertEqual(sorted(second), sorted(set(clean) - set(first)))
+
+            merged = {**done, **second}
+            self.assertEqual(merged, clean)
+            text = hb.record_path.read_text()
+            self.assertIn("2 segment(s)", text)
+            self.assertIn("Resolution diagnostic", text)
+            self.assertFalse(hb.checkpoint_path.exists())
+
+    def test_cli_rejects_conflicting_blocks_before_any_unit_runs(self):
+        import copy
+        import tempfile
+
+        m = copy.deepcopy(CP_MANIFEST)
+        m["ac"] = {"node": "x"}
+        called = []
+        with tempfile.TemporaryDirectory() as tmp:
+            h = _Harness(Path(tmp), manifest=m)
+
+            def run_point(*a, **k):
+                called.append(a)
+
+            rc, out = h.run([], run_point)
+        self.assertEqual(rc, 1)
+        self.assertIn("exactly one analysis block", out)
+        self.assertEqual(called, [])
+
+    def test_cli_rejects_cp_in_monte_carlo_mode(self):
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            h = _Harness(Path(tmp), manifest=CP_MANIFEST)
+            rc, out = h.run(["--mc"], lambda *a, **k: None)
+        self.assertEqual(rc, 1)
+        self.assertIn("no Monte Carlo mode", out)
+
+
+class CpCheckpointRoundTripTests(unittest.TestCase):
+    POINT = corners.PvtPoint(corner="tt", temp_c=27.0, supply_v=1.8)
+
+    def test_unavailable_entries_reasons_and_resolution_deltas_survive(self):
+        import tempfile
+
+        spec = cp_spec()
+        prefix = f"{self.POINT.corner_id}-"
+        gone = cp_mod.sweep_dump_name(0, 1, prefix)
+        dumps = cp_dump_texts(spec, prefix, drop={gone, cp_mod.op_dump_name(prefix)})
+        sweep = cp_mod.reduce_cp_sweep(spec, 1.8, dumps, prefix)
+        result = runner.PointResult(self.POINT, False, "incomplete", (sweep,))
+        fp = CheckpointFileTests.FINGERPRINT
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / checkpoint_mod.CHECKPOINT_NAME
+            ckpt = checkpoint_mod.start(path, record_id=RECORD_ID, slug="fake", fp=fp)
+            ckpt.record(self.POINT.corner_id, result)
+            _h, loaded = checkpoint_mod.load(path)
+        back = loaded[self.POINT.corner_id]
+        self.assertEqual(back, result)
+        got = back.measurements[0]
+        self.assertFalse(got.op.available)
+        self.assertIn("dump missing", got.op.reason)
+        self.assertIn("dump missing", got.point(0, 1).reason)
+        self.assertEqual(got.point(0, 1).coord, sweep.point(0, 1).coord)
+        self.assertEqual(got.resolution, sweep.resolution)
+        self.assertEqual(got.diagnostic_points, sweep.diagnostic_points)
+        self.assertEqual(got.slopes, sweep.slopes)
 
 
 if __name__ == "__main__":

@@ -54,6 +54,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from . import acmeasure as ac_mod
+from . import cpmeasure as cp_mod
 from . import measure as measure_mod
 from .corners import PvtPoint
 from .montecarlo import McTrial
@@ -91,6 +92,18 @@ _SERIALIZABLE = (
     measure_mod.Measurement,
     ac_mod.AcMeasurement,
     ac_mod.LoopGainPoint,
+    # Charge-pump result tree (`PointResult.measurements` holds one
+    # `CpSweepResult` per point); every nested dataclass must be listed.
+    cp_mod.CpSweepResult,
+    cp_mod.OpResult,
+    cp_mod.CpPhaseResult,
+    cp_mod.CpCoordinate,
+    cp_mod.CycleCharge,
+    cp_mod.PlateauResult,
+    cp_mod.SlopeResult,
+    cp_mod.ComplianceResult,
+    cp_mod.ComplianceWindow,
+    cp_mod.ResolutionDelta,
     PointResult,
     McTrialResult,
 )

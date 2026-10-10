@@ -725,6 +725,38 @@ changes (`diagnostic.material_fraction`, default 5%), and sets
 `converged=False` for either; it is an accuracy diagnostic, not a design
 bound.
 
+### Harness integration (issue #249)
+
+`cp` is a third, mutually exclusive analysis branch beside `measure` and `ac`
+in `runner.prepare_point`/`run_point`, `cli.cmd_run` and `report.render`.
+
+- **Validation**: a `cp` block combined with `measure` or `ac` is rejected
+  before any unit runs (`CpError`, a `MeasureError`, so the CLI exits 1). A
+  `cp` manifest has no Monte Carlo mode: `--mc` refuses it instead of running
+  it as a plumbing-only check.
+- **Preparation / execution**: the unit's control block is
+  `build_cp_control_block(spec, point.supply_v, "<corner-id>-")`; the
+  completion marker and per-point timeout are the `cp` block's. Local and
+  remote execution share this preparation and the same judge. Dumps are named
+  `<corner-id>-cp*.raw`, so `purge_unit_artifacts` (local) and
+  `RemoteBackend.stage` (remote) clear a previous attempt's files first and
+  `pull_artifacts` lands the new ones where the local run writes them.
+- **Verdict**: a unit PASSes when ngspice completed and *every* promised dump
+  (operating point, main grid, diagnostic) exists and parses. An unavailable
+  plateau, slope or compliance window is a measurement outcome, reported with
+  its reason in the record, not an execution failure. The provisional
+  tolerances never gate a verdict. A failed unit still carries its
+  `CpSweepResult` (with explicit unavailable entries) when ngspice completed.
+- **Resume**: the whole `CpSweepResult` tree is registered in
+  `checkpoint._SERIALIZABLE` and round-trips with its coordinates, operating
+  point, unavailable reasons and resolution deltas.
+- **Record**: the methodology states the stimulus, sweeps, windows and
+  polarity; the result adds operating-point and compliance, per-VCTRL
+  plateau/zero-offset-charge/slope, the midrail phase curve, an explicit
+  unavailable-entries list and the resolution diagnostic. The manifest's
+  `spec_rows`/`spec_rows_note` supply the (mechanism-only) row citation that
+  `measurements/aggregate.py` discovers without any aggregator change.
+
 ## Monte Carlo (`--mc`)
 
 `sim/run_corners.py <slug> --mc` runs a **statistical variation** campaign

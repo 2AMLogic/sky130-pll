@@ -19,6 +19,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from . import acmeasure as ac_mod
+from . import cpmeasure as cp_mod
 from . import executor as executor_mod
 from . import measure as measure_mod
 from .corners import PvtPoint
@@ -147,6 +148,7 @@ def patch_netlist(
     spec=None,
     prefix: str = "",
     ac_spec=None,
+    cp_spec=None,
 ) -> str:
     text = _substitute_corner_and_supply(netlist_text, manifest, point.corner, point.supply_v)
 
@@ -166,6 +168,12 @@ def patch_netlist(
         # per-swept-point loop-gain `alter` from the manifest's `ac` block
         # (see sim/harness/acmeasure.py).
         injected += ac_mod.build_ac_control_block(ac_spec, prefix)
+    elif cp_spec is not None:
+        # And for a charge-pump manifest: the harness injects the operating
+        # point, every VCTRL x phase-offset transient and the diagnostic
+        # re-runs from the manifest's `cp` block, at this point's own supply
+        # (see sim/harness/cpmeasure.py).
+        injected += cp_mod.build_cp_control_block(cp_spec, point.supply_v, prefix)
     text = _END_CARD_RE.sub(lambda m: f"{injected}{m.group(1)}", text, count=1)
     return text
 
@@ -422,6 +430,37 @@ def _run_ngspice_and_judge(
     return passed, reason, outcome.log_path, outcome.spice_path
 
 
+def _analysis_specs(manifest: dict) -> tuple:
+    """Parse the manifest's analysis block: `(spec, ac_spec, cp_spec)`.
+
+    A manifest declares at most one analysis mode. The charge-pump parser is
+    consulted first because it rejects a `cp` block combined with `measure` or
+    `ac` (raising `cpmeasure.CpError`, a `MeasureError`); an `ac` block next to
+    a `measure` block is rejected here for the same reason. At most one of the
+    three returned specs is not `None`.
+    """
+    cp_spec = cp_mod.CpSpec.from_manifest(manifest)
+    if cp_spec is not None:
+        return None, None, cp_spec
+    spec = measure_mod.MeasureSpec.from_manifest(manifest)
+    ac_spec = ac_mod.AcSpec.from_manifest(manifest)
+    if spec is not None and ac_spec is not None:
+        raise measure_mod.MeasureError(
+            "manifest declares both a `measure` block and an `ac` block -- a "
+            "testbench runs one analysis mode per manifest"
+        )
+    return spec, ac_spec, None
+
+
+def _reject_cp_in_monte_carlo(manifest: dict) -> None:
+    """A `cp` manifest has no Monte Carlo mode; never run it as plumbing."""
+    if manifest.get("cp"):
+        raise cp_mod.CpError(
+            "manifest declares a `cp` block, which has no Monte Carlo mode; a "
+            "Monte Carlo run would silently treat it as a plumbing-only check"
+        )
+
+
 def prepare_point(
     manifest: dict, netlist_text: str, point: PvtPoint, work_dir: Path
 ) -> executor_mod.NgspiceUnit:
@@ -432,16 +471,17 @@ def prepare_point(
     front (`executor.RemoteBackend.stage`) while `run_point` still derives
     the identical unit per point when it judges the result.
     """
-    spec = measure_mod.MeasureSpec.from_manifest(manifest)
-    ac_spec = ac_mod.AcSpec.from_manifest(manifest) if spec is None else None
+    spec, ac_spec, cp_spec = _analysis_specs(manifest)
     prefix = f"{point.corner_id}-"
     patched = patch_netlist(
-        netlist_text, manifest, point, spec=spec, prefix=prefix, ac_spec=ac_spec
+        netlist_text, manifest, point, spec=spec, prefix=prefix, ac_spec=ac_spec, cp_spec=cp_spec
     )
     if spec is not None:
         marker, timeout_s = measure_mod.COMPLETION_MARKER, spec.timeout_s
     elif ac_spec is not None:
         marker, timeout_s = ac_mod.COMPLETION_MARKER, ac_spec.timeout_s
+    elif cp_spec is not None:
+        marker, timeout_s = cp_mod.COMPLETION_MARKER, cp_spec.timeout_s
     else:
         marker, timeout_s = COMPLETION_MARKER, 300
     return executor_mod.NgspiceUnit(
@@ -464,6 +504,7 @@ def prepare_mc_trial(
     completion marker and per-trial timeout budget a PVT point of that
     manifest would, instead of the plumbing-only default.
     """
+    _reject_cp_in_monte_carlo(manifest)
     spec = measure_mod.MeasureSpec.from_manifest(manifest)
     prefix = f"{trial.corner_id}-" if spec is not None else ""
     patched = patch_netlist_mc(netlist_text, manifest, trial, spec=spec, prefix=prefix)
@@ -489,8 +530,7 @@ def run_point(
     work_dir: Path,
     execute=None,
 ) -> PointResult:
-    spec = measure_mod.MeasureSpec.from_manifest(manifest)
-    ac_spec = ac_mod.AcSpec.from_manifest(manifest) if spec is None else None
+    spec, ac_spec, cp_spec = _analysis_specs(manifest)
     prefix = f"{point.corner_id}-"
     unit = prepare_point(manifest, netlist_text, point, work_dir)
     passed, reason, _log_path, _spice_path = _run_ngspice_and_judge(
@@ -508,6 +548,10 @@ def run_point(
         measurements, passed, reason = _reduce_measurements(spec, point.supply_v, work_dir, prefix)
     elif passed and ac_spec is not None:
         measurements, passed, reason = _reduce_ac_measurements(ac_spec, work_dir, prefix)
+    elif passed and cp_spec is not None:
+        measurements, passed, reason = _reduce_cp_measurements(
+            cp_spec, point.supply_v, work_dir, prefix
+        )
     return PointResult(
         point=point,
         passed=passed,
@@ -596,6 +640,55 @@ def _reduce_ac_measurements(spec, work_dir: Path, prefix: str):
     return tuple(measurements), passed, reason
 
 
+def _reduce_cp_measurements(spec, supply_v: float, work_dir: Path, prefix: str):
+    """Read one unit's charge-pump dumps back and reduce them.
+
+    Returns `(measurements, passed, reason)` where `measurements` is a
+    one-element tuple holding the point's `CpSweepResult`. Two claims are kept
+    apart: *execution completeness* (every dump the control block promises --
+    operating point, main grid and diagnostic -- exists and parses) decides
+    `passed`; *measurement availability* (a plateau, slope or compliance
+    window that the data cannot support) is reported inside the result with its
+    reason and never turns into a pass or a fail here. Provisional compliance
+    thresholds are descriptive and play no part in the verdict.
+
+    A missing or unreadable dump keeps its sweep coordinates in the result as
+    an unavailable entry (`reduce_cp_sweep`) and fails the unit, so an
+    incomplete unit can never be read back as a valid measurement -- the same
+    holds after a resume, because the stale files of an earlier attempt are
+    purged before each attempt (`purge_unit_artifacts`).
+    """
+    names = cp_mod.waveform_names(spec, prefix)
+    dumps: dict = {}
+    unreadable: dict = {}
+    for name in names:
+        path = work_dir / name
+        if not path.is_file():
+            continue
+        try:
+            dumps[name] = path.read_text()
+        except (OSError, UnicodeDecodeError) as exc:
+            unreadable[name] = str(exc)
+    result = cp_mod.reduce_cp_sweep(spec, supply_v, dumps, prefix)
+
+    problems = [
+        f"no CP waveform dump {n!r}" for n in names if n not in dumps and n not in unreadable
+    ]
+    problems += [f"unreadable CP dump {n!r}: {why}" for n, why in unreadable.items()]
+    problems += [
+        f"{p.coord.vctrl_fraction:g}VDD/{p.coord.offset_s:g}s: {p.reason}"
+        for p in (*result.points, *result.diagnostic_points)
+        if not p.available and p.reason and not p.reason.startswith("dump missing")
+    ]
+    if spec.op_vectors and not result.op.available and not result.op.reason.startswith("dump missing"):
+        problems.append(f"operating point: {result.op.reason}")
+    if problems:
+        head = "; ".join(problems[:3])
+        more = f" (+{len(problems) - 3} more)" if len(problems) > 3 else ""
+        return (result,), False, f"ngspice completed but charge-pump analysis is incomplete: {head}{more}"
+    return (result,), True, "ok"
+
+
 def run_mc_trial(
     pdk: ResolvedPdk,
     spiceinit: Path,
@@ -621,6 +714,7 @@ def run_mc_trial(
     fails the trial, and the trial's `measurements` carry the same
     `Measurement` a PVT point's would (frequency, lock, period jitter, ...).
     """
+    _reject_cp_in_monte_carlo(manifest)
     spec = measure_mod.MeasureSpec.from_manifest(manifest)
     prefix = f"{trial.corner_id}-" if spec is not None else ""
     unit = prepare_mc_trial(manifest, netlist_text, trial, work_dir)
