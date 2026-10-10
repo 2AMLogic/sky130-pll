@@ -24,6 +24,7 @@ _None._
 Issues currently being built (`loom:building`).
 
 - **#244**: sim: record divider Fmax boundaries across PVT for digital T1 characterization
+- **#248**: sim: implement signed charge-pump analysis and synthetic reducers
 
 ## PRs Awaiting Review
 
@@ -52,6 +53,7 @@ Issues carrying `loom:curated`.
 - **#233**: sim: no sky130 power measurement exists, so spec row 12 cannot be re-budgeted *(curated)*
 - **#239**: Guard: recognize bounded explicit /tmp mktemp templates while preserving containment *(curated)*
 - **#244**: sim: record divider Fmax boundaries across PVT for digital T1 characterization *(curated)*
+- **#248**: sim: implement signed charge-pump analysis and synthetic reducers *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -70,10 +72,10 @@ _None._
 | Operator merge-risk holds | 0 |
 | Operator priority | 0 |
 | Ready (`loom:issue`) | 0 |
-| In Progress (`loom:building`) | 1 |
+| In Progress (`loom:building`) | 2 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
-| Curated | 11 |
+| Curated | 12 |
 | Architect / Hermit proposals | 3 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
