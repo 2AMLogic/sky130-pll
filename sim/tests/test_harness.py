@@ -13,16 +13,20 @@ from pathlib import Path
 
 SIM_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(SIM_DIR))
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # sibling test modules
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 
 from harness import cli  # noqa: E402
 from harness import corners  # noqa: E402
+from harness import cpmeasure as cp_mod  # noqa: E402
 from harness import pdk as pdk_mod  # noqa: E402
 from harness import report  # noqa: E402
 from harness import runner  # noqa: E402
 from scripts.git_status import porcelain_paths  # noqa: E402
+
+import test_execution as exec_tests  # noqa: E402
 
 
 class SupplyPointsTests(unittest.TestCase):
@@ -624,6 +628,135 @@ class RenderMethodologyTests(unittest.TestCase):
     def test_record_can_state_an_explicit_none(self):
         text = self._render(spec_rows_line="none -- harness plumbing")
         self.assertIn("- **Spec row(s)**: none -- harness plumbing", text)
+
+
+class CpRecordRenderTests(unittest.TestCase):
+    """A rendered charge-pump record: complete, honest about unavailable
+    entries, never a ratified-spec PASS -- and found by the aggregator."""
+
+    POINTS = [
+        corners.PvtPoint(corner="tt", temp_c=27.0, supply_v=1.8),
+        corners.PvtPoint(corner="ss", temp_c=125.0, supply_v=1.62),
+    ]
+
+    class _StubPdk:
+        variant = "sky130A"
+        resolved_commit = "0" * 40
+        pinned_commit = "0" * 40
+        commit_mismatch = False
+        ngspice_lib = Path("/fake/sky130.lib.spice")
+
+    def _results(self, tmp):
+        out = []
+        for i, p in enumerate(self.POINTS):
+            drop = {cp_mod.sweep_dump_name(1, 3, f"{p.corner_id}-")} if i == 1 else set()
+            out.append(
+                runner.run_point(
+                    exec_tests._StubPdk(), Path("/unused"), exec_tests.CP_MANIFEST,
+                    exec_tests.NETLIST, p, Path(tmp) / p.corner_id,
+                    execute=exec_tests.cp_execute(drop=drop),
+                )
+            )
+        return out
+
+    def _render(self, results, record_id="20260101-000000-abc1234"):
+        from unittest import mock
+
+        m = exec_tests.CP_MANIFEST
+        with mock.patch.object(report, "git_info", return_value={"sha": "abc1234", "dirty": False}):
+            with mock.patch.object(report, "sha256_file", return_value="deadbeef"):
+                return report.render(
+                    record_id=record_id,
+                    slug="pfd-cp-fixture",
+                    claim=m["claim"],
+                    spec_rows_line=report.format_spec_rows(*report.spec_rows_from_manifest(m)),
+                    pdk=self._StubPdk(),
+                    tool_versions={"ngspice": "ngspice-47", "xschem": "XSCHEM V3.4.7"},
+                    repo_root=REPO_ROOT,
+                    netlist_snapshot=Path("/fake/netlist.spice"),
+                    points=self.POINTS,
+                    results=results,
+                    subset_reason=None,
+                    supersedes=None,
+                    methodology_note="a fixture DUT note.",
+                    analysis="charge-pump analysis (fixture)",
+                    cp_spec=cp_mod.CpSpec.from_manifest(m),
+                )
+
+    def test_record_carries_stimulus_sweep_op_charge_plateaus_phase_and_windows(self):
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            text = self._render(self._results(tmp))
+        for needle in (
+            "positive phase offset means DIV rises later than REF",
+            "VCTRL sweep",
+            "Phase-offset sweep",
+            "settling period(s)",
+            "Operating point and descriptive compliance windows",
+            "NB", "PB", "IREF",
+            "UP window", "DN window",
+            "Directional plateaus, zero-offset charge and phase slope",
+            "Qnet @ 0 offset", "Asymmetry @ 0", "Phase slope",
+            "Phase curve at 0.5 VDD",
+            "Resolution diagnostic",
+            "Unavailable entries",
+            "(unavailable, never perfect matching",
+        ):
+            with self.subTest(needle=needle):
+                self.assertIn(needle, text)
+        # signed plateau currents are rendered with units and sign
+        self.assertRegex(text, r"\| 100 uA \(magnitude 100 uA\)")
+        self.assertRegex(text, r"\| -100 uA \(magnitude 100 uA\)")
+
+    def test_unavailable_entries_keep_coordinates_and_reasons(self):
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            text = self._render(self._results(tmp))
+        self.assertIn("| ss | 125 | 1.62 | VCTRL 0.5 VDD, offset 100 ps | dump missing: ss_125c_1.62v-cp_v01_p03.raw |", text)
+        # the incomplete unit FAILs on execution completeness, with its reason
+        self.assertIn("charge-pump analysis is incomplete", text)
+        self.assertIn("**Overall: FAIL** (1/2 points passed)", text)
+
+    def test_provisional_thresholds_never_become_spec_pass_criteria(self):
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            text = self._render(self._results(tmp)[:1])
+        self.assertIn("descriptive", text)
+        self.assertIn("**not** a statement that any current, charge, asymmetry or compliance range meets a spec row", text)
+        self.assertIn("not a spec pass", text)
+        self.assertIn("DRAFT status is unchanged", text)
+        self.assertNotIn("**miss**", text)
+        self.assertNotIn("| meets |", text)
+
+    def test_aggregator_discovers_the_record_with_a_mechanism_only_row_10_citation(self):
+        import importlib
+        import tempfile
+
+        sys.path.insert(0, str(REPO_ROOT / "measurements"))
+        try:
+            aggregate = importlib.import_module("aggregate")
+        finally:
+            sys.path.remove(str(REPO_ROOT / "measurements"))
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp) / "repo"
+            rec_dir = repo / "sim" / "pfd-cp-fixture" / "records"
+            rec_dir.mkdir(parents=True)
+            rid = "20260101-000000-abc1234"
+            results = self._results(Path(tmp) / "work")[:1]
+            (rec_dir / f"{rid}.md").write_text(self._render(results, rid))
+
+            found = aggregate.discover_evidence(repo)
+        self.assertEqual(len(found), 1)
+        rec = found[0]
+        self.assertEqual((rec.kind, rec.block, rec.record_id), ("sim", "pfd-cp-fixture", rid))
+        self.assertEqual(rec.spec_rows, [10])
+        self.assertEqual(rec.spec_rows_source, aggregate.SOURCE_RECORD)
+        self.assertIn("partial mechanism evidence only", rec.spec_rows_note)
+        self.assertIn("DRAFT", rec.spec_rows_note)
+        self.assertEqual(rec.verdict, "PASS")
 
 
 class PdkCommitParsingTests(unittest.TestCase):

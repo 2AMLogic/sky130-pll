@@ -14,6 +14,7 @@ from pathlib import Path
 from . import acmeasure as ac_mod
 from . import checkpoint as checkpoint_mod
 from . import corners as corners_mod
+from . import cpmeasure as cp_mod
 from . import executor as executor_mod
 from . import measure as measure_mod
 from . import montecarlo as mc_mod
@@ -701,15 +702,7 @@ def cmd_run(args: argparse.Namespace) -> int:
         # Fail fast on a malformed `measure` / `ac` block rather than at the
         # first point, so a typo in the manifest costs a second, not a corner
         # run.
-        spec = measure_mod.MeasureSpec.from_manifest(manifest)
-        ac_spec = ac_mod.AcSpec.from_manifest(manifest)
-        if spec is not None and ac_spec is not None:
-            raise measure_mod.MeasureError(
-                "manifest declares both a `measure` block and an `ac` block -- a "
-                "testbench runs one analysis mode per manifest (transient "
-                "measurement or AC loop-dynamics), so split them into sibling "
-                "experiment directories"
-            )
+        runner_mod._analysis_specs(manifest)
         return corners_mod.build_matrix(
             manifest,
             pdk.process_corners,
@@ -724,6 +717,7 @@ def cmd_run(args: argparse.Namespace) -> int:
         return report_mod.render(
             spec=measure_mod.MeasureSpec.from_manifest(manifest),
             ac_spec=ac_mod.AcSpec.from_manifest(manifest),
+            cp_spec=cp_mod.CpSpec.from_manifest(manifest),
             manifest_has_supply=manifest.get("supply_pattern") is not None,
             corner_note=manifest.get("corner_note"),
             record_id=record_id,
@@ -786,6 +780,9 @@ def cmd_run_mc(args: argparse.Namespace) -> int:
         )
 
     def build_units(manifest, pdk):
+        # A `cp` manifest has no Monte Carlo mode; refuse rather than run it
+        # as a plumbing-only check.
+        runner_mod._reject_cp_in_monte_carlo(manifest)
         return mc_mod.build_trials(
             manifest,
             pdk.process_corners,

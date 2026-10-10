@@ -49,11 +49,14 @@ from unittest import mock
 
 SIM_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(SIM_DIR))
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # sibling test modules
 
 from harness import cli  # noqa: E402
 from harness import corners  # noqa: E402
+from harness import cpmeasure as cp_mod  # noqa: E402
 from harness import executor as executor_mod  # noqa: E402
 from harness import runner  # noqa: E402
+import test_execution as exec_tests  # noqa: E402
 
 RECORD_ID = "20260101-000000-abc1234"
 LOCAL_PDK_ROOT = "/fake/pdk-root"
@@ -686,6 +689,125 @@ class RemoteExecutorTests(unittest.TestCase):
 # --------------------------------------------------------------------------- #
 # remote: fallback, never failure
 # --------------------------------------------------------------------------- #
+
+
+class _CpFakeFleet(_FakeFleet):
+    """A fleet member that also leaves the charge-pump dumps behind, exactly
+    where `pull_artifacts` lands them (`<corner-id>-*.raw`)."""
+
+    def __init__(self, *, drop=(), **kw):
+        super().__init__(log_for=lambda cid: (exec_tests.CP_LOG, 0), **kw)
+        self._drop = set(drop)
+
+    def pull_artifacts(self, *, local_artifacts_dir, job, **kw):
+        super().pull_artifacts(local_artifacts_dir=local_artifacts_dir, job=job, **kw)
+        spec = exec_tests.cp_spec()
+        for item in job.inputs:
+            if not item.remote_name.endswith(".spice"):
+                continue
+            prefix = item.remote_name[: -len(".spice")] + "-"
+            dumps = exec_tests.cp_dump_texts(
+                spec, prefix, drop={prefix + d for d in self._drop}
+            )
+            for name, text in dumps.items():
+                (Path(local_artifacts_dir) / name).write_text(text)
+
+
+CP_REMOTE_MANIFEST = {
+    **MANIFEST,
+    "supply_tolerance": 0.0,
+    "spec_rows": [10],
+    "spec_rows_note": "partial mechanism evidence only; row 10 stays DRAFT",
+    "cp": exec_tests.CP_MANIFEST["cp"],
+}
+
+
+class _CpLocalHarness(_Harness):
+    """Local backend that writes the same synthetic dumps a fleet would."""
+
+    def _fake_local(self, log_text=GOOD_LOG, returncode=0):
+        base = super()._fake_local(exec_tests.CP_LOG, returncode)
+        spec = exec_tests.cp_spec()
+
+        def run_ngspice_locally(unit, *, pdk, spiceinit):
+            outcome = base(unit, pdk=pdk, spiceinit=spiceinit)
+            for name, text in exec_tests.cp_dump_texts(
+                spec, f"{unit.corner_id}-"
+            ).items():
+                (unit.work_dir / name).write_text(text)
+            return outcome
+
+        return run_ngspice_locally
+
+
+class CpRemoteTests(unittest.TestCase):
+    """The charge-pump analysis reduces identically whether ngspice ran here
+    or its artifacts were collected from the fleet."""
+
+    def _remote(self, tmp, fleet):
+        h = _Harness(Path(tmp), manifest=CP_REMOTE_MANIFEST)
+        with _fake_klayout_tools(fleet), _aws_on_path():
+            rc, out = h.run(
+                ["--executor", "remote"], env=_provisioned_env(Path(tmp))
+            )
+        return h, rc, out
+
+    @staticmethod
+    def _result_section(text: str) -> str:
+        return _without_wall_clock(text).split("- **Methodology", 1)[1]
+
+    def test_remote_record_matches_the_local_record_result_for_result(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            remote, rc_r, out_r = self._remote(Path(tmp) / "r", _CpFakeFleet())
+            local = _CpLocalHarness(Path(tmp) / "l", manifest=CP_REMOTE_MANIFEST)
+            rc_l, out_l = local.run([])
+            self.assertEqual((rc_r, rc_l), (0, 0), out_r + out_l)
+            self.assertTrue(local.local_calls)
+            self.assertEqual(
+                self._result_section(remote.record_path.read_text()),
+                self._result_section(local.record_path.read_text()),
+            )
+            self.assertIn("Phase curve at 0.5 VDD", remote.record_path.read_text())
+
+    def test_remote_missing_dump_fails_the_unit_and_names_it(self):
+        drop = [cp_mod.sweep_dump_name(1, 2)]
+        with tempfile.TemporaryDirectory() as tmp:
+            h, rc, out = self._remote(Path(tmp), _CpFakeFleet(drop=drop))
+            self.assertEqual(rc, 1, out)
+            text = h.record_path.read_text()
+            self.assertIn("cp_v01_p02.raw", text)
+            self.assertIn("charge-pump analysis is incomplete", text)
+            self.assertIn("dump missing", text)  # the explicit unavailable entry
+
+    def test_remote_timeout_and_marker_are_the_cp_manifests(self):
+        fleet = _CpFakeFleet()
+        fleet._log_for = lambda cid: ("partial output\n", 124)
+        with tempfile.TemporaryDirectory() as tmp:
+            h, rc, out = self._remote(Path(tmp), fleet)
+            self.assertEqual(rc, 1, out)
+            self.assertIn(
+                f"{exec_tests.cp_spec().timeout_s} s per-point timeout",
+                h.record_path.read_text(),
+            )
+            job = fleet.pushed[0]
+            netlists = [
+                i for i in job.inputs if i.remote_name.endswith(".spice")
+            ]
+            self.assertTrue(netlists)
+
+    def test_a_stale_cp_dump_is_purged_before_the_pull_lands_new_artifacts(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            h = _Harness(Path(tmp), manifest=CP_REMOTE_MANIFEST)
+            corners_dir = h.exp_dir / "corners" / RECORD_ID
+            corners_dir.mkdir(parents=True)
+            stale = corners_dir / "tt_27c_1.80v-cp_v00_p00.raw"
+            stale.write_text("stale\n")
+            fleet = _CpFakeFleet(drop=["cp_v00_p00.raw"])
+            with _fake_klayout_tools(fleet), _aws_on_path():
+                rc, out = h.run(["--executor", "remote"], env=_provisioned_env(Path(tmp)))
+            self.assertEqual(rc, 1, out)
+            self.assertFalse(stale.exists())
+            self.assertIn("cp_v00_p00.raw", h.record_path.read_text())
 
 
 class RemoteFallbackTests(unittest.TestCase):

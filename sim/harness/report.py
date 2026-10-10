@@ -13,6 +13,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from . import acmeasure as ac_mod
+from . import cpmeasure as cp_mod
 from . import measure as measure_mod
 from .corners import PvtPoint
 from .montecarlo import McTrial
@@ -681,6 +682,283 @@ def _render_sweep_tables(a, results, spec) -> None:
     )
 
 
+_SI_PREFIXES = ((1e-15, "f"), (1e-12, "p"), (1e-9, "n"), (1e-6, "u"), (1e-3, "m"), (1.0, ""))
+
+
+def _si(value, unit: str) -> str:
+    """Engineering-prefixed value with units; `-` for a missing value."""
+    if value is None:
+        return "-"
+    if value != value or value in (float("inf"), float("-inf")):
+        return f"{value} {unit}"
+    if value == 0:
+        return f"0 {unit}"
+    mag = abs(value)
+    scale, prefix = _SI_PREFIXES[0]
+    for s, p in _SI_PREFIXES:
+        if mag >= s:
+            scale, prefix = s, p
+    return f"{value / scale:.4g} {prefix}{unit}"
+
+
+def _cell(text) -> str:
+    return str(text).replace("|", "/").replace("\n", " ")
+
+
+def _render_cp_criteria(a, cp_spec, methodology_note: str) -> None:
+    """Methodology bullets for a charge-pump record.
+
+    States the stimulus, sweep, windows and polarity convention up front, and
+    that every threshold below is descriptive: nothing here is a ratified
+    spec PASS criterion.
+    """
+    s = cp_spec
+    a(
+        "  - Per-unit criterion (execution, not performance): ngspice exits 0, "
+        f"prints the harness's analysis-completion marker (`{cp_mod.COMPLETION_MARKER}`), "
+        "emits no `Error:` line, and every promised waveform dump (operating "
+        "point, each VCTRL x phase-offset coordinate and each diagnostic "
+        "coordinate) exists and parses. A **PASS** verdict therefore says the "
+        "analysis ran to completion and produced every dump; it is **not** a "
+        "statement that any current, charge, asymmetry or compliance range "
+        "meets a spec row."
+    )
+    a(
+        "  - Provisional thresholds: the compliance tolerance "
+        f"({s.compliance_tolerance:.0%} of the midrail plateau magnitude), the "
+        f"settling tolerance ({s.settle_tolerance:.0%} of charge throughput) and "
+        "the resolution material-change fraction are **descriptive "
+        "characterization methodology**. They are not ratified bounds, never "
+        "gate the verdict, and no row is reported as met or missed from them."
+    )
+    a(
+        f"  - Stimulus: REF (`{s.ref_source}`) and DIV (`{s.div_source}`) are "
+        f"{s.frequency_hz / 1e6:g} MHz, {s.duty:.0%} duty, 0 to VDD square waves with "
+        f"{_si(s.rise_s, 's')} rise and {_si(s.fall_s, 's')} fall; REF's first rising "
+        f"(50%) edge is at {_si(s.first_edge_s, 's')}. A **positive phase offset "
+        "means DIV rises later than REF**. The output node is held by the ideal "
+        f"voltage clamp `{s.clamp_source}` (CP to ground), so a positive clamp "
+        "current is charge delivered into CP (UP) and a negative one is DN."
+    )
+    fr = ", ".join(f"{f:g}" for f in s.vctrl_fractions)
+    offs = ", ".join(_si(o, "s") for o in s.phase_offsets_s)
+    a(f"  - VCTRL sweep (fractions of VDD, every supply): {fr}.")
+    a(f"  - Phase-offset sweep: {offs}. The Cartesian product is run at every PVT point.")
+    a(
+        f"  - Windows: {s.settle_periods} settling period(s), then "
+        f"{s.integrate_periods} complete period(s) integrated between REF rising "
+        "edges (boundaries interpolated; trapezoidal integration on the native "
+        f"timestamps). Dump spacing {_si(s.dump_step_s, 's')}, ngspice maximum "
+        f"internal step {_si(s.max_step_s, 's')}."
+    )
+    a(
+        "  - Charge definitions: `Qnet = integral(Iclamp dt)`, `Qplus = integral(max(Iclamp,0) dt)`, "
+        "`Qminus = -integral(min(Iclamp,0) dt)`; asymmetry is `(Qplus-Qminus)/(Qplus+Qminus)` "
+        "(unavailable, never perfect matching, when the denominator is empty). It is a "
+        "**net-output** quantity: simultaneous opposing branch currents cancel in the "
+        "clamp current and cannot be separated by it."
+    )
+    a(
+        f"  - Directional plateaus come from the +/-{_si(s.plateau_offset_s, 's')} cases, "
+        "from the middle half of each exclusive UP/DN pulse selected by the observed "
+        f"gate states (`{s.up_gate.node}`, `{s.dn_gate.node}`); an absent exclusive pulse "
+        "is reported unavailable. The phase slope is the central difference over the "
+        f"+/-{_si(s.slope_offset_s, 's')} pair. The raw Qnet-versus-offset curve is "
+        "published; no dead-zone limit is inferred."
+    )
+    a(
+        "  - Descriptive compliance window: the contiguous sampled VCTRL interval "
+        "containing 0.5 VDD where the directional plateau has the expected sign and "
+        "is within the provisional tolerance of its midrail magnitude; boundaries "
+        "are sampled points (no interpolation) and the result is not a spec pass."
+    )
+    if s.op_vectors:
+        a(
+            "  - Operating point: REF = DIV = 0 with the clamp at midrail; the "
+            "vectors "
+            + ", ".join(f"`{v.label}` = `{v.expr}`" for v in s.op_vectors)
+            + " are dumped independently of the transient dumps."
+        )
+    if s.diagnostic is not None:
+        d = s.diagnostic
+        a(
+            f"  - Resolution diagnostic: coordinate(s) at VCTRL = {d.vctrl_fraction:g} VDD, offsets "
+            + ", ".join(_si(o, "s") for o in d.phase_offsets_s)
+            + f", re-run at {_si(d.dump_step_s, 's')} dump / {_si(d.max_step_s, 's')} internal "
+            f"step; a change above {d.material_fraction:.0%} (provisional) or a sign change is "
+            "reported as not converged. It is an accuracy diagnostic, not a design bound."
+        )
+    a(f"  - DUT / limitations: {methodology_note}")
+
+
+def _cp_sweeps(results) -> list:
+    """`(PvtPoint, CpSweepResult | None)` for every result, in record order."""
+    out = []
+    for r in results:
+        sweep = next((m for m in r.measurements if isinstance(m, cp_mod.CpSweepResult)), None)
+        out.append((r.point, sweep, r))
+    return out
+
+
+def _window_text(w) -> str:
+    if not w.available:
+        return f"unavailable ({_cell(w.reason)})"
+    return (
+        f"{w.lo_fraction:g}-{w.hi_fraction:g} VDD ({w.lo_v:.3g}-{w.hi_v:.3g} V, "
+        f"{w.n_points} pts)"
+    )
+
+
+def _render_cp_tables(a, results, cp_spec) -> None:
+    """Operating point, compliance, per-VCTRL charge/plateau and phase tables."""
+    s = cp_spec
+    sweeps = _cp_sweeps(results)
+    a("")
+    a("- **Operating point and descriptive compliance windows** (one row per PVT point; "
+      "windows are provisional-tolerance characterization, not spec verdicts):")
+    a("")
+    labels = [v.label for v in s.op_vectors]
+    a("  | Corner | Temp (C) | Supply (V) | Execution | "
+      + " | ".join(labels + ["UP window", "DN window", "Both"]) + " |")
+    a("  |" + "---|" * (4 + len(labels) + 3))
+    for p, sw, r in sweeps:
+        status = "complete" if r.passed else "incomplete"
+        if sw is None:
+            cells = ["-"] * (len(labels) + 3)
+        else:
+            if sw.op.available:
+                op_cells = [f"{x:.5g}" for _l, _e, x in sw.op.values]
+            else:
+                op_cells = [f"unavailable ({_cell(sw.op.reason)})"] + ["-"] * (len(labels) - 1)
+            if not labels:
+                op_cells = []
+            cells = op_cells + [
+                _window_text(sw.compliance.up),
+                _window_text(sw.compliance.dn),
+                _window_text(sw.compliance.both),
+            ]
+        a(f"  | {p.corner} | {p.temp_c:g} | {p.supply_v:.2f} | {status} | " + " | ".join(cells) + " |")
+
+    a("")
+    a("- **Directional plateaus, zero-offset charge and phase slope** (one row per PVT point x "
+      "VCTRL; signed currents, UP positive / DN negative; charge in coulombs):")
+    a("")
+    a("  | Corner | Temp (C) | Supply (V) | VCTRL (V) | UP plateau | DN plateau | "
+      "Qnet @ 0 offset | Qnet std | Asymmetry @ 0 | Min UP width | Min DN width | Phase slope |")
+    a("  |---|---|---|---|---|---|---|---|---|---|---|---|")
+    zi = s.offset_index(0.0)
+    jp, jm = s.offset_index(s.plateau_offset_s), s.offset_index(-s.plateau_offset_s)
+
+    def plateau_cell(pt):
+        pl = pt.plateau if pt is not None else None
+        if pl is None:
+            return "unavailable"
+        if not pl.available:
+            return f"unavailable ({_cell(pl.reason)})"
+        flag = "" if pl.sign_ok else " **wrong sign**"
+        return f"{_si(pl.current_a, 'A')} (magnitude {_si(pl.magnitude_a, 'A')}){flag}"
+
+    for p, sw, _r in sweeps:
+        for vi, frac in enumerate(s.vctrl_fractions):
+            head = f"  | {p.corner} | {p.temp_c:g} | {p.supply_v:.2f} | {frac * p.supply_v:.3g} | "
+            if sw is None:
+                a(head + " | ".join(["unavailable (no measurement)"] + ["-"] * 7) + " |")
+                continue
+            up = sw.point(vi, jp) if jp is not None else None
+            dn = sw.point(vi, jm) if jm is not None else None
+            z = sw.point(vi, zi) if zi is not None else None
+            slope = sw.slopes[vi]
+            if z is not None and z.available:
+                asym = f"{z.asymmetry:.4g}" if z.asymmetry is not None else f"unavailable ({_cell(z.asymmetry_reason)})"
+                zc = [_si(z.qnet_mean_c, "C"), _si(z.qnet_std_c, "C"), asym,
+                      _si(z.min_up_width_s, "s"), _si(z.min_dn_width_s, "s")]
+            else:
+                why = "unavailable (zero offset not swept)" if z is None else f"unavailable ({_cell(z.reason)})"
+                zc = [why, "-", "-", "-", "-"]
+            sl = _si(slope.slope_c_per_s, "C/s") if slope.available else f"unavailable ({_cell(slope.reason)})"
+            a(head + " | ".join([plateau_cell(up), plateau_cell(dn)] + zc + [sl]) + " |")
+
+    mi = s.midrail_index()
+    a("")
+    if mi is None:
+        a("- **Phase curve**: not rendered -- 0.5 VDD is not a sampled VCTRL.")
+    else:
+        a(f"- **Phase curve at {s.vctrl_fractions[mi]:g} VDD** (Qnet per cycle versus phase offset, "
+          "mean and sample standard deviation over the integrated cycles; the other VCTRL "
+          "coordinates are carried in the dumps and the unavailable list below):")
+        a("")
+        a("  | Corner | Temp (C) | Supply (V) | Offset | Qnet mean | Qnet std | Qplus | Qminus | Settled |")
+        a("  |---|---|---|---|---|---|---|---|---|")
+        for p, sw, _r in sweeps:
+            for pj, off in enumerate(s.phase_offsets_s):
+                head = f"  | {p.corner} | {p.temp_c:g} | {p.supply_v:.2f} | {_si(off, 's')} | "
+                pt = sw.point(mi, pj) if sw is not None else None
+                if pt is None or not pt.available:
+                    why = "no measurement" if pt is None else pt.reason
+                    a(head + f"unavailable ({_cell(why)}) | - | - | - | - |")
+                else:
+                    settled = "yes" if pt.settled else "**no**"
+                    a(head + " | ".join([
+                        _si(pt.qnet_mean_c, "C"), _si(pt.qnet_std_c, "C"),
+                        _si(pt.qplus_mean_c, "C"), _si(pt.qminus_mean_c, "C"), settled,
+                    ]) + " |")
+
+    a("")
+    a("- **Unavailable entries** (every coordinate whose reduction could not be made, with its reason):")
+    a("")
+    unavailable = []
+    for p, sw, r in sweeps:
+        if sw is None:
+            unavailable.append((p, "whole point", r.reason))
+            continue
+        for pt in (*sw.points, *sw.diagnostic_points):
+            if not pt.available:
+                c = pt.coord
+                kind = "diagnostic " if pt in sw.diagnostic_points else ""
+                unavailable.append(
+                    (p, f"{kind}VCTRL {c.vctrl_fraction:g} VDD, offset {_si(c.offset_s, 's')}", pt.reason)
+                )
+        if not sw.op.available and s.op_vectors:
+            unavailable.append((p, "operating point", sw.op.reason))
+    if not unavailable:
+        a("  None: every declared dump was reduced.")
+    else:
+        a("  | Corner | Temp (C) | Supply (V) | Coordinate | Reason |")
+        a("  |---|---|---|---|---|")
+        for p, where, why in unavailable:
+            a(f"  | {p.corner} | {p.temp_c:g} | {p.supply_v:.2f} | {where} | {_cell(why)} |")
+
+    if s.diagnostic is not None:
+        a("")
+        a("- **Resolution diagnostic** (finer-grid re-run minus main grid; a diagnostic, "
+          "not a design bound):")
+        a("")
+        a("  | Corner | Temp (C) | Supply (V) | VCTRL (V) | Offset | dQnet | Sign change | "
+          "dMin UP width | dMin DN width | Converged |")
+        a("  |---|---|---|---|---|---|---|---|---|---|")
+        for p, sw, _r in sweeps:
+            deltas = sw.resolution if sw is not None else ()
+            if not deltas:
+                a(f"  | {p.corner} | {p.temp_c:g} | {p.supply_v:.2f} | - | - | unavailable (no measurement) | - | - | - | - |")
+            for d in deltas:
+                head = (f"  | {p.corner} | {p.temp_c:g} | {p.supply_v:.2f} | {d.coord.vctrl_v:.3g} | "
+                        f"{_si(d.coord.offset_s, 's')} | ")
+                if not d.available:
+                    a(head + f"unavailable ({_cell(d.reason)}) | - | - | - | no claim |")
+                    continue
+                conv = "no claim" if d.converged is None else ("yes" if d.converged else "**no**")
+                a(head + " | ".join([
+                    _si(d.dqnet_c, "C"), "yes" if d.sign_changed else "no",
+                    _si(d.dmin_up_width_s, "s"), _si(d.dmin_dn_width_s, "s"), conv,
+                ]) + " |")
+    a("")
+    a(
+        "  Nothing in these tables is a ratified spec result. Spec rows cited above "
+        "are cited as partial mechanism evidence only; their DRAFT status is "
+        "unchanged, and ratification is a separate decision-record act."
+    )
+
+
 def render(
     *,
     record_id: str,
@@ -699,6 +977,7 @@ def render(
     analysis: str,
     spec=None,
     ac_spec=None,
+    cp_spec=None,
     manifest_has_supply: bool = True,
     corner_note: str | None = None,
     execution_note: str | None = None,
@@ -761,6 +1040,8 @@ def render(
         _render_measurement_criteria(a, spec, methodology_note)
     elif ac_spec is not None:
         _render_ac_criteria(a, ac_spec, methodology_note)
+    elif cp_spec is not None:
+        _render_cp_criteria(a, cp_spec, methodology_note)
     else:
         a(
             "  - Per-point criterion: ngspice exits 0, prints its analysis-"
@@ -790,6 +1071,8 @@ def render(
         _render_sweep_tables(a, results, spec)
     if ac_spec is not None:
         _render_ac_tables(a, results, ac_spec)
+    if cp_spec is not None:
+        _render_cp_tables(a, results, cp_spec)
     _render_footer(lines_append=a, slug=slug, record_id=record_id, supersedes=supersedes)
     a("")
     return "\n".join(lines)
