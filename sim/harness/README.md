@@ -16,6 +16,7 @@ sim/harness/
   checkpoint.py  crash-safe per-point progress, and the --resume path's guards
   measure.py     reduce a transient to frequency / duty / lock time / period jitter
   acmeasure.py   reduce an AC sweep to loop bandwidth / phase margin / gain margin
+  cpmeasure.py   charge-pump current/charge analysis (`cp` block): control generation + reducers
   report.py      render the append-only records/<record-id>.md evidence record
   cli.py         argparse glue: --check-env / --print-env / --list / <slug> [--mc]
 ```
@@ -636,6 +637,93 @@ owed. A manifest declares one analysis mode or the other, never both
   process corner and temperature do move a passive sky130 network.
 
 `sim/loop-ac/` is the first campaign of this shape.
+
+## Charge-pump current/charge analysis (`cp` manifest block)
+
+`sim/harness/cpmeasure.py` (issue #248, part of #247) is the **pure analysis
+layer** for isolated PFD/charge-pump characterization: manifest parser,
+deterministic ngspice control generation, dump parsing and reducers. It does
+not dispatch simulations or render records -- wiring it into `runner.py`,
+`cli.py` and `report.py` is issue #249, and the physical campaign is #250.
+Nothing in it is physical evidence, and it states **no spec bound**.
+
+A manifest declares exactly one analysis block: `cp` together with `measure`
+or `ac` is rejected by `CpSpec.from_manifest`. Unknown keys, non-finite
+numbers, non-increasing `vctrl_fractions`, plateau/slope offsets that the
+sweep does not sample, and a diagnostic grid that is not finer than the main
+grid are all rejected at parse time.
+
+```json
+"cp": {
+  "clamp_source": "VCLAMP", "ref_source": "VREF", "div_source": "VDIV",
+  "up_gate": {"node": "x1.up", "active": "high"},
+  "dn_gate": {"node": "x1.dnb", "active": "low"},
+  "frequency_hz": "10meg", "duty": 0.5, "rise_s": "100p", "fall_s": "100p",
+  "first_edge_s": "100n",
+  "vctrl_fractions": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
+  "phase_offsets_s": ["-25n", "-10n", "-5n", "-1n", "-0.5n", "-0.1n", "-0.05n", 0,
+                      "0.05n", "0.1n", "0.5n", "1n", "5n", "10n", "25n"],
+  "settle_periods": 20, "integrate_periods": 10,
+  "dump_step_s": "5p", "max_step_s": "5p",
+  "op": {"vectors": [{"label": "NB", "expr": "v(x1.nb)"}]},
+  "diagnostic": {"dump_step_s": "2.5p", "max_step_s": "2.5p",
+                 "vctrl_fraction": 0.5, "phase_offsets_s": ["-0.1n", 0, "0.1n"]}
+}
+```
+
+(The values above are the #247 contract; they are manifest-owned, and the
+module hard-codes none of them. `plateau_offset_s` defaults to 25 ns,
+`slope_offset_s` to 0.1 ns, `compliance_tolerance` to 0.1 and
+`settle_tolerance` to 0.05; the last two are provisional methodology.)
+
+**Units.** Time in seconds, current in amperes, charge in coulombs, slope in
+C/s (numerically amperes), voltage in volts. SPICE literals (`25n`, `10meg`)
+are parsed with `measure.parse_spice_time`, whose semantics are unchanged.
+
+**Polarity.** Positive phase offset means DIV rises later than REF. The
+clamp source runs from CP (positive terminal) to ground, so ngspice's
+`i(<clamp>)` is positive when the pump delivers charge into CP (UP) and
+negative for DN. The reducer never flips the sign; a source wired the other
+way inverts every result.
+
+**Windows.** A REF rising edge is the 50% crossing; edge `k` is at
+`first_edge_s + k/f`. Each coordinate integrates `integrate_periods` complete
+periods starting at `first_edge_s + settle_periods/f`, by trapezoids on the
+native timestamps with linearly interpolated boundaries. A window not inside
+the dump is an error, never truncated. Per-cycle `Qnet`, `Qplus`, `Qminus`,
+their mean and sample standard deviation are kept; a `settled` flag records
+whether the last cycle differs from the first by more than `settle_tolerance`
+of the charge throughput (the remedy is a new record with a longer window).
+
+**Analyses and outputs.** `build_cp_control_block(spec, vdd, prefix)` emits
+the OP (REF = DIV = 0 via flat pulses, clamp at 0.5 VDD) to its own
+`<prefix>cp_op.raw`, then one transient per VCTRL x phase coordinate to
+`<prefix>cp_v<VV>_p<PP>.raw`, then the finer-grid diagnostic transients to
+`<prefix>cpdiag_v<VV>_p<PP>.raw`. `reduce_cp_sweep` consumes a
+`{filename: text}` mapping and returns a `CpSweepResult`; a missing, short,
+non-finite or malformed dump yields an *unavailable* result that keeps its
+sweep coordinates and a reason string. Nothing is silently defaulted.
+
+**Reductions.**
+`Qnet = ∫I dt`, `Qplus = ∫max(I,0) dt`, `Qminus = -∫min(I,0) dt`;
+asymmetry `(Qplus-Qminus)/(Qplus+Qminus)` (unavailable if the denominator is
+empty -- never "perfect matching"). *Limitation*: this is net-output
+asymmetry; opposing branch currents that conduct simultaneously cancel in the
+clamp current and cannot be separated by it. Plateau current is the mean over
+the middle half of each complete exclusive UP (or DN) pulse, selected by the
+observed gate voltages at VDD/2, from the `+plateau_offset_s` (UP, expected
+positive) and `-plateau_offset_s` (DN, expected negative) cases; no exclusive
+pulse means unavailable. Minimum UP/DN pulse widths are reported per
+coordinate; the phase slope is the central difference of `Qnet` over
+`±slope_offset_s`. The descriptive compliance window, per direction, is the
+contiguous run of *sampled* VCTRL fractions around 0.5 whose plateau has the
+expected sign and a magnitude within `compliance_tolerance` of the midrail
+magnitude (no interpolation; unavailable if midrail is invalid; not a spec
+pass). `compare_resolution` reports the change in `Qnet` and minimum pulse
+widths between the main and finer grids, flags sign changes and material
+changes (`diagnostic.material_fraction`, default 5%), and sets
+`converged=False` for either; it is an accuracy diagnostic, not a design
+bound.
 
 ## Monte Carlo (`--mc`)
 
