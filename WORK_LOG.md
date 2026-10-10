@@ -4,6 +4,8 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 ### 2026-10-10
 
+- **PR #266**: sim: wire charge-pump analysis through PVT execution and records
+- **Issue #249** (closed): sim: wire charge-pump analysis through PVT execution and records
 - **PR #263**: sim: implement signed charge-pump analysis and synthetic reducers
 - **Issue #248** (closed): sim: implement signed charge-pump analysis and synthetic reducers
 - **Issue #246** (closed): sim: run and commit the divider Fmax full-grid record (follow-up to #244)
