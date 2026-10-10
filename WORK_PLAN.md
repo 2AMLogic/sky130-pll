@@ -23,7 +23,7 @@ _None._
 
 Issues currently being built (`loom:building`).
 
-- **#249**: sim: wire charge-pump analysis through PVT execution and records
+- **#250**: sim: deliver standalone PFD pump full-PVT campaign evidence
 
 ## PRs Awaiting Review
 
@@ -52,7 +52,7 @@ Issues carrying `loom:curated`.
 - **#233**: sim: no sky130 power measurement exists, so spec row 12 cannot be re-budgeted *(curated)*
 - **#239**: Guard: recognize bounded explicit /tmp mktemp templates while preserving containment *(curated)*
 - **#244**: sim: record divider Fmax boundaries across PVT for digital T1 characterization *(curated)*
-- **#249**: sim: wire charge-pump analysis through PVT execution and records *(curated)*
+- **#250**: sim: deliver standalone PFD pump full-PVT campaign evidence *(curated)*
 - **#259**: design: characterize LOCK timing primitives and watchdog over PVT *(curated)*
 
 ## Proposed (Architect / Hermit)
