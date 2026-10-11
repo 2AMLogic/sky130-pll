@@ -2,6 +2,10 @@
 
 Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
+### 2026-10-11
+
+- **PR #268**: sim: pfd-cp campaign testbench/manifest and nominal resolution record (Part of #250)
+
 ### 2026-10-10
 
 - **PR #266**: sim: wire charge-pump analysis through PVT execution and records
