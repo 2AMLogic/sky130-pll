@@ -51,8 +51,9 @@ per-coordinate stimulus requires. Running the 45-point grid on a host that
 exports `KLT_SIM_BACKEND=batch` therefore has no batch path through this
 harness, and a `--executor remote` request would fall back to a local run of
 the entire grid. Do not run it that way on a shared host. A full-grid record
-needs a harness batch route (or a provisioned `remote` fleet) first; see the
-PR for #250.
+needs a harness batch route (or a provisioned `remote` fleet) first. The
+generic tool gap is filed as 2AMLogic/klayout-tools#3097 (2026-10-11 re-check:
+no batch submit was attempted because no route exists; nothing was run).
 
 ## Evidence discipline
 
