@@ -1,0 +1,78 @@
+{
+  "schema": "sky130-pll.harness.tb/1",
+  "spec_rows": [],
+  "schematic": "../../pfd-cp/testbench/tb_pfd_cp.sch",
+  "corner_pattern": "(\\.lib\\s+\\S*sky130\\.lib\\.spice\\s+)(\\w+)",
+  "supply_pattern": "(V1 VDD GND )([0-9.]+)",
+  "supply_nominal": 1.8,
+  "methodology_note": "this testbench's DUT is the unchanged design/pfd-cp/pfd_cp.sch driven through its actual ports VDD GND REF DIV CP (no VCO, loop filter or divider; no internal node is forced). CP is held at the swept VCTRL by an ideal voltage clamp whose positive terminal is CP, so a positive clamp current is charge delivered into CP (UP) and a negative one is DN. REF and DIV are equal-frequency 10 MHz, 50 % duty, 0-to-VDD square waves with 100 ps edges; REF's first rising edge is at 100 ns and a positive offset means DIV rises later than REF. 10 MHz is one characterization point inside row 3's range, not coverage of that whole row. Each sweep coordinate settles 20 periods and integrates the next 10 complete periods between REF rising edges, with 5 ps dump spacing and 5 ps ngspice maximum step. The 10 % compliance rule is provisional characterization methodology, not a spec limit, and nothing here is a pass/fail verdict on the design. The charge asymmetry reported is NET-OUTPUT asymmetry: simultaneous opposing branch currents cancel in the clamp current and cannot be separated from it.",
+  "analysis": "operating point plus one transient per VCTRL x phase-offset coordinate (`tran 5p 3.1u`-class windows, injected from the `cp` block; one ngspice invocation per PVT point)",
+  "claim": "Nominal-point numerical-resolution diagnostic for the pfd-cp campaign (issue #250): re-runs the zero and +/-0.1 ns phase offsets at midrail VCTRL with 2.5 ps dump spacing and maximum step against the 5 ps main grid and publishes the change in integrated charge and minimum pulse width. It is an accuracy diagnostic of one nominal point (tt, 27 degC, 1.8 V) and says nothing about convergence elsewhere; it is not a design acceptance bound.",
+  "spec_rows_note": "measures no spec row: this is an accuracy diagnostic of the pfd-cp campaign's own numerical resolution at one nominal point, not a characterization of a spec quantity (the pfd-cp record owns the row 10 / row 12 citations).",
+  "process_corners": [
+    "tt"
+  ],
+  "temps_c": [
+    27
+  ],
+  "supply_tolerance": 0.0,
+  "cp": {
+    "clamp_source": "VCLAMP",
+    "ref_source": "VREF",
+    "div_source": "VDIV",
+    "up_gate": {
+      "node": "xx1.up",
+      "active": "high"
+    },
+    "dn_gate": {
+      "node": "xx1.dn",
+      "active": "high"
+    },
+    "frequency_hz": "10meg",
+    "duty": 0.5,
+    "rise_s": "100p",
+    "fall_s": "100p",
+    "first_edge_s": "100n",
+    "vctrl_fractions": [
+      0.5
+    ],
+    "phase_offsets_s": [
+      "-25n",
+      "-0.1n",
+      0,
+      "0.1n",
+      "25n"
+    ],
+    "settle_periods": 20,
+    "integrate_periods": 10,
+    "dump_step_s": "5p",
+    "max_step_s": "5p",
+    "timeout_s": 21600,
+    "op": {
+      "vectors": [
+        {
+          "label": "NB",
+          "expr": "v(xx1.nb)"
+        },
+        {
+          "label": "PB",
+          "expr": "v(xx1.pb)"
+        },
+        {
+          "label": "IREF (RBIAS branch, @r.xx1.xrbias.rend1[i], ngspice sign)",
+          "expr": "@r.xx1.xrbias.rend1[i]"
+        }
+      ]
+    },
+    "diagnostic": {
+      "dump_step_s": "2.5p",
+      "max_step_s": "2.5p",
+      "vctrl_fraction": 0.5,
+      "phase_offsets_s": [
+        "-0.1n",
+        0,
+        "0.1n"
+      ]
+    }
+  }
+}

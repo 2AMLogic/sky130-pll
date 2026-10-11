@@ -1,0 +1,95 @@
+{
+  "schema": "sky130-pll.harness.tb/1",
+  "spec_rows": [
+    10,
+    12
+  ],
+  "schematic": "tb_pfd_cp.sch",
+  "corner_pattern": "(\\.lib\\s+\\S*sky130\\.lib\\.spice\\s+)(\\w+)",
+  "supply_pattern": "(V1 VDD GND )([0-9.]+)",
+  "supply_nominal": 1.8,
+  "methodology_note": "this testbench's DUT is the unchanged design/pfd-cp/pfd_cp.sch driven through its actual ports VDD GND REF DIV CP (no VCO, loop filter or divider; no internal node is forced). CP is held at the swept VCTRL by an ideal voltage clamp whose positive terminal is CP, so a positive clamp current is charge delivered into CP (UP) and a negative one is DN. REF and DIV are equal-frequency 10 MHz, 50 % duty, 0-to-VDD square waves with 100 ps edges; REF's first rising edge is at 100 ns and a positive offset means DIV rises later than REF. 10 MHz is one characterization point inside row 3's range, not coverage of that whole row. Each sweep coordinate settles 20 periods and integrates the next 10 complete periods between REF rising edges, with 5 ps dump spacing and 5 ps ngspice maximum step. The 10 % compliance rule is provisional characterization methodology, not a spec limit, and nothing here is a pass/fail verdict on the design. The charge asymmetry reported is NET-OUTPUT asymmetry: simultaneous opposing branch currents cancel in the clamp current and cannot be separated from it.",
+  "analysis": "operating point plus one transient per VCTRL x phase-offset coordinate (`tran 5p 3.1u`-class windows, injected from the `cp` block; one ngspice invocation per PVT point)",
+  "claim": "Standalone characterization of design/pfd-cp/pfd_cp.sch (issue #250, part of #247): bias operating point (NB, PB, reference-branch current), UP/DN plateau current and descriptive VCTRL compliance window, and the zero-offset net charge and Qnet-vs-phase-offset curve, at 10 MHz over the declared VCTRL x phase grid at every PVT point. This is measured mechanism evidence for the charge-pump UP/DN charge-asymmetry half of spec row 10 and a prerequisite input to row 12; it ratifies nothing and is not an assembled-loop result.",
+  "spec_rows_note": "mechanism-only partial evidence for row 10 (reference spur: the UP/DN charge-asymmetry measurement the spec names as owed; the ripple-in-lock half is #166) and prerequisite context for row 12 (Icp/bias current that feeds the power budget). This isolated block does not measure assembled-loop power, so no total-PLL-power claim is made. Both rows stay DRAFT.",
+  "process_corners": [
+    "tt",
+    "ff",
+    "ss",
+    "fs",
+    "sf"
+  ],
+  "temps_c": [
+    -40,
+    27,
+    125
+  ],
+  "supply_tolerance": 0.1,
+  "cp": {
+    "clamp_source": "VCLAMP",
+    "ref_source": "VREF",
+    "div_source": "VDIV",
+    "up_gate": {
+      "node": "xx1.up",
+      "active": "high"
+    },
+    "dn_gate": {
+      "node": "xx1.dn",
+      "active": "high"
+    },
+    "frequency_hz": "10meg",
+    "duty": 0.5,
+    "rise_s": "100p",
+    "fall_s": "100p",
+    "first_edge_s": "100n",
+    "vctrl_fractions": [
+      0.1,
+      0.2,
+      0.3,
+      0.4,
+      0.5,
+      0.6,
+      0.7,
+      0.8,
+      0.9
+    ],
+    "phase_offsets_s": [
+      "-25n",
+      "-10n",
+      "-5n",
+      "-1n",
+      "-0.5n",
+      "-0.1n",
+      "-0.05n",
+      0,
+      "0.05n",
+      "0.1n",
+      "0.5n",
+      "1n",
+      "5n",
+      "10n",
+      "25n"
+    ],
+    "settle_periods": 20,
+    "integrate_periods": 10,
+    "dump_step_s": "5p",
+    "max_step_s": "5p",
+    "timeout_s": 21600,
+    "op": {
+      "vectors": [
+        {
+          "label": "NB",
+          "expr": "v(xx1.nb)"
+        },
+        {
+          "label": "PB",
+          "expr": "v(xx1.pb)"
+        },
+        {
+          "label": "IREF (RBIAS branch, @r.xx1.xrbias.rend1[i], ngspice sign)",
+          "expr": "@r.xx1.xrbias.rend1[i]"
+        }
+      ]
+    }
+  }
+}
