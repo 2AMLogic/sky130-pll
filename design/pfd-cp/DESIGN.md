@@ -418,6 +418,18 @@ is out of scope, deferred to #23 and whatever sub-issue runs the sky130 PVT
 campaign). The one check performed for this issue is netlist-generation
 correctness (below), not functional or timing verification.
 
+**Campaign status (issue #250, part of #247).** A standalone campaign now
+exists (`sim/pfd-cp/`, with the nominal resolution diagnostic in
+`sim/pfd-cp-resolution/`), but it has **not yet produced measured bias or
+current values**, so every number above remains a hand-derived estimate and is
+unchanged by it. The only committed record,
+`sim/pfd-cp-resolution/records/20261011-011743-f9ceac9.md`, is a **failed**
+nominal run: the 2.5 ps diagnostic transients at the +/-0.1 ns offsets were
+aborted by ngspice ("Timestep too small" at node `xx1.rstpre`), so that point
+is recorded as incomplete and carries no operating-point, plateau or charge
+values. The 45-point grid has not been run. Measured results will be cited
+here, alongside (not in place of) these estimates, when a record exists.
+
 ## Verification performed for this issue
 
 - `xschem -n -q -x --rcfile sim/xschemrc design/pfd-cp/pfd_cp.sch -o
