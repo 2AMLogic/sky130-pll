@@ -4,6 +4,7 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 ### 2026-10-11
 
+- **PR #270**: docs(sim/pfd-cp): full-grid campaign still blocked on batch route (Part of #250)
 - **PR #268**: sim: pfd-cp campaign testbench/manifest and nominal resolution record (Part of #250)
 
 ### 2026-10-10
