@@ -164,6 +164,8 @@ class Run(Base):
         rec = self.rec()
         self.assertEqual([j["group"] for j in rec["jobs"]], ["p1.c0_1.80v", "p2.c0_1.80v"])
         self.assertEqual([len(c["rows"]) for c in rec["candidates"]], [1, 1])
+        self.assertEqual(rec["points_scope"], "SUBSET_POINTS:nominal")
+        self.assertEqual({c["result"]["verdict"] for c in rec["candidates"]}, {L.INCONCLUSIVE})
         for j in rec["jobs"]:
             report = self.tmp / "rec" / rec["record_id"] / j["group"] / "report.json"
             self.assertEqual(json.loads(report.read_text())["environment"]["remote"]["job_id"],
