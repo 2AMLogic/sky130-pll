@@ -168,8 +168,10 @@ ngspice-flavored `sky130.lib.spice` instead of the combined library read
 5.07 / 12.8 ns; the models differ, so the library path must match the
 request's `libs.tech/combined/sky130.lib.spice`.)
 
-Fleet note: all 12 jobs returned exit 0 on `c7i.8xlarge` Spot instances
-(ngspice 46, runner klt 0.5.0 vs client 0.7.0, `version_skew: true`
+Fleet note: all 12 jobs ran on `c7i.8xlarge` Spot instances and klt exited 4
+("nothing checked", `no_requested_measurements`) on every one; the runner
+accepted that as waveform-only via `locktiming_cli.waveform_only_exit`, as in
+the smoke (ngspice 46, runner klt 0.5.0 vs client 0.7.0, `version_skew: true`
 accepted as in the smoke); no submit failure occurred.
 
 Cell inventory and area: see the Candidates table (liberty areas;
