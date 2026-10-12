@@ -2,6 +2,11 @@
 
 Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
+### 2026-10-12
+
+- **PR #277**: sim: define LOCK timing measurement schema and reducer
+- **Issue #273** (closed): sim: define LOCK timing measurement schema and reducer
+
 ### 2026-10-11
 
 - **PR #270**: docs(sim/pfd-cp): full-grid campaign still blocked on batch route (Part of #250)
