@@ -74,3 +74,46 @@ result with verdict `PASS`.
 The synthetic builders in `sim/tests/test_locktiming.py` (`manifest`,
 `waves`, `point`, `rows`) are the representative fixtures for the runner
 and both physical campaigns.
+
+## Runner (`sim/run_locktiming.py`, issue #274)
+
+Infrastructure only: no circuit and no physical evidence ships with it.
+Implemented by `sim/harness/locktiming_cli.py`, tested PDK-free by
+`sim/tests/test_locktiming_cli.py` (fake `klt`, captured-report style fixtures).
+
+A candidate is `MANIFEST.json=NETLIST.spice`. The netlist carries the fixed
+stimulus, the DUT and one `@VDD@` placeholder for the supply value; it must not
+hold `.control`, `.end` or a process `.lib` card (any `.lib`/`.end` line is
+stripped; klt owns the process axis, `.control` and capture). The runner adds
+`.save` for the manifest's traces. Grouping is explicit: one `klt sim` request
+per candidate x supply, process x temperature as klt corners.
+
+```
+# plan only: no job, no PDK, no klt needed (nominal = tt/27C/1.8V, a labelled SUBSET_POINTS)
+python3 sim/run_locktiming.py --candidate m1.json=n1.spice --candidate m2.json=n2.spice --dry-run
+python3 sim/run_locktiming.py --candidate m1.json=n1.spice --points all --dry-run   # 45 coords
+
+# physical smoke (later circuit children; needs klt, KLT_BATCH_PROVISION_SCRIPT, fleet)
+python3 sim/run_locktiming.py --candidate m1.json=n1.spice --points nominal \
+    --required-products pA,pB,pC
+```
+
+Rules the runner enforces:
+
+* Failed submission, capacity exhaustion, version refusal, missing report,
+  missing corner/trace and truncated or non-uniform waveforms become explicit
+  `SIM_FAILED`/`MALFORMED`/`INSUFFICIENT_SETTLING` rows with a `reason`; the
+  candidate stays `INCONCLUSIVE`. No local simulation fallback, no ngspice loop.
+* Records are JSON (`sky130-pll.lockdet-timing.record/1`) in
+  `sim/lockdet-timing/records/`, append-only; the request, body netlist and
+  report of every group are kept under `records/<record-id>/<group>/`. Each
+  carries input/netlist hashes, PDK pin, job ids, engine and runner/client klt
+  versions, `points_scope` and the `handoff` scope. A rerun of the same matrix
+  must pass `--supersedes <record-id>`; an existing file is never overwritten.
+* `evidence_class` is `physical` only if every group has a batch job id and no
+  group failure. `--fixture` forces `fixture` and requires an explicit
+  `--records-dir`, so test output cannot enter the real records.
+* The request reuses `fmax_klt.build_request` (runner_version_check `warn`).
+  Whether the fleet runner supports this campaign (per-coordinate transient
+  sweeps, runner/client skew: klayout-tools #3097, #2948, #2851) is **not**
+  established here; the physical children must verify it with a real run.
