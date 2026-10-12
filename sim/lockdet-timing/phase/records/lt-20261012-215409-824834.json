@@ -1,0 +1,788 @@
+{
+ "candidates": [
+  {
+   "candidate_id": "s50-falling",
+   "manifest_path": "sim/lockdet-timing/phase/candidates/s50-falling.json",
+   "manifest_sha256": "729138a82588cab9a961ef77ad5d98627ecc5e74da7f2268b6aa16569f68b96b",
+   "netlist_path": "sim/lockdet-timing/phase/candidates/s50.spice",
+   "netlist_sha256": "7ec0df8e42bb072b38ff788cf0131a4c3d6655357b504d600d9c617b74f6ce69",
+   "product_id": "phase-windows",
+   "result": {
+    "candidate_id": "s50-falling",
+    "complete": true,
+    "diagnostic_raw_period_s": [
+     2.4999999999999994e-07,
+     2.5e-07
+    ],
+    "duplicates": [],
+    "failed": [],
+    "missing": [],
+    "product_id": "phase-windows",
+    "schema": "sky130-pll.lockdet-timing.result/1",
+    "startup_latency_s": [
+     4.545454545454646e-11,
+     5.5555555555557156e-11
+    ],
+    "unexpected": [],
+    "verdict": "MISS",
+    "verdicts": {
+     "hysteresis_max_acq_lt_min_rel": "PASS",
+     "rel_ceiling_lt_12ns": "PASS",
+     "tick": "PASS",
+     "w_acq": "PASS",
+     "w_rel": "MISS"
+    }
+   },
+   "rows": [
+    {
+     "coord": {
+      "process": "tt",
+      "temp_c": -40.0,
+      "vdd_v": 1.62
+     },
+     "error": null,
+     "raw_period_s": 2.5e-07,
+     "reason": null,
+     "startup_latency_s": 5.5555555555557156e-11,
+     "status": "OK",
+     "tick_s": 2.5e-07,
+     "w_acq_s": 2.9947118792180736e-09,
+     "w_rel_s": 7.580047875275862e-09
+    },
+    {
+     "coord": {
+      "process": "tt",
+      "temp_c": 27.0,
+      "vdd_v": 1.62
+     },
+     "error": null,
+     "raw_period_s": 2.5e-07,
+     "reason": null,
+     "startup_latency_s": 5.5555555555557156e-11,
+     "status": "OK",
+     "tick_s": 2.5e-07,
+     "w_acq_s": 2.896869283276912e-09,
+     "w_rel_s": 7.326054136438141e-09
+    },
+    {
+     "coord": {
+      "process": "tt",
+      "temp_c": 125.0,
+      "vdd_v": 1.62
+     },
+     "error": null,
+     "raw_period_s": 2.5e-07,
+     "reason": null,
+     "startup_latency_s": 5.5555555555557156e-11,
+     "status": "OK",
+     "tick_s": 2.5e-07,
+     "w_acq_s": 2.8723502756434998e-09,
+     "w_rel_s": 7.263418788653462e-09
+    },
+    {
+     "coord": {
+      "process": "ff",
+      "temp_c": -40.0,
+      "vdd_v": 1.62
+     },
+     "error": null,
+     "raw_period_s": 2.5e-07,
+     "reason": null,
+     "startup_latency_s": 5.5555555555557156e-11,
+     "status": "OK",
+     "tick_s": 2.5e-07,
+     "w_acq_s": 2.52526235892484e-09,
+     "w_rel_s": 6.38939730061181e-09
+    },
+    {
+     "coord": {
+      "process": "ff",
+      "temp_c": 27.0,
+      "vdd_v": 1.62
+     },
+     "error": null,
+     "raw_period_s": 2.5e-07,
+     "reason": null,
+     "startup_latency_s": 5.5555555555557156e-11,
+     "status": "OK",
+     "tick_s": 2.5e-07,
+     "w_acq_s": 2.484602864224564e-09,
+     "w_rel_s": 6.283451225311398e-09
+    },
+    {
+     "coord": {
+      "process": "ff",
+      "temp_c": 125.0,
+      "vdd_v": 1.62
+     },
+     "error": null,
+     "raw_period_s": 2.5e-07,
+     "reason": null,
+     "startup_latency_s": 5.5555555555557156e-11,
+     "status": "OK",
+     "tick_s": 2.5e-07,
+     "w_acq_s": 2.5264911426329235e-09,
+     "w_rel_s": 6.39018103132721e-09
+    },
+    {
+     "coord": {
+      "process": "ss",
+      "temp_c": -40.0,
+      "vdd_v": 1.62
+     },
+     "error": null,
+     "raw_period_s": 2.5e-07,
+     "reason": null,
+     "startup_latency_s": 5.5555555555557156e-11,
+     "status": "OK",
+     "tick_s": 2.5e-07,
+     "w_acq_s": 3.6334448176021914e-09,
+     "w_rel_s": 9.205128653712153e-09
+    },
+    {
+     "coord": {
+      "process": "ss",
+      "temp_c": 27.0,
+      "vdd_v": 1.62
+     },
+     "error": null,
+     "raw_period_s": 2.5e-07,
+     "reason": null,
+     "startup_latency_s": 5.5555555555557156e-11,
+     "status": "OK",
+     "tick_s": 2.5e-07,
+     "w_acq_s": 3.474655245638988e-09,
+     "w_rel_s": 8.790644607861093e-09
+    },
+    {
+     "coord": {
+      "process": "ss",
+      "temp_c": 125.0,
+      "vdd_v": 1.62
+     },
+     "error": null,
+     "raw_period_s": 2.5e-07,
+     "reason": null,
+     "startup_latency_s": 5.5555555555557156e-11,
+     "status": "OK",
+     "tick_s": 2.5e-07,
+     "w_acq_s": 3.4049572571530875e-09,
+     "w_rel_s": 8.604596394668074e-09
+    },
+    {
+     "coord": {
+      "process": "fs",
+      "temp_c": -40.0,
+      "vdd_v": 1.62
+     },
+     "error": null,
+     "raw_period_s": 2.5e-07,
+     "reason": null,
+     "startup_latency_s": 5.5555555555557156e-11,
+     "status": "OK",
+     "tick_s": 2.5e-07,
+     "w_acq_s": 2.7333671770248666e-09,
+     "w_rel_s": 6.9061763454185525e-09
+    },
+    {
+     "coord": {
+      "process": "fs",
+      "temp_c": 27.0,
+      "vdd_v": 1.62
+     },
+     "error": null,
+     "raw_period_s": 2.5e-07,
+     "reason": null,
+     "startup_latency_s": 5.5555555555557156e-11,
+     "status": "OK",
+     "tick_s": 2.5e-07,
+     "w_acq_s": 2.7650993003646333e-09,
+     "w_rel_s": 6.975932320495549e-09
+    },
+    {
+     "coord": {
+      "process": "fs",
+      "temp_c": 125.0,
+      "vdd_v": 1.62
+     },
+     "error": null,
+     "raw_period_s": 2.5e-07,
+     "reason": null,
+     "startup_latency_s": 5.5555555555557156e-11,
+     "status": "OK",
+     "tick_s": 2.5e-07,
+     "w_acq_s": 2.8514792171361754e-09,
+     "w_rel_s": 7.193555436265357e-09
+    },
+    {
+     "coord": {
+      "process": "sf",
+      "temp_c": -40.0,
+      "vdd_v": 1.62
+     },
+     "error": null,
+     "raw_period_s": 2.5e-07,
+     "reason": null,
+     "startup_latency_s": 5.5555555555557156e-11,
+     "status": "OK",
+     "tick_s": 2.5e-07,
+     "w_acq_s": 3.345419328005719e-09,
+     "w_rel_s": 8.488006657705425e-09
+    },
+    {
+     "coord": {
+      "process": "sf",
+      "temp_c": 27.0,
+      "vdd_v": 1.62
+     },
+     "error": null,
+     "raw_period_s": 2.5e-07,
+     "reason": null,
+     "startup_latency_s": 5.5555555555557156e-11,
+     "status": "OK",
+     "tick_s": 2.5e-07,
+     "w_acq_s": 3.08214190335358e-09,
+     "w_rel_s": 7.810173697773838e-09
+    },
+    {
+     "coord": {
+      "process": "sf",
+      "temp_c": 125.0,
+      "vdd_v": 1.62
+     },
+     "error": null,
+     "raw_period_s": 2.5e-07,
+     "reason": null,
+     "startup_latency_s": 5.5555555555557156e-11,
+     "status": "OK",
+     "tick_s": 2.5e-07,
+     "w_acq_s": 2.928410824606681e-09,
+     "w_rel_s": 7.412096402698116e-09
+    },
+    {
+     "coord": {
+      "process": "tt",
+      "temp_c": -40.0,
+      "vdd_v": 1.8
+     },
+     "error": null,
+     "raw_period_s": 2.4999999999999994e-07,
+     "reason": null,
+     "startup_latency_s": 5.000000000000045e-11,
+     "status": "OK",
+     "tick_s": 2.4999999999999994e-07,
+     "w_acq_s": 2.2039321764003578e-09,
+     "w_rel_s": 5.556581422526018e-09
+    },
+    {
+     "coord": {
+      "process": "tt",
+      "temp_c": 27.0,
+      "vdd_v": 1.8
+     },
+     "error": null,
+     "raw_period_s": 2.4999999999999994e-07,
+     "reason": null,
+     "startup_latency_s": 5.000000000000045e-11,
+     "status": "OK",
+     "tick_s": 2.4999999999999994e-07,
+     "w_acq_s": 2.2556225316032998e-09,
+     "w_rel_s": 5.687159816875885e-09
+    },
+    {
+     "coord": {
+      "process": "tt",
+      "temp_c": 125.0,
+      "vdd_v": 1.8
+     },
+     "error": null,
+     "raw_period_s": 2.4999999999999994e-07,
+     "reason": null,
+     "startup_latency_s": 5.000000000000045e-11,
+     "status": "OK",
+     "tick_s": 2.4999999999999994e-07,
+     "w_acq_s": 2.3641049711054737e-09,
+     "w_rel_s": 5.9599547843993875e-09
+    },
+    {
+     "coord": {
+      "process": "ff",
+      "temp_c": -40.0,
+      "vdd_v": 1.8
+     },
+     "error": null,
+     "raw_period_s": 2.4999999999999994e-07,
+     "reason": null,
+     "startup_latency_s": 5.000000000000045e-11,
+     "status": "OK",
+     "tick_s": 2.4999999999999994e-07,
+     "w_acq_s": 1.9170642605796778e-09,
+     "w_rel_s": 4.8352845549709325e-09
+    },
+    {
+     "coord": {
+      "process": "ff",
+      "temp_c": 27.0,
+      "vdd_v": 1.8
+     },
+     "error": null,
+     "raw_period_s": 2.4999999999999994e-07,
+     "reason": null,
+     "startup_latency_s": 5.000000000000045e-11,
+     "status": "OK",
+     "tick_s": 2.4999999999999994e-07,
+     "w_acq_s": 1.9794919787291287e-09,
+     "w_rel_s": 4.99241130017837e-09
+    },
+    {
+     "coord": {
+      "process": "ff",
+      "temp_c": 125.0,
+      "vdd_v": 1.8
+     },
+     "error": null,
+     "raw_period_s": 2.4999999999999994e-07,
+     "reason": null,
+     "startup_latency_s": 5.000000000000045e-11,
+     "status": "OK",
+     "tick_s": 2.4999999999999994e-07,
+     "w_acq_s": 2.1166399130360896e-09,
+     "w_rel_s": 5.344858973235311e-09
+    },
+    {
+     "coord": {
+      "process": "ss",
+      "temp_c": -40.0,
+      "vdd_v": 1.8
+     },
+     "error": null,
+     "raw_period_s": 2.4999999999999994e-07,
+     "reason": null,
+     "startup_latency_s": 5.000000000000045e-11,
+     "status": "OK",
+     "tick_s": 2.4999999999999994e-07,
+     "w_acq_s": 2.6034328940309332e-09,
+     "w_rel_s": 6.56619407737995e-09
+    },
+    {
+     "coord": {
+      "process": "ss",
+      "temp_c": 27.0,
+      "vdd_v": 1.8
+     },
+     "error": null,
+     "raw_period_s": 2.4999999999999994e-07,
+     "reason": null,
+     "startup_latency_s": 5.000000000000045e-11,
+     "status": "OK",
+     "tick_s": 2.4999999999999994e-07,
+     "w_acq_s": 2.6512964724473734e-09,
+     "w_rel_s": 6.683185133029559e-09
+    },
+    {
+     "coord": {
+      "process": "ss",
+      "temp_c": 125.0,
+      "vdd_v": 1.8
+     },
+     "error": null,
+     "raw_period_s": 2.4999999999999994e-07,
+     "reason": null,
+     "startup_latency_s": 5.000000000000045e-11,
+     "status": "OK",
+     "tick_s": 2.4999999999999994e-07,
+     "w_acq_s": 2.765291142023267e-09,
+     "w_rel_s": 6.966140234626369e-09
+    },
+    {
+     "coord": {
+      "process": "fs",
+      "temp_c": -40.0,
+      "vdd_v": 1.8
+     },
+     "error": null,
+     "raw_period_s": 2.4999999999999994e-07,
+     "reason": null,
+     "startup_latency_s": 5.000000000000045e-11,
+     "status": "OK",
+     "tick_s": 2.4999999999999994e-07,
+     "w_acq_s": 2.0827008637844828e-09,
+     "w_rel_s": 5.236072989491135e-09
+    },
+    {
+     "coord": {
+      "process": "fs",
+      "temp_c": 27.0,
+      "vdd_v": 1.8
+     },
+     "error": null,
+     "raw_period_s": 2.4999999999999994e-07,
+     "reason": null,
+     "startup_latency_s": 5.000000000000045e-11,
+     "status": "OK",
+     "tick_s": 2.4999999999999994e-07,
+     "w_acq_s": 2.193928648010701e-09,
+     "w_rel_s": 5.515534417131498e-09
+    },
+    {
+     "coord": {
+      "process": "fs",
+      "temp_c": 125.0,
+      "vdd_v": 1.8
+     },
+     "error": null,
+     "raw_period_s": 2.4999999999999994e-07,
+     "reason": null,
+     "startup_latency_s": 5.000000000000045e-11,
+     "status": "OK",
+     "tick_s": 2.4999999999999994e-07,
+     "w_acq_s": 2.3616429770132268e-09,
+     "w_rel_s": 5.942951857621782e-09
+    },
+    {
+     "coord": {
+      "process": "sf",
+      "temp_c": -40.0,
+      "vdd_v": 1.8
+     },
+     "error": null,
+     "raw_period_s": 2.4999999999999994e-07,
+     "reason": null,
+     "startup_latency_s": 5.000000000000045e-11,
+     "status": "OK",
+     "tick_s": 2.4999999999999994e-07,
+     "w_acq_s": 2.3622281974767962e-09,
+     "w_rel_s": 5.9694393387126695e-09
+    },
+    {
+     "coord": {
+      "process": "sf",
+      "temp_c": 27.0,
+      "vdd_v": 1.8
+     },
+     "error": null,
+     "raw_period_s": 2.4999999999999994e-07,
+     "reason": null,
+     "startup_latency_s": 5.000000000000045e-11,
+     "status": "OK",
+     "tick_s": 2.4999999999999994e-07,
+     "w_acq_s": 2.3428718208278043e-09,
+     "w_rel_s": 5.916564572370145e-09
+    },
+    {
+     "coord": {
+      "process": "sf",
+      "temp_c": 125.0,
+      "vdd_v": 1.8
+     },
+     "error": null,
+     "raw_period_s": 2.4999999999999994e-07,
+     "reason": null,
+     "startup_latency_s": 5.000000000000045e-11,
+     "status": "OK",
+     "tick_s": 2.4999999999999994e-07,
+     "w_acq_s": 2.3850331074414096e-09,
+     "w_rel_s": 6.0208810099851585e-09
+    },
+    {
+     "coord": {
+      "process": "tt",
+      "temp_c": -40.0,
+      "vdd_v": 1.98
+     },
+     "error": null,
+     "raw_period_s": 2.4999999999999994e-07,
+     "reason": null,
+     "startup_latency_s": 4.545454545454646e-11,
+     "status": "OK",
+     "tick_s": 2.4999999999999994e-07,
+     "w_acq_s": 1.7884314930970449e-09,
+     "w_rel_s": 4.498733443988337e-09
+    },
+    {
+     "coord": {
+      "process": "tt",
+      "temp_c": 27.0,
+      "vdd_v": 1.98
+     },
+     "error": null,
+     "raw_period_s": 2.4999999999999994e-07,
+     "reason": null,
+     "startup_latency_s": 4.545454545454646e-11,
+     "status": "OK",
+     "tick_s": 2.4999999999999994e-07,
+     "w_acq_s": 1.8788772977526384e-09,
+     "w_rel_s": 4.7348745212240686e-09
+    },
+    {
+     "coord": {
+      "process": "tt",
+      "temp_c": 125.0,
+      "vdd_v": 1.98
+     },
+     "error": null,
+     "raw_period_s": 2.4999999999999994e-07,
+     "reason": null,
+     "startup_latency_s": 4.545454545454646e-11,
+     "status": "OK",
+     "tick_s": 2.4999999999999994e-07,
+     "w_acq_s": 2.0339317550565956e-09,
+     "w_rel_s": 5.123915515321606e-09
+    },
+    {
+     "coord": {
+      "process": "ff",
+      "temp_c": -40.0,
+      "vdd_v": 1.98
+     },
+     "error": null,
+     "raw_period_s": 2.4999999999999994e-07,
+     "reason": null,
+     "startup_latency_s": 4.545454545454646e-11,
+     "status": "OK",
+     "tick_s": 2.4999999999999994e-07,
+     "w_acq_s": 1.5831792988754522e-09,
+     "w_rel_s": 4.001074316262794e-09
+    },
+    {
+     "coord": {
+      "process": "ff",
+      "temp_c": 27.0,
+      "vdd_v": 1.98
+     },
+     "error": null,
+     "raw_period_s": 2.4999999999999994e-07,
+     "reason": null,
+     "startup_latency_s": 4.545454545454646e-11,
+     "status": "OK",
+     "tick_s": 2.4999999999999994e-07,
+     "w_acq_s": 1.679238676544261e-09,
+     "w_rel_s": 4.228426557955624e-09
+    },
+    {
+     "coord": {
+      "process": "ff",
+      "temp_c": 125.0,
+      "vdd_v": 1.98
+     },
+     "error": null,
+     "raw_period_s": 2.4999999999999994e-07,
+     "reason": null,
+     "startup_latency_s": 4.545454545454646e-11,
+     "status": "OK",
+     "tick_s": 2.4999999999999994e-07,
+     "w_acq_s": 1.8496099591340432e-09,
+     "w_rel_s": 4.6654631141446324e-09
+    },
+    {
+     "coord": {
+      "process": "ss",
+      "temp_c": -40.0,
+      "vdd_v": 1.98
+     },
+     "error": null,
+     "raw_period_s": 2.4999999999999994e-07,
+     "reason": null,
+     "startup_latency_s": 4.545454545454646e-11,
+     "status": "OK",
+     "tick_s": 2.4999999999999994e-07,
+     "w_acq_s": 2.068399169897108e-09,
+     "w_rel_s": 5.197587500479107e-09
+    },
+    {
+     "coord": {
+      "process": "ss",
+      "temp_c": 27.0,
+      "vdd_v": 1.98
+     },
+     "error": null,
+     "raw_period_s": 2.4999999999999994e-07,
+     "reason": null,
+     "startup_latency_s": 4.545454545454646e-11,
+     "status": "OK",
+     "tick_s": 2.4999999999999994e-07,
+     "w_acq_s": 2.1868625560996232e-09,
+     "w_rel_s": 5.4915266020128465e-09
+    },
+    {
+     "coord": {
+      "process": "ss",
+      "temp_c": 125.0,
+      "vdd_v": 1.98
+     },
+     "error": null,
+     "raw_period_s": 2.4999999999999994e-07,
+     "reason": null,
+     "startup_latency_s": 4.545454545454646e-11,
+     "status": "OK",
+     "tick_s": 2.4999999999999994e-07,
+     "w_acq_s": 2.3593081293705254e-09,
+     "w_rel_s": 5.9302765913321725e-09
+    },
+    {
+     "coord": {
+      "process": "fs",
+      "temp_c": -40.0,
+      "vdd_v": 1.98
+     },
+     "error": null,
+     "raw_period_s": 2.4999999999999994e-07,
+     "reason": null,
+     "startup_latency_s": 4.545454545454646e-11,
+     "status": "OK",
+     "tick_s": 2.4999999999999994e-07,
+     "w_acq_s": 1.716119445618629e-09,
+     "w_rel_s": 4.30959122514889e-09
+    },
+    {
+     "coord": {
+      "process": "fs",
+      "temp_c": 27.0,
+      "vdd_v": 1.98
+     },
+     "error": null,
+     "raw_period_s": 2.4999999999999994e-07,
+     "reason": null,
+     "startup_latency_s": 4.545454545454646e-11,
+     "status": "OK",
+     "tick_s": 2.4999999999999994e-07,
+     "w_acq_s": 1.846663242314684e-09,
+     "w_rel_s": 4.635307859060276e-09
+    },
+    {
+     "coord": {
+      "process": "fs",
+      "temp_c": 125.0,
+      "vdd_v": 1.98
+     },
+     "error": null,
+     "raw_period_s": 2.4999999999999994e-07,
+     "reason": null,
+     "startup_latency_s": 4.545454545454646e-11,
+     "status": "OK",
+     "tick_s": 2.4999999999999994e-07,
+     "w_acq_s": 2.039209097376628e-09,
+     "w_rel_s": 5.123204912386421e-09
+    },
+    {
+     "coord": {
+      "process": "sf",
+      "temp_c": -40.0,
+      "vdd_v": 1.98
+     },
+     "error": null,
+     "raw_period_s": 2.4999999999999994e-07,
+     "reason": null,
+     "startup_latency_s": 4.545454545454646e-11,
+     "status": "OK",
+     "tick_s": 2.4999999999999994e-07,
+     "w_acq_s": 1.8860882388564845e-09,
+     "w_rel_s": 4.746263242920403e-09
+    },
+    {
+     "coord": {
+      "process": "sf",
+      "temp_c": 27.0,
+      "vdd_v": 1.98
+     },
+     "error": null,
+     "raw_period_s": 2.4999999999999994e-07,
+     "reason": null,
+     "startup_latency_s": 4.545454545454646e-11,
+     "status": "OK",
+     "tick_s": 2.4999999999999994e-07,
+     "w_acq_s": 1.932244043122082e-09,
+     "w_rel_s": 4.867426332776848e-09
+    },
+    {
+     "coord": {
+      "process": "sf",
+      "temp_c": 125.0,
+      "vdd_v": 1.98
+     },
+     "error": null,
+     "raw_period_s": 2.4999999999999994e-07,
+     "reason": null,
+     "startup_latency_s": 4.545454545454646e-11,
+     "status": "OK",
+     "tick_s": 2.4999999999999994e-07,
+     "w_acq_s": 2.0445148659924034e-09,
+     "w_rel_s": 5.150250864825692e-09
+    }
+   ]
+  }
+ ],
+ "evidence_class": "physical",
+ "grouping": "one klt request per (product, candidate) x supply; process x temperature as klt corners",
+ "handoff": {
+  "handoff_ready": false,
+  "products_absent": "required products not declared",
+  "scope": "SUBSET"
+ },
+ "jobs": [
+  {
+   "client_klt_version": "0.7.0+g0eb710abc950",
+   "dir": "phase-windows.s50-falling_1.62v",
+   "engine_version": "46",
+   "exit_code": 4,
+   "failure": null,
+   "group": "phase-windows.s50-falling_1.62v",
+   "instance_type": "c7i.8xlarge",
+   "job_id": "klt-sim-db988f0c323a",
+   "netlist_sha256": "01a6300b84214c42f88df6d669bd06da7b5821acdd0b7c5ed306fdd1169233cc",
+   "pdk": {
+    "lib": "libs.tech/combined/sky130.lib.spice",
+    "pdk": "sky130A"
+   },
+   "request_sha256": "08dceeb63b537599b955ac91794066e7796d8181ab0229c9e5b380afbb3d3b59",
+   "runner_klt_version": "0.5.0",
+   "supply_v": 1.62,
+   "version_skew": true
+  },
+  {
+   "client_klt_version": "0.7.0+g0eb710abc950",
+   "dir": "phase-windows.s50-falling_1.80v",
+   "engine_version": "46",
+   "exit_code": 4,
+   "failure": null,
+   "group": "phase-windows.s50-falling_1.80v",
+   "instance_type": "c6i.8xlarge",
+   "job_id": "klt-sim-5a09af4d2c56",
+   "netlist_sha256": "0a2e4e7943b2721b65106334e7fc74ae700f569c70116a79e7da614db6b9bf8f",
+   "pdk": {
+    "lib": "libs.tech/combined/sky130.lib.spice",
+    "pdk": "sky130A"
+   },
+   "request_sha256": "08dceeb63b537599b955ac91794066e7796d8181ab0229c9e5b380afbb3d3b59",
+   "runner_klt_version": "0.5.0",
+   "supply_v": 1.8,
+   "version_skew": true
+  },
+  {
+   "client_klt_version": "0.7.0+g0eb710abc950",
+   "dir": "phase-windows.s50-falling_1.98v",
+   "engine_version": "46",
+   "exit_code": 4,
+   "failure": null,
+   "group": "phase-windows.s50-falling_1.98v",
+   "instance_type": "c7i.8xlarge",
+   "job_id": "klt-sim-246659a4e914",
+   "netlist_sha256": "6bd6d34edc0fd4175160d6b77d3fb1d5c3bff4828725ef83b44ec614ef803e88",
+   "pdk": {
+    "lib": "libs.tech/combined/sky130.lib.spice",
+    "pdk": "sky130A"
+   },
+   "request_sha256": "08dceeb63b537599b955ac91794066e7796d8181ab0229c9e5b380afbb3d3b59",
+   "runner_klt_version": "0.5.0",
+   "supply_v": 1.98,
+   "version_skew": true
+  }
+ ],
+ "matrix_id": "c64bfca5c24d5db0",
+ "pdk_pin": "c6d73a35f524070e85faff4a6a9eef49553ebc2b",
+ "points_requested": 45,
+ "points_scope": "all",
+ "record_id": "lt-20261012-215409-824834",
+ "schema": "sky130-pll.lockdet-timing.record/1",
+ "supersedes": null
+}

@@ -1,0 +1,38 @@
+{
+ "analysis": {
+  "args": "20p 800.0008n",
+  "kind": "tran"
+ },
+ "backend": "batch",
+ "batch": {
+  "poll_timeout_s": 7200,
+  "runner_version_check": "warn"
+ },
+ "corners": {
+  "process": [
+   "tt",
+   "ff",
+   "ss",
+   "fs",
+   "sf"
+  ],
+  "temperature_c": [
+   -40.0,
+   27.0,
+   125.0
+  ]
+ },
+ "engine": "ngspice",
+ "measurements": [],
+ "models": {
+  "lib": "libs.tech/combined/sky130.lib.spice",
+  "pdk": "sky130A"
+ },
+ "netlist": "body.spice",
+ "options": {
+  "keep_artifacts": true,
+  "max_workers": 2,
+  "timeout_s": 3600,
+  "waveforms": true
+ }
+}
