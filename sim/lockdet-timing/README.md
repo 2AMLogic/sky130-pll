@@ -86,7 +86,8 @@ stimulus, the DUT and one `@VDD@` placeholder for the supply value; it must not
 hold `.control`, `.end` or a process `.lib` card (any `.lib`/`.end` line is
 stripped; klt owns the process axis, `.control` and capture). The runner adds
 `.save` for the manifest's traces. Grouping is explicit: one `klt sim` request
-per candidate x supply, process x temperature as klt corners.
+per (product, candidate) x supply, process x temperature as klt corners; the
+group key `<product>.<candidate>_<vdd>v` names its work and evidence directory.
 
 ```
 # plan only: no job, no PDK, no klt needed (nominal = tt/27C/1.8V, a labelled SUBSET_POINTS)
@@ -98,9 +99,13 @@ python3 sim/run_locktiming.py --candidate m1.json=n1.spice --points nominal \
     --required-products pA,pB,pC
 ```
 
+`--required-products` must name exactly three distinct ids; a wrong count is
+refused before anything is submitted.
+
 Rules the runner enforces:
 
-* Failed submission, capacity exhaustion, version refusal, missing report,
+* Failed submission, capacity exhaustion, a non-usable klt exit code (not 0
+  or 3, recorded as `exit_code`), version refusal, missing report,
   missing corner/trace and truncated or non-uniform waveforms become explicit
   `SIM_FAILED`/`MALFORMED`/`INSUFFICIENT_SETTLING` rows with a `reason`; the
   candidate stays `INCONCLUSIVE`. No local simulation fallback, no ngspice loop.
@@ -108,7 +113,8 @@ Rules the runner enforces:
   `sim/lockdet-timing/records/`, append-only; the request, body netlist and
   report of every group are kept under `records/<record-id>/<group>/`. Each
   carries input/netlist hashes, PDK pin, job ids, engine and runner/client klt
-  versions, `points_scope` and the `handoff` scope. A rerun of the same matrix
+  versions (`version_skew: true` when they differ), `points_scope` and the
+  `handoff` scope. A rerun of the same matrix
   must pass `--supersedes <record-id>`; an existing file is never overwritten.
 * `evidence_class` is `physical` only if every group has a batch job id and no
   group failure. `--fixture` forces `fixture` and requires an explicit
