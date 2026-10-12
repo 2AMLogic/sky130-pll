@@ -1,0 +1,300 @@
+{
+ "candidate_id": "s50-rising",
+ "grid": [
+  {
+   "process": "tt",
+   "temp_c": -40.0,
+   "vdd_v": 1.62
+  },
+  {
+   "process": "tt",
+   "temp_c": -40.0,
+   "vdd_v": 1.8
+  },
+  {
+   "process": "tt",
+   "temp_c": -40.0,
+   "vdd_v": 1.98
+  },
+  {
+   "process": "tt",
+   "temp_c": 27.0,
+   "vdd_v": 1.62
+  },
+  {
+   "process": "tt",
+   "temp_c": 27.0,
+   "vdd_v": 1.8
+  },
+  {
+   "process": "tt",
+   "temp_c": 27.0,
+   "vdd_v": 1.98
+  },
+  {
+   "process": "tt",
+   "temp_c": 125.0,
+   "vdd_v": 1.62
+  },
+  {
+   "process": "tt",
+   "temp_c": 125.0,
+   "vdd_v": 1.8
+  },
+  {
+   "process": "tt",
+   "temp_c": 125.0,
+   "vdd_v": 1.98
+  },
+  {
+   "process": "ff",
+   "temp_c": -40.0,
+   "vdd_v": 1.62
+  },
+  {
+   "process": "ff",
+   "temp_c": -40.0,
+   "vdd_v": 1.8
+  },
+  {
+   "process": "ff",
+   "temp_c": -40.0,
+   "vdd_v": 1.98
+  },
+  {
+   "process": "ff",
+   "temp_c": 27.0,
+   "vdd_v": 1.62
+  },
+  {
+   "process": "ff",
+   "temp_c": 27.0,
+   "vdd_v": 1.8
+  },
+  {
+   "process": "ff",
+   "temp_c": 27.0,
+   "vdd_v": 1.98
+  },
+  {
+   "process": "ff",
+   "temp_c": 125.0,
+   "vdd_v": 1.62
+  },
+  {
+   "process": "ff",
+   "temp_c": 125.0,
+   "vdd_v": 1.8
+  },
+  {
+   "process": "ff",
+   "temp_c": 125.0,
+   "vdd_v": 1.98
+  },
+  {
+   "process": "ss",
+   "temp_c": -40.0,
+   "vdd_v": 1.62
+  },
+  {
+   "process": "ss",
+   "temp_c": -40.0,
+   "vdd_v": 1.8
+  },
+  {
+   "process": "ss",
+   "temp_c": -40.0,
+   "vdd_v": 1.98
+  },
+  {
+   "process": "ss",
+   "temp_c": 27.0,
+   "vdd_v": 1.62
+  },
+  {
+   "process": "ss",
+   "temp_c": 27.0,
+   "vdd_v": 1.8
+  },
+  {
+   "process": "ss",
+   "temp_c": 27.0,
+   "vdd_v": 1.98
+  },
+  {
+   "process": "ss",
+   "temp_c": 125.0,
+   "vdd_v": 1.62
+  },
+  {
+   "process": "ss",
+   "temp_c": 125.0,
+   "vdd_v": 1.8
+  },
+  {
+   "process": "ss",
+   "temp_c": 125.0,
+   "vdd_v": 1.98
+  },
+  {
+   "process": "fs",
+   "temp_c": -40.0,
+   "vdd_v": 1.62
+  },
+  {
+   "process": "fs",
+   "temp_c": -40.0,
+   "vdd_v": 1.8
+  },
+  {
+   "process": "fs",
+   "temp_c": -40.0,
+   "vdd_v": 1.98
+  },
+  {
+   "process": "fs",
+   "temp_c": 27.0,
+   "vdd_v": 1.62
+  },
+  {
+   "process": "fs",
+   "temp_c": 27.0,
+   "vdd_v": 1.8
+  },
+  {
+   "process": "fs",
+   "temp_c": 27.0,
+   "vdd_v": 1.98
+  },
+  {
+   "process": "fs",
+   "temp_c": 125.0,
+   "vdd_v": 1.62
+  },
+  {
+   "process": "fs",
+   "temp_c": 125.0,
+   "vdd_v": 1.8
+  },
+  {
+   "process": "fs",
+   "temp_c": 125.0,
+   "vdd_v": 1.98
+  },
+  {
+   "process": "sf",
+   "temp_c": -40.0,
+   "vdd_v": 1.62
+  },
+  {
+   "process": "sf",
+   "temp_c": -40.0,
+   "vdd_v": 1.8
+  },
+  {
+   "process": "sf",
+   "temp_c": -40.0,
+   "vdd_v": 1.98
+  },
+  {
+   "process": "sf",
+   "temp_c": 27.0,
+   "vdd_v": 1.62
+  },
+  {
+   "process": "sf",
+   "temp_c": 27.0,
+   "vdd_v": 1.8
+  },
+  {
+   "process": "sf",
+   "temp_c": 27.0,
+   "vdd_v": 1.98
+  },
+  {
+   "process": "sf",
+   "temp_c": 125.0,
+   "vdd_v": 1.62
+  },
+  {
+   "process": "sf",
+   "temp_c": 125.0,
+   "vdd_v": 1.8
+  },
+  {
+   "process": "sf",
+   "temp_c": 125.0,
+   "vdd_v": 1.98
+  }
+ ],
+ "inventory": {
+  "cells": [
+   {
+    "drive": "1",
+    "name": "sky130_fd_sc_hd__clkdlybuf4s50_1",
+    "stage": "acq x7"
+   },
+   {
+    "drive": "1",
+    "name": "sky130_fd_sc_hd__clkdlybuf4s50_1",
+    "stage": "rel x18"
+   }
+  ],
+  "dividers": [
+   "none: tick is the stimulus"
+  ],
+  "taps": [
+   "acq",
+   "rel"
+  ]
+ },
+ "measurement": {
+  "acq": {
+   "input": "in",
+   "input_edge": "rising",
+   "tap": "acq",
+   "tap_edge": "rising",
+   "threshold_v": 0.9
+  },
+  "load_f": 1e-14,
+  "raw": {
+   "edge": "rising",
+   "signal": "in",
+   "threshold_v": 0.9
+  },
+  "rel": {
+   "input": "in",
+   "input_edge": "rising",
+   "tap": "rel",
+   "tap_edge": "rising",
+   "threshold_v": 0.9
+  },
+  "slew_s": 1e-10,
+  "startup": {
+   "edge": "rising",
+   "signal": "rstb",
+   "threshold_v": 0.9
+  },
+  "tick": {
+   "edge": "rising",
+   "signal": "in",
+   "threshold_v": 0.9
+  }
+ },
+ "product_id": "phase-windows",
+ "schema": "sky130-pll.lockdet-timing.manifest/1",
+ "units": {
+  "capacitance": "F",
+  "temperature": "C",
+  "time": "s",
+  "voltage": "V"
+ },
+ "windows": {
+  "enable_s": 2e-08,
+  "settle_s": 6e-08,
+  "step_s": 2e-11,
+  "timeout_s": 3600,
+  "window_start_s": 1e-07,
+  "window_stop_s": 8e-07
+ }
+}
