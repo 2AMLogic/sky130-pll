@@ -113,10 +113,68 @@ falling. The batch-reduced rising values above agree to < 0.1 ps.
 
 ### Full PVT grid
 
-Not yet recorded. The four 45-point grids (`s50`/`s25` x rising/falling,
-three supply groups each) are submitted through the runner's batch path; each
-15-corner group takes about 25 minutes on the fleet. Until their records are
-committed here, no envelope, band verdict or selection is claimed.
+Four records, one per candidate x polarity, each the complete 45-point
+matrix (tt/ff/ss/fs/sf x -40/27/125 C x 1.62/1.8/1.98 V) run through the
+runner's klt batch path (three supply groups of 15 corners each, fleet jobs
+listed in each record). Every record is `physical`, `complete: true`, with
+no failed, missing, duplicate or unexpected points (45 of 45 `OK`). Startup
+latency (enable-to-first-edge convention) and the stimulus period (`tick`)
+pass in all four.
+
+| record | candidate | `W_acq` (ns) | `W_rel` (ns) | reducer verdict |
+| --- | --- | --- | --- | --- |
+| `lt-20261012-215440-502985` | `s50` rising | 1.885 - 4.584 | 4.745 - 11.573 | MISS: `W_acq` 4 points > 4.0, `W_rel` 4 points > 10.0 |
+| `lt-20261012-215409-824834` | `s50` falling | 1.583 - 3.633 | 4.001 - 9.205 | MISS: `W_rel` 4 points < 4.5 |
+| `lt-20261012-220148-142698` | `s25` rising | 1.748 - 4.064 | 4.748 - 11.064 | MISS: `W_acq` 1 point > 4.0, `W_rel` 2 points > 10.0 |
+| `lt-20261012-220219-074618` | `s25` falling | 1.677 - 3.776 | 4.591 - 10.376 | MISS: `W_rel` 1 point > 10.0 |
+
+Bands: `W_acq` 1.5-4.0 ns, `W_rel` 4.5-10.0 ns. In all four records the
+cross-window checks pass: max(`W_acq`) < min(`W_rel`) (strict) and
+max(`W_rel`) < 12 ns (strict). Every extreme sits at the same corners:
+fastest at ff/-40 C/1.98 V, slowest at ss/-40 C/1.62 V. The spread is
+dominated by process and supply (about 2.4x for the 1.62-1.98 V and ss/ff
+extremes combined), not temperature.
+
+**Verdict: no tested candidate meets the bands.** On the rising edges, which
+are the selection basis (the DR-007 phase test compares rising `REF`/`FBCLK`
+edges), both `s50` and `s25` miss the `W_rel` ceiling (11.573 ns and
+11.064 ns against 10.0 ns) and the `W_acq` ceiling (4.584 ns and 4.064 ns
+against 4.0 ns). The nearest rising candidate is `s25` (acquisition misses by
+0.064 ns at one corner, release by up to 1.064 ns at two). On falling edges
+only `s25` is close (one `W_rel` point at 10.376 ns); `s50` falling misses
+the `W_rel` floor at four corners (min 4.001 ns). No tap was selected. This
+is a fully measured miss.
+
+Why a different tap count of the same cells would not fix it: the release
+band spans a ratio of 10.0/4.5 = 2.22, but the measured slowest/fastest
+`W_rel` ratio is 2.44 (`s50` rising), 2.33 (`s25` rising), 2.26 (`s25`
+falling) and 2.30 (`s50` falling). Scaling the tap count scales the whole
+envelope, so it cannot narrow the ratio; the release band is unreachable
+with these cells over the full grid, whatever the count. The acquisition
+band (ratio 4.0/1.5 = 2.67) is wide enough in principle (measured ratios
+2.1-2.4) and could be re-centered by a shorter chain. Meeting the release
+band needs a structure whose delay varies less across process and supply
+(or a revisit of the band), which is follow-up design work and is not done
+here. This miss blocks #260 as the issue states. No band, spec value or
+DR-007 status was changed.
+
+Waveform/reducer cross-check at the worst corner: one local single-corner
+ngspice run (ss, -40 C, 1.62 V, `s50.spice`, the same combined-PDK library
+the batch request names, `.meas` at 0.9 V from 100 ns) gave rising
+`W_acq` 4.58433 ns / `W_rel` 11.5730 ns and falling 3.63304 ns / 9.20474 ns.
+The records give 4.58447 / 11.5732 ns (rising) and 3.633 / 9.205 ns
+(falling): agreement to < 0.2 ps. (A first probe that used the standalone
+ngspice-flavored `sky130.lib.spice` instead of the combined library read
+5.07 / 12.8 ns; the models differ, so the library path must match the
+request's `libs.tech/combined/sky130.lib.spice`.)
+
+Fleet note: all 12 jobs returned exit 0 on `c7i.8xlarge` Spot instances
+(ngspice 46, runner klt 0.5.0 vs client 0.7.0, `version_skew: true`
+accepted as in the smoke); no submit failure occurred.
+
+Cell inventory and area: see the Candidates table (liberty areas;
+measured from liberty, placement-free). Selection of a cell/tap count did not
+occur, so there is no selected-area figure.
 
 ## Switching current and shared VDD
 
