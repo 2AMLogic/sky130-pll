@@ -1,0 +1,54 @@
+{
+ "candidates": {
+  "s25-falling": {
+   "acq": "14x sky130_fd_sc_hd__clkdlybuf4s25_1",
+   "manifest": "candidates/s25-falling.json",
+   "manifest_sha256": "d46f67cd5da6e7e93dfdf08a6322de6dd5cdbb200ea17a318096ca59e5825d30",
+   "netlist": "candidates/s25.spice",
+   "netlist_sha256": "003b06ce6863afb6f1f512b8a0d31f8e8d3b4ea5c558f1c152cd70d0941bfa53",
+   "rel": "39x sky130_fd_sc_hd__clkdlybuf4s25_1"
+  },
+  "s25-rising": {
+   "acq": "14x sky130_fd_sc_hd__clkdlybuf4s25_1",
+   "manifest": "candidates/s25-rising.json",
+   "manifest_sha256": "09e542938d36097173b0cc17e162c0e867c47f9ebf0bfc76b1643d04d619e87b",
+   "netlist": "candidates/s25.spice",
+   "netlist_sha256": "003b06ce6863afb6f1f512b8a0d31f8e8d3b4ea5c558f1c152cd70d0941bfa53",
+   "rel": "39x sky130_fd_sc_hd__clkdlybuf4s25_1"
+  },
+  "s50-falling": {
+   "acq": "7x sky130_fd_sc_hd__clkdlybuf4s50_1",
+   "manifest": "candidates/s50-falling.json",
+   "manifest_sha256": "729138a82588cab9a961ef77ad5d98627ecc5e74da7f2268b6aa16569f68b96b",
+   "netlist": "candidates/s50.spice",
+   "netlist_sha256": "7ec0df8e42bb072b38ff788cf0131a4c3d6655357b504d600d9c617b74f6ce69",
+   "rel": "18x sky130_fd_sc_hd__clkdlybuf4s50_1"
+  },
+  "s50-rising": {
+   "acq": "7x sky130_fd_sc_hd__clkdlybuf4s50_1",
+   "manifest": "candidates/s50-rising.json",
+   "manifest_sha256": "3a3cd4e51161edcb9c77eb2787307eebe45cdb0bc76ce1b8a93e4f6af32b02de",
+   "netlist": "candidates/s50.spice",
+   "netlist_sha256": "7ec0df8e42bb072b38ff788cf0131a4c3d6655357b504d600d9c617b74f6ce69",
+   "rel": "18x sky130_fd_sc_hd__clkdlybuf4s50_1"
+  }
+ },
+ "generator": "design/lock-detector/timing/gen_phase_windows.py",
+ "grid": "tt/ff/ss/fs/sf x -40/27/125 C x 1.62/1.8/1.98 V (45 per candidate)",
+ "pdk_pin": "c6d73a35f524070e85faff4a6a9eef49553ebc2b",
+ "schema": "sky130-pll.lockdet-timing.phase-index/1",
+ "stimulus": {
+  "enable_s": 2e-08,
+  "input_first_rise_s": 1.5e-07,
+  "input_period_s": 2.5e-07,
+  "input_width_s": 1e-07,
+  "load_f": 1e-14,
+  "settle_s": 6e-08,
+  "slew_s": 1e-10,
+  "step_s": 2e-11,
+  "threshold_v": 0.9,
+  "timeout_s": 3600,
+  "window_start_s": 1e-07,
+  "window_stop_s": 8e-07
+ }
+}

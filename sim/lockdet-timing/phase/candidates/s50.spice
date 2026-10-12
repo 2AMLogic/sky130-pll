@@ -1,0 +1,49 @@
+* phase-window candidate s50
+* cells inlined verbatim from sky130_fd_sc_hd.spice (open_pdks pin in sim/pdk.json)
+.subckt sky130_fd_sc_hd__clkdlybuf4s50_1 A VGND VNB VPB VPWR X
+X0 a_390_47# a_283_47# VGND VNB sky130_fd_pr__nfet_01v8 w=650000u l=500000u
+X1 a_27_47# A VPWR VPB sky130_fd_pr__pfet_01v8_hvt w=1e+06u l=150000u
+X2 VPWR a_27_47# a_283_47# VPB sky130_fd_pr__pfet_01v8_hvt w=820000u l=500000u
+X3 VGND a_27_47# a_283_47# VNB sky130_fd_pr__nfet_01v8 w=650000u l=500000u
+X4 VPWR a_390_47# X VPB sky130_fd_pr__pfet_01v8_hvt w=1e+06u l=150000u
+X5 VGND a_390_47# X VNB sky130_fd_pr__nfet_01v8 w=420000u l=150000u
+X6 a_390_47# a_283_47# VPWR VPB sky130_fd_pr__pfet_01v8_hvt w=820000u l=500000u
+X7 a_27_47# A VGND VNB sky130_fd_pr__nfet_01v8 w=420000u l=150000u
+.ends
+
+
+
+.subckt phase_win_s50 IN ACQ REL VDD GND
+XACQ1 IN GND GND VDD VDD acq1 sky130_fd_sc_hd__clkdlybuf4s50_1
+XACQ2 acq1 GND GND VDD VDD acq2 sky130_fd_sc_hd__clkdlybuf4s50_1
+XACQ3 acq2 GND GND VDD VDD acq3 sky130_fd_sc_hd__clkdlybuf4s50_1
+XACQ4 acq3 GND GND VDD VDD acq4 sky130_fd_sc_hd__clkdlybuf4s50_1
+XACQ5 acq4 GND GND VDD VDD acq5 sky130_fd_sc_hd__clkdlybuf4s50_1
+XACQ6 acq5 GND GND VDD VDD acq6 sky130_fd_sc_hd__clkdlybuf4s50_1
+XACQ7 acq6 GND GND VDD VDD ACQ sky130_fd_sc_hd__clkdlybuf4s50_1
+XREL1 IN GND GND VDD VDD rel1 sky130_fd_sc_hd__clkdlybuf4s50_1
+XREL2 rel1 GND GND VDD VDD rel2 sky130_fd_sc_hd__clkdlybuf4s50_1
+XREL3 rel2 GND GND VDD VDD rel3 sky130_fd_sc_hd__clkdlybuf4s50_1
+XREL4 rel3 GND GND VDD VDD rel4 sky130_fd_sc_hd__clkdlybuf4s50_1
+XREL5 rel4 GND GND VDD VDD rel5 sky130_fd_sc_hd__clkdlybuf4s50_1
+XREL6 rel5 GND GND VDD VDD rel6 sky130_fd_sc_hd__clkdlybuf4s50_1
+XREL7 rel6 GND GND VDD VDD rel7 sky130_fd_sc_hd__clkdlybuf4s50_1
+XREL8 rel7 GND GND VDD VDD rel8 sky130_fd_sc_hd__clkdlybuf4s50_1
+XREL9 rel8 GND GND VDD VDD rel9 sky130_fd_sc_hd__clkdlybuf4s50_1
+XREL10 rel9 GND GND VDD VDD rel10 sky130_fd_sc_hd__clkdlybuf4s50_1
+XREL11 rel10 GND GND VDD VDD rel11 sky130_fd_sc_hd__clkdlybuf4s50_1
+XREL12 rel11 GND GND VDD VDD rel12 sky130_fd_sc_hd__clkdlybuf4s50_1
+XREL13 rel12 GND GND VDD VDD rel13 sky130_fd_sc_hd__clkdlybuf4s50_1
+XREL14 rel13 GND GND VDD VDD rel14 sky130_fd_sc_hd__clkdlybuf4s50_1
+XREL15 rel14 GND GND VDD VDD rel15 sky130_fd_sc_hd__clkdlybuf4s50_1
+XREL16 rel15 GND GND VDD VDD rel16 sky130_fd_sc_hd__clkdlybuf4s50_1
+XREL17 rel16 GND GND VDD VDD rel17 sky130_fd_sc_hd__clkdlybuf4s50_1
+XREL18 rel17 GND GND VDD VDD REL sky130_fd_sc_hd__clkdlybuf4s50_1
+.ends
+
+VDD VDD 0 @VDD@
+VIN IN 0 PULSE(0 @VDD@ 1.5e-07 1e-10 1e-10 1e-07 2.5e-07)
+VRSTB RSTB 0 PWL(0 0 2e-08 0 2.01e-08 @VDD@)
+XDUT IN ACQ REL VDD 0 phase_win_s50
+CACQ ACQ 0 1e-14
+CREL REL 0 1e-14
