@@ -109,6 +109,16 @@ def read_waves(path, names) -> dict:
             for n in names if f"v({n})" in cols}
 
 
+def waveform_only_exit(report: dict) -> bool:
+    """klt exits 4 ("nothing checked") when a request declares no measurements,
+    which is this runner's design: raw traces are the product. That exit is
+    usable only if the report says exactly that and every corner passed."""
+    cov, corners = report.get("coverage") or {}, report.get("corners") or []
+    return (bool(corners) and all(c.get("status") == "pass" for c in corners)
+            and cov.get("nothing_checked") is True
+            and cov.get("nothing_checked_reasons") == ["no_requested_measurements"])
+
+
 def run_group(item: dict, work: Path, klt: str, runner, *, retries, wait_s, sleep, log) -> dict:
     """Submit one group; -> {"job": provenance, "report": dict | None, "gdir": Path}.
     The capacity retry mirrors `KltBatchBackend._run_group`, but a failure is
@@ -154,7 +164,9 @@ def run_group(item: dict, work: Path, klt: str, runner, *, retries, wait_s, slee
                version_skew=rm.get("runner_klt_version") != rm.get("client_klt_version"),
                instance_type=rm.get("instance_type"))
     job["failure"] = K.job_level_failure(report) or (
-        None if proc.returncode in K._USABLE_EXIT else f"klt sim exit {proc.returncode}")
+        None if proc.returncode in K._USABLE_EXIT or (
+            proc.returncode == 4 and waveform_only_exit(report))
+        else f"klt sim exit {proc.returncode}")
     out["report"] = None if job["failure"] else report
     return out
 

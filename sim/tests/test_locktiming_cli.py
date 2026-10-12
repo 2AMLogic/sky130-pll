@@ -71,7 +71,10 @@ class FakeKlt:
                "environment": {"engine_version": "46", "remote": {
                    "job_id": f"job-{len(self.calls)}", "runner_klt_version": "0.5.0",
                    "client_klt_version": "0.7.0"}}}
-        return NS(returncode=4 if self.mode in ("refusal", "exit4") else 0,
+        if self.mode == "unmeasured":  # real klt: exit 4 when no measurement is requested
+            rep["coverage"] = {"nothing_checked": True,
+                               "nothing_checked_reasons": ["no_requested_measurements"]}
+        return NS(returncode=4 if self.mode in ("refusal", "exit4", "unmeasured") else 0,
                   stdout=json.dumps(rep), stderr="")
 
 
@@ -179,6 +182,14 @@ class Run(Base):
             self.assertEqual(c["result"]["verdict"], L.INCONCLUSIVE)
             self.assertIn(status, {r["status"] for r in c["rows"]})
         return rec
+
+    def test_unmeasured_exit4_is_usable_only_with_the_exact_report(self):
+        rc, _, err = self.fix("--points", "all", runner=FakeKlt("unmeasured"), fresh=True)
+        self.assertEqual(rc, 0, err)
+        rec = self.rec()
+        self.assertTrue(all(j["failure"] is None and j["exit_code"] == 4 for j in rec["jobs"]))
+        self.assertEqual(rec["evidence_class"], "fixture")
+        self.assertIn(L.OK, {r["status"] for c in rec["candidates"] for r in c["rows"]})
 
     def test_failures_never_pass(self):
         self.assertIn("no JSON report", self.failing("boom", L.SIM_FAILED)["jobs"][0]["failure"])

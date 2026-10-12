@@ -109,6 +109,10 @@ Rules the runner enforces:
   missing corner/trace and truncated or non-uniform waveforms become explicit
   `SIM_FAILED`/`MALFORMED`/`INSUFFICIENT_SETTLING` rows with a `reason`; the
   candidate stays `INCONCLUSIVE`. No local simulation fallback, no ngspice loop.
+  Exit 4 ("nothing checked") is usable only when the report says the sole
+  reason is `no_requested_measurements` and every corner passed: the request
+  deliberately declares no klt measurements, so a real batch run returns 4
+  (found by the first physical smoke, `phase/records/lt-20261012-154414-443931`).
 * Records are JSON (`sky130-pll.lockdet-timing.record/1`) in
   `sim/lockdet-timing/records/`, append-only; the request, body netlist and
   report of every group are kept under `records/<record-id>/<group>/`. Each
