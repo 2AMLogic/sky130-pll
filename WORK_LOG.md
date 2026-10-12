@@ -4,6 +4,9 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 ### 2026-10-12
 
+- **PR #280**: design: phase-window delay-chain candidates and PVT evidence (#275)
+- **PR #279**: sim: add fixed-stimulus batch runner for LOCK timing primitives
+- **Issue #274** (closed): sim: add fixed-stimulus batch runner for LOCK timing primitives
 - **PR #277**: sim: define LOCK timing measurement schema and reducer
 - **Issue #273** (closed): sim: define LOCK timing measurement schema and reducer
 

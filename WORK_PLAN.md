@@ -7,9 +7,15 @@ Judge-approved PRs stuck under a `loom:operator` merge-risk hold — implementat
 
 _None._
 
-## Operator Priority
+## Very Important
 
-Issues the operator starred (`loom:operator-priority`); land these first.
+`loom:very-important` (one counts per workspace); every stage takes these first.
+
+_None._
+
+## Important
+
+`loom:important`; taken before unlabelled work.
 
 _None._
 
@@ -23,7 +29,7 @@ _None._
 
 Issues currently being built (`loom:building`).
 
-_None._
+- **#275**: design: measure acquisition and release delay-chain PVT envelopes
 
 ## PRs Awaiting Review
 
@@ -54,6 +60,7 @@ Issues carrying `loom:curated`.
 - **#244**: sim: record divider Fmax boundaries across PVT for digital T1 characterization *(curated)*
 - **#250**: sim: deliver standalone PFD pump full-PVT campaign evidence *(curated)*
 - **#259**: design: characterize LOCK timing primitives and watchdog over PVT *(curated)*
+- **#275**: design: measure acquisition and release delay-chain PVT envelopes *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -67,15 +74,16 @@ _None._
 
 ## Backlog Balance
 
-| Tier | Count |
+| Bucket | Count |
 |------|-------|
 | Operator merge-risk holds | 0 |
-| Operator priority | 0 |
+| Very important | 0 |
+| Important | 0 |
 | Ready (`loom:issue`) | 0 |
-| In Progress (`loom:building`) | 0 |
+| In Progress (`loom:building`) | 1 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
-| Curated | 13 |
+| Curated | 14 |
 | Architect / Hermit proposals | 3 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
