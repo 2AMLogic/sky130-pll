@@ -176,6 +176,11 @@ def run_group(item: dict, work: Path, klt: str, runner, *, retries, wait_s, slee
         None if proc.returncode in K._USABLE_EXIT or (
             proc.returncode == 4 and waveform_only_exit(report))
         else f"klt sim exit {proc.returncode}")
+    if job["failure"] == "klt sim exit 4":  # say why, e.g. a simulator nonconvergence
+        why = sorted({f"{d.get('code')}: {d.get('message', '')}" for c in report.get("corners") or []
+                      for d in c.get("diagnostics") or [] if d.get("severity") == "error"})
+        if why:
+            job["failure"] += " (" + "; ".join(why) + ")"
     out["report"] = None if job["failure"] else report
     return out
 
@@ -247,7 +252,7 @@ def write_group_record(gdir: Path, item: dict, res: dict, rows: list, supersedes
 
 def execute(cands, points, *, klt, runner, work, retries=30, wait_s=120.0,
             sleep=time.sleep, log=print, split_temps=False, groups_dir=None,
-            resume=False, max_groups=None) -> dict:
+            resume=False, max_groups=None, only=None) -> dict:
     """Run the plan. With `groups_dir`, every finished group is written there at once
     (append-only). `resume` skips groups that already have a successful record;
     `max_groups` bounds the jobs submitted in this invocation. `pending` lists the
@@ -261,7 +266,8 @@ def execute(cands, points, *, klt, runner, work, retries=30, wait_s=120.0,
             jobs.append(done["job"])
             by_uid.setdefault(item["cand"]["uid"], []).extend(done["rows"])
             continue
-        if max_groups is not None and submitted >= max_groups:
+        if (only and not re.search(only, key)) or (
+                max_groups is not None and submitted >= max_groups):
             pending.append(key)
             continue
         submitted += 1
@@ -336,6 +342,8 @@ def main(argv=None, *, runner=subprocess.run, sleep=time.sleep, now=None) -> int
                          "(or with --finalize-incomplete)")
     ap.add_argument("--max-groups", type=int, metavar="N",
                     help="submit at most N fleet jobs in this invocation (bounded run)")
+    ap.add_argument("--only", metavar="REGEX",
+                    help="submit only groups whose key matches (e.g. '1\\.80v'); others stay pending")
     ap.add_argument("--finalize-incomplete", action="store_true",
                     help="with --resume/--max-groups, write the combined record even though "
                          "groups are missing or failed (they grade SIM_FAILED/absent)")
@@ -378,8 +386,8 @@ def main(argv=None, *, runner=subprocess.run, sleep=time.sleep, now=None) -> int
             run = execute(cands, points, klt=probe.klt, runner=runner, work=Path(tmp),
                           sleep=sleep, split_temps=args.split_temps,
                           groups_dir=records_dir / "groups" / mid, resume=args.resume,
-                          max_groups=args.max_groups)
-            if (args.resume or args.max_groups is not None) and run["pending"] \
+                          max_groups=args.max_groups, only=args.only)
+            if (args.resume or args.max_groups is not None or args.only) and run["pending"] \
                     and not args.finalize_incomplete:
                 print(f"{len(run['pending'])} group(s) still lacking a good record "
                       f"({', '.join(run['pending'])}); group records are under "

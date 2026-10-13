@@ -249,6 +249,13 @@ class Resume(Base):
         for c in rec["candidates"]:
             self.assertEqual((c["result"]["verdict"], c["result"]["complete"]), (L.PASS, True))
 
+    def test_only_selects_groups(self):
+        k = FakeKlt()
+        rc, out, err = self.fix("--points", "all", "--split-temps", "--only", r"1\.80v_\+27c",
+                                runner=k)
+        self.assertEqual((rc, len(k.calls)), (0, 2), err)  # two candidates
+        self.assertIn("no combined record written", out)
+
     def test_failed_group_is_rerun_and_names_what_it_supersedes(self):
         self.assertEqual(self.fix("--points", "all", "--split-temps", "--max-groups", "1",
                                   runner=FakeKlt("boom"))[0], 0)
