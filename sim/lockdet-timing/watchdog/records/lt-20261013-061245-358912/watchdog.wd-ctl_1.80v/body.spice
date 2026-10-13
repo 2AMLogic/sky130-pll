@@ -1,0 +1,85 @@
+* NEGATIVE CONTROL: AND2 enable gate makes the loop non-inverting (cannot oscillate)
+* cells inlined verbatim from sky130_fd_sc_hd.spice (open_pdks pin in sim/pdk.json)
+.subckt sky130_fd_sc_hd__and2_1 A B VGND VNB VPB VPWR X
+X0 VGND a_59_75# X VNB sky130_fd_pr__nfet_01v8 w=650000u l=150000u
+X1 VPWR A a_59_75# VPB sky130_fd_pr__pfet_01v8_hvt w=420000u l=150000u
+X2 a_59_75# A a_145_75# VNB sky130_fd_pr__nfet_01v8 w=420000u l=150000u
+X3 a_59_75# B VPWR VPB sky130_fd_pr__pfet_01v8_hvt w=420000u l=150000u
+X4 a_145_75# B VGND VNB sky130_fd_pr__nfet_01v8 w=420000u l=150000u
+X5 VPWR a_59_75# X VPB sky130_fd_pr__pfet_01v8_hvt w=1e+06u l=150000u
+.ends
+
+
+
+.subckt sky130_fd_sc_hd__dfrbp_1 CLK D RESET_B VGND VNB VPB VPWR Q Q_N
+X0 a_1270_413# a_1283_21# VPWR VPB sky130_fd_pr__pfet_01v8_hvt w=420000u l=150000u
+X1 VPWR a_543_47# a_761_289# VPB sky130_fd_pr__pfet_01v8_hvt w=840000u l=150000u
+X2 VGND a_543_47# a_761_289# VNB sky130_fd_pr__nfet_01v8 w=640000u l=150000u
+X3 VPWR a_1847_47# Q_N VPB sky130_fd_pr__pfet_01v8_hvt w=1e+06u l=150000u
+X4 VGND D a_448_47# VNB sky130_fd_pr__nfet_01v8 w=420000u l=150000u
+X5 a_1108_47# a_193_47# a_1270_413# VPB sky130_fd_pr__pfet_01v8_hvt w=420000u l=150000u
+X6 a_1217_47# a_1283_21# VGND VNB sky130_fd_pr__nfet_01v8 w=420000u l=150000u
+X7 a_448_47# a_27_47# a_543_47# VNB sky130_fd_pr__special_nfet_01v8 w=360000u l=150000u
+X8 a_1847_47# a_1283_21# VGND VNB sky130_fd_pr__nfet_01v8 w=420000u l=150000u
+X9 VPWR a_1283_21# Q VPB sky130_fd_pr__pfet_01v8_hvt w=1e+06u l=150000u
+X10 a_448_47# a_193_47# a_543_47# VPB sky130_fd_pr__pfet_01v8_hvt w=420000u l=150000u
+X11 a_543_47# a_193_47# a_639_47# VNB sky130_fd_pr__special_nfet_01v8 w=360000u l=150000u
+X12 a_1108_47# a_27_47# a_1217_47# VNB sky130_fd_pr__special_nfet_01v8 w=360000u l=150000u
+X13 a_1462_47# a_1108_47# a_1283_21# VNB sky130_fd_pr__nfet_01v8 w=420000u l=150000u
+X14 VGND a_1283_21# Q VNB sky130_fd_pr__nfet_01v8 w=650000u l=150000u
+X15 a_543_47# a_27_47# a_651_413# VPB sky130_fd_pr__pfet_01v8_hvt w=420000u l=150000u
+X16 a_805_47# RESET_B VGND VNB sky130_fd_pr__nfet_01v8 w=420000u l=150000u
+X17 a_761_289# a_193_47# a_1108_47# VNB sky130_fd_pr__special_nfet_01v8 w=360000u l=150000u
+X18 VPWR RESET_B a_651_413# VPB sky130_fd_pr__pfet_01v8_hvt w=420000u l=150000u
+X19 VGND a_27_47# a_193_47# VNB sky130_fd_pr__nfet_01v8 w=420000u l=150000u
+X20 a_27_47# CLK VGND VNB sky130_fd_pr__nfet_01v8 w=420000u l=150000u
+X21 a_27_47# CLK VPWR VPB sky130_fd_pr__pfet_01v8_hvt w=640000u l=150000u
+X22 VPWR a_27_47# a_193_47# VPB sky130_fd_pr__pfet_01v8_hvt w=640000u l=150000u
+X23 a_1283_21# a_1108_47# VPWR VPB sky130_fd_pr__pfet_01v8_hvt w=420000u l=150000u
+X24 a_1847_47# a_1283_21# VPWR VPB sky130_fd_pr__pfet_01v8_hvt w=640000u l=150000u
+X25 VGND RESET_B a_1462_47# VNB sky130_fd_pr__nfet_01v8 w=420000u l=150000u
+X26 VPWR D a_448_47# VPB sky130_fd_pr__pfet_01v8_hvt w=420000u l=150000u
+X27 a_651_413# a_761_289# VPWR VPB sky130_fd_pr__pfet_01v8_hvt w=420000u l=150000u
+X28 a_761_289# a_27_47# a_1108_47# VPB sky130_fd_pr__pfet_01v8_hvt w=420000u l=150000u
+X29 VGND a_1847_47# Q_N VNB sky130_fd_pr__nfet_01v8 w=650000u l=150000u
+X30 VPWR RESET_B a_1283_21# VPB sky130_fd_pr__pfet_01v8_hvt w=420000u l=150000u
+X31 a_639_47# a_761_289# a_805_47# VNB sky130_fd_pr__nfet_01v8 w=420000u l=150000u
+.ends
+
+
+
+.subckt sky130_fd_sc_hd__dlygate4sd3_1 A VGND VNB VPB VPWR X
+X0 a_391_47# a_285_47# VGND VNB sky130_fd_pr__nfet_01v8 w=420000u l=500000u
+X1 VPWR a_49_47# a_285_47# VPB sky130_fd_pr__pfet_01v8_hvt w=420000u l=500000u
+X2 a_49_47# A VGND VNB sky130_fd_pr__nfet_01v8 w=420000u l=150000u
+X3 VPWR a_391_47# X VPB sky130_fd_pr__pfet_01v8_hvt w=1e+06u l=150000u
+X4 VGND a_391_47# X VNB sky130_fd_pr__nfet_01v8 w=650000u l=150000u
+X5 VGND a_49_47# a_285_47# VNB sky130_fd_pr__nfet_01v8 w=420000u l=500000u
+X6 a_391_47# a_285_47# VPWR VPB sky130_fd_pr__pfet_01v8_hvt w=420000u l=500000u
+X7 a_49_47# A VPWR VPB sky130_fd_pr__pfet_01v8_hvt w=420000u l=150000u
+.ends
+
+
+
+.subckt wd_ctl EN RSTB RAW TICK VDD GND
+XG EN RAW GND GND VDD VDD n0 sky130_fd_sc_hd__and2_1
+XD1 n0 GND GND VDD VDD d1 sky130_fd_sc_hd__dlygate4sd3_1
+XD2 d1 GND GND VDD VDD d2 sky130_fd_sc_hd__dlygate4sd3_1
+XD3 d2 GND GND VDD VDD d3 sky130_fd_sc_hd__dlygate4sd3_1
+XD4 d3 GND GND VDD VDD d4 sky130_fd_sc_hd__dlygate4sd3_1
+XD5 d4 GND GND VDD VDD RAW sky130_fd_sc_hd__dlygate4sd3_1
+XF1 RAW qn1 RSTB GND GND VDD VDD q1 qn1 sky130_fd_sc_hd__dfrbp_1
+XF2 q1 qn2 RSTB GND GND VDD VDD q2 qn2 sky130_fd_sc_hd__dfrbp_1
+XF3 q2 qn3 RSTB GND GND VDD VDD q3 qn3 sky130_fd_sc_hd__dfrbp_1
+XF4 q3 qn4 RSTB GND GND VDD VDD q4 qn4 sky130_fd_sc_hd__dfrbp_1
+XF5 q4 qn5 RSTB GND GND VDD VDD q5 qn5 sky130_fd_sc_hd__dfrbp_1
+XF6 q5 qn6 RSTB GND GND VDD VDD TICK qn6 sky130_fd_sc_hd__dfrbp_1
+.ends
+
+VDD VDD 0 1.8
+VEN EN 0 PWL(0 0 2e-08 0 2.01e-08 1.8)
+VRSTB RSTB 0 PWL(0 0 2e-08 0 2.01e-08 1.8)
+XDUT EN RSTB RAW TICK VDD 0 wd_ctl
+CRAW RAW 0 1e-14
+CTICK TICK 0 1e-14
+.save v(raw) v(tick)
