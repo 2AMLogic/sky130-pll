@@ -1,0 +1,38 @@
+{
+ "candidates": {
+  "wd": {
+   "manifest": "candidates/wd.json",
+   "manifest_sha256": "0b7ee74bccde37650f52d3bfb827a6f93e8e465c8cd75da6c5e2cf20d8a3f612",
+   "netlist": "candidates/wd.spice",
+   "netlist_sha256": "0f50eaf0c6baa0687c512bae0175d86d3816d3e7210b47f645d29cef328ea6db"
+  },
+  "wd-ctl": {
+   "manifest": "candidates/wd-ctl.json",
+   "manifest_sha256": "f24876b7e0fe9dc2a73962acb580c75420c6329ef06413ac174386ff25a61564",
+   "netlist": "candidates/control.spice",
+   "netlist_sha256": "44bd833dbd7b1af954367444f18c5a3396565479cb63727e1995129384c8f1e4"
+  },
+  "wd-ctl-en": {
+   "manifest": "candidates/wd-ctl-en.json",
+   "manifest_sha256": "28b7ba6c98c955edf6061ccabfbc9ffd0419dc75e4377fed410707cac87bc285",
+   "netlist": "candidates/control-en.spice",
+   "netlist_sha256": "768a52defb1e046bed5956488fad66a219cd38efa87cc95f83c5a6d88baf26f9"
+  }
+ },
+ "generator": "design/lock-detector/timing/gen_watchdog.py",
+ "grid": "tt/ff/ss/fs/sf x -40/27/125 C x 1.62/1.8/1.98 V (45 per candidate)",
+ "pdk_pin": "c6d73a35f524070e85faff4a6a9eef49553ebc2b",
+ "schema": "sky130-pll.lockdet-timing.watchdog-index/1",
+ "stimulus": {
+  "en_rstb_release_s": 2e-08,
+  "enable_s": 2e-08,
+  "load_f": 1e-14,
+  "settle_s": 6e-08,
+  "slew_s": 1e-10,
+  "step_s": 5e-11,
+  "threshold_v": 0.9,
+  "timeout_s": 3600,
+  "window_start_s": 1e-07,
+  "window_stop_s": 1.5e-06
+ }
+}

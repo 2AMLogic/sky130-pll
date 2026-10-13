@@ -1,4 +1,4 @@
-# design/lock-detector/ — behavioral reference (no circuit yet)
+# design/lock-detector/ — behavioral reference (no circuit yet) and timing evidence
 
 This directory holds the **executable behavioral reference** for the
 proposed `LOCK` contract in
@@ -20,6 +20,11 @@ python3 -m unittest discover -s design/lock-detector/tests -p 'test_*.py'
 ```
 
 `npm run test:unit` runs these tests too.
+
+Circuit-timing primitives (phase windows, #275; watchdog, #276) and their
+records are summarized in [`DESIGN.md`](DESIGN.md); the handoff there is not
+ready (band misses and an incomplete watchdog grid). The behavioral reference
+above is unchanged.
 
 **Evidential scope.** These are behavioral-reference results on ideal edges.
 They are not circuit, PVT or silicon evidence, and they are not row 16

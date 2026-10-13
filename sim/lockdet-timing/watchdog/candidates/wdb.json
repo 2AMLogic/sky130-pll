@@ -1,0 +1,305 @@
+{
+ "candidate_id": "wdb",
+ "grid": [
+  {
+   "process": "tt",
+   "temp_c": -40.0,
+   "vdd_v": 1.62
+  },
+  {
+   "process": "tt",
+   "temp_c": -40.0,
+   "vdd_v": 1.8
+  },
+  {
+   "process": "tt",
+   "temp_c": -40.0,
+   "vdd_v": 1.98
+  },
+  {
+   "process": "tt",
+   "temp_c": 27.0,
+   "vdd_v": 1.62
+  },
+  {
+   "process": "tt",
+   "temp_c": 27.0,
+   "vdd_v": 1.8
+  },
+  {
+   "process": "tt",
+   "temp_c": 27.0,
+   "vdd_v": 1.98
+  },
+  {
+   "process": "tt",
+   "temp_c": 125.0,
+   "vdd_v": 1.62
+  },
+  {
+   "process": "tt",
+   "temp_c": 125.0,
+   "vdd_v": 1.8
+  },
+  {
+   "process": "tt",
+   "temp_c": 125.0,
+   "vdd_v": 1.98
+  },
+  {
+   "process": "ff",
+   "temp_c": -40.0,
+   "vdd_v": 1.62
+  },
+  {
+   "process": "ff",
+   "temp_c": -40.0,
+   "vdd_v": 1.8
+  },
+  {
+   "process": "ff",
+   "temp_c": -40.0,
+   "vdd_v": 1.98
+  },
+  {
+   "process": "ff",
+   "temp_c": 27.0,
+   "vdd_v": 1.62
+  },
+  {
+   "process": "ff",
+   "temp_c": 27.0,
+   "vdd_v": 1.8
+  },
+  {
+   "process": "ff",
+   "temp_c": 27.0,
+   "vdd_v": 1.98
+  },
+  {
+   "process": "ff",
+   "temp_c": 125.0,
+   "vdd_v": 1.62
+  },
+  {
+   "process": "ff",
+   "temp_c": 125.0,
+   "vdd_v": 1.8
+  },
+  {
+   "process": "ff",
+   "temp_c": 125.0,
+   "vdd_v": 1.98
+  },
+  {
+   "process": "ss",
+   "temp_c": -40.0,
+   "vdd_v": 1.62
+  },
+  {
+   "process": "ss",
+   "temp_c": -40.0,
+   "vdd_v": 1.8
+  },
+  {
+   "process": "ss",
+   "temp_c": -40.0,
+   "vdd_v": 1.98
+  },
+  {
+   "process": "ss",
+   "temp_c": 27.0,
+   "vdd_v": 1.62
+  },
+  {
+   "process": "ss",
+   "temp_c": 27.0,
+   "vdd_v": 1.8
+  },
+  {
+   "process": "ss",
+   "temp_c": 27.0,
+   "vdd_v": 1.98
+  },
+  {
+   "process": "ss",
+   "temp_c": 125.0,
+   "vdd_v": 1.62
+  },
+  {
+   "process": "ss",
+   "temp_c": 125.0,
+   "vdd_v": 1.8
+  },
+  {
+   "process": "ss",
+   "temp_c": 125.0,
+   "vdd_v": 1.98
+  },
+  {
+   "process": "fs",
+   "temp_c": -40.0,
+   "vdd_v": 1.62
+  },
+  {
+   "process": "fs",
+   "temp_c": -40.0,
+   "vdd_v": 1.8
+  },
+  {
+   "process": "fs",
+   "temp_c": -40.0,
+   "vdd_v": 1.98
+  },
+  {
+   "process": "fs",
+   "temp_c": 27.0,
+   "vdd_v": 1.62
+  },
+  {
+   "process": "fs",
+   "temp_c": 27.0,
+   "vdd_v": 1.8
+  },
+  {
+   "process": "fs",
+   "temp_c": 27.0,
+   "vdd_v": 1.98
+  },
+  {
+   "process": "fs",
+   "temp_c": 125.0,
+   "vdd_v": 1.62
+  },
+  {
+   "process": "fs",
+   "temp_c": 125.0,
+   "vdd_v": 1.8
+  },
+  {
+   "process": "fs",
+   "temp_c": 125.0,
+   "vdd_v": 1.98
+  },
+  {
+   "process": "sf",
+   "temp_c": -40.0,
+   "vdd_v": 1.62
+  },
+  {
+   "process": "sf",
+   "temp_c": -40.0,
+   "vdd_v": 1.8
+  },
+  {
+   "process": "sf",
+   "temp_c": -40.0,
+   "vdd_v": 1.98
+  },
+  {
+   "process": "sf",
+   "temp_c": 27.0,
+   "vdd_v": 1.62
+  },
+  {
+   "process": "sf",
+   "temp_c": 27.0,
+   "vdd_v": 1.8
+  },
+  {
+   "process": "sf",
+   "temp_c": 27.0,
+   "vdd_v": 1.98
+  },
+  {
+   "process": "sf",
+   "temp_c": 125.0,
+   "vdd_v": 1.62
+  },
+  {
+   "process": "sf",
+   "temp_c": 125.0,
+   "vdd_v": 1.8
+  },
+  {
+   "process": "sf",
+   "temp_c": 125.0,
+   "vdd_v": 1.98
+  }
+ ],
+ "inventory": {
+  "cells": [
+   {
+    "drive": "1",
+    "name": "sky130_fd_sc_hd__nand2_1",
+    "stage": "enable gate x1"
+   },
+   {
+    "drive": "1",
+    "name": "sky130_fd_sc_hd__buf_1",
+    "stage": "ring delay x29"
+   },
+   {
+    "drive": "1",
+    "name": "sky130_fd_sc_hd__dfrbp_1",
+    "stage": "divider flop x6"
+   }
+  ],
+  "dividers": [
+   "ripple /64"
+  ],
+  "taps": [
+   "raw",
+   "tick"
+  ]
+ },
+ "measurement": {
+  "acq": {
+   "input": "raw",
+   "input_edge": "rising",
+   "tap": "tick",
+   "tap_edge": "rising",
+   "threshold_v": 0.9
+  },
+  "load_f": 1e-14,
+  "raw": {
+   "edge": "rising",
+   "signal": "raw",
+   "threshold_v": 0.9
+  },
+  "rel": {
+   "input": "raw",
+   "input_edge": "rising",
+   "tap": "tick",
+   "tap_edge": "rising",
+   "threshold_v": 0.9
+  },
+  "slew_s": 1e-10,
+  "startup": {
+   "edge": "rising",
+   "signal": "raw",
+   "threshold_v": 0.9
+  },
+  "tick": {
+   "edge": "rising",
+   "signal": "tick",
+   "threshold_v": 0.9
+  }
+ },
+ "product_id": "watchdog",
+ "schema": "sky130-pll.lockdet-timing.manifest/1",
+ "units": {
+  "capacitance": "F",
+  "temperature": "C",
+  "time": "s",
+  "voltage": "V"
+ },
+ "windows": {
+  "enable_s": 2e-08,
+  "settle_s": 6e-08,
+  "step_s": 5e-11,
+  "timeout_s": 3600,
+  "window_start_s": 1e-07,
+  "window_stop_s": 1.2e-06
+ }
+}
