@@ -4,6 +4,8 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 ### 2026-10-12
 
+- **PR #281**: sim: full PVT grids for LOCK phase-window delay chains (measured miss)
+- **Issue #275** (closed): design: measure acquisition and release delay-chain PVT envelopes
 - **PR #280**: design: phase-window delay-chain candidates and PVT evidence (#275)
 - **PR #279**: sim: add fixed-stimulus batch runner for LOCK timing primitives
 - **Issue #274** (closed): sim: add fixed-stimulus batch runner for LOCK timing primitives

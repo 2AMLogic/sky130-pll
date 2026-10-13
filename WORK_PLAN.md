@@ -29,7 +29,7 @@ _None._
 
 Issues currently being built (`loom:building`).
 
-- **#275**: design: measure acquisition and release delay-chain PVT envelopes
+- **#276**: design: measure independent watchdog and publish LOCK timing handoff
 
 ## PRs Awaiting Review
 
@@ -60,7 +60,7 @@ Issues carrying `loom:curated`.
 - **#244**: sim: record divider Fmax boundaries across PVT for digital T1 characterization *(curated)*
 - **#250**: sim: deliver standalone PFD pump full-PVT campaign evidence *(curated)*
 - **#259**: design: characterize LOCK timing primitives and watchdog over PVT *(curated)*
-- **#275**: design: measure acquisition and release delay-chain PVT envelopes *(curated)*
+- **#276**: design: measure independent watchdog and publish LOCK timing handoff *(curated)*
 
 ## Proposed (Architect / Hermit)
 
