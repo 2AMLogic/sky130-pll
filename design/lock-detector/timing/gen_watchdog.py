@@ -22,8 +22,8 @@ C = "sky130_fd_sc_hd__"
 RING_CELL = "buf_1"
 STAGES, DIV = 29, 6         # ring buffers; divider flops (ratio 2**DIV)
 LOAD_F, SLEW_S, THR_V = 10e-15, 100e-12, 0.9
-WIN = dict(enable_s=20e-9, settle_s=60e-9, window_start_s=100e-9, window_stop_s=1200e-9,
-           step_s=50e-12, timeout_s=3600)
+WIN = dict(enable_s=20e-9, settle_s=60e-9, window_start_s=100e-9, window_stop_s=2000e-9,
+           step_s=25e-12, timeout_s=3600)
 
 
 def dut(name, gate):

@@ -71,17 +71,22 @@ def body_for(cand: dict, vdd: float) -> str:
         f"v({t})" for t in required_traces(cand["manifest"]))]) + "\n"
 
 
-def plan(cands: list, points: list) -> list:
-    """One group per (product, candidate) x supply; process x temperature as klt corners."""
+def plan(cands: list, points: list, split_temps: bool = False) -> list:
+    """One group per (product, candidate) x supply; process x temperature as klt corners.
+    `split_temps` makes one group per supply x temperature (5 corners) so each fleet
+    job stays under the whole-job ceiling."""
     groups = []
     for c in cands:
         for vdd in sorted({p[2] for p in points}):
             at = [p for p in points if p[2] == vdd]
-            g = K.Group(n=0, supply_v=vdd, needed={(a[0], a[1]) for a in at},
-                        processes=[p for p in L.PROCESSES if any(a[0] == p for a in at)],
-                        temps=[t for t in L.TEMPS_C if any(a[1] == t for a in at)])
-            groups.append({"cand": c, "group": g, "points": at,
-                           "key": "{}.{}_{:.2f}v".format(*c["uid"], vdd)})
+            for tsel in (sorted({a[1] for a in at}) if split_temps else [None]):
+                sub = [a for a in at if tsel is None or a[1] == tsel]
+                g = K.Group(n=0, supply_v=vdd, needed={(a[0], a[1]) for a in sub},
+                            processes=[p for p in L.PROCESSES if any(a[0] == p for a in sub)],
+                            temps=[t for t in L.TEMPS_C if any(a[1] == t for a in sub)])
+                suffix = "" if tsel is None else "_{:+g}c".format(tsel)
+                groups.append({"cand": c, "group": g, "points": sub,
+                               "key": "{}.{}_{:.2f}v{}".format(*c["uid"], vdd, suffix)})
     return groups
 
 
@@ -91,6 +96,9 @@ def build_group_request(cand: dict, g: K.Group) -> dict:
     req = K.build_request(spec, g, w["window_stop_s"], timeout_s=int(w["timeout_s"]),
                           max_workers=2)
     req["measurements"] = []  # raw traces are the product; the reducer measures them
+    # Save only the netlist's own `.save` vectors (RAW/TICK), not `save all`:
+    # a full-node ASCII raw of a 29-stage ring + dividers is ~1.8 GB per corner.
+    req["options"]["save_mode"] = "netlist"
     req["batch"]["poll_timeout_s"] = int(w["timeout_s"]) + 3600
     return req
 
@@ -196,9 +204,9 @@ def points_from_report(item: dict, res: dict) -> list:
 
 
 def execute(cands, points, *, klt, runner, work, retries=30, wait_s=120.0,
-            sleep=time.sleep, log=print) -> dict:
+            sleep=time.sleep, log=print, split_temps=False) -> dict:
     by_uid, jobs = {}, []
-    for item in plan(cands, points):
+    for item in plan(cands, points, split_temps):
         res = run_group(item, work, klt, runner, retries=retries, wait_s=wait_s,
                         sleep=sleep, log=log)
         jobs.append(res["job"])
@@ -254,6 +262,8 @@ def main(argv=None, *, runner=subprocess.run, sleep=time.sleep, now=None) -> int
     ap.add_argument("--records-dir", type=Path)
     ap.add_argument("--supersedes")
     ap.add_argument("--klt")
+    ap.add_argument("--split-temps", action="store_true",
+                    help="one fleet job per supply x temperature (keeps each job under the ceiling)")
     args = ap.parse_args(argv)
     try:
         cands = [load_candidate(s) for s in args.candidate]
@@ -265,7 +275,7 @@ def main(argv=None, *, runner=subprocess.run, sleep=time.sleep, now=None) -> int
             raise RunnerError(f"--required-products must name "
                               f"{L.REQUIRED_PRODUCT_COUNT} distinct ids")
         points = [("tt", 27.0, 1.8)] if args.points == "nominal" else list(L.GRID)
-        groups = plan(cands, points)
+        groups = plan(cands, points, args.split_temps)
         if args.dry_run:
             print(json.dumps({"points_label": scope(points, args.points),
                               "points_requested": len(points),
@@ -290,7 +300,7 @@ def main(argv=None, *, runner=subprocess.run, sleep=time.sleep, now=None) -> int
             except K.KltBatchError as e:
                 raise RunnerError(f"{e}; no local fallback") from e
             run = execute(cands, points, klt=probe.klt, runner=runner, work=Path(tmp),
-                          sleep=sleep)
+                          sleep=sleep, split_temps=args.split_temps)
             rec = {"schema": RECORD_SCHEMA,
                    "record_id": (now or (lambda: datetime.now(timezone.utc)))()
                    .strftime("lt-%Y%m%d-%H%M%S-%f"),

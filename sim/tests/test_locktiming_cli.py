@@ -128,6 +128,10 @@ class DryRun(Base):
         plan = json.loads(self.cli("--dry-run", "--points", "all")[1])
         self.assertEqual((plan["points_label"], len(plan["groups"])), ("all", 6))
         self.assertEqual(sum(len(g["corners"]) for g in plan["groups"]), 90)
+        plan = json.loads(self.cli("--dry-run", "--points", "all", "--split-temps")[1])
+        self.assertEqual((len(plan["groups"]), sum(len(g["corners"]) for g in plan["groups"])),
+                         (18, 90))
+        self.assertIn("p1.c0_1.62v_-40c", [g["key"] for g in plan["groups"]])
 
     def test_bad_inputs_refused_before_submit(self):
         k = FakeKlt()
