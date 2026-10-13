@@ -297,9 +297,9 @@
  "windows": {
   "enable_s": 2e-08,
   "settle_s": 6e-08,
-  "step_s": 5e-11,
+  "step_s": 2.5e-11,
   "timeout_s": 3600,
   "window_start_s": 1e-07,
-  "window_stop_s": 1.2e-06
+  "window_stop_s": 2e-06
  }
 }

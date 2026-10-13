@@ -2,13 +2,13 @@
  "candidates": {
   "wdb": {
    "manifest": "candidates/wdb.json",
-   "manifest_sha256": "0cc6944680fedcc9c26796a97ea5893e41c2ac3909bed955e8648cc004e22794",
+   "manifest_sha256": "9cd57675ce0dceabc891d422426761ab5b1bb64a9f38a020177a533011b0d980",
    "netlist": "candidates/wdb.spice",
    "netlist_sha256": "eebdb15947a07d66d08a129d9cb030ac2942fa861adef06e805f9e17bc54b62b"
   },
   "wdb-ctl-en": {
    "manifest": "candidates/wdb-ctl-en.json",
-   "manifest_sha256": "e4eb42c01c2214955fcbc1a2c1e58d082eed13993955e4c6520d6578e5cb90d2",
+   "manifest_sha256": "9baa992eedb8db64a891c46a5365447f4a2ebbf01f8c612e84c25f1ce43b5c0f",
    "netlist": "candidates/control-en.spice",
    "netlist_sha256": "f46722cdfb2f7138858cea869788b902381f9d39f954acf85fec298d8f11cf0b"
   }
@@ -23,10 +23,10 @@
   "load_f": 1e-14,
   "settle_s": 6e-08,
   "slew_s": 1e-10,
-  "step_s": 5e-11,
+  "step_s": 2.5e-11,
   "threshold_v": 0.9,
   "timeout_s": 3600,
   "window_start_s": 1e-07,
-  "window_stop_s": 1.2e-06
+  "window_stop_s": 2e-06
  }
 }
