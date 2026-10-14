@@ -2,6 +2,15 @@
 
 Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
+### 2026-10-14
+
+- **PR #286**: lockdet: resumable append-only grid runner; partial wdb grid (#276)
+
+### 2026-10-13
+
+- **PR #285**: design: wdb watchdog nominal, split-temp runner and incomplete-grid evidence (#276)
+- **PR #284**: design: watchdog primitive, controls and partial timing handoff (#276)
+
 ### 2026-10-12
 
 - **PR #281**: sim: full PVT grids for LOCK phase-window delay chains (measured miss)
