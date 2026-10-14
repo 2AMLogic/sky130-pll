@@ -29,7 +29,7 @@ _None._
 
 Issues currently being built (`loom:building`).
 
-- **#276**: design: measure independent watchdog and publish LOCK timing handoff
+_None._
 
 ## PRs Awaiting Review
 
@@ -80,7 +80,7 @@ _None._
 | Very important | 0 |
 | Important | 0 |
 | Ready (`loom:issue`) | 0 |
-| In Progress (`loom:building`) | 1 |
+| In Progress (`loom:building`) | 0 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
 | Curated | 14 |
