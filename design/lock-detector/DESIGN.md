@@ -105,11 +105,40 @@ Its decks, manifests and generator output are preserved under `rejected-dlygate/
 4. Control `wdb-ctl-en` (EN held low) and the `wdb` nominal point are committed;
    the control classifies as `ABSENT_CROSSING`.
 
-Net: the capability gap is **resumable/partial-record execution of a long
-fleet grid**. Closing it needs a runner change (record per completed job, rerun
-only missing groups) or a fleet ceiling/queue that fits 15-corner jobs - a
-tool/infra change that is outside this issue's "no new execution framework"
-scope. Reproduction of the attempt is below.
+5. **Resumable runner (this increment) and bounded resumed runs.** The runner now
+   writes one append-only group record per finished fleet job under
+   `sim/lockdet-timing/watchdog/records/groups/<matrix-id>/<group>.<stamp>.json`
+   (plus the request, body, report and stderr beside it), skips groups that
+   already have a good record (`--resume`), can bound an invocation
+   (`--max-groups N`, `--only REGEX`) and writes the combined record only when
+   every group has a good record (`--finalize-incomplete` overrides). A rerun of
+   a failed group is a new file naming the one it supersedes; nothing is edited
+   or deleted. Measured outcome of the resumed attempts (the plan is 9 jobs of
+   5 corners, `--split-temps`, one candidate):
+
+   | group (supply, temperature) | outcome |
+   |---|---|
+   | 1.62 V, -40 C | 5/5 corners returned waveforms, reduced rows `OK` (group record `...1.62v_-40c.20261013-204006-424780`) |
+   | 1.62 V, +27 C | all 5 corners `nonconvergence` ("Dynamic gmin stepping failed"), `SIM_FAILED` |
+   | 1.62 V, +125 C | no record: job still polling after > 1 h 50 min when the 2 h background limit killed the runner |
+   | 1.80 V, -40 C | `batch_job_timeout` (job exceeded the 3600 s fleet ceiling), `SIM_FAILED` |
+   | 1.80 V, +27 C | all 5 corners `nonconvergence`, `SIM_FAILED` |
+   | 1.80 V, +125 C | no record: submit waited on fleet capacity, runner killed at the background limit |
+   | 1.98 V, all three temperatures | not attempted |
+
+   So 1 of 9 groups (5 of 45 points) has good measured rows; no combined record
+   exists, the grid is **not complete and not graded**, and no PVT conclusion is
+   drawn. The `wdb` +27 C groups fail to converge at 1.62 V and 1.8 V even
+   though the earlier single-corner nominal record (tt, 27 C, 1.8 V) converged;
+   whether that is the group request (five corners, `save_mode=netlist`), the
+   fleet image or non-determinism is **not established** here. Fleet job
+   durations remain unstable (10 min to > 1 h for equivalent jobs). No local
+   fallback was used.
+
+Net: the runner capability gap (record per finished job, rerun only missing
+groups) is closed. What remains is fleet reliability (job ceiling, capacity
+waits) plus the unexplained +27 C nonconvergence, both outside this issue's
+"no new execution framework" scope. Reproduction of the attempt is below.
 
 ## Negative controls (actual classification, before any grid)
 
@@ -138,7 +167,7 @@ Backend `klt sim --backend batch` accepted the smoke and every group. Runner klt
 0.7.0 vs client 0.7.1.dev (`version_skew: true`), exit 4 accepted as
 waveform-only by `locktiming_cli.waveform_only_exit`. Capability gaps found:
 artifact size/memory (klayout-tools#3211), whole-job ceiling vs 15-corner
-bound, and no resume / partial-record path in the runner.
+bound, and (now closed) the missing resume / partial-record path in the runner.
 
 ## Reproduction
 
@@ -146,7 +175,7 @@ bound, and no resume / partial-record path in the runner.
 python3 design/lock-detector/timing/gen_watchdog.py        # regenerate wdb files (no PDK write)
 W=sim/lockdet-timing/watchdog
 python3 sim/run_locktiming.py --candidate $W/candidates/wdb.json=$W/candidates/wdb.spice --points nominal --required-products phase-acq,phase-rel,watchdog --records-dir $W/records
-python3 sim/run_locktiming.py --candidate $W/candidates/wdb.json=$W/candidates/wdb.spice --points all --split-temps --supersedes lt-20261013-142513-681682 --required-products phase-acq,phase-rel,watchdog --records-dir $W/records   # ~3 h; needs a launcher that can outlive 2 h
+python3 sim/run_locktiming.py --candidate $W/candidates/wdb.json=$W/candidates/wdb.spice --points all --split-temps --resume --max-groups 3 --supersedes lt-20261013-142513-681682 --required-products phase-acq,phase-rel,watchdog --records-dir $W/records   # repeat until the combined record is written; add --only REGEX to pick groups
 python3 design/lock-detector/timing/grade_combined.py sim/lockdet-timing/phase/records/lt-20261012-220148-142698.json $W/records/lt-20261013-102052-850129.json
 ```
 
@@ -154,5 +183,5 @@ Phase evidence: `sim/lockdet-timing/phase/README.md`.
 
 ## Open items
 
-* Complete 45-point `wdb` grid (needs a resumable runner or a longer-lived launcher; the deck and `save_mode` fix are in place).
+* Complete 45-point `wdb` grid: 1 of 9 groups recorded good (see above). Re-run with `--resume` in bounded invocations; investigate the +27 C nonconvergence first (it recurs at two supplies).
 * Re-satisfy the phase bands (separate design work) before #260 can start.
