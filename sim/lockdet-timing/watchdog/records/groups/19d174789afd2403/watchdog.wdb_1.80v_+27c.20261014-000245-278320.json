@@ -1,0 +1,101 @@
+{
+ "group": "watchdog.wdb_1.80v_+27c",
+ "job": {
+  "client_klt_version": "0.7.1.dev320+g17267703c4b1",
+  "dir": "watchdog.wdb_1.80v_+27c",
+  "engine_version": "46",
+  "exit_code": 4,
+  "failure": "klt sim exit 4 (nonconvergence: Warning: Dynamic gmin stepping failed)",
+  "group": "watchdog.wdb_1.80v_+27c",
+  "instance_type": "c7i.8xlarge",
+  "job_id": "klt-sim-d60680f9d19e",
+  "netlist_sha256": "ef0772d5f74c18e93644498f571ecada71039d4cea512ec0b25ee22f50704fa5",
+  "pdk": {
+   "lib": "libs.tech/combined/sky130.lib.spice",
+   "pdk": "sky130A"
+  },
+  "request_sha256": "832d69cee686fac6bddff9582a128e64baba37f2f22d6ed61bdb222f2d4d30e6",
+  "runner_klt_version": "0.7.0",
+  "supply_v": 1.8,
+  "version_skew": true
+ },
+ "rows": [
+  {
+   "coord": {
+    "process": "tt",
+    "temp_c": 27.0,
+    "vdd_v": 1.8
+   },
+   "error": null,
+   "raw_period_s": null,
+   "reason": "klt sim exit 4 (nonconvergence: Warning: Dynamic gmin stepping failed)",
+   "startup_latency_s": null,
+   "status": "SIM_FAILED",
+   "tick_s": null,
+   "w_acq_s": null,
+   "w_rel_s": null
+  },
+  {
+   "coord": {
+    "process": "ff",
+    "temp_c": 27.0,
+    "vdd_v": 1.8
+   },
+   "error": null,
+   "raw_period_s": null,
+   "reason": "klt sim exit 4 (nonconvergence: Warning: Dynamic gmin stepping failed)",
+   "startup_latency_s": null,
+   "status": "SIM_FAILED",
+   "tick_s": null,
+   "w_acq_s": null,
+   "w_rel_s": null
+  },
+  {
+   "coord": {
+    "process": "ss",
+    "temp_c": 27.0,
+    "vdd_v": 1.8
+   },
+   "error": null,
+   "raw_period_s": null,
+   "reason": "klt sim exit 4 (nonconvergence: Warning: Dynamic gmin stepping failed)",
+   "startup_latency_s": null,
+   "status": "SIM_FAILED",
+   "tick_s": null,
+   "w_acq_s": null,
+   "w_rel_s": null
+  },
+  {
+   "coord": {
+    "process": "fs",
+    "temp_c": 27.0,
+    "vdd_v": 1.8
+   },
+   "error": null,
+   "raw_period_s": null,
+   "reason": "klt sim exit 4 (nonconvergence: Warning: Dynamic gmin stepping failed)",
+   "startup_latency_s": null,
+   "status": "SIM_FAILED",
+   "tick_s": null,
+   "w_acq_s": null,
+   "w_rel_s": null
+  },
+  {
+   "coord": {
+    "process": "sf",
+    "temp_c": 27.0,
+    "vdd_v": 1.8
+   },
+   "error": null,
+   "raw_period_s": null,
+   "reason": "klt sim exit 4 (nonconvergence: Warning: Dynamic gmin stepping failed)",
+   "startup_latency_s": null,
+   "status": "SIM_FAILED",
+   "tick_s": null,
+   "w_acq_s": null,
+   "w_rel_s": null
+  }
+ ],
+ "schema": "sky130-pll.lockdet-timing.group/1",
+ "supersedes": null
+}

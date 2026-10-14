@@ -225,6 +225,58 @@ class Run(Base):
                          "incomplete-not-physical")
 
 
+
+class Resume(Base):
+    def groups(self):
+        return sorted((self.tmp / "rec" / "groups").glob("*/*.json"))
+
+    def test_bounded_runs_resume_and_finalize(self):
+        k1 = FakeKlt()
+        rc, out, err = self.fix("--points", "all", "--split-temps", "--max-groups", "4",
+                                runner=k1)
+        self.assertEqual((rc, len(k1.calls), len(self.groups())), (0, 4, 4), err)
+        self.assertIn("no combined record written", out)
+        self.assertEqual(list((self.tmp / "rec").glob("*.json")), [])
+        before = {g: g.read_bytes() for g in self.groups()}
+        k2 = FakeKlt()
+        rc, _, err = self.fix("--points", "all", "--split-temps", "--resume", runner=k2)
+        self.assertEqual((rc, len(k2.calls)), (0, 14), err)  # 18 groups - 4 done
+        self.assertEqual(len(self.groups()), 18)
+        for g, b in before.items():
+            self.assertEqual(g.read_bytes(), b)  # prior records untouched
+        rec = self.rec()
+        self.assertEqual(len(rec["jobs"]), 18)
+        for c in rec["candidates"]:
+            self.assertEqual((c["result"]["verdict"], c["result"]["complete"]), (L.PASS, True))
+
+    def test_only_selects_groups(self):
+        k = FakeKlt()
+        rc, out, err = self.fix("--points", "all", "--split-temps", "--only", r"1\.80v_\+27c",
+                                runner=k)
+        self.assertEqual((rc, len(k.calls)), (0, 2), err)  # two candidates
+        self.assertIn("no combined record written", out)
+
+    def test_failed_group_is_rerun_and_names_what_it_supersedes(self):
+        self.assertEqual(self.fix("--points", "all", "--split-temps", "--max-groups", "1",
+                                  runner=FakeKlt("boom"))[0], 0)
+        (first,) = self.groups()
+        k = FakeKlt()
+        rc, _, err = self.fix("--points", "all", "--split-temps", "--resume",
+                              "--max-groups", "1", runner=k)
+        self.assertEqual((rc, len(k.calls), len(self.groups())), (0, 1, 2), err)
+        new = [g for g in self.groups() if g != first][0]
+        self.assertEqual(json.loads(new.read_text())["supersedes"], first.stem)
+        self.assertTrue(first.is_file())
+
+    def test_finalize_incomplete_grades_missing_as_not_pass(self):
+        rc, out, err = self.fix("--points", "all", "--split-temps", "--max-groups", "2",
+                                "--finalize-incomplete")
+        self.assertEqual(rc, 0, err)
+        for c in self.rec()["candidates"]:
+            self.assertFalse(c["result"]["complete"])
+            self.assertNotEqual(c["result"]["verdict"], L.PASS)
+
+
 class Retention(Base):
     def test_append_only_and_supersession(self):
         t0 = datetime(2026, 1, 1)

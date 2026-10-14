@@ -1,0 +1,101 @@
+{
+ "group": "watchdog.wdb_1.62v_+27c",
+ "job": {
+  "client_klt_version": "0.7.1.dev323+g6120283c606e",
+  "dir": "watchdog.wdb_1.62v_+27c",
+  "engine_version": "46",
+  "exit_code": 4,
+  "failure": "klt sim exit 4",
+  "group": "watchdog.wdb_1.62v_+27c",
+  "instance_type": "c7i.8xlarge",
+  "job_id": "klt-sim-c220f4016d0d",
+  "netlist_sha256": "0c576499450251895d76b03c18cd0e63d2c9c201bcb2f0ca3cc950d4a821b45a",
+  "pdk": {
+   "lib": "libs.tech/combined/sky130.lib.spice",
+   "pdk": "sky130A"
+  },
+  "request_sha256": "832d69cee686fac6bddff9582a128e64baba37f2f22d6ed61bdb222f2d4d30e6",
+  "runner_klt_version": "0.7.0",
+  "supply_v": 1.62,
+  "version_skew": true
+ },
+ "rows": [
+  {
+   "coord": {
+    "process": "tt",
+    "temp_c": 27.0,
+    "vdd_v": 1.62
+   },
+   "error": null,
+   "raw_period_s": null,
+   "reason": "klt sim exit 4",
+   "startup_latency_s": null,
+   "status": "SIM_FAILED",
+   "tick_s": null,
+   "w_acq_s": null,
+   "w_rel_s": null
+  },
+  {
+   "coord": {
+    "process": "ff",
+    "temp_c": 27.0,
+    "vdd_v": 1.62
+   },
+   "error": null,
+   "raw_period_s": null,
+   "reason": "klt sim exit 4",
+   "startup_latency_s": null,
+   "status": "SIM_FAILED",
+   "tick_s": null,
+   "w_acq_s": null,
+   "w_rel_s": null
+  },
+  {
+   "coord": {
+    "process": "ss",
+    "temp_c": 27.0,
+    "vdd_v": 1.62
+   },
+   "error": null,
+   "raw_period_s": null,
+   "reason": "klt sim exit 4",
+   "startup_latency_s": null,
+   "status": "SIM_FAILED",
+   "tick_s": null,
+   "w_acq_s": null,
+   "w_rel_s": null
+  },
+  {
+   "coord": {
+    "process": "fs",
+    "temp_c": 27.0,
+    "vdd_v": 1.62
+   },
+   "error": null,
+   "raw_period_s": null,
+   "reason": "klt sim exit 4",
+   "startup_latency_s": null,
+   "status": "SIM_FAILED",
+   "tick_s": null,
+   "w_acq_s": null,
+   "w_rel_s": null
+  },
+  {
+   "coord": {
+    "process": "sf",
+    "temp_c": 27.0,
+    "vdd_v": 1.62
+   },
+   "error": null,
+   "raw_period_s": null,
+   "reason": "klt sim exit 4",
+   "startup_latency_s": null,
+   "status": "SIM_FAILED",
+   "tick_s": null,
+   "w_acq_s": null,
+   "w_rel_s": null
+  }
+ ],
+ "schema": "sky130-pll.lockdet-timing.group/1",
+ "supersedes": null
+}

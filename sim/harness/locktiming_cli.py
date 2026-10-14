@@ -17,6 +17,7 @@ import argparse
 import hashlib
 import json
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -175,6 +176,11 @@ def run_group(item: dict, work: Path, klt: str, runner, *, retries, wait_s, slee
         None if proc.returncode in K._USABLE_EXIT or (
             proc.returncode == 4 and waveform_only_exit(report))
         else f"klt sim exit {proc.returncode}")
+    if job["failure"] == "klt sim exit 4":  # say why, e.g. a simulator nonconvergence
+        why = sorted({f"{d.get('code')}: {d.get('message', '')}" for c in report.get("corners") or []
+                      for d in c.get("diagnostics") or [] if d.get("severity") == "error"})
+        if why:
+            job["failure"] += " (" + "; ".join(why) + ")"
     out["report"] = None if job["failure"] else report
     return out
 
@@ -203,18 +209,84 @@ def points_from_report(item: dict, res: dict) -> list:
     return out
 
 
+GROUP_SCHEMA = "sky130-pll.lockdet-timing.group/1"
+
+
+def matrix_id(cands, points) -> str:
+    return sha(json.dumps([[c["manifest_sha256"], c["netlist_sha256"]] for c in cands]
+                          + [sorted(points)]).encode())[:16]
+
+
+def load_group_records(gdir: Path) -> dict:
+    """{group key: [records, oldest first]} from an append-only group-record directory."""
+    out = {}
+    for p in sorted(gdir.glob("*.json")) if gdir.is_dir() else []:
+        r = json.loads(p.read_text())
+        out.setdefault(r["group"], []).append(dict(r, _stem=p.stem))
+    return out
+
+
+def group_done(recs: list) -> dict | None:
+    """Latest record of a group whose job succeeded, else None (failed groups are rerun)."""
+    ok = [r for r in recs if not r["job"].get("failure")]
+    return ok[-1] if ok else None
+
+
+def write_group_record(gdir: Path, item: dict, res: dict, rows: list, supersedes) -> Path:
+    """Persist one finished group immediately; exclusive create, never overwrite."""
+    gdir.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S-%f")
+    stem = f"{item['key']}.{stamp}"
+    path = gdir / f"{stem}.json"
+    rec = {"schema": GROUP_SCHEMA, "group": item["key"], "job": res["job"], "rows": rows,
+           "supersedes": supersedes}
+    with open(path, "x") as f:  # raises FileExistsError rather than editing a record
+        f.write(json.dumps(rec, indent=1, sort_keys=True, default=list) + "\n")
+    dst = gdir / stem
+    dst.mkdir()
+    for name in (K.REQUEST_NAME, K.NET_NAME, "report.json", "stderr.log"):
+        if (res["gdir"] / name).is_file():
+            shutil.copy2(res["gdir"] / name, dst / name)
+    return path
+
+
 def execute(cands, points, *, klt, runner, work, retries=30, wait_s=120.0,
-            sleep=time.sleep, log=print, split_temps=False) -> dict:
-    by_uid, jobs = {}, []
+            sleep=time.sleep, log=print, split_temps=False, groups_dir=None,
+            resume=False, max_groups=None, only=None) -> dict:
+    """Run the plan. With `groups_dir`, every finished group is written there at once
+    (append-only). `resume` skips groups that already have a successful record;
+    `max_groups` bounds the jobs submitted in this invocation. `pending` lists the
+    group keys still lacking a successful record."""
+    by_uid, jobs, pending, submitted = {}, [], [], 0
+    prior = load_group_records(groups_dir) if groups_dir else {}
     for item in plan(cands, points, split_temps):
+        key, done = item["key"], group_done(prior.get(item["key"], []))
+        if resume and done:
+            log(f"  {key}: already recorded ({done['_stem']}); skipped")
+            jobs.append(done["job"])
+            by_uid.setdefault(item["cand"]["uid"], []).extend(done["rows"])
+            continue
+        if (only and not re.search(only, key)) or (
+                max_groups is not None and submitted >= max_groups):
+            pending.append(key)
+            continue
+        submitted += 1
         res = run_group(item, work, klt, runner, retries=retries, wait_s=wait_s,
                         sleep=sleep, log=log)
+        pts = points_from_report(item, res)
+        rows = [dict(L.reduce_point(item["cand"]["manifest"], p), reason=p["reason"])
+                for p in pts]
+        if groups_dir:
+            hist = prior.get(key) or []
+            write_group_record(groups_dir, item, res, rows,
+                               hist[-1]["_stem"] if hist else None)
+        if res["job"].get("failure"):
+            pending.append(key)
         jobs.append(res["job"])
-        by_uid.setdefault(item["cand"]["uid"], []).extend(points_from_report(item, res))
+        by_uid.setdefault(item["cand"]["uid"], []).extend(rows)
     results, out = [], []
     for c in cands:
-        rows = [dict(L.reduce_point(c["manifest"], p), reason=p["reason"])
-                for p in by_uid[c["uid"]]]
+        rows = by_uid.get(c["uid"], [])
         r = L.grade_candidate(c["manifest"], rows)
         results.append(r)
         r = dict(r, failed=[{"coord": list(k), "status": v} for k, v in r["failed"].items()])
@@ -222,7 +294,7 @@ def execute(cands, points, *, klt, runner, work, retries=30, wait_s=120.0,
                                       "netlist_sha256")}
                    | {"product_id": c["uid"][0], "candidate_id": c["uid"][1],
                       "result": r, "rows": rows})
-    return {"jobs": jobs, "candidates": out, "results": results}
+    return {"jobs": jobs, "candidates": out, "results": results, "pending": pending}
 
 
 def evidence_class(run: dict, fixture: bool) -> str:
@@ -264,6 +336,17 @@ def main(argv=None, *, runner=subprocess.run, sleep=time.sleep, now=None) -> int
     ap.add_argument("--klt")
     ap.add_argument("--split-temps", action="store_true",
                     help="one fleet job per supply x temperature (keeps each job under the ceiling)")
+    ap.add_argument("--resume", action="store_true",
+                    help="skip groups already recorded under <records-dir>/groups/<matrix-id>/; "
+                         "write the combined record only once every group has a good record "
+                         "(or with --finalize-incomplete)")
+    ap.add_argument("--max-groups", type=int, metavar="N",
+                    help="submit at most N fleet jobs in this invocation (bounded run)")
+    ap.add_argument("--only", metavar="REGEX",
+                    help="submit only groups whose key matches (e.g. '1\\.80v'); others stay pending")
+    ap.add_argument("--finalize-incomplete", action="store_true",
+                    help="with --resume/--max-groups, write the combined record even though "
+                         "groups are missing or failed (they grade SIM_FAILED/absent)")
     args = ap.parse_args(argv)
     try:
         cands = [load_candidate(s) for s in args.candidate]
@@ -299,13 +382,21 @@ def main(argv=None, *, runner=subprocess.run, sleep=time.sleep, now=None) -> int
                 probe.preflight()
             except K.KltBatchError as e:
                 raise RunnerError(f"{e}; no local fallback") from e
+            mid = matrix_id(cands, points)
             run = execute(cands, points, klt=probe.klt, runner=runner, work=Path(tmp),
-                          sleep=sleep, split_temps=args.split_temps)
+                          sleep=sleep, split_temps=args.split_temps,
+                          groups_dir=records_dir / "groups" / mid, resume=args.resume,
+                          max_groups=args.max_groups, only=args.only)
+            if (args.resume or args.max_groups is not None or args.only) and run["pending"] \
+                    and not args.finalize_incomplete:
+                print(f"{len(run['pending'])} group(s) still lacking a good record "
+                      f"({', '.join(run['pending'])}); group records are under "
+                      f"{records_dir / 'groups' / mid}; no combined record written")
+                return 0
             rec = {"schema": RECORD_SCHEMA,
                    "record_id": (now or (lambda: datetime.now(timezone.utc)))()
                    .strftime("lt-%Y%m%d-%H%M%S-%f"),
-                   "matrix_id": sha(json.dumps([[c["manifest_sha256"], c["netlist_sha256"]]
-                                                for c in cands] + [sorted(points)]).encode())[:16],
+                   "matrix_id": mid,
                    "evidence_class": evidence_class(run, args.fixture),
                    "points_scope": scope(points, args.points), "points_requested": len(points),
                    "pdk_pin": json.loads((REPO_ROOT / "sim" / "pdk.json").read_text())
