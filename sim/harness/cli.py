@@ -15,6 +15,7 @@ from . import acmeasure as ac_mod
 from . import checkpoint as checkpoint_mod
 from . import corners as corners_mod
 from . import cpmeasure as cp_mod
+from . import cp_klt as cp_klt_mod
 from . import executor as executor_mod
 from . import measure as measure_mod
 from . import montecarlo as mc_mod
@@ -206,6 +207,10 @@ def _executor_note(provenance: dict | None) -> str | None:
             "ngspice ran: the pass/fail criterion, the measurement reducer and "
             "this record's own shape are the local ones, unchanged."
         )
+    if executor == "batch":
+        from . import cp_klt  # lazy: stdlib-only, but only a batch run needs it
+
+        return cp_klt.execution_note(provenance)
     if executor != "remote":
         return f"executor: `{executor}`."
     cost = provenance.get("estimated_fleet_hourly_cost_usd")
@@ -399,9 +404,13 @@ def _run_experiment(
     if jobs < 1:
         print("run_corners.py: --jobs must be at least 1", file=sys.stderr)
         return 1
-    executor_name = executor_mod.resolve_name(
-        getattr(args, "executor", None), manifest
-    )
+    try:
+        executor_name = executor_mod.resolve_name(
+            getattr(args, "executor", None), manifest
+        )
+    except executor_mod.ExecutorRefused as e:
+        print(f"run_corners.py: {e}", file=sys.stderr)
+        return 1
     if executor_name not in executor_mod.EXECUTORS:
         print(
             f"run_corners.py: unknown executor {executor_name!r} -- choose one "
@@ -564,12 +573,18 @@ def _run_experiment(
         )
         execute_kwargs: dict = {}
         if executor_name != executor_mod.DEFAULT_EXECUTOR:
-            backend = backend.stage(
-                [
-                    prepare_unit(manifest, netlist_text, unit, corners_dir)
-                    for unit in pending
-                ]
-            )
+            try:
+                backend = backend.stage(
+                    [
+                        prepare_unit(manifest, netlist_text, unit, corners_dir)
+                        for unit in pending
+                    ]
+                )
+            except cp_klt_mod.CpBatchError as e:
+                # A refused or failed batch submit is a failed run, never a
+                # local one (host rule); no record is written.
+                print(f"run_corners.py: batch submit failed: {e}", file=sys.stderr)
+                return 1
             execute_kwargs = {"execute": backend.execute}
 
         def run_one(unit):
@@ -877,9 +892,12 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help=(
             "where each unit's ngspice process runs: `local` (default -- this "
-            "host, today's behaviour, stdlib-only) or `remote` (klayout-tools' "
+            "host, today's behaviour, stdlib-only), `remote` (klayout-tools' "
             "Spot fleet, one per-job EC2 instance per shard; `--jobs N` becomes "
-            "the shard count). A manifest may opt in permanently with an "
+            "the shard count) or `batch` (`cp` manifests only: one `klt sim` "
+            "decks[] request per run on the Spot batch fleet, never a local "
+            "fallback; chosen automatically for a `cp` manifest when "
+            "KLT_SIM_BACKEND=batch). A manifest may opt in permanently with an "
             "`\"executor\"` key, which this flag overrides. `remote` degrades to "
             "`local` -- with one logged line and a `fallback_reason` in the "
             "record -- on any host that is not provisioned for the fleet; see "

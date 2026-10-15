@@ -24,6 +24,7 @@ simulations that never ran:
 from __future__ import annotations
 
 import json
+import os
 import re
 import sys
 import threading
@@ -201,7 +202,11 @@ class _Harness:
              mock.patch.object(cli.pdk_mod, "tool_versions", return_value={"ngspice": "stub", "xschem": "stub"}), \
              mock.patch.object(cli.runner_mod, "netlist_schematic", return_value=netlist), \
              mock.patch.object(cli.runner_mod, "run_point", run_point), \
-             mock.patch.object(cli.report_mod, "make_record_id", return_value=RECORD_ID):
+             mock.patch.object(cli.report_mod, "make_record_id", return_value=RECORD_ID), \
+             mock.patch.dict(os.environ, clear=False):
+            # A batch dispatch host exports KLT_SIM_BACKEND=batch, which routes a `cp`
+            # manifest to the batch executor (#290); these tests pin the local seam.
+            os.environ.pop("KLT_SIM_BACKEND", None)
             with contextlib.redirect_stdout(out), contextlib.redirect_stderr(out):
                 rc = cli.main([str(self.testbench)] + argv)
         return rc, out.getvalue()
