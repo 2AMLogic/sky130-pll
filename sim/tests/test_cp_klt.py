@@ -84,6 +84,11 @@ class FakeKlt:
             for u in units:
                 u["status"] = "error"
                 u["diagnostics"] = [{"code": "batch_poll_timeout", "message": "poll timed out"}]
+        if self.mode == "runner_old":
+            for u in units:
+                u["status"] = "error"
+                u["diagnostics"] = [{"code": "batch_job_failed", "message":
+                                     "job command exited 1: request is missing required field: netlist"}]
         report = {"mode": "decks", "status": "ok", "units": units, "outdir": str(outdir),
                   "environment": {"engine_version": "ngspice-44",
                                   "remote": {"job_id": "job-1", "instance_type": "c7i.large",
@@ -222,6 +227,11 @@ class FailurePathTests(unittest.TestCase):
                 with self.assertRaises(K.DecksUnsupported):
                     make_backend(Path(d), spec, klt).stage(make_units(Path(d), spec))
                 self.assert_no_local_ngspice(klt)
+
+    def test_fleet_runner_without_decks_support_is_named(self):
+        with self.assertRaises(K.DecksUnsupported) as cm:
+            self.stage("runner_old")
+        self.assertIn("fleet runner", str(cm.exception))
 
     def test_missing_declared_output_fails_the_unit_explicitly(self):
         spec = make_spec()

@@ -293,6 +293,13 @@ class CpBatchBackend(executor_mod.ExecutionBackend):
                 raise CpBatchError(f"{unit.corner_id}: unit missing from the deck-list report")
             diags = entry.get("diagnostics") or []
             job_level = [d for d in diags if str(d.get("code", "")).startswith("batch_")]
+            if any("missing required field: netlist" in str(d.get("message", "")) for d in job_level):
+                # The client accepted the deck-list request, but the fleet runner's
+                # own (older) klt read it as a corner request and refused it.
+                raise DecksUnsupported(
+                    f"{unit.corner_id}: the batch fleet runner's klt does not accept a decks[] "
+                    "request (it asked for a corner `netlist`): "
+                    + "; ".join(sorted({str(d.get("message", "")) for d in job_level})))
             if job_level:
                 raise CpBatchError(
                     f"{unit.corner_id}: batch job produced no result: "
