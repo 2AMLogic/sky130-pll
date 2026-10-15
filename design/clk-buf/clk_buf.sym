@@ -1,0 +1,32 @@
+v {xschem version=3.4.7 file_version=1.2
+* clk_buf.sym -- block symbol for the sky130 PLL CLK output buffer (issue #232).
+* Pin order (VDD, GND, CLKIN, CLKOUT) matches the iopin/ipin/opin declaration
+* order in clk_buf.sch so @pinlist nets correctly (same convention as
+* design/vco/vco_ring5.sym).
+}
+G {}
+K {type=subcircuit
+format="X@name @pinlist @symname"
+template="name=x1"
+}
+V {}
+S {}
+E {}
+L 4 -100 -60 100 -60 {}
+L 4 100 -60 100 60 {}
+L 4 100 60 -100 60 {}
+L 4 -100 60 -100 -60 {}
+L 4 0 -80 0 -60 {}
+L 4 0 60 0 80 {}
+L 4 -130 0 -100 0 {}
+L 4 100 0 130 0 {}
+B 5 -2.5 -82.5 2.5 -77.5 {name=VDD dir=inout}
+B 5 -2.5 77.5 2.5 82.5 {name=GND dir=inout}
+B 5 -132.5 -2.5 -127.5 2.5 {name=CLKIN dir=in}
+B 5 127.5 -2.5 132.5 2.5 {name=CLKOUT dir=out}
+T {@symname} -35 -10 0 0 0.3 0.3 {}
+T {@name} -95 -70 0 0 0.2 0.2 {}
+T {VDD} -12 -75 0 1 0.2 0.2 {}
+T {GND} -12 68 0 1 0.2 0.2 {}
+T {CLKIN} -125 8 0 0 0.2 0.2 {}
+T {CLKOUT} 85 8 0 0 0.2 0.2 {}

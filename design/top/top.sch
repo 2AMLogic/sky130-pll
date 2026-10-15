@@ -17,12 +17,12 @@ v {xschem version=3.4.7 file_version=1.2
 *   DIV.FBCLK (feedback) -------------------------> PFDCP.DIV
 *   PFDCP.CP  --------------------------------------> LF.CP
 *   LF.VCTRL  ---------------------------------------> VCO.VCTRL
-*   VCO.CLK   ---------------------------------------> top-level CLK output
-*   VCO.CLK   ---------------------------------------> DIV.CLK (feedback tap)
+*   VCO.CLK (net VCOCLK) ---------------------------> BUF.CLKIN -> top-level CLK output
+*   VCO.CLK (net VCOCLK) ---------------------------> DIV.CLK (feedback tap)
 *   RESETB (top-level input) ---------------------> DIV.RESETB
 *   NSEL0..NSEL5 (top-level inputs, N-1) ----------> DIV.NSEL0..NSEL5
 *   VDD/GND (top-level supply) --------------------> PFDCP, VCO, DIV
-*                                                     (LF is purely passive,
+*                                                     (and BUF; LF is purely passive,
 *                                                     no VDD pin -- see
 *                                                     design/loop-filter/
 *                                                     DESIGN.md)
@@ -47,6 +47,12 @@ v {xschem version=3.4.7 file_version=1.2
 * filter -> VCO -> feedback divider -> PFD), not derived from any existing
 * silicon or netlist. No spec/target-spec.md row is edited by this issue.
 *
+* Output stage (issue #232): VCO.CLK is no longer the exported pin. It is the
+* internal net VCOCLK, which feeds DIV.CLK directly (feedback timing is
+* unchanged) and the input of XBUF (design/clk-buf, a two-inverter chain);
+* XBUF.CLKOUT is the exported CLK pin. The load assumption for the pin is in
+* spec/decision-records/DR-008-clk-output-load-and-buffer-scope.md.
+*
 * Pins: VDD, GND (supply, inout), REF (reference clock, in), RESETB
 * (async active-low divider reset, in), NSEL0..NSEL5 (divider config word
 * N-1, in), CLK (PLL output, out).
@@ -65,7 +71,7 @@ C {devices/lab_pin.sym} 1030 0 0 0 {name=p3 sig_type=std_logic lab=VCTRL}
 C {devices/lab_pin.sym} 1670 0 0 0 {name=p4 sig_type=std_logic lab=VCTRL}
 C {devices/lab_pin.sym} -130 40 0 0 {name=p5 sig_type=std_logic lab=FBCLK}
 C {devices/lab_pin.sym} 1930 900 0 0 {name=p6 sig_type=std_logic lab=FBCLK}
-C {devices/lab_pin.sym} 1670 760 0 0 {name=p7 sig_type=std_logic lab=CLK}
+C {devices/lab_pin.sym} 1670 760 0 0 {name=p7 sig_type=std_logic lab=VCOCLK}
 C {devices/lab_pin.sym} 1800 -80 0 0 {name=p8 sig_type=std_logic lab=VDD}
 C {devices/lab_pin.sym} 1800 720 0 0 {name=p9 sig_type=std_logic lab=VDD}
 C {devices/lab_pin.sym} 900 80 0 0 {name=p10 sig_type=std_logic lab=GND}
@@ -81,5 +87,10 @@ C {devices/ipin.sym} 1670 920 0 0 {name=p19 lab=NSEL2}
 C {devices/ipin.sym} 1670 960 0 0 {name=p20 lab=NSEL3}
 C {devices/ipin.sym} 1670 1000 0 0 {name=p21 lab=NSEL4}
 C {devices/ipin.sym} 1670 1040 0 0 {name=p22 lab=NSEL5}
-C {devices/opin.sym} 1930 0 0 0 {name=p23 lab=CLK}
+C {devices/lab_pin.sym} 1930 0 0 0 {name=p23 sig_type=std_logic lab=VCOCLK}
+C {design/clk-buf/clk_buf.sym} 2300 0 0 0 {name=XBUF}
+C {devices/lab_pin.sym} 2170 0 0 0 {name=p24 sig_type=std_logic lab=VCOCLK}
+C {devices/lab_pin.sym} 2300 -80 0 0 {name=p25 sig_type=std_logic lab=VDD}
+C {devices/lab_pin.sym} 2300 80 0 0 {name=p26 sig_type=std_logic lab=GND}
+C {devices/opin.sym} 2430 0 0 0 {name=p27 lab=CLK}
 C {devices/title.sym} -200 1400 0 0 {name=l1 author="2AM Logic (issue #28, sky130 PLL top-level integration)"}

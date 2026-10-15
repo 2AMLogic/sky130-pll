@@ -37,6 +37,7 @@ BLOCKS = {
     "loop_filter": "design/loop-filter/netlist/loop_filter.spice",
     "vco_ring5": "design/vco/netlist/vco_ring5.spice",
     "divider_intN": "design/divider/netlist/divider_intN.spice",
+    "clk_buf": "design/clk-buf/netlist/clk_buf.spice",
 }
 TOP_SNAPSHOT = "design/top/netlist/top.spice"
 

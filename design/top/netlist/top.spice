@@ -1,4 +1,4 @@
-** sch_path: /home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-240/design/top/top.sch
+** sch_path: /home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-232/design/top/top.sch
 **.subckt top VDD GND REF RESETB NSEL0 NSEL1 NSEL2 NSEL3 NSEL4 NSEL5 CLK
 *.iopin VDD
 *.iopin GND
@@ -13,13 +13,14 @@
 *.opin CLK
 XXPFDCP VDD GND REF FBCLK CP pfd_cp
 XXLF CP GND VCTRL loop_filter
-XXVCO VDD GND VCTRL CLK vco_ring5
-XXDIV VDD GND CLK RESETB NSEL0 NSEL1 NSEL2 NSEL3 NSEL4 NSEL5 FBCLK divider_intN
+XXVCO VDD GND VCTRL VCOCLK vco_ring5
+XXDIV VDD GND VCOCLK RESETB NSEL0 NSEL1 NSEL2 NSEL3 NSEL4 NSEL5 FBCLK divider_intN
+XXBUF VDD GND VCOCLK CLK clk_buf
 **.ends
 
 * expanding   symbol:  design/pfd-cp/pfd_cp.sym # of pins=5
-** sym_path: /home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-240/design/pfd-cp/pfd_cp.sym
-** sch_path: /home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-240/design/pfd-cp/pfd_cp.sch
+** sym_path: /home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-232/design/pfd-cp/pfd_cp.sym
+** sch_path: /home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-232/design/pfd-cp/pfd_cp.sch
 .subckt pfd_cp VDD GND REF DIV CP
 *.iopin VDD
 *.iopin GND
@@ -149,8 +150,8 @@ XUPINV_N UPB UP GND GND sky130_fd_pr__nfet_01v8 L=0.15 W=1 nf=1 ad=0.29 as=0.29 
 
 
 * expanding   symbol:  design/loop-filter/loop_filter.sym # of pins=3
-** sym_path: /home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-240/design/loop-filter/loop_filter.sym
-** sch_path: /home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-240/design/loop-filter/loop_filter.sch
+** sym_path: /home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-232/design/loop-filter/loop_filter.sym
+** sch_path: /home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-232/design/loop-filter/loop_filter.sch
 .subckt loop_filter CP GND VCTRL
 *.ipin CP
 *.iopin GND
@@ -164,8 +165,8 @@ XC3 VCTRL GND sky130_fd_pr__cap_mim_m3_1 W=40 L=40 MF=1 m=1
 
 
 * expanding   symbol:  design/vco/vco_ring5.sym # of pins=4
-** sym_path: /home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-240/design/vco/vco_ring5.sym
-** sch_path: /home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-240/design/vco/vco_ring5.sch
+** sym_path: /home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-232/design/vco/vco_ring5.sym
+** sch_path: /home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-232/design/vco/vco_ring5.sch
 .subckt vco_ring5 VDD GND VCTRL CLK
 *.iopin VDD
 *.iopin GND
@@ -227,8 +228,8 @@ XMBUFB_N CLK BUF1 GND GND sky130_fd_pr__nfet_01v8 L=0.15 W=8 nf=1 ad=2.32 as=2.3
 
 
 * expanding   symbol:  design/divider/divider_intN.sym # of pins=11
-** sym_path: /home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-240/design/divider/divider_intN.sym
-** sch_path: /home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-240/design/divider/divider_intN.sch
+** sym_path: /home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-232/design/divider/divider_intN.sym
+** sch_path: /home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-232/design/divider/divider_intN.sch
 .subckt divider_intN VDD GND CLK RESETB NSEL0 NSEL1 NSEL2 NSEL3 NSEL4 NSEL5 FBCLK
 *.iopin VDD
 *.iopin GND
@@ -283,6 +284,25 @@ XLDEC1 NSEL2 NB2 GND GND VDD VDD L1 sky130_fd_sc_hd__xor2_2
 XLDEC2 NSEL3 NB3 GND GND VDD VDD L2 sky130_fd_sc_hd__xor2_2
 XLDEC3 NSEL4 NB4 GND GND VDD VDD L3 sky130_fd_sc_hd__xor2_2
 XLDEC4 NSEL5 NB5 GND GND VDD VDD L4 sky130_fd_sc_hd__xor2_2
+.ends
+
+
+* expanding   symbol:  design/clk-buf/clk_buf.sym # of pins=4
+** sym_path: /home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-232/design/clk-buf/clk_buf.sym
+** sch_path: /home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-232/design/clk-buf/clk_buf.sch
+.subckt clk_buf VDD GND CLKIN CLKOUT
+*.iopin VDD
+*.iopin GND
+*.ipin CLKIN
+*.opin CLKOUT
+XMB1_P N1 CLKIN VDD VDD sky130_fd_pr__pfet_01v8 L=0.15 W=2 nf=1 ad=0.58 as=0.58 pd=4.58 ps=4.58 nrd=0.145 nrs=0.145 sa=0 sb=0 sd=0
++ mult=1 m=1
+XMB1_N N1 CLKIN GND GND sky130_fd_pr__nfet_01v8 L=0.15 W=1 nf=1 ad=0.29 as=0.29 pd=2.58 ps=2.58 nrd=0.29 nrs=0.29 sa=0 sb=0 sd=0
++ mult=1 m=1
+XMB2_P CLKOUT N1 VDD VDD sky130_fd_pr__pfet_01v8 L=0.15 W=24 nf=1 ad=6.96 as=6.96 pd=48.58 ps=48.58 nrd=0.012083 nrs=0.012083 sa=0
++ sb=0 sd=0 mult=1 m=1
+XMB2_N CLKOUT N1 GND GND sky130_fd_pr__nfet_01v8 L=0.15 W=12 nf=1 ad=3.48 as=3.48 pd=24.58 ps=24.58 nrd=0.024167 nrs=0.024167 sa=0
++ sb=0 sd=0 mult=1 m=1
 .ends
 
 .end

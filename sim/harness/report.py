@@ -312,6 +312,18 @@ def _render_measurement_criteria(a, spec, methodology_note: str) -> None:
             f"after the same population start instant (the lock instant, or "
             f"`settle_from` when the manifest declares no lock criterion)."
         )
+    if spec.levels is not None:
+        a(
+            f"  - Output levels (reported, not gated on; issue #232): "
+            f"{spec.levels.summary}, over the same `v({spec.node})` samples "
+            f"and the same population start instant as the figures above. The "
+            f"\"meets\"/\"MISSES\" wording compares against the point's own "
+            f"supply and the DRAFT spec row 15 fractions; it is a report, not a "
+            f"verdict, and the fractions are never edited to fit a result. The "
+            f"load the node drives is whatever the testbench schematic "
+            f"instantiates -- the spec row's \"stated load\" is "
+            f"spec/decision-records/DR-008-clk-output-load-and-buffer-scope.md."
+        )
     a(
         "  - Not measured here: loop bandwidth and phase margin are open-loop "
         "quantities and need their own AC/linearized-model testbench -- see "

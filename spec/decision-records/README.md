@@ -13,6 +13,7 @@ One file per decision, DR-NNN-<slug>.md. See CLAUDE.md.
 | [DR-005](DR-005-pll-lock-cold-start-initial-conditions.md) | `sim/pll-lock` cold-start initial conditions | see record |
 | [DR-006](DR-006-statistical-rows-ratification.md) | Statistical rows ratification | see record |
 | [DR-007](DR-007-lock-detector-provisional-contract.md) | Provisional `LOCK` detector contract (row 16 stays DRAFT) | proposed |
+| [DR-008](DR-008-clk-output-load-and-buffer-scope.md) | Provisional 1 pF `CLK` characterization load and buffered-output regression scope (rows 14/15 stay DRAFT) | proposed |
 
 The "Status" column is authoritative only for records added with this index;
 for earlier records, the record's own header is the source of truth.

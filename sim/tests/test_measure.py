@@ -12,6 +12,7 @@ simulator.
 
 from __future__ import annotations
 
+import dataclasses
 import math
 import sys
 import unittest
@@ -1842,6 +1843,95 @@ class SimulatorOptionsTests(unittest.TestCase):
             with self.subTest(name=name):
                 with self.assertRaises(measure.MeasureError):
                     measure.MeasureSpec.from_manifest(self._manifest({name: 7}))
+
+
+class OutputLevelsTests(unittest.TestCase):
+    """`output_levels` / `measure.levels` -- issue #232's V_OH / V_OL figure,
+    on a synthetic clock whose levels and overshoot are known exactly."""
+
+    SPEC = measure.MeasureSpec(
+        node="clk",
+        tran_step="20p",
+        tran_stop="200n",
+        threshold_frac=0.5,
+        hysteresis_frac=0.15,
+        settle_from_s=50e-9,
+        min_edges=5,
+        timeout_s=600,
+        levels=measure.LevelsSpec(),
+    )
+
+    def test_levels_recover_the_known_rails(self):
+        times, values = square_wave(
+            freq_hz=500e6, duration_s=200e-9, step_s=2e-12, edge_s=100e-12,
+            v_low=0.02, v_high=1.75,
+        )
+        v_oh, v_ol, v_max, v_min = measure.output_levels(times, values, 0.9, 50e-9)
+        self.assertAlmostEqual(v_oh, 1.75, places=6)
+        self.assertAlmostEqual(v_ol, 0.02, places=6)
+        self.assertAlmostEqual(v_max, 1.75, places=6)
+        self.assertAlmostEqual(v_min, 0.02, places=6)
+
+    def test_a_brief_overshoot_does_not_read_as_the_level(self):
+        times, values = square_wave(
+            freq_hz=500e6, duration_s=200e-9, step_s=2e-12, edge_s=100e-12
+        )
+        i = next(k for k, t in enumerate(times) if t > 100e-9 and values[k] > 1.79)
+        values[i] = 1.9  # one-sample ring above the rail
+        v_oh, _, v_max, _ = measure.output_levels(times, values, 0.9, 50e-9)
+        self.assertAlmostEqual(v_oh, 1.8, places=6)
+        self.assertAlmostEqual(v_max, 1.9, places=6)
+
+    def test_window_start_excludes_earlier_samples(self):
+        times = [0.0, 1.0, 2.0, 3.0]
+        values = [1.8, 1.8, 0.0, 0.0]
+        self.assertEqual(measure.output_levels(times, values, 0.9, 2.0), (None, 0.0, 0.0, 0.0))
+
+    def test_empty_window_has_no_levels(self):
+        self.assertEqual(
+            measure.output_levels([0.0, 1.0], [0.0, 1.8], 0.9, 5.0), (None, None, None, None)
+        )
+
+    def test_trace_reports_meets_when_rail_to_rail(self):
+        times, values = square_wave(
+            freq_hz=500e6, duration_s=200e-9, step_s=2e-12, edge_s=100e-12
+        )
+        m = measure.measure_trace(times, values, self.SPEC, supply_v=1.8)
+        self.assertAlmostEqual(m.v_oh, 1.8, places=6)
+        self.assertAlmostEqual(m.v_ol, 0.0, places=6)
+        self.assertIn("V_OH", m.note)
+        self.assertNotIn("MISSES", m.note)
+
+    def test_trace_records_a_miss_without_failing_the_point(self):
+        times, values = square_wave(
+            freq_hz=500e6, duration_s=200e-9, step_s=2e-12, edge_s=100e-12,
+            v_low=0.3, v_high=1.5,
+        )
+        m = measure.measure_trace(times, values, self.SPEC, supply_v=1.8)
+        self.assertEqual(m.note.count("MISSES"), 2)
+        self.assertTrue(m.passed, "levels are reported, never gated")
+
+    def test_no_levels_block_leaves_the_measurement_unchanged(self):
+        spec = dataclasses.replace(self.SPEC, levels=None)
+        times, values = square_wave(
+            freq_hz=500e6, duration_s=200e-9, step_s=2e-12, edge_s=100e-12
+        )
+        m = measure.measure_trace(times, values, spec, supply_v=1.8)
+        self.assertIsNone(m.v_oh)
+        self.assertIsNone(m.v_ol)
+        self.assertNotIn("V_OH", m.note)
+
+    def test_manifest_block_parses_and_validates(self):
+        base = {"node": "clk", "tran_step": "20p", "tran_stop": "200n"}
+        def parse(**extra):
+            return measure.MeasureSpec.from_manifest({"measure": {**base, **extra}})
+
+        self.assertEqual(parse(levels=True).levels, measure.LevelsSpec())
+        self.assertIsNone(parse().levels)
+        with self.assertRaises(measure.MeasureError):
+            parse(levels={"voh_min_frac": 0.1, "vol_max_frac": 0.9})
+        with self.assertRaises(measure.MeasureError):
+            parse(levels=3)
 
 
 if __name__ == "__main__":
