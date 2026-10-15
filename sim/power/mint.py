@@ -19,7 +19,11 @@ A record is never edited; a re-run mints a new one (`--supersedes <id>`).
     python3 sim/power/mint.py --reports-dir DIR [--supersedes ID]
         [--subset-reason TEXT] [--record-id ID] [--dry-run]
 
-DIR holds `<block>.report.json` for every block.
+DIR holds `<block>.report.json` for every block, or -- when the block was run as
+batch-fleet shards (`sim/power/shard.py`) -- `<block>.shard<NN>.report.json` for
+every shard. Shard reports are merged into one per-block report (corner lists
+concatenated; a duplicated or missing PVT point is an error, so a merge can
+never silently claim the 45-point grid) and copied verbatim into the record.
 
 Provenance: the record layout (Record ID / Claim / Spec row(s) / Netlist
 provenance / Environment provenance / Corner matrix run / Methodology /
@@ -66,6 +70,33 @@ SPEC_ROW_NOTE = (
 # --------------------------------------------------------------------------- #
 # collection
 # --------------------------------------------------------------------------- #
+
+
+def load_block_reports(reports_dir: Path, block: str) -> tuple[dict, list[Path]]:
+    """The block's merged klt report and the report files it came from."""
+    single = reports_dir / f"{block}.report.json"
+    shards = sorted(reports_dir.glob(f"{block}.shard[0-9][0-9].report.json"))
+    if single.is_file() and shards:
+        raise SystemExit(f"{block}: both {single.name} and shard reports present; keep one")
+    if single.is_file():
+        return json.loads(single.read_text()), [single]
+    if not shards:
+        raise SystemExit(f"missing {single} (or {block}.shard<NN>.report.json)")
+    docs = [json.loads(p.read_text()) for p in shards]
+    merged = dict(docs[0])
+    corners = [c for d in docs for c in d.get("corners", [])]
+    ids = [c["corner_id"] for c in corners]
+    dup = sorted({i for i in ids if ids.count(i) > 1})
+    if dup:
+        raise SystemExit(f"{block}: PVT point(s) in more than one shard: {', '.join(dup)}")
+    merged["corners"] = corners
+    merged["corner_count"] = len(corners)
+    merged["status"] = "pass" if all(d.get("status") == "pass" for d in docs) else "fail"
+    jobs = [r for r in ((d.get("environment") or {}).get("remote") for d in docs) if r]
+    merged["environment"] = {**(docs[0].get("environment") or {}), "remote_jobs": jobs}
+    klts = sorted({str((d.get("provenance") or {}).get("klt_version")) for d in docs})
+    merged["provenance"] = {**(docs[0].get("provenance") or {}), "klt_version": ", ".join(klts)}
+    return merged, shards
 
 
 def corner_key(c: dict) -> tuple:
@@ -339,7 +370,8 @@ def render(record_id: str, reports: dict, all_data: dict, stages_docs: dict,
     verdict = "PASS" if overall_ok else "FAIL"
 
     envs = {b: (reports[b].get("environment") or {}) for b in BLOCKS}
-    remote = {b: envs[b].get("remote") or {} for b in BLOCKS}
+    remote = {b: envs[b].get("remote_jobs") or ([envs[b]["remote"]] if envs[b].get("remote") else [])
+              for b in BLOCKS}
     prov = {b: (reports[b].get("provenance") or {}) for b in BLOCKS}
     klt_versions = sorted({str(prov[b].get("klt_version")) for b in BLOCKS})
 
@@ -374,14 +406,13 @@ def render(record_id: str, reports: dict, all_data: dict, stages_docs: dict,
         L.append(f"  - PDK: {json.dumps(pdk, sort_keys=True)}")
     L.append(f"  - Repo commit: `{git('rev-parse', 'HEAD')}`" + (" (dirty)" if git("status", "--porcelain") else ""))
     for b in BLOCKS:
-        r = remote[b]
-        if r:
+        for r in remote[b]:
             L.append(
                 f"  - `{b}` ran on the batch fleet: job `{r.get('job_id')}`, "
                 f"`{r.get('instance_type')}`, lifecycle `{r.get('lifecycle')}`, "
                 f"{r.get('elapsed_seconds')} s elapsed"
             )
-        else:
+        if not remote[b]:
             L.append(f"  - `{b}`: no `environment.remote` in the report (ran locally)")
     L.append("- **Corner matrix run**:")
     L.append(f"  - Process corners: {', '.join(procs)}")
@@ -525,12 +556,9 @@ def main(argv=None) -> int:
     ap.add_argument("--dry-run", action="store_true", help="print the record, write nothing")
     args = ap.parse_args(argv)
 
-    reports, stages_docs, all_data = {}, {}, {}
+    reports, stages_docs, all_data, report_files = {}, {}, {}, {}
     for b in BLOCKS:
-        rp = args.reports_dir / f"{b}.report.json"
-        if not rp.is_file():
-            raise SystemExit(f"missing {rp}")
-        reports[b] = json.loads(rp.read_text())
+        reports[b], report_files[b] = load_block_reports(args.reports_dir, b)
         stages_docs[b] = json.loads((HERE / "testbench" / f"{b}.stages.json").read_text())
         all_data[b] = reduce_block(b, reports[b], stages_docs[b])
 
@@ -552,7 +580,8 @@ def main(argv=None) -> int:
     snap_dir = HERE / "netlist-snapshots" / record_id
     snap_dir.mkdir(parents=True)
     for b in BLOCKS:
-        shutil.copy(args.reports_dir / f"{b}.report.json", rep_dir / f"{b}.report.json")
+        for rp in report_files[b]:
+            shutil.copy(rp, rep_dir / rp.name)
         for suffix in ("body.spice", "request.json", "stages.json"):
             shutil.copy(HERE / "testbench" / f"{b}.{suffix}", snap_dir / f"{b}.{suffix}")
     reduced = {

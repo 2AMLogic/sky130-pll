@@ -32,6 +32,7 @@ def _load(name: str):
 reduce_mod = _load("reduce")
 sys.path.insert(0, str(POWER_DIR))
 mint_mod = _load("mint")
+shard_mod = _load("shard")
 
 VDD = 1.8
 DT = 0.05e-9
@@ -301,6 +302,80 @@ class RollupTests(unittest.TestCase):
         self.assertEqual(mint_mod.fmt_i(5e-10), "0.50 nA")
         self.assertEqual(mint_mod.fmt_i(14e-6), "14.00 uA")
         self.assertEqual(mint_mod.fmt_p(2.5e-3), "2.5000 mW")
+
+
+class ShardTests(unittest.TestCase):
+    def test_every_block_partitions_the_45_point_grid(self):
+        for block in shard_mod.BLOCKS:
+            full = json.loads((POWER_DIR / "testbench" / f"{block}.request.json").read_text())
+            shards = shard_mod.shard_requests(block, full)
+            pts = [shard_mod.grid_points(r) for r in shards]
+            self.assertEqual(sum(len(p) for p in pts), 45, block)
+            self.assertEqual(set().union(*pts), shard_mod.grid_points(full), block)
+            self.assertEqual(len(shards), 15 if block == "divider-n64" else 5, block)
+            self.assertLessEqual(max(len(p) for p in pts), 9, block)
+
+    def test_serial_bound_fits_the_fleet_ceiling(self):
+        for block in shard_mod.BLOCKS:
+            full = json.loads((POWER_DIR / "testbench" / f"{block}.request.json").read_text())
+            for r in shard_mod.shard_requests(block, full):
+                n = len(shard_mod.grid_points(r))
+                self.assertLessEqual(r["options"]["timeout_s"] * n + 120, 3600, block)
+                self.assertGreaterEqual(r["options"]["timeout_s"], 370, block)
+
+    def test_shard_leaves_the_rest_of_the_request_untouched(self):
+        full = json.loads((POWER_DIR / "testbench" / "pfd-cp.request.json").read_text())
+        for r in shard_mod.shard_requests("pfd-cp", full):
+            self.assertEqual({k: v for k, v in r.items() if k not in ("corners", "options")},
+                             {k: v for k, v in full.items() if k not in ("corners", "options")})
+            self.assertEqual({k: v for k, v in r["options"].items() if k != "timeout_s"},
+                             {k: v for k, v in full["options"].items() if k != "timeout_s"})
+
+
+class MergeShardReportsTests(unittest.TestCase):
+    def _corner(self, proc):
+        return {"corner_id": f"{proc}/1.800V/27C", "process": proc,
+                "supply_v": {"v1": 1.8}, "temperature_c": 27, "status": "pass"}
+
+    def _write(self, d, name, procs, status="pass"):
+        (d / name).write_text(json.dumps({
+            "status": status, "corner_count": len(procs),
+            "corners": [self._corner(p) for p in procs],
+            "environment": {"remote": {"job_id": f"job-{name}"}},
+            "provenance": {"klt_version": "0.7.1"},
+        }))
+
+    def test_merges_shards_in_order_and_keeps_every_job(self):
+        with tempfile.TemporaryDirectory() as t:
+            d = Path(t)
+            self._write(d, "vco.shard00.report.json", ["tt"])
+            self._write(d, "vco.shard01.report.json", ["ff"], status="fail")
+            rep, files = mint_mod.load_block_reports(d, "vco")
+            self.assertEqual([c["process"] for c in rep["corners"]], ["tt", "ff"])
+            self.assertEqual(rep["corner_count"], 2)
+            self.assertEqual(rep["status"], "fail")
+            self.assertEqual(len(rep["environment"]["remote_jobs"]), 2)
+            self.assertEqual(len(files), 2)
+
+    def test_duplicate_point_is_refused(self):
+        with tempfile.TemporaryDirectory() as t:
+            d = Path(t)
+            self._write(d, "vco.shard00.report.json", ["tt"])
+            self._write(d, "vco.shard01.report.json", ["tt"])
+            with self.assertRaises(SystemExit):
+                mint_mod.load_block_reports(d, "vco")
+
+    def test_single_report_and_missing_report(self):
+        with tempfile.TemporaryDirectory() as t:
+            d = Path(t)
+            with self.assertRaises(SystemExit):
+                mint_mod.load_block_reports(d, "vco")
+            self._write(d, "vco.report.json", ["tt"])
+            rep, files = mint_mod.load_block_reports(d, "vco")
+            self.assertEqual(files, [d / "vco.report.json"])
+            self._write(d, "vco.shard00.report.json", ["ff"])
+            with self.assertRaises(SystemExit):
+                mint_mod.load_block_reports(d, "vco")
 
 
 if __name__ == "__main__":
