@@ -39,21 +39,28 @@ python3 sim/run_corners.py pfd-cp-resolution          # nominal 2.5 ps vs 5 ps d
 Each point is 135 transients of ~3.1 us at 5 ps, so the full grid is long
 enough that it belongs on a fleet, not on a shared dispatch host.
 
-### Execution-backend gap (read before running the full grid)
+### Execution backend: the batch route and its status (issue #290)
 
-The generic harness executors are `local` and `remote`. `remote` needs the
-klayout-tools SSH fleet and **silently degrades to `local`** on a host that
-is not provisioned for it (`sim/harness/README.md`, "Fallback contract"). It
-has no `klt sim --backend batch` route: that exists only for the divider Fmax
-campaign (`sim/harness/fmax_klt.py`), because `klt sim` owns the deck's single
-`.control` block and cannot `alter` a PULSE source, which this campaign's
-per-coordinate stimulus requires. Running the 45-point grid on a host that
-exports `KLT_SIM_BACKEND=batch` therefore has no batch path through this
-harness, and a `--executor remote` request would fall back to a local run of
-the entire grid. Do not run it that way on a shared host. A full-grid record
-needs a harness batch route (or a provisioned `remote` fleet) first. The
-generic tool gap is filed as 2AMLogic/klayout-tools#3097 (2026-10-11 re-check:
-no batch submit was attempted because no route exists; nothing was run).
+`--executor remote` needs the klayout-tools SSH fleet and **silently degrades
+to `local`** on a host that is not provisioned for it (`sim/harness/README.md`,
+"Fallback contract"), and `klt sim` corner requests cannot express this
+campaign's per-coordinate PULSE stimulus. The harness therefore has a
+dedicated route, `--executor batch` (`sim/harness/cp_klt.py`): one `klt sim`
+`decks[]` entry per PVT point, run on the Spot batch fleet, with the returned
+dumps reduced by the unchanged `cpmeasure` reducer. On a host that exports
+`KLT_SIM_BACKEND=batch` it is chosen automatically for this manifest, and
+`--executor remote` is refused. A refused or failed submit is reported and
+the run exits nonzero; it never falls back to a local run of the grid. See
+`sim/harness/README.md`, "Batch-fleet route for `cp`".
+
+**Status as of 2026-10-15: the route is built and unit-tested but has no
+successful end-to-end run.** A one-deck probe through the real fleet reached a
+spot instance and failed in 25 s because the fleet runner's `klt` does not
+accept `decks[]` (`request is missing required field: netlist`; job
+`klt-sim-b1f40d6f9ddc`, installed client `klt 0.7.1.dev500+g247e3c89b14b`),
+tracked as 2AMLogic/klayout-tools#3303. The nominal-point smoke (tt/27 C/1.80 V)
+has therefore **not** been run; no record was minted and nothing ran locally.
+Do not run the 45-point grid until a one-point batch smoke has passed.
 
 ## Evidence discipline
 
@@ -66,7 +73,7 @@ answered with a new record with a longer manifest window, not an edit.
 
 - `pfd-cp` (45-point grid): **not run.** One nominal point's 135-transient
   sweep costs on the order of 9 hours of CPU (about 4 minutes per 5 ps
-  transient), so the grid is roughly 400 CPU-hours and has no harness route to
+  transient), so the grid is roughly 400 CPU-hours and has no working end-to-end route to
   a batch fleet (see above).
 - `pfd-cp-resolution`: run once locally (a single nominal unit), record
   `sim/pfd-cp-resolution/records/20261011-011743-f9ceac9.md`. It **failed**:

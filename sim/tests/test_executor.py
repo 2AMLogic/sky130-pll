@@ -39,6 +39,7 @@ from __future__ import annotations
 import contextlib
 import io
 import json
+import os
 import sys
 import tempfile
 import types
@@ -388,6 +389,9 @@ class _Harness:
         with contextlib.ExitStack() as stack:
             for patch in patches:
                 stack.enter_context(patch)
+            # A batch dispatch host exports KLT_SIM_BACKEND=batch, which routes a
+            # `cp` manifest to the batch executor (#290); these tests pin the seam.
+            os.environ.pop("KLT_SIM_BACKEND", None)
             with contextlib.redirect_stdout(out), contextlib.redirect_stderr(out):
                 rc = cli.main([str(self.testbench)] + argv)
         return rc, out.getvalue()
@@ -508,11 +512,11 @@ class LocalExecutorUnchangedTests(unittest.TestCase):
 
     def test_an_unknown_executor_name_is_rejected(self):
         with tempfile.TemporaryDirectory() as tmp:
-            manifest = dict(MANIFEST, executor="batch")
+            manifest = dict(MANIFEST, executor="fleet")
             h = _Harness(Path(tmp), manifest=manifest)
             rc, out = h.run([])
             self.assertEqual(rc, 1)
-            self.assertIn("unknown executor 'batch'", out)
+            self.assertIn("unknown executor 'fleet'", out)
 
 
 # --------------------------------------------------------------------------- #
@@ -1072,7 +1076,7 @@ class BackendInterfaceTests(unittest.TestCase):
 
     def test_build_rejects_an_unknown_backend_name(self):
         with self.assertRaises(ValueError):
-            executor_mod.build("batch", pdk=_StubPdk(), spiceinit=Path("/x"), jobs=1, manifest={})
+            executor_mod.build("fleet", pdk=_StubPdk(), spiceinit=Path("/x"), jobs=1, manifest={})
 
 
 if __name__ == "__main__":  # pragma: no cover

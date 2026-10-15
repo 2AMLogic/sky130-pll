@@ -24,9 +24,10 @@ Backends
 
 :class:`ExecutionBackend` is intentionally a small ABC over a single verb
 (``execute(unit) -> outcome``) plus an optional batch ``stage(units)``.
-A third backend (klayout-tools' newer ``batch`` backend, 2AMLogic/klayout-tools#2080,
-which targets an unprovisioned batch fleet) can be added here later as one
-more subclass without touching `runner.py` or `cli.py` at all.
+The ``batch`` backend (``--executor batch``, `sim/harness/cp_klt.py`, issue #290)
+submits the unit set to the Spot batch fleet as one `klt sim` ``decks[]``
+request. It exists for the charge-pump (`cp`) analysis only and, unlike
+``remote``, **never falls back to local**: a refused or failed submit raises.
 
 Dependency discipline
 ---------------------
@@ -63,7 +64,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 #: The `--executor` choices, in the order argparse should offer them.
-EXECUTORS = ("local", "remote")
+EXECUTORS = ("local", "remote", "batch")
 DEFAULT_EXECUTOR = "local"
 
 #: `$PDK_ROOT` on the klayout-tools remote-sim AMI (its build script pins
@@ -751,10 +752,43 @@ def _fleet_cost(fleet: list[dict]) -> float | None:
 # --------------------------------------------------------------------------- #
 
 
-def resolve_name(cli_value: str | None, manifest: dict) -> str:
-    """`--executor` wins; otherwise the manifest's own `executor` key; else
-    `local`. An unknown name is rejected by the caller."""
-    return (cli_value or manifest.get("executor") or DEFAULT_EXECUTOR).strip()
+class ExecutorRefused(ValueError):
+    """The requested executor cannot be used for this manifest on this host."""
+
+
+def resolve_name(cli_value: str | None, manifest: dict, environ: dict | None = None) -> str:
+    """`--executor` wins; otherwise the manifest's own `executor` key; else a
+    `cp` manifest on a host that exports `KLT_SIM_BACKEND=batch` routes to
+    `batch` (the dispatch-host rule: a grid never runs locally there); else
+    `local`. An unknown name is rejected by the caller.
+
+    Raises :class:`ExecutorRefused` for the two requests that would otherwise
+    simulate a `cp` grid on a batch-configured host: `remote` (which degrades
+    to `local` on an unprovisioned host) and `batch` for a manifest that has
+    no `cp` block (the batch route only knows how to submit that analysis).
+    """
+    from . import cp_klt  # lazy: cp_klt imports this module
+
+    explicit = cli_value or manifest.get("executor")
+    on_batch_host = cp_klt.batch_requested(environ)
+    is_cp = bool(manifest.get("cp"))
+    if explicit:
+        name = explicit.strip()
+        if name == "remote" and is_cp and on_batch_host:
+            raise ExecutorRefused(
+                "--executor remote for a `cp` manifest on a host that exports "
+                "KLT_SIM_BACKEND=batch would degrade to a local run of the whole grid "
+                "if the SSH fleet is not provisioned; use --executor batch"
+            )
+        if name == "batch" and not is_cp:
+            raise ExecutorRefused(
+                "--executor batch is implemented for `cp` manifests only (it submits "
+                "the charge-pump analysis as a klt sim decks[] request)"
+            )
+        return name
+    if is_cp and on_batch_host:
+        return "batch"
+    return DEFAULT_EXECUTOR
 
 
 def build(
@@ -770,5 +804,16 @@ def build(
             config=remote_config(manifest),
             hosts=jobs,
             log=log,
+        )
+    if name == "batch":
+        from . import cp_klt  # lazy: cp_klt imports this module
+        from . import cpmeasure as cp_mod
+
+        return cp_klt.CpBatchBackend(
+            pdk=pdk,
+            spiceinit=spiceinit,
+            cp_spec=cp_mod.CpSpec.from_manifest(manifest),
+            log=log,
+            max_workers=min(max(1, int(jobs)), 2),
         )
     raise ValueError(f"unknown executor {name!r} (known: {', '.join(EXECUTORS)})")

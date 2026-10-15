@@ -211,7 +211,7 @@ artifact are identical either way, which is why a staged run records no
 provenance about having been staged. It is where ngspice's scratch lived, not
 a fact about the DUT.
 
-### Where a unit runs: `--executor {local,remote}`
+### Where a unit runs: `--executor {local,remote,batch}`
 
 `--executor` selects the **execution backend** — where each unit's
 `ngspice -b` process actually runs. It is the only thing the flag changes:
@@ -756,6 +756,50 @@ in `runner.prepare_point`/`run_point`, `cli.cmd_run` and `report.render`.
   unavailable-entries list and the resolution diagnostic. The manifest's
   `spec_rows`/`spec_rows_note` supply the (mechanism-only) row citation that
   `measurements/aggregate.py` discovers without any aggregator change.
+
+### Batch-fleet route for `cp`: `--executor batch` (issue #290)
+
+`klt sim` corner requests own the deck's single `.control` block and cannot
+`alter` a PULSE source, so a `cp` manifest cannot be a corner request. It
+travels as a `klt sim` **deck-list request** (`decks[]`) instead, which runs a
+caller-composed deck byte-for-byte on the Spot batch fleet. `sim/harness/cp_klt.py`
+(`CpBatchBackend`, an `ExecutionBackend`) submits the whole pending unit set as
+one request: one `decks[]` entry per PVT point, `deck` = that point's patched
+netlist, `inputs` = `sim/spiceinit` as `.spiceinit`, `outputs` = every dump the
+control block writes (`cpmeasure.waveform_names`). The returned dumps land in
+each unit's own working directory and the returned streams become its log, so
+`runner.judge` and the unchanged `cpmeasure` reducer read them exactly as for a
+local run.
+
+```
+python3 sim/run_corners.py pfd-cp --executor batch      # explicit
+KLT_SIM_BACKEND=batch python3 sim/run_corners.py pfd-cp # chosen automatically for cp
+```
+
+- **Selection**: on a host that exports `KLT_SIM_BACKEND=batch`, a `cp`
+  manifest with no `--executor`/`"executor"` key resolves to `batch`
+  (`executor.resolve_name`). `--executor remote` for a `cp` manifest on such a
+  host is **refused** (it would degrade to a local run of the grid), and
+  `--executor batch` for any other manifest is refused. An explicit
+  `--executor local` is still honoured (a single debug point).
+- **No fallback, ever**: a submit failure, a capacity refusal (retried by waiting
+  and resubmitting the same job, never by running locally), a `klt` or fleet
+  runner that does not accept `decks[]` (`DecksUnsupported`), or a job-level
+  `batch_*` diagnostic raises `CpBatchError`; the CLI prints the exact error,
+  exits nonzero and writes no record. A unit that ran but returned a nonzero
+  exit, timed out or lacked a declared output (`missing_outputs`) is a failed
+  unit through the ordinary judge/reducer.
+- **Deck difference**: this host's absolute PDK root is rewritten to `$PDK_ROOT`
+  in the shipped deck (a deck-list request leaves `$VAR` targets to the
+  executing host); the record states this and carries the job id, instance type,
+  lifecycle, ngspice version and runner/client `klt` versions. The model library
+  is the fleet image's, not the local pinned install.
+- **Tests**: `sim/tests/test_cp_klt.py` (mocked `klt`, stdlib only).
+- **Fleet status (2026-10-15)**: the installed client (`klt 0.7.1.dev500`)
+  accepts and launches `decks[]` batch requests, but the fleet runner's own `klt`
+  rejects them (`request is missing required field: netlist`); tracked in
+  2AMLogic/klayout-tools#3303. Until the runner image is updated the route fails
+  explicitly, which is the specified behaviour.
 
 ## Monte Carlo (`--mc`)
 
