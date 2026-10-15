@@ -7,8 +7,10 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 import unittest
+from unittest import mock
 from pathlib import Path
 
 SIM_DIR = Path(__file__).resolve().parents[1]
@@ -760,25 +762,127 @@ class CpRecordRenderTests(unittest.TestCase):
 
 
 class PdkCommitParsingTests(unittest.TestCase):
-    def test_extracts_commit_from_volare_style_symlink(self):
+    PIN = "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+    OLD = "c6d73a35f524070e85faff4a6a9eef49553ebc2b"  # historical pin (volare era)
+
+    def _tree(self, root: Path, store: str, commit: str, sources: str | None):
+        """Build `<root>/<store>/sky130/versions/<commit>/sky130A` + the
+        `<root>/sky130A` symlink, with the minimum files resolve() needs."""
+        real = root / store / "sky130" / "versions" / commit / "sky130A"
+        (real / "libs.tech" / "combined").mkdir(parents=True)
+        (real / "libs.tech" / "xschem").mkdir(parents=True)
+        (real / "libs.tech" / "combined" / "sky130.lib.spice").write_text("")
+        (real / "libs.tech" / "xschem" / "xschemrc").write_text("")
+        if sources is not None:
+            (real / "SOURCES").write_text(sources)
+        (root / "sky130A").symlink_to(real)
+        return root
+
+    def _resolve(self, root: Path, pdk_root_env=True, home: Path | None = None):
+        env = {"PDK": "sky130A"}
+        if pdk_root_env:
+            env["PDK_ROOT"] = str(root)
+        with mock.patch.dict(os.environ, env, clear=False), \
+                mock.patch.object(pdk_mod, "_ciel_path", return_value=None), \
+                mock.patch.object(pdk_mod, "_LEGACY_PDK_ROOT", (home or root) / ".volare"):
+            if not pdk_root_env:
+                os.environ.pop("PDK_ROOT", None)
+            return pdk_mod.resolve(REPO_ROOT)
+
+    def test_extracts_commit_from_ciel_style_symlink(self):
         import tempfile
 
-        commit = "c6d73a35f524070e85faff4a6a9eef49553ebc2b"
         with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            real_dir = root / "volare" / "sky130" / "versions" / commit / "sky130A"
-            real_dir.mkdir(parents=True)
-            link = root / "sky130A"
-            link.symlink_to(real_dir)
-            self.assertEqual(pdk_mod._commit_from_variant_dir(link), commit)
+            root = self._tree(Path(tmp), "ciel", self.PIN, None)
+            self.assertEqual(pdk_mod._commit_from_variant_dir(root / "sky130A"), self.PIN)
 
-    def test_returns_none_for_a_non_volare_path(self):
+    def test_returns_none_for_a_non_managed_path(self):
         import tempfile
 
         with tempfile.TemporaryDirectory() as tmp:
             plain = Path(tmp) / "sky130A"
             plain.mkdir()
             self.assertIsNone(pdk_mod._commit_from_variant_dir(plain))
+            self.assertIsNone(pdk_mod._commit_from_sources(plain))
+
+    def test_sources_file_match(self):
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self._tree(Path(tmp), "ciel", self.PIN, f"open_pdks {self.PIN}\n")
+            r = self._resolve(root)
+        self.assertEqual(r.resolved_commit, self.PIN)
+        self.assertFalse(r.commit_mismatch)
+
+    def test_sources_file_wins_over_path_and_mismatch_is_flagged(self):
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            # path says the pin, SOURCES says otherwise: SOURCES is authoritative
+            root = self._tree(Path(tmp), "ciel", self.PIN, f"open_pdks {self.OLD}\n")
+            r = self._resolve(root)
+        self.assertEqual(r.resolved_commit, self.OLD)
+        self.assertTrue(r.commit_mismatch)
+
+    def test_volare_layout_tree_at_old_pin_is_a_visible_mismatch(self):
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self._tree(Path(tmp), "volare", self.OLD, f"open_pdks {self.OLD}\n")
+            r = self._resolve(root)
+        self.assertEqual(r.resolved_commit, self.OLD)
+        self.assertTrue(r.commit_mismatch)
+
+    def test_path_fallback_when_no_sources_file(self):
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self._tree(Path(tmp), "volare", self.OLD, None)
+            r = self._resolve(root)
+        self.assertEqual(r.resolved_commit, self.OLD)
+        self.assertTrue(r.commit_mismatch)
+
+    def test_leftover_legacy_tree_is_flagged_not_silently_used(self):
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            legacy = home / ".volare"
+            legacy.mkdir()
+            self._tree(legacy, "volare", self.OLD, f"open_pdks {self.OLD}\n")
+            ciel_root = home / ".ciel"  # empty: no variant installed
+            ciel_root.mkdir()
+            with mock.patch.object(
+                pdk_mod, "_load_pdk_json",
+                return_value={**pdk_mod._load_pdk_json(REPO_ROOT),
+                              "default_pdk_root": str(ciel_root)},
+            ):
+                r = self._resolve(home, pdk_root_env=False, home=home)
+        self.assertEqual(r.pdk_root, legacy)
+        self.assertTrue(r.commit_mismatch)
+
+    def test_ciel_root_preferred_over_legacy_when_both_present(self):
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            legacy = home / ".volare"
+            legacy.mkdir()
+            self._tree(legacy, "volare", self.OLD, f"open_pdks {self.OLD}\n")
+            ciel_root = home / ".ciel"
+            ciel_root.mkdir()
+            self._tree(ciel_root, "ciel", self.PIN, f"open_pdks {self.PIN}\n")
+            with mock.patch.object(
+                pdk_mod, "_load_pdk_json",
+                return_value={**pdk_mod._load_pdk_json(REPO_ROOT),
+                              "default_pdk_root": str(ciel_root)},
+            ):
+                r = self._resolve(home, pdk_root_env=False, home=home)
+        self.assertEqual(r.pdk_root, ciel_root)
+        self.assertFalse(r.commit_mismatch)
+
+    def test_pin_in_repo_is_the_new_revision(self):
+        self.assertEqual(pdk_mod._load_pdk_json(REPO_ROOT)["open_pdks_commit"], self.PIN)
 
 
 class SubsetReasonGateOrderingTests(unittest.TestCase):

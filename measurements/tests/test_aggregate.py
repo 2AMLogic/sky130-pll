@@ -39,7 +39,7 @@ SIM_RECORD_FIXTURE = """\
 - **Claim**: harness self-test -- proves the plumbing works end to end.
 - **Netlist provenance**: schematic, SHA-256 `deadbeef`
 - **Environment provenance**:
-  - PDK: volare `sky130A`
+  - PDK: ciel `sky130A`
 - **Corner matrix run**:
   - Total points: 27
 - **Methodology / criteria / limitations**:

@@ -7,7 +7,7 @@ Apache-2.0.
 
 - **PDK**: sky130 (open PDK). Open-source flow: xschem + ngspice for
   design/sim, klayout-tools (`klt`) for layout work. Install the PDK with
-  `volare` and mirror the sky130 plumbing (`xschemrc`, `spiceinit`, the sky130
+  `ciel` and mirror the sky130 plumbing (`xschemrc`, `spiceinit`, the sky130
   `klt` decks) from `2AMLogic/sky130-bandgap` rather than reinventing it. The
   sky130 device menu is **not** gf180's: gf180-pll is built on 3.3 V I/O
   devices (`nfet_03v3`/`pfet_03v3`); the sky130 supply flavor — 1.8 V core

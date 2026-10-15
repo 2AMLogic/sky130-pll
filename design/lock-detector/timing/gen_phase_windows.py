@@ -99,7 +99,7 @@ def schematic():
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--pdk-spice", default=str(Path.home() / ".volare/sky130A/libs.ref/"
+    ap.add_argument("--pdk-spice", default=str(Path.home() / ".ciel/sky130A/libs.ref/"
                                                "sky130_fd_sc_hd/spice/sky130_fd_sc_hd.spice"))
     pdk = Path(ap.parse_args().pdk_spice).read_text()
     out = ROOT / "sim/lockdet-timing/phase/candidates"

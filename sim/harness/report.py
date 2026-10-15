@@ -159,7 +159,7 @@ def _render_header(
         f"SHA-256 `{netlist_sha}`"
     )
     a("- **Environment provenance**:")
-    a(f"  - PDK: volare `{pdk.variant}`, open_pdks `{pdk.resolved_commit or 'unknown'}`"
+    a(f"  - PDK: ciel `{pdk.variant}`, open_pdks `{pdk.resolved_commit or 'unknown'}`"
       + (f" (**MISMATCH** vs. pinned `{pdk.pinned_commit}`)" if pdk.commit_mismatch else ""))
     a(f"  - Model library: `{pdk.ngspice_lib}`")
     a(f"  - Simulator: {tool_versions.get('ngspice') or 'unknown'}; "
