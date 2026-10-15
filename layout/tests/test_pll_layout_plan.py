@@ -40,7 +40,9 @@ class NetlistParsingTests(unittest.TestCase):
         # builder silently loses the block list and draws nothing.
         cards = pll_layout.read_cards(NETLIST.read_text())
         self.assertIn("top", cards)
-        self.assertEqual(len(cards["top"]), 4, "top instantiates four blocks")
+        self.assertEqual(
+            len(cards["top"]), 5, "top instantiates five blocks (four PLL blocks + clk_buf, issue #232)"
+        )
 
     def test_continuation_lines_are_joined(self):
         text = "\n".join(
