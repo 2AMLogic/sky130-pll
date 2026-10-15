@@ -29,7 +29,8 @@ line (which is what `measurements/aggregate.py` reads).
 sim/power/
   build.py          regenerates everything under testbench/ from one stage table
   reduce.py         waveform -> whole-cycle mean supply current (pure; unit-tested)
-  mint.py           klt reports -> append-only record + reduced data + snapshots
+  shard.py          splits a request into batch-fleet shards that partition the 45 points
+  mint.py           klt reports (or shard reports, merged) -> append-only record + reduced data + snapshots
   testbench/
     tb_power_<block>.sch     xschem testbench (generated)
     <block>.body.spice       klt circuit body (generated)
@@ -54,14 +55,32 @@ active minus idle (a difference, not a separate simulation).
 
 ## Running (do not hand-launch ngspice grids on the shared host)
 
+The batch fleet kills a whole job at 3600 s and caps the fleet at 8 instances,
+and `klt sim --hosts` only shards the local backends, so each 45-point request
+is split client-side into shards that partition the grid (`shard.py`; measured
+serial cost per point on a shared worker: vco 64 s, divider-n4 95 s, pfd-cp
+86 s, divider-n64 300 s -> 5 shards per block by process corner, 15 for
+divider-n64 by process x supply). The grid, stimulus and averaging windows are
+unchanged; only `options.timeout_s` is lowered per shard so klt's serial bound
+fits the ceiling.
+
 ```sh
-for b in vco divider-n4 divider-n64 pfd-cp; do
-  klt sim sim/power/testbench/$b.request.json --backend batch --format json \
-      -o /path/to/scratch/$b-out > /path/to/scratch/$b.report.json
-done
-python3 sim/power/mint.py --reports-dir /path/to/scratch [--supersedes <id>]
+S=/path/to/scratch
+python3 sim/power/shard.py --out $S
+# verify ONE shard end to end first, then the rest (<= 4 in flight):
+klt sim $S/pfd-cp.shard00.request.json --backend batch --format json \
+    -o $S/pfd-cp.shard00.out > $S/pfd-cp.shard00.report.json
+# then the remaining shards, at most 4 submitted at once (fleet cap is 8 instances,
+# shared with other sweeps); a refused submit is reported, never run locally:
+for r in $S/*.shard*.request.json; do klt sim $r --backend batch --format json \
+    -o ${r%.request.json}.out > ${r%.request.json}.report.json; done   # serial; or 4 at a time
+python3 sim/power/mint.py --reports-dir $S [--supersedes <id>]
 python3 measurements/aggregate.py --out measurements/report.md
 ```
+
+Each shard's report must be saved as `$S/<block>.shard<NN>.report.json`;
+`mint.py` merges them and refuses a duplicated PVT point. It records every
+fleet job id.
 
 The requests carry `"backend": "batch"`; `KLT_SIM_BACKEND` / the batch fleet
 configuration come from the environment. The fleet refuses a client whose
