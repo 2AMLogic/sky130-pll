@@ -7,10 +7,15 @@
 # installer (`loom-daemon init` / `uninstall-loom.sh --clean`) that a path
 # under `.loom/` is repo-owned and must not be deleted on reinstall.
 
-# #78: pins the `state`-only gh pr view fix (no nonexistent `merged` --json
-# field) restored from this repo's own history at commit 7270355. A later
-# resync (commit 2f436d0) had silently reverted that fix back to the broken
-# `,merged` form because the resync source at the time was still serving the
-# pre-fix upstream content; pin here until upstream `rjwalters/loom` is
-# confirmed to consistently serve the fixed version (rjwalters/loom PR #6799).
-scripts/verdict-staleness-guard.sh
+#
+# NO PINS AS OF 2026-10-14 (2AMLogic/2am#4345, Q7 ruling 2026-10-15).
+#
+# scripts/verdict-staleness-guard.sh was pinned (#78/#79) for the
+# `state`-only `gh pr view` fix (no nonexistent `merged` --json field),
+# "until upstream rjwalters/loom is confirmed to consistently serve the fixed
+# version (rjwalters/loom PR #6799)". It does: upstream asks for
+# `headRefOid,labels,state` only. The pinned copy also lacked later upstream
+# hardening (#9258 unmarked-approval STALE, #9548 trusted markers, #9576
+# tree-equality FRESH), and failed this repo's own
+# test-verdict-staleness-guard.sh and -tree.sh. The upstream file passes both
+# (319/319, 36/36). The pin was removed and the file replaced with upstream.
