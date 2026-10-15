@@ -48,6 +48,11 @@ v {xschem version=3.4.7 file_version=1.2
 * external source netlist), instance-for-instance identical to
 * tb_pll_lock.sch except for the `V2` value, the NSEL strap, and this
 * header comment.
+*
+* Issue #232: CLK is now the buffered output pin (design/clk-buf) and CL is the
+* provisional 1 pF CLK-to-GND characterization load of
+* spec/decision-records/DR-008-clk-output-load-and-buffer-scope.md. The load
+* is a lumped characterization stand-in, not a pad/package model.
 }
 G {}
 V {}
@@ -65,6 +70,9 @@ C {devices/lab_pin.sym} -130 20 0 0 {name=p8 sig_type=std_logic lab=VDD}
 C {devices/lab_pin.sym} -130 60 0 0 {name=p9 sig_type=std_logic lab=VDD}
 C {devices/lab_pin.sym} -130 100 0 0 {name=p10 sig_type=std_logic lab=VDD}
 C {devices/lab_pin.sym} 130 0 0 0 {name=p11 sig_type=std_logic lab=CLK}
+C {devices/capa.sym} 300 0 0 0 {name=CL m=1 value=1p footprint=1206 device="ceramic capacitor"}
+C {devices/lab_pin.sym} 300 -30 0 0 {name=p90 sig_type=std_logic lab=CLK}
+C {devices/lab_pin.sym} 300 30 0 0 {name=p91 sig_type=std_logic lab=GND}
 C {devices/vsource.sym} 600 0 0 0 {name=V1 value=1.8 savecurrent=false}
 C {devices/lab_pin.sym} 600 -30 0 0 {name=p12 sig_type=std_logic lab=VDD}
 C {devices/gnd.sym} 600 30 0 0 {name=l1 lab=GND}

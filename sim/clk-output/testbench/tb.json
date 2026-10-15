@@ -1,0 +1,45 @@
+{
+  "schema": "sky130-pll.harness.tb/1",
+  "claim": "V_OH, V_OL, duty cycle and 10-90% edge time at the buffered CLK pin (design/clk-buf, issue #232) across the full 45-point PVT grid (DR-003 five-corner set x -40/27/125 C x 1.62/1.80/1.98 V), into the provisional 1 pF CLK-to-GND characterization load of spec/decision-records/DR-008-clk-output-load-and-buffer-scope.md. Measured design input toward the DRAFT spec rows 14 and 15; it ratifies nothing, excludes pad/package/ESD capability, and a miss against the DRAFT bounds is recorded as a miss. The ring is held open-loop at a fixed VCTRL of 0.865 V (the near-250 MHz point of sim/vco-clk-transition), so the grid exercises the buffer across process, temperature and supply at one drive frequency per corner; the loaded closed-loop view is sim/pll-lock, sim/pll-lock-1mhz and sim/pll-lock-25mhz.",
+  "spec_rows": [
+    14,
+    15
+  ],
+  "spec_rows_note": "spec/target-spec.md row 14 (output duty cycle, 45-55 %) and row 15 (output levels V_OH >= 0.9*VDD / V_OL <= 0.1*VDD into a stated load), both DRAFT. The 'stated load' is DR-008's provisional 1 pF lumped characterization load, not a ratified interface; the record reports each figure next to the DRAFT bound and does not gate on it.",
+  "schematic": "tb_clk_output.sch",
+  "corner_pattern": "(\\.lib\\s+\\S*sky130\\.lib\\.spice\\s+)(\\w+)",
+  "process_corners": [
+    "tt",
+    "ff",
+    "ss",
+    "sf",
+    "fs"
+  ],
+  "temps_c": [
+    -40,
+    27,
+    125
+  ],
+  "supply_nominal": 1.8,
+  "supply_tolerance": 0.1,
+  "measure": {
+    "node": "clk",
+    "tran_step": "10p",
+    "tran_stop": "200n",
+    "settle_from": "60n",
+    "threshold_frac": 0.5,
+    "hysteresis_frac": 0.15,
+    "min_edges": 4,
+    "ic": [
+      "v(xxxvco.ring0)=0"
+    ],
+    "uic": true,
+    "require_oscillation": true,
+    "timeout_s": 3600,
+    "transition": true,
+    "levels": true
+  },
+  "methodology_note": "this testbench's DUT is design/vco/vco_ring5.sch (open loop, VCTRL fixed at 0.865 V) followed by design/clk-buf/clk_buf.sch driving a 1 pF CLK-to-GND capacitor (DR-008); the measured node is the buffered pin. Frequency, duty, 10-90% rise/fall (`measure.transition`) and settled V_OH/V_OL (`measure.levels`, issue #232: medians of the samples above/below mid-supply, with the true extremes printed beside them) are all taken over the post-60 ns population. Levels, duty and edge time are reported and never gate the verdict; the verdict gates only on the buffer chain oscillating at every point. The 1 pF load is lumped: it excludes bond-wire/pad/package inductance and ESD structures, so no figure here is pad capability. `tran_step` 10 ps resolves the ~100-200 ps loaded edges (>= 5 samples per edge, the condition sim/harness/measure.py states). The reducer's V_OH/V_OL figure is a median, not an extreme, so a ringing overshoot is shown only in the 'extremes' clause.",
+  "analysis": "transient per PVT point (`tran 10p 200n uic`, one ngspice invocation per point)",
+  "supply_pattern": "(V1 VDD GND )([0-9.]+)"
+}

@@ -46,7 +46,7 @@ top --------> [ PFD + charge pump ] --------> [ loop filter ] -----------> [ VCO
                      ^        (#25)                  (#26)                  (#24)        |
                      | DIV                                                                |
                      |                                                                    |
-                     +------------------------------ FBCLK <---------- CLK -------- [ divider ] <--- RESETB, NSEL[5:0]
+                     +------------------------------ FBCLK <---------- VCOCLK ---- [ divider ] <--- RESETB, NSEL[5:0]
                                                                                         (#27)              (from top)
 ```
 
@@ -58,7 +58,8 @@ Concretely, in `top.sch`:
 | `FBCLK` | `divider_intN.FBCLK` | `pfd_cp.DIV` |
 | `CP` | `pfd_cp.CP` | `loop_filter.CP` |
 | `VCTRL` | `loop_filter.VCTRL` | `vco_ring5.VCTRL` |
-| `CLK` | `vco_ring5.CLK` | top-level output pin **and** `divider_intN.CLK` |
+| `VCOCLK` | `vco_ring5.CLK` | `divider_intN.CLK` **and** `clk_buf.CLKIN` (issue #232) |
+| `CLK` | `clk_buf.CLKOUT` | top-level output pin (the buffered `VCOCLK`; issue #232) |
 | `RESETB` | top-level input pin | `divider_intN.RESETB` |
 | `NSEL0`..`NSEL5` | top-level input pins | `divider_intN.NSEL0`..`NSEL5` |
 | `VDD`, `GND` | top-level supply pins | `pfd_cp`, `vco_ring5`, `divider_intN` (all three; `loop_filter` has no `VDD` pin — purely passive, see `design/loop-filter/DESIGN.md`) |
@@ -108,10 +109,13 @@ devices — for the divider):
   - `vco_ring5.CLK` is driven by the VCO's own tapered output buffer
     (`MBUFB_*`, sized `W=16/8 µm` specifically "for adequate drive into
     whatever external/testbench load `CLK` sees," per
-    `design/vco/DESIGN.md`) — a fan-out of two (the top-level `CLK` output
-    pin plus `divider_intN.CLK`'s standard-cell input) is exactly the kind
-    of external load that buffer was already sized to drive; no additional
-    buffering is added here.
+    `design/vco/DESIGN.md`) — its fan-out of two (`divider_intN.CLK` and,
+    since issue #232, `clk_buf.CLKIN`) is the net `VCOCLK`. Before #232 the
+    top-level `CLK` pin was this same net, with no output stage and no stated
+    load; issue #232 added `design/clk-buf` (a two-inverter chain, see its
+    `DESIGN.md` and `spec/decision-records/DR-008-clk-output-load-and-buffer-scope.md`)
+    so the exported `CLK` pin is the buffered net. The divider stays on
+    `VCOCLK`, so its input timing is unchanged.
   - `divider_intN.FBCLK` is a registered standard-cell output
     (`sky130_fd_sc_hd__dfxtp_2`, `design/divider/DESIGN.md` "Output
     register") — already a clean, glitch-free, full-swing digital signal,

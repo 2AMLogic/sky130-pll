@@ -1,0 +1,16 @@
+** sch_path: /home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-232/design/clk-buf/clk_buf.sch
+**.subckt clk_buf VDD GND CLKIN CLKOUT
+*.iopin VDD
+*.iopin GND
+*.ipin CLKIN
+*.opin CLKOUT
+XMB1_P N1 CLKIN VDD VDD sky130_fd_pr__pfet_01v8 L=0.15 W=2 nf=1 ad=0.58 as=0.58 pd=4.58 ps=4.58 nrd=0.145 nrs=0.145 sa=0 sb=0 sd=0
++ mult=1 m=1
+XMB1_N N1 CLKIN GND GND sky130_fd_pr__nfet_01v8 L=0.15 W=1 nf=1 ad=0.29 as=0.29 pd=2.58 ps=2.58 nrd=0.29 nrs=0.29 sa=0 sb=0 sd=0
++ mult=1 m=1
+XMB2_P CLKOUT N1 VDD VDD sky130_fd_pr__pfet_01v8 L=0.15 W=24 nf=1 ad=6.96 as=6.96 pd=48.58 ps=48.58 nrd=0.012083 nrs=0.012083 sa=0
++ sb=0 sd=0 mult=1 m=1
+XMB2_N CLKOUT N1 GND GND sky130_fd_pr__nfet_01v8 L=0.15 W=12 nf=1 ad=3.48 as=3.48 pd=24.58 ps=24.58 nrd=0.024167 nrs=0.024167 sa=0
++ sb=0 sd=0 mult=1 m=1
+**.ends
+.end

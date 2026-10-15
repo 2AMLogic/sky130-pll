@@ -30,7 +30,11 @@ synthetic traces):
    has in hand to a rise/fall transition time (`transition_times`, issue
    #186) -- the 10-90% (default; a manifest may state another pair of
    fractions) edge speed, again reported alongside and never gating the
-   clock measurement.
+   clock measurement. A manifest with a `measure.levels` block reduces the same
+   samples to the settled output levels V_OH / V_OL (`output_levels`, issue
+   #232) -- the median of the samples above / below the threshold crossing, so
+   a brief edge overshoot does not read as the level -- reported alongside
+   (with the true extremes) and never gating either.
 
 ## What "locked" means here
 
@@ -278,7 +282,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field, replace
-from statistics import fmean, pstdev
+from statistics import fmean, median, pstdev
 
 # Echoed by `build_control_block` as the last statement of the injected
 # `.control` section. ngspice does not print its usual "Total analysis time"
@@ -467,6 +471,31 @@ class TransitionSpec:
 
 
 @dataclass(frozen=True)
+class LevelsSpec:
+    """The optional `measure.levels` block: reduce the measured node to its
+    settled output levels V_OH / V_OL (issue #232), reported -- never
+    gated -- alongside frequency/duty.
+
+    `voh_min_frac` / `vol_max_frac` are the fractions of the point's own
+    supply the record *compares* the levels against (the DRAFT row 15 numbers,
+    0.9*VDD and 0.1*VDD); the comparison is printed as a plain
+    "meets"/"misses" clause and decides nothing, so a miss is recorded as a
+    miss and the bound is never edited to fit.
+    """
+
+    voh_min_frac: float = 0.9
+    vol_max_frac: float = 0.1
+
+    @property
+    def summary(self) -> str:
+        return (
+            f"settled output levels: V_OH = median of the samples above the "
+            f"threshold crossing, V_OL = median of those below it, compared "
+            f"with {self.voh_min_frac:g}*VDD / {self.vol_max_frac:g}*VDD"
+        )
+
+
+@dataclass(frozen=True)
 class MeasureSpec:
     """The `measure` block of a `tb.json` manifest, parsed."""
 
@@ -495,6 +524,7 @@ class MeasureSpec:
     extra_nodes: tuple = field(default=())
     ripple: RippleSpec | None = None
     transition: TransitionSpec | None = None
+    levels: LevelsSpec | None = None
     # The optional `measure.options` block: ngspice `.options` cards (name,
     # value) the injected analysis runs under -- see "The integrator's
     # tolerance puts a second floor under this figure" in the module
@@ -673,6 +703,26 @@ class MeasureSpec:
                 )
             transition = TransitionSpec(frac_lo=frac_lo, frac_hi=frac_hi)
 
+        levels = None
+        if "levels" in block:
+            lvb = block["levels"]
+            if lvb is None or lvb is True:
+                lvb = {}
+            if not isinstance(lvb, dict):
+                raise MeasureError(
+                    "manifest `measure.levels` block must be an object "
+                    "(or `true` for the 0.9*VDD / 0.1*VDD comparison)"
+                )
+            voh_min = float(lvb.get("voh_min_frac", 0.9))
+            vol_max = float(lvb.get("vol_max_frac", 0.1))
+            if not 0.0 <= vol_max < voh_min <= 1.0:
+                raise MeasureError(
+                    "manifest `measure.levels` fractions must satisfy "
+                    f"0 <= vol_max_frac < voh_min_frac <= 1 -- got "
+                    f"vol_max_frac={vol_max!r}, voh_min_frac={voh_min!r}"
+                )
+            levels = LevelsSpec(voh_min_frac=voh_min, vol_max_frac=vol_max)
+
         sim_options = _parse_sim_options(block.get("options"))
 
         tran_max_step = block.get("tran_max_step")
@@ -710,6 +760,7 @@ class MeasureSpec:
             extra_nodes=tuple(block.get("extra_nodes", ())),
             ripple=ripple,
             transition=transition,
+            levels=levels,
             sim_options=sim_options,
             tran_max_step=tran_max_step,
         )
@@ -1061,6 +1112,34 @@ def transition_times(
     return rises, falls
 
 
+def output_levels(times, values, threshold: float, t_from: float | None = None) -> tuple:
+    """`(v_oh, v_ol, v_max, v_min)` of a rail-to-rail trace from `t_from`.
+
+    V_OH / V_OL are the *medians* of the samples above / below `threshold`
+    (the clock's own crossing level), not the extremes: a ringing edge
+    overshoots the rail by a few mV for a few samples, and an extreme would
+    report that overshoot as the level. The true extremes are returned too so
+    a record can print both. The dump is `linearize`d onto a uniform grid, so
+    a sample median is a time-weighted median. Any element is `None` when the
+    window holds no sample on that side of the threshold (a stuck node has a
+    V_OH or a V_OL, never both).
+    """
+    highs, lows, every = [], [], []
+    for t, v in zip(times, values):
+        if t_from is not None and t < t_from:
+            continue
+        every.append(v)
+        (highs if v > threshold else lows).append(v)
+    if not every:
+        return None, None, None, None
+    return (
+        median(highs) if highs else None,
+        median(lows) if lows else None,
+        max(every),
+        min(every),
+    )
+
+
 def lock_time(rising, spec: LockSpec) -> tuple:
     """Apply this module's lock criterion. Returns (locked, time_to_lock)."""
     w = spec.window_cycles
@@ -1203,6 +1282,10 @@ class Measurement:
     fall_time_s: float | None = None
     n_rise_edges: int = 0
     n_fall_edges: int = 0
+    # Issue #232's settled output levels -- `None` when the manifest declares
+    # no `levels` block or the node never swung through the threshold.
+    v_oh: float | None = None
+    v_ol: float | None = None
 
     def summary(self) -> str:
         """One-line human-readable form, used in the record's result table."""
@@ -1307,6 +1390,37 @@ def _measure_transition(
         parts.append(f"fall {_fmt_s(fall_mean)} (n={len(falls)})")
     clause = f"{tag} transition time: " + ", ".join(parts)
     return rise_mean, fall_mean, len(rises), len(falls), clause
+
+
+def _measure_levels(
+    times, values, spec: MeasureSpec, supply_v: float, t_from: float | None
+) -> tuple:
+    """Issue #232's output-level figure for one trace:
+    `(v_oh, v_ol, note_clause)`. `(None, None, None)` when the manifest
+    declares no `levels` block, so a campaign that does not ask for it is
+    byte-for-byte unaffected. The "meets"/"misses" wording compares against
+    the point's own supply and is a report, not a verdict."""
+    if spec.levels is None:
+        return None, None, None
+    ls = spec.levels
+    v_oh, v_ol, v_max, v_min = output_levels(
+        times, values, spec.threshold_frac * supply_v, t_from
+    )
+    if v_oh is None or v_ol is None:
+        return v_oh, v_ol, (
+            "output levels **not measured**: the node never crossed the "
+            "threshold in both directions after the population start"
+        )
+    oh_ok = v_oh >= ls.voh_min_frac * supply_v
+    ol_ok = v_ol <= ls.vol_max_frac * supply_v
+    clause = (
+        f"V_OH {_fmt_v(v_oh)} ({'meets' if oh_ok else 'MISSES'} "
+        f">={ls.voh_min_frac:g}*VDD = {_fmt_v(ls.voh_min_frac * supply_v)}), "
+        f"V_OL {_fmt_v(v_ol)} ({'meets' if ol_ok else 'MISSES'} "
+        f"<={ls.vol_max_frac:g}*VDD = {_fmt_v(ls.vol_max_frac * supply_v)}); "
+        f"extremes {_fmt_v(v_min)} .. {_fmt_v(v_max)}"
+    )
+    return v_oh, v_ol, clause
 
 
 def measure_trace(
@@ -1423,6 +1537,11 @@ def _measure_clock(
         )
         if transition_clause:
             note += f", {transition_clause}"
+        v_oh, v_ol, levels_clause = _measure_levels(
+            times, values, spec, supply_v, t_from=settle
+        )
+        if levels_clause:
+            note += f", {levels_clause}"
         return Measurement(
             label=label,
             oscillating=True,
@@ -1439,6 +1558,8 @@ def _measure_clock(
             fall_time_s=fall_t,
             n_rise_edges=n_rise,
             n_fall_edges=n_fall,
+            v_oh=v_oh,
+            v_ol=v_ol,
         )
 
     locked, t_lock = lock_time(usable, spec.lock)
@@ -1493,6 +1614,11 @@ def _measure_clock(
     )
     if transition_clause:
         note += f", {transition_clause}"
+    v_oh, v_ol, levels_clause = _measure_levels(
+        times, values, spec, supply_v, t_from=t_lock
+    )
+    if levels_clause:
+        note += f", {levels_clause}"
     return Measurement(
         label=label,
         oscillating=True,
@@ -1509,6 +1635,8 @@ def _measure_clock(
         fall_time_s=fall_t,
         n_rise_edges=n_rise,
         n_fall_edges=n_fall,
+        v_oh=v_oh,
+        v_ol=v_ol,
     )
 
 

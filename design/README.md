@@ -35,9 +35,10 @@ design/
 - **`<block>`** — a short slug for the sub-block. First instance:
   `vco` (issue #24, the ring-oscillator VCO core). Sibling blocks (PFD/charge
   pump, loop filter, feedback divider) each have their own `<block>/`
-  directory. `top` (issue #28) is the one exception to
-  "sub-block": it is the integration schematic that hierarchically
-  instantiates all four sibling blocks into the closed PLL loop, following
+  directory, as does `clk-buf` (issue #232, the `CLK` output buffer). `top`
+  (issue #28) is the one exception to "sub-block": it is the integration
+  schematic that hierarchically instantiates the sibling blocks into the
+  closed PLL loop, following
   the same internal file shape (`top.sch`/`top.sym`/`DESIGN.md`/
   `netlist/top.spice`) for consistency, even though it isn't itself a
   sub-block.
@@ -71,7 +72,7 @@ design/
 ### Regenerating parents after a child changes
 
 `design/top/netlist/top.spice` embeds a copy of every child block's netlist
-(`pfd_cp`, `loop_filter`, `vco_ring5`, `divider_intN`). xschem does not
+(`pfd_cp`, `loop_filter`, `vco_ring5`, `divider_intN`, `clk_buf`). xschem does not
 refresh a parent when only a child schematic is saved, so after changing any
 child, regenerate every ancestor with the same command (for the top level,
 `design/top/top.sch -o design/top/netlist`), and commit the changed snapshots
