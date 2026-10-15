@@ -4,6 +4,7 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 ### 2026-10-15
 
+- **PR #292**: sim: add klt sim decks[] batch route for the pfd-cp campaign
 - **PR #289**: Bump Repo Skills 0.19.5 -> 0.24.1
 - **PR #288**: loom: unpin verdict-staleness-guard.sh (2am#4345 Q7)
 
