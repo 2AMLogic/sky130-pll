@@ -23,13 +23,14 @@ _None._
 
 Human-approved issues ready for implementation (`loom:issue`).
 
-_None._
+- **#304**: layout: draw clk_buf and re-mint the top-level layout record against the buffered top (split from #303)
 
 ## In Progress
 
 Issues currently being built (`loom:building`).
 
 - **#296**: Re-pin open_pdks to f6eeac7 and move PDK install/search to ciel 2.6.1 (part of #295)
+- **#303**: sim: paired buffered-CLK closed-loop runs and layout/LVS for clk_buffer (follow-up to #232)
 
 ## PRs Awaiting Review
 
@@ -62,11 +63,11 @@ Issues carrying `loom:curated`.
 - **#276**: design: measure independent watchdog and publish LOCK timing handoff *(curated)*
 - **#290**: sim: klt decks[] batch route for the PFD/charge-pump (cp) campaign, with one-point smoke *(curated)*
 - **#296**: Re-pin open_pdks to f6eeac7 and move PDK install/search to ciel 2.6.1 (part of #295) *(curated)*
+- **#303**: sim: paired buffered-CLK closed-loop runs and layout/LVS for clk_buffer (follow-up to #232) *(curated)*
 
 ## Proposed (Architect / Hermit)
 
 - **#231**: design: add the digital lock output spec row 16 asks for (top-level has no LOCK port) *(architect)*
-- **#232**: design: CLK is the raw VCO node — add an output stage so rows 14/15 have a pin to measure *(architect)*
 - **#247**: sim: add a standalone PFD/charge-pump characterization campaign (UP/DN asymmetry, Icp, compliance) *(architect)*
 
 ## Epics
@@ -80,11 +81,11 @@ _None._
 | Operator merge-risk holds | 1 |
 | Very important | 0 |
 | Important | 0 |
-| Ready (`loom:issue`) | 0 |
-| In Progress (`loom:building`) | 1 |
+| Ready (`loom:issue`) | 1 |
+| In Progress (`loom:building`) | 2 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 1 |
-| Curated | 15 |
-| Architect / Hermit proposals | 3 |
+| Curated | 16 |
+| Architect / Hermit proposals | 2 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
