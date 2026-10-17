@@ -29,7 +29,7 @@ Human-approved issues ready for implementation (`loom:issue`).
 
 Issues currently being built (`loom:building`).
 
-- **#296**: Re-pin open_pdks to f6eeac7 and move PDK install/search to ciel 2.6.1 (part of #295)
+_None._
 
 ## PRs Awaiting Review
 
@@ -81,7 +81,7 @@ _None._
 | Very important | 0 |
 | Important | 1 |
 | Ready (`loom:issue`) | 1 |
-| In Progress (`loom:building`) | 1 |
+| In Progress (`loom:building`) | 0 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 1 |
 | Curated | 16 |
