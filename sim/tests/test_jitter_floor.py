@@ -44,6 +44,8 @@ jitter_floor = importlib.util.module_from_spec(_spec)
 sys.modules["jitter_floor"] = jitter_floor
 _spec.loader.exec_module(jitter_floor)  # type: ignore[union-attr]
 
+import analysis_common  # noqa: E402  (on sys.path once the script above has loaded)
+
 
 FLOOR_RECORD_TEMPLATE = """# Record {record_id}
 
@@ -232,17 +234,17 @@ class CommittedEvidenceTests(unittest.TestCase):
 
 class SpiceLiteralTests(unittest.TestCase):
     def test_parses_the_literals_the_committed_netlists_use(self):
-        self.assertAlmostEqual(jitter_floor.spice_time("200p"), 200e-12)
-        self.assertAlmostEqual(jitter_floor.spice_time("3.9170n"), 3.9170e-9)
-        self.assertAlmostEqual(jitter_floor.spice_time("50u"), 50e-6)
-        self.assertAlmostEqual(jitter_floor.spice_time("1n"), 1e-9)
-        self.assertAlmostEqual(jitter_floor.spice_time("4e-9"), 4e-9)
+        self.assertAlmostEqual(analysis_common.spice_literal("200p"), 200e-12)
+        self.assertAlmostEqual(analysis_common.spice_literal("3.9170n"), 3.9170e-9)
+        self.assertAlmostEqual(analysis_common.spice_literal("50u"), 50e-6)
+        self.assertAlmostEqual(analysis_common.spice_literal("1n"), 1e-9)
+        self.assertAlmostEqual(analysis_common.spice_literal("4e-9"), 4e-9)
 
     def test_rejects_a_literal_it_cannot_read(self):
         for text in ("", "later", "3.9n7", "p200"):
             with self.subTest(text=text):
                 with self.assertRaises(jitter_floor.AnalysisError):
-                    jitter_floor.spice_time(text)
+                    analysis_common.spice_literal(text)
 
 
 class RefusalTests(unittest.TestCase):

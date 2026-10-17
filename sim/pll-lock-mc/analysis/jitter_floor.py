@@ -119,12 +119,17 @@ if str(_SIM_DIR) not in sys.path:
 
 from analysis_common import (  # noqa: E402
     AnalysisError,
+    JITTER_IN_DETAIL_RE,
     REPO_ROOT,
     cells as _cells,
     pct as _pct,
     ps as _ps,
     record_id as _record_id,
+    point_netlist,
+    pulse_floor_point,
+    pwl_points,
     repo_rel as _repo_rel,
+    tran_card,
 )
 
 MC_RECORD = REPO_ROOT / "sim" / "pll-lock-mc" / "records" / "20260924-222341-a9375a5.md"
@@ -143,23 +148,9 @@ ROW_9_MAX_FRAC = 0.01
 #: than the spacing between any two variants either family runs.
 PERIOD_MATCH_TOL = 1e-3
 
-_SUFFIXES = {"f": 1e-15, "p": 1e-12, "n": 1e-9, "u": 1e-6, "m": 1e-3}
-_LITERAL_RE = re.compile(r"^([+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)\s*([a-zA-Z]*)$")
-
 _VARIANT_RE = re.compile(r"THIS RECORD'S VARIANT: (?P<variant>[A-Za-z0-9]+) --")
-_JITTER_IN_DETAIL_RE = re.compile(
-    r"period jitter (?P<pct>[\d.]+)% RMS over (?P<cycles>\d+) cycles"
-)
 _MC_JITTER_CELL_RE = re.compile(r"^(?P<pct>[\d.]+)% \((?P<cycles>\d+) cycles\)$")
 _FREQ_MHZ_RE = re.compile(r"^(?P<mhz>[\d.]+) MHz$")
-_PULSE_RE = re.compile(
-    r"^VCLK\s+\S+\s+\S+\s+pulse\(\s*(?P<v1>\S+)\s+(?P<v2>\S+)\s+(?P<td>\S+)\s+"
-    r"(?P<tr>\S+)\s+(?P<tf>\S+)\s+(?P<pw>\S+)\s+(?P<per>[^)\s]+)\s*\)",
-    re.M | re.I,
-)
-_TRAN_RE = re.compile(r"^tran\s+(?P<step>\S+)\s+(?P<stop>\S+)\s*$", re.M)
-_PWL_HEAD_RE = re.compile(r"^VCLK\s+\S+\s+\S+\s+pwl\([ \t]*\r?\n", re.M | re.I)
-
 _MC_HEADER = [
     "Trial",
     "Seed",
@@ -172,29 +163,6 @@ _MC_HEADER = [
     "Detail",
 ]
 _PVT_HEADER = ["Corner", "Temp (C)", "Supply (V)", "Verdict", "f_out", "Duty", "Detail"]
-
-
-def spice_time(text: str) -> float:
-    """Parse a SPICE time literal (`200p`, `3.9170n`, `50u`).
-
-    Deliberately a local 10-liner rather than an import of
-    `sim/harness/measure.parse_spice_time`: an `analysis/` script reads
-    committed evidence and must keep running when the harness moves, so it
-    takes no dependency on the harness package. `meg` is not accepted here --
-    no time literal in this evidence trail uses it, and silently mapping `m`
-    to milli (SPICE's convention, which this does) is the only footgun that
-    matters for the cards read below.
-    """
-    m = _LITERAL_RE.match(text.strip())
-    if not m:
-        raise AnalysisError(f"not a SPICE time literal: {text!r}")
-    value, suffix = float(m.group(1)), m.group(2).lower()
-    if not suffix:
-        return value
-    scale = _SUFFIXES.get(suffix[0])
-    if scale is None:
-        raise AnalysisError(f"unknown SPICE time suffix in {text!r}")
-    return value * scale
 
 
 def _table_rows(text: str, header: list[str]) -> list[list[str]]:
@@ -267,30 +235,11 @@ def parse_floor_record(record_path: Path, experiment: Path) -> dict:
             f"{record_path}: expected exactly one PVT point, found {len(rows)}"
         )
     detail = rows[0][6]
-    jitter = _JITTER_IN_DETAIL_RE.search(detail)
+    jitter = JITTER_IN_DETAIL_RE.search(detail)
     if jitter is None:
         raise AnalysisError(f"{record_path}: point reports no period jitter: {detail!r}")
 
-    corners = experiment / "corners" / record_id
-    netlists = sorted(p for p in corners.glob("*.spice") if not p.name.startswith("tb_"))
-    if len(netlists) != 1:
-        raise AnalysisError(
-            f"{corners}: expected exactly one committed per-point netlist, found "
-            f"{len(netlists)}"
-        )
-    netlist = netlists[0].read_text()
-    pulse = _PULSE_RE.search(netlist)
-    tran = _TRAN_RE.search(netlist)
-    if pulse is None or tran is None:
-        raise AnalysisError(
-            f"{netlists[0]}: no `VCLK ... pulse(...)` card and/or no injected "
-            "`tran <step> <stop>` card"
-        )
-    if pulse.group("tr") != pulse.group("tf"):
-        raise AnalysisError(
-            f"{netlists[0]}: this restatement assumes a symmetric edge "
-            f"(TR == TF), got {pulse.group('tr')} / {pulse.group('tf')}"
-        )
+    point = pulse_floor_point(experiment, record_id)
 
     return {
         "record_id": record_id,
@@ -298,11 +247,11 @@ def parse_floor_record(record_path: Path, experiment: Path) -> dict:
         "variant": variant.group("variant"),
         "floor_frac": float(jitter.group("pct")) / 100.0,
         "cycles": int(jitter.group("cycles")),
-        "period_s": spice_time(pulse.group("per")),
-        "edge_s": spice_time(pulse.group("tr")),
-        "step_s": spice_time(tran.group("step")),
-        "stop_s": spice_time(tran.group("stop")),
-        "netlist": _repo_rel(netlists[0]),
+        "period_s": point["period_s"],
+        "edge_s": point["edge_s"],
+        "step_s": point["step_s"],
+        "stop_s": point["stop_s"],
+        "netlist": _repo_rel(point["netlist_path"]),
     }
 
 
@@ -318,48 +267,6 @@ def parse_floor_records(experiment: Path) -> list[dict]:
             f"({sorted(steps)}); this restatement compares floors at one grid"
         )
     return parsed
-
-
-def pwl_points(netlist: str, path: Path) -> list[tuple[float, float]]:
-    """The `(time_s, volts)` pairs of a committed `VCLK ... pwl(...)` card.
-
-    Ported from `sim/jitter-calibration/analysis/calibration.py`'s function of
-    the same name rather than imported: an `analysis/` script reads committed
-    evidence and keeps running when a sibling campaign's script moves. Trimmed
-    to what `calibration_schedule` below needs -- this script never renders
-    the reported-vs-injected calibration curve `calibration.py` does.
-    """
-    m = _PWL_HEAD_RE.search(netlist)
-    if m is None:
-        raise AnalysisError(
-            f"{path}: no `VCLK <n+> <n-> pwl(` card -- is this a "
-            "sim/jitter-calibration per-point netlist?"
-        )
-    points: list[tuple[float, float]] = []
-    closed = False
-    for line in netlist[m.end() :].splitlines():
-        body = line.strip()
-        if not body.startswith("+"):
-            raise AnalysisError(f"{path}: `pwl(` card ends without a closing `+ )` line")
-        body = body[1:].strip()
-        if body == ")":
-            closed = True
-            break
-        fields = body.split()
-        if len(fields) % 2:
-            raise AnalysisError(
-                f"{path}: `pwl(` continuation line has an odd field count: {line!r}"
-            )
-        for t_text, v_text in zip(fields[0::2], fields[1::2]):
-            points.append((spice_time(t_text), spice_time(v_text)))
-    if not closed:
-        raise AnalysisError(f"{path}: `pwl(` card is never closed")
-    if len(points) < 4:
-        raise AnalysisError(f"{path}: `pwl(` card holds only {len(points)} points")
-    times = [t for t, _ in points]
-    if any(b <= a for a, b in zip(times, times[1:])):
-        raise AnalysisError(f"{path}: `pwl(` times are not strictly increasing")
-    return points
 
 
 def calibration_schedule(points: list[tuple[float, float]], path: Path) -> dict:
@@ -424,22 +331,14 @@ def parse_calibration_record(record_path: Path, experiment: Path) -> dict:
             f"{record_path}: expected exactly one PVT point, found {len(rows)}"
         )
     detail = rows[0][6]
-    jitter = _JITTER_IN_DETAIL_RE.search(detail)
+    jitter = JITTER_IN_DETAIL_RE.search(detail)
     if jitter is None:
         raise AnalysisError(f"{record_path}: point reports no period jitter: {detail!r}")
 
-    corners = experiment / "corners" / record_id
-    netlists = sorted(p for p in corners.glob("*.spice") if not p.name.startswith("tb_"))
-    if len(netlists) != 1:
-        raise AnalysisError(
-            f"{corners}: expected exactly one committed per-point netlist, found "
-            f"{len(netlists)}"
-        )
-    netlist = netlists[0].read_text()
-    schedule = calibration_schedule(pwl_points(netlist, netlists[0]), netlists[0])
-    tran = _TRAN_RE.search(netlist)
-    if tran is None:
-        raise AnalysisError(f"{netlists[0]}: no injected `tran <step> <stop>` card")
+    netlist_path = point_netlist(experiment, record_id)
+    netlist = netlist_path.read_text()
+    schedule = calibration_schedule(pwl_points(netlist, netlist_path), netlist_path)
+    step_s, _ = tran_card(netlist, netlist_path)
 
     reported_frac = float(jitter.group("pct")) / 100.0
     period_s = schedule["period_s"]
@@ -458,9 +357,9 @@ def parse_calibration_record(record_path: Path, experiment: Path) -> dict:
         "period_s": period_s,
         "edge_s": schedule["edge_s"],
         "cycles": schedule["cycles"],
-        "step_s": spice_time(tran.group("step")),
+        "step_s": step_s,
         "implied_floor_s": implied_floor_s,
-        "netlist": _repo_rel(netlists[0]),
+        "netlist": _repo_rel(netlist_path),
     }
 
 

@@ -110,12 +110,17 @@ if str(_SIM_DIR) not in sys.path:
 
 from analysis_common import (  # noqa: E402
     AnalysisError,
+    JITTER_IN_DETAIL_RE,
     REPO_ROOT,
     pct as _pct,
     ps as _ps,
     record_id as _record_id,
+    point_netlist as _point_netlist,
+    pulse_floor_point,
+    pwl_points,
     repo_rel as _repo_rel,
     single_point_detail,
+    tran_card as _tran,
 )
 
 CALIBRATION_EXPERIMENT = REPO_ROOT / "sim" / "jitter-calibration"
@@ -133,20 +138,8 @@ ROW_9_MAX_FRAC = 0.01
 #: assuming it silently.
 THRESHOLD_FRAC = 0.5
 
-_SUFFIXES = {"f": 1e-15, "p": 1e-12, "n": 1e-9, "u": 1e-6, "m": 1e-3}
-_LITERAL_RE = re.compile(r"^([+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)\s*([a-zA-Z]*)$")
-
-_JITTER_IN_DETAIL_RE = re.compile(
-    r"period jitter (?P<pct>[\d.]+)% RMS over (?P<cycles>\d+) cycles"
-)
-_TRAN_RE = re.compile(r"^tran\s+(?P<step>\S+)\s+(?P<stop>\S+)\s*$", re.M)
 _PWL_VARIANT_RE = re.compile(r"^\*\* GENERATED -- variant (?P<variant>[A-Za-z0-9]+):", re.M)
 _PWL_HEAD_RE = re.compile(r"^VCLK\s+\S+\s+\S+\s+pwl\([ \t]*\r?\n", re.M | re.I)
-_PULSE_RE = re.compile(
-    r"^VCLK\s+\S+\s+\S+\s+pulse\(\s*(?P<v1>\S+)\s+(?P<v2>\S+)\s+(?P<td>\S+)\s+"
-    r"(?P<tr>\S+)\s+(?P<tf>\S+)\s+(?P<pw>\S+)\s+(?P<per>[^)\s]+)\s*\)",
-    re.M | re.I,
-)
 _FLOOR_VARIANT_RE = re.compile(r"THIS RECORD'S VARIANT: (?P<variant>[A-Za-z0-9]+) --")
 
 _PVT_HEADER = ["Corner", "Temp (C)", "Supply (V)", "Verdict", "f_out", "Duty", "Detail"]
@@ -159,86 +152,12 @@ _PVT_HEADER = ["Corner", "Temp (C)", "Supply (V)", "Verdict", "f_out", "Duty", "
 _MATCH_TOL = 1e-3
 
 
-def spice_literal(text: str) -> float:
-    """Parse a SPICE literal (`200p`, `3.9170n`, `1.8`, `0`).
-
-    Deliberately a local 10-liner rather than an import of
-    `sim/harness/measure.parse_spice_time`: an `analysis/` script reads
-    committed evidence and must keep running when the harness moves, so it
-    takes no dependency on the harness package.
-    """
-    m = _LITERAL_RE.match(text.strip())
-    if not m:
-        raise AnalysisError(f"not a SPICE literal: {text!r}")
-    value, suffix = float(m.group(1)), m.group(2).lower()
-    if not suffix:
-        return value
-    scale = _SUFFIXES.get(suffix[0])
-    if scale is None:
-        raise AnalysisError(f"unknown SPICE suffix in {text!r}")
-    return value * scale
-
-
 def _reported(text: str, path: Path) -> tuple:
     detail = single_point_detail(text, path, _PVT_HEADER)
-    m = _JITTER_IN_DETAIL_RE.search(detail)
+    m = JITTER_IN_DETAIL_RE.search(detail)
     if m is None:
         raise AnalysisError(f"{path}: point reports no period jitter: {detail!r}")
     return float(m.group("pct")) / 100.0, int(m.group("cycles"))
-
-
-def _point_netlist(experiment: Path, record_id: str) -> Path:
-    corners = experiment / "corners" / record_id
-    netlists = sorted(p for p in corners.glob("*.spice") if not p.name.startswith("tb_"))
-    if len(netlists) != 1:
-        raise AnalysisError(
-            f"{corners}: expected exactly one committed per-point netlist, found "
-            f"{len(netlists)}"
-        )
-    return netlists[0]
-
-
-def _tran(netlist: str, path: Path) -> tuple:
-    m = _TRAN_RE.search(netlist)
-    if m is None:
-        raise AnalysisError(f"{path}: no injected `tran <step> <stop>` card")
-    return spice_literal(m.group("step")), spice_literal(m.group("stop"))
-
-
-def pwl_points(netlist: str, path: Path) -> list:
-    """The `(time_s, volts)` pairs of the committed `VCLK ... pwl(...)` card."""
-    m = _PWL_HEAD_RE.search(netlist)
-    if m is None:
-        raise AnalysisError(
-            f"{path}: no `VCLK <n+> <n-> pwl(` card -- is this a "
-            "sim/jitter-calibration per-point netlist?"
-        )
-    points: list = []
-    lines = netlist[m.end():].splitlines()
-    closed = False
-    for line in lines:
-        body = line.strip()
-        if not body.startswith("+"):
-            raise AnalysisError(f"{path}: `pwl(` card ends without a closing `+ )` line")
-        body = body[1:].strip()
-        if body == ")":
-            closed = True
-            break
-        fields = body.split()
-        if len(fields) % 2:
-            raise AnalysisError(
-                f"{path}: `pwl(` continuation line has an odd field count: {line!r}"
-            )
-        for t_text, v_text in zip(fields[0::2], fields[1::2]):
-            points.append((spice_literal(t_text), spice_literal(v_text)))
-    if not closed:
-        raise AnalysisError(f"{path}: `pwl(` card is never closed")
-    if len(points) < 4:
-        raise AnalysisError(f"{path}: `pwl(` card holds only {len(points)} points")
-    times = [t for t, _ in points]
-    if any(b <= a for a, b in zip(times, times[1:])):
-        raise AnalysisError(f"{path}: `pwl(` times are not strictly increasing")
-    return points
 
 
 def injected_from_pwl(points: list, path: Path) -> dict:
@@ -332,25 +251,15 @@ def parse_floor_record(record_path: Path, experiment: Path) -> dict:
             "sim/jitter-floor record?"
         )
     floor_frac, cycles = _reported(text, record_path)
-    netlist_path = _point_netlist(experiment, record_id)
-    netlist = netlist_path.read_text()
-    pulse = _PULSE_RE.search(netlist)
-    if pulse is None:
-        raise AnalysisError(f"{netlist_path}: no `VCLK ... pulse(...)` card")
-    if pulse.group("tr") != pulse.group("tf"):
-        raise AnalysisError(
-            f"{netlist_path}: this restatement assumes a symmetric edge (TR == TF), "
-            f"got {pulse.group('tr')} / {pulse.group('tf')}"
-        )
-    step_s, _ = _tran(netlist, netlist_path)
+    point = pulse_floor_point(experiment, record_id)
     return {
         "record_id": record_id,
         "variant": variant.group("variant"),
         "floor_frac": floor_frac,
         "cycles": cycles,
-        "period_s": spice_literal(pulse.group("per")),
-        "edge_s": spice_literal(pulse.group("tr")),
-        "step_s": step_s,
+        "period_s": point["period_s"],
+        "edge_s": point["edge_s"],
+        "step_s": point["step_s"],
     }
 
 
