@@ -20,7 +20,6 @@ No PDK, ngspice or xschem required. Two kinds of case here:
 
 from __future__ import annotations
 
-import importlib.util
 import math
 import sys
 import tempfile
@@ -28,6 +27,11 @@ import unittest
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from scripts.test_support import load_module  # noqa: E402
+
 SCRIPT_PATH = REPO_ROOT / "sim" / "pll-lock-mc" / "analysis" / "jitter_floor.py"
 MC_RECORD = REPO_ROOT / "sim" / "pll-lock-mc" / "records" / "20260924-222341-a9375a5.md"
 FLOOR_EXPERIMENT = REPO_ROOT / "sim" / "jitter-floor"
@@ -39,10 +43,7 @@ RESTATEMENT = (
 # sim/pll-lock-mc/analysis/ is not an importable package (hyphens in the slug),
 # so the module is loaded from its path -- the same pattern
 # sim/tests/test_yield_evidence.py and sim/tests/test_pushing.py use.
-_spec = importlib.util.spec_from_file_location("jitter_floor", SCRIPT_PATH)
-jitter_floor = importlib.util.module_from_spec(_spec)
-sys.modules["jitter_floor"] = jitter_floor
-_spec.loader.exec_module(jitter_floor)  # type: ignore[union-attr]
+jitter_floor = load_module("jitter_floor", SCRIPT_PATH)
 
 import analysis_common  # noqa: E402  (on sys.path once the script above has loaded)
 

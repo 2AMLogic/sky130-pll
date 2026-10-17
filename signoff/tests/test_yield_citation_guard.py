@@ -24,18 +24,22 @@ Two layers:
 """
 
 import copy
-import hashlib
 import json
 import os
 import pathlib
 import shutil
 import stat
 import subprocess
+import sys
 import tempfile
 import unittest
 
 SIGNOFF_DIR = pathlib.Path(__file__).resolve().parents[1]
 REPO_ROOT = SIGNOFF_DIR.parent
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from scripts.test_support import sha256_tag  # noqa: E402
 YIELD_DIR = REPO_ROOT / "sim" / "pll-lock-mc" / "analysis" / "yield-evidence"
 
 STUB_KLT = """#!/usr/bin/env bash
@@ -60,10 +64,6 @@ CASES = {
 }
 
 
-def sha256(data: bytes) -> str:
-    return "sha256:" + hashlib.sha256(data).hexdigest()
-
-
 def build_case(root: pathlib.Path, name: str):
     """Write report + sample document + manifest for one case under `root`."""
     verdict, control = CASES[name]
@@ -80,7 +80,7 @@ def build_case(root: pathlib.Path, name: str):
         measurement["sample_size"]["verdict"] = verdict
     measurement["negative_control"] = control
     (case_dir / "report.json").write_text(json.dumps(report))
-    pin = sha256((case_dir / "mc-samples.json").read_bytes())
+    pin = sha256_tag((case_dir / "mc-samples.json").read_bytes())
     manifest = {
         "block": "test",
         "kind": "mixed-signal",
@@ -169,7 +169,7 @@ class GuardPolicyTests(unittest.TestCase):
         dest.mkdir(parents=True)
         for name in ("klt-yield-report.json", "mc-samples.json"):
             shutil.copy2(YIELD_DIR / name, dest / name)
-        pin = sha256((dest / "mc-samples.json").read_bytes())
+        pin = sha256_tag((dest / "mc-samples.json").read_bytes())
         manifest = {
             "block": "test",
             "kind": "mixed-signal",

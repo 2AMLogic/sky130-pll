@@ -51,12 +51,14 @@ from unittest import mock
 SIM_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(SIM_DIR))
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # sibling test modules
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from harness import cli  # noqa: E402
 from harness import corners  # noqa: E402
 from harness import cpmeasure as cp_mod  # noqa: E402
 from harness import executor as executor_mod  # noqa: E402
 from harness import runner  # noqa: E402
+from scripts.test_support import record_table_rows  # noqa: E402
 import test_execution as exec_tests  # noqa: E402
 
 RECORD_ID = "20260101-000000-abc1234"
@@ -397,14 +399,6 @@ class _Harness:
         return rc, out.getvalue()
 
 
-def _table_rows(record_text: str) -> list:
-    return [
-        line.strip()
-        for line in record_text.splitlines()
-        if line.strip().startswith("| ") and ("PASS" in line or "FAIL" in line)
-    ]
-
-
 def _provisioned_env(tmp: Path, **overrides) -> dict:
     """A fully-provisioned-looking host, entirely inside `tmp`.
 
@@ -563,7 +557,7 @@ class RemoteExecutorTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             h, _fleet, rc, out = self._run_remote(tmp=tmp, fleet=fleet)
             self.assertEqual(rc, 1, out)
-            rows = _table_rows(h.record_path.read_text())
+            rows = record_table_rows(h.record_path.read_text())
             self.assertTrue(rows)
             for row in rows:
                 self.assertIn("FAIL", row)
@@ -846,7 +840,7 @@ class RemoteFallbackTests(unittest.TestCase):
             rc_baseline, _ = baseline.run([])
             self.assertEqual(rc, rc_baseline)
             self.assertEqual(
-                _table_rows(text), _table_rows(baseline.record_path.read_text())
+                record_table_rows(text), record_table_rows(baseline.record_path.read_text())
             )
 
     def test_klayout_tools_not_importable(self):
@@ -942,7 +936,7 @@ class RemoteFallbackTests(unittest.TestCase):
             text = h.record_path.read_text()
             self.assertIn("fallback_reason", text)
             # No hole: every unit has a row, and every row came from a real run.
-            self.assertEqual(len(_table_rows(text)), 3)
+            self.assertEqual(len(record_table_rows(text)), 3)
             self.assertEqual(len(h.local_calls), 3)
 
 

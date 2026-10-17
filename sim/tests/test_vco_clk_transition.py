@@ -22,31 +22,24 @@ which member of that family applies. These tests check:
 
 from __future__ import annotations
 
-import importlib.util
 import sys
 import tempfile
 import unittest
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from scripts.test_support import load_module  # noqa: E402
+
 EXPERIMENT = REPO_ROOT / "sim" / "vco-clk-transition"
 FLOOR_EXPERIMENT = REPO_ROOT / "sim" / "jitter-floor"
 ANALYSIS_PATH = EXPERIMENT / "analysis" / "bracket_floor.py"
 DOCUMENT = EXPERIMENT / "analysis" / "bracket.md"
 
 
-def _load(name: str, path: Path):
-    """Neither directory is an importable package (hyphens in the slug), so
-    the module is loaded from its path -- the same pattern
-    `sim/tests/test_jitter_calibration.py` uses."""
-    spec = importlib.util.spec_from_file_location(name, path)
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[name] = module
-    spec.loader.exec_module(module)  # type: ignore[union-attr]
-    return module
-
-
-bf = _load("bracket_floor", ANALYSIS_PATH)
+bf = load_module("bracket_floor", ANALYSIS_PATH)
 
 
 TRANSITION_RECORD_TEMPLATE = """# Record {record_id}

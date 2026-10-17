@@ -14,7 +14,6 @@ carry no information at all.
 
 from __future__ import annotations
 
-import importlib.util
 import sys
 import unittest
 from pathlib import Path
@@ -25,10 +24,9 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from scripts.git_status import porcelain_paths  # noqa: E402
+from scripts.test_support import load_module  # noqa: E402
 
-_spec = importlib.util.spec_from_file_location("render_record", RENDER_RECORD_PY)
-render_record = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(render_record)
+render_record = load_module("render_record", RENDER_RECORD_PY, register=False)
 
 REPORT_DIR = "layout/trivial-cell/reports/20260101-000000-abc1234/"
 

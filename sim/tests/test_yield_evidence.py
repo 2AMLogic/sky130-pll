@@ -18,7 +18,6 @@ asserted rather than assumed.
 
 from __future__ import annotations
 
-import importlib.util
 import json
 import sys
 import tempfile
@@ -26,6 +25,11 @@ import unittest
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from scripts.test_support import load_module  # noqa: E402
+
 SCRIPT_PATH = REPO_ROOT / "sim" / "pll-lock-mc" / "analysis" / "yield_evidence.py"
 RECORD_PATH = (
     REPO_ROOT / "sim" / "pll-lock-mc" / "records" / "20260924-222341-a9375a5.md"
@@ -37,10 +41,7 @@ EVIDENCE_DIR = REPO_ROOT / "sim" / "pll-lock-mc" / "analysis" / "yield-evidence"
 # name has hyphens, which are not valid in a Python package path), so the
 # module is loaded directly from its file path -- the same pattern
 # sim/tests/test_pushing.py uses for the sibling analysis script.
-_spec = importlib.util.spec_from_file_location("yield_evidence", SCRIPT_PATH)
-yield_evidence = importlib.util.module_from_spec(_spec)
-sys.modules["yield_evidence"] = yield_evidence
-_spec.loader.exec_module(yield_evidence)  # type: ignore[union-attr]
+yield_evidence = load_module("yield_evidence", SCRIPT_PATH)
 
 
 def manifest(**overrides) -> dict:

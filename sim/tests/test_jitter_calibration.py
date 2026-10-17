@@ -28,7 +28,6 @@ No PDK, ngspice or xschem required. Four kinds of case here:
 
 from __future__ import annotations
 
-import importlib.util
 import math
 import sys
 import tempfile
@@ -37,6 +36,11 @@ from pathlib import Path
 from statistics import fmean, pstdev
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from scripts.test_support import load_module  # noqa: E402
+
 EXPERIMENT = REPO_ROOT / "sim" / "jitter-calibration"
 FLOOR_EXPERIMENT = REPO_ROOT / "sim" / "jitter-floor"
 GENERATOR_PATH = EXPERIMENT / "testbench" / "gen_pwl_clock.py"
@@ -44,20 +48,8 @@ ANALYSIS_PATH = EXPERIMENT / "analysis" / "calibration.py"
 DOCUMENT = EXPERIMENT / "analysis" / "calibration.md"
 
 
-def _load(name: str, path: Path):
-    """Neither directory is an importable package (hyphens in the slug), so the
-    modules are loaded from their paths -- the same pattern
-    `sim/tests/test_jitter_floor.py` and `sim/tests/test_yield_evidence.py` use.
-    """
-    spec = importlib.util.spec_from_file_location(name, path)
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[name] = module
-    spec.loader.exec_module(module)  # type: ignore[union-attr]
-    return module
-
-
-gen = _load("gen_pwl_clock", GENERATOR_PATH)
-calibration = _load("calibration", ANALYSIS_PATH)
+gen = load_module("gen_pwl_clock", GENERATOR_PATH)
+calibration = load_module("calibration", ANALYSIS_PATH)
 
 import analysis_common  # noqa: E402  (on sys.path once the script above has loaded)
 

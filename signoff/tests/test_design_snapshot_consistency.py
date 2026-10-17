@@ -1,17 +1,22 @@
 #!/usr/bin/env python3
 """Unit tests for signoff/design-snapshot-consistency.py (PDK-free, xschem-free)."""
 
-import importlib.util
 import pathlib
+import sys
 import unittest
 
 _HERE = pathlib.Path(__file__).resolve().parent
 _ROOT = _HERE.parent.parent
-_spec = importlib.util.spec_from_file_location(
-    "design_snapshot_consistency", _ROOT / "signoff" / "design-snapshot-consistency.py"
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
+from scripts.test_support import load_module  # noqa: E402
+
+dsc = load_module(
+    "design_snapshot_consistency",
+    _ROOT / "signoff" / "design-snapshot-consistency.py",
+    register=False,
 )
-dsc = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(dsc)
 
 STANDALONE = """\
 ** sch_path: /a/b/design/loop-filter/loop_filter.sch

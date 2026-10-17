@@ -14,13 +14,17 @@ and later verifies the derived section.
 
 from __future__ import annotations
 
-import importlib.util
 import sys
 import tempfile
 import unittest
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from scripts.test_support import load_module  # noqa: E402
+
 PUSHING_PATH = REPO_ROOT / "sim" / "vco-supply-pushing" / "analysis" / "pushing.py"
 
 # sim/vco-supply-pushing/analysis/ is not an importable package (the slug
@@ -28,10 +32,7 @@ PUSHING_PATH = REPO_ROOT / "sim" / "vco-supply-pushing" / "analysis" / "pushing.
 # so the module is loaded directly from its file path -- the same pattern
 # sim/run_corners.py itself uses to reach sim/harness without an installed
 # package.
-_spec = importlib.util.spec_from_file_location("pushing", PUSHING_PATH)
-pushing = importlib.util.module_from_spec(_spec)
-sys.modules["pushing"] = pushing
-_spec.loader.exec_module(pushing)  # type: ignore[union-attr]
+pushing = load_module("pushing", PUSHING_PATH)
 
 
 def swept_table(rows: list[tuple]) -> str:

@@ -12,13 +12,18 @@ Tests that the check correctly:
    characterization report records as FAIL or without evidence
 """
 
-import importlib.util
 import json
 import pathlib
 import subprocess
 import sys
 import tempfile
 import unittest
+
+_REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
+
+from scripts.test_support import load_module  # noqa: E402
 
 
 class TestReadmeManifestConsistency(unittest.TestCase):
@@ -371,12 +376,10 @@ class TestCountsKindAndItem8Disclosure(unittest.TestCase):
         """The committed envelope against the committed report -- the same
         check `npm run check:ci` runs, pinned here so a regression in the
         parser cannot pass by finding no rows at all."""
-        spec = importlib.util.spec_from_file_location(
-            "consistency", pathlib.Path(__file__).parent.parent / "readme-manifest-consistency.py"
-        )
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
         repo = pathlib.Path(__file__).resolve().parents[2]
+        module = load_module(
+            "consistency", repo / "signoff" / "readme-manifest-consistency.py", register=False
+        )
         states = module.report_row_states((repo / "measurements" / "report.md").read_text())
         self.assertIn(8, states)
         self.assertTrue(states[8][0], "row 8 (lock time) should read FAIL in the report")
