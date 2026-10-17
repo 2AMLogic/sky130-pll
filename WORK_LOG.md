@@ -4,6 +4,10 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 ### 2026-10-17
 
+- **PR #325**: refactor: share injected_from_pwl and parse_floor_records via analysis_common
+- **Issue #324** (closed): Share injected_from_pwl and parse_floor_records via sim/analysis_common (residual duplicates)
+- **PR #322**: refactor: share parse_floor_record via sim/analysis_common
+- **Issue #321** (closed): Consolidate triplicated parse_floor_record into sim/analysis_common.py
 - **PR #318**: refactor(sim): share SPICE-literal and floor-netlist parsing across analysis scripts
 - **Issue #316** (closed): Consolidate duplicated SPICE-literal and floor-record parsing left in sim analysis scripts
 - **PR #315**: refactor(sim): share klt batch capacity-retry submit across runners
