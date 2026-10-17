@@ -54,7 +54,23 @@ import re
 import sys
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
+# `sim/analysis_common.py` holds the helpers every analysis script shares. These
+# scripts are run directly and also loaded by path via importlib (sim/tests),
+# so `sim/` goes on sys.path explicitly rather than relying on script-directory
+# insertion.
+_SIM_DIR = Path(__file__).resolve().parents[2]
+if str(_SIM_DIR) not in sys.path:
+    sys.path.insert(0, str(_SIM_DIR))
+
+from analysis_common import (  # noqa: E402
+    AnalysisError,
+    REPO_ROOT,
+    pct as _pct,
+    record_id as _record_id,
+    repo_rel as _repo_rel,
+    single_point_detail,
+)
+
 TRANSITION_EXPERIMENT = REPO_ROOT / "sim" / "vco-clk-transition"
 FLOOR_EXPERIMENT = REPO_ROOT / "sim" / "jitter-floor"
 OUTPUT = Path(__file__).resolve().parent / "bracket.md"
@@ -62,7 +78,6 @@ OUTPUT = Path(__file__).resolve().parent / "bracket.md"
 _SUFFIXES = {"f": 1e-15, "p": 1e-12, "n": 1e-9, "u": 1e-6, "m": 1e-3}
 _LITERAL_RE = re.compile(r"^([+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)\s*([a-zA-Z]*)$")
 
-_RECORD_ID_RE = re.compile(r"^- \*\*Record ID\*\*: (?P<record_id>\S+)\s*$", re.M)
 _TRANSITION_DETAIL_RE = re.compile(
     r"transition time: rise (?P<rise>[\d.]+) ps \(n=(?P<n_rise>\d+)\), "
     r"fall (?P<fall>[\d.]+) ps \(n=(?P<n_fall>\d+)\)"
@@ -79,17 +94,6 @@ _PULSE_RE = re.compile(
 _TRAN_RE = re.compile(r"^tran\s+(?P<step>\S+)\s+(?P<stop>\S+)(?:\s+uic)?\s*$", re.M)
 
 _PVT_HEADER_NO_TRANSITION = ["Corner", "Temp (C)", "Supply (V)", "Verdict", "f_out", "Duty", "Detail"]
-
-
-class AnalysisError(RuntimeError):
-    pass
-
-
-def _repo_rel(path: Path) -> str:
-    try:
-        return path.relative_to(REPO_ROOT).as_posix()
-    except ValueError:
-        return path.as_posix()
 
 
 def spice_literal(text: str) -> float:
@@ -109,13 +113,6 @@ def spice_literal(text: str) -> float:
     if scale is None:
         raise AnalysisError(f"unknown SPICE suffix in {text!r}")
     return value * scale
-
-
-def _record_id(text: str, path: Path) -> str:
-    m = _RECORD_ID_RE.search(text)
-    if m is None:
-        raise AnalysisError(f"{path}: record has no `Record ID` field")
-    return m.group("record_id")
 
 
 def parse_transition_record(experiment: Path) -> dict:
@@ -159,36 +156,6 @@ def parse_transition_record(experiment: Path) -> dict:
     }
 
 
-def _cells(line: str) -> list | None:
-    stripped = line.strip()
-    if not stripped.startswith("|") or not stripped.endswith("|"):
-        return None
-    return [cell.strip() for cell in stripped[1:-1].split("|")]
-
-
-def _single_point_detail(text: str, path: Path) -> str:
-    rows, seen = [], False
-    for line in text.splitlines():
-        cells = _cells(line)
-        if cells is None:
-            continue
-        if cells == _PVT_HEADER_NO_TRANSITION:
-            seen = True
-            continue
-        if not seen:
-            continue
-        if set("".join(cells)) <= {"-", ":"}:
-            continue
-        if len(cells) != len(_PVT_HEADER_NO_TRANSITION):
-            raise AnalysisError(f"{path}: result row has {len(cells)} cells: {line!r}")
-        rows.append(cells)
-    if not seen:
-        raise AnalysisError(f"{path}: record has no result table with the expected header")
-    if len(rows) != 1:
-        raise AnalysisError(f"{path}: expected exactly one PVT point, found {len(rows)}")
-    return rows[0][6]
-
-
 def parse_floor_record(record_path: Path, experiment: Path) -> dict:
     """One `sim/jitter-floor` variant -- its floor, period, edge and grid step,
     all read from that record and its own committed per-point netlist (the
@@ -202,7 +169,8 @@ def parse_floor_record(record_path: Path, experiment: Path) -> dict:
             f"{record_path}: no `THIS RECORD'S VARIANT: <id> --` line -- is this a "
             "sim/jitter-floor record?"
         )
-    floor_frac_m = _JITTER_IN_DETAIL_RE.search(_single_point_detail(text, record_path))
+    detail = single_point_detail(text, record_path, _PVT_HEADER_NO_TRANSITION)
+    floor_frac_m = _JITTER_IN_DETAIL_RE.search(detail)
     if floor_frac_m is None:
         raise AnalysisError(f"{record_path}: point reports no period jitter")
 
@@ -253,10 +221,6 @@ def parse_floor_records(experiment: Path) -> list:
 
 def _ps(seconds: float) -> str:
     return f"{1e12 * seconds:.2f} ps"
-
-
-def _pct(frac: float) -> str:
-    return f"{100.0 * frac:.3f}%"
 
 
 def bracket(transition: dict, floors: list) -> dict:

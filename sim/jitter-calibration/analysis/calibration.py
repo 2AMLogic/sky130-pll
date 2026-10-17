@@ -100,7 +100,24 @@ import sys
 from pathlib import Path
 from statistics import fmean, pstdev
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
+# `sim/analysis_common.py` holds the helpers every analysis script shares. These
+# scripts are run directly and also loaded by path via importlib (sim/tests),
+# so `sim/` goes on sys.path explicitly rather than relying on script-directory
+# insertion.
+_SIM_DIR = Path(__file__).resolve().parents[2]
+if str(_SIM_DIR) not in sys.path:
+    sys.path.insert(0, str(_SIM_DIR))
+
+from analysis_common import (  # noqa: E402
+    AnalysisError,
+    REPO_ROOT,
+    pct as _pct,
+    ps as _ps,
+    record_id as _record_id,
+    repo_rel as _repo_rel,
+    single_point_detail,
+)
+
 CALIBRATION_EXPERIMENT = REPO_ROOT / "sim" / "jitter-calibration"
 FLOOR_EXPERIMENT = REPO_ROOT / "sim" / "jitter-floor"
 OUTPUT = Path(__file__).resolve().parent / "calibration.md"
@@ -119,7 +136,6 @@ THRESHOLD_FRAC = 0.5
 _SUFFIXES = {"f": 1e-15, "p": 1e-12, "n": 1e-9, "u": 1e-6, "m": 1e-3}
 _LITERAL_RE = re.compile(r"^([+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)\s*([a-zA-Z]*)$")
 
-_RECORD_ID_RE = re.compile(r"^- \*\*Record ID\*\*: (?P<record_id>\S+)\s*$", re.M)
 _JITTER_IN_DETAIL_RE = re.compile(
     r"period jitter (?P<pct>[\d.]+)% RMS over (?P<cycles>\d+) cycles"
 )
@@ -143,18 +159,6 @@ _PVT_HEADER = ["Corner", "Temp (C)", "Supply (V)", "Verdict", "f_out", "Duty", "
 _MATCH_TOL = 1e-3
 
 
-class AnalysisError(RuntimeError):
-    pass
-
-
-def _repo_rel(path: Path) -> str:
-    """`path` relative to the repo root when it is inside it, else as-is."""
-    try:
-        return path.relative_to(REPO_ROOT).as_posix()
-    except ValueError:
-        return path.as_posix()
-
-
 def spice_literal(text: str) -> float:
     """Parse a SPICE literal (`200p`, `3.9170n`, `1.8`, `0`).
 
@@ -175,46 +179,8 @@ def spice_literal(text: str) -> float:
     return value * scale
 
 
-def _cells(line: str) -> list | None:
-    stripped = line.strip()
-    if not stripped.startswith("|") or not stripped.endswith("|"):
-        return None
-    return [cell.strip() for cell in stripped[1:-1].split("|")]
-
-
-def _single_point_detail(text: str, path: Path) -> str:
-    """The `Detail` cell of a record whose result table holds exactly one row."""
-    rows, seen = [], False
-    for line in text.splitlines():
-        cells = _cells(line)
-        if cells is None:
-            continue
-        if cells == _PVT_HEADER:
-            seen = True
-            continue
-        if not seen:
-            continue
-        if set("".join(cells)) <= {"-", ":"}:
-            continue
-        if len(cells) != len(_PVT_HEADER):
-            raise AnalysisError(f"{path}: result row has {len(cells)} cells: {line!r}")
-        rows.append(cells)
-    if not seen:
-        raise AnalysisError(f"{path}: record has no result table with the expected header")
-    if len(rows) != 1:
-        raise AnalysisError(f"{path}: expected exactly one PVT point, found {len(rows)}")
-    return rows[0][6]
-
-
-def _record_id(text: str, path: Path) -> str:
-    m = _RECORD_ID_RE.search(text)
-    if m is None:
-        raise AnalysisError(f"{path}: record has no `Record ID` field")
-    return m.group("record_id")
-
-
 def _reported(text: str, path: Path) -> tuple:
-    detail = _single_point_detail(text, path)
+    detail = single_point_detail(text, path, _PVT_HEADER)
     m = _JITTER_IN_DETAIL_RE.search(detail)
     if m is None:
         raise AnalysisError(f"{path}: point reports no period jitter: {detail!r}")
@@ -566,14 +532,6 @@ def restate(rows: list, floors: list) -> dict:
         "families": families,
         "rows": [r for fam in families for r in fam["rows"]],
     }
-
-
-def _pct(frac: float | None) -> str:
-    return "-" if frac is None else f"{100.0 * frac:.3f}%"
-
-
-def _ps(seconds: float | None) -> str:
-    return "-" if seconds is None else f"{1e12 * seconds:.1f} ps"
 
 
 def _edge(seconds: float) -> str:
