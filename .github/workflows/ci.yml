@@ -24,7 +24,7 @@ name: CI
 #     the pinned sky130 PDK models load in ngspice, xschem netlists
 #     headlessly, and the PVT knobs actually reach the simulator) via
 #     `sim/selftest.sh --quick --record --require-pdk` -> requires xschem +
-#     ngspice + the ~1 GB sky130 PDK via volare, so per CLAUDE.md's
+#     ngspice + the ~1 GB sky130 PDK via ciel, so per CLAUDE.md's
 #     "headless only" CI guideline it does NOT block every PR. It runs in the
 #     `pdk-smoke` job on a nightly schedule, on manual dispatch, and opt-in on
 #     a PR via the `run-pdk-smoke` label.
@@ -115,15 +115,14 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ngspice xschem
 
-      - name: Install volare
-        run: pip install --user volare
+      - name: Install ciel
+        run: pip install --user ciel==2.6.1
 
       - name: Fetch + enable pinned sky130 PDK
         run: |
           export PATH="$HOME/.local/bin:$PATH"
           commit="$(python3 -c "import json;print(json.load(open('sim/pdk.json'))['open_pdks_commit'])")"
-          volare fetch --pdk sky130 "$commit"
-          volare enable --pdk sky130 "$commit"
+          ciel enable --pdk-family sky130 -l sky130_fd_pr "$commit"
 
       - name: Run sim/selftest.sh (quick PVT subset, PDK required)
         run: |

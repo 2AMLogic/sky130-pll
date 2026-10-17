@@ -9,7 +9,7 @@ Stdlib only, no virtualenv. Package layout:
 
 ```
 sim/harness/
-  pdk.py         resolve the sky130 PDK install (PDK_ROOT/PDK, volare, sim/pdk.json)
+  pdk.py         resolve the sky130 PDK install (PDK_ROOT/PDK, ciel, sim/pdk.json)
   corners.py     build the PVT point matrix from a manifest + CLI overrides
   montecarlo.py  build the Monte Carlo trial matrix from a manifest + CLI overrides
   runner.py      xschem-netlist once, patch per point/trial, run ngspice, judge pass/fail

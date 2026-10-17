@@ -123,6 +123,6 @@ run env AUDIT_HEADLESS_ACTIVE=1; rc=$?
 [ $rc -eq 4 ]; expect "recursive invocation refused" $?
 
 # 8. default path never touches PDK/sim flags
-! grep -Eq "require-pdk|ngspice|volare" "$FAKE_LOG"; expect "no PDK/simulation commands invoked" $?
+! grep -Eq "require-pdk|ngspice|volare|ciel" "$FAKE_LOG"; expect "no PDK/simulation commands invoked" $?
 
 echo "1..$n"; [ $fails -eq 0 ]

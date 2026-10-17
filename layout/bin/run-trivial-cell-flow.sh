@@ -9,7 +9,7 @@
 #   layout/bin/run-trivial-cell-flow.sh
 #
 # Requires: layout/.venv (see setup-venv.sh) and a resolvable sky130A PDK
-# install (same pin as sim/pdk.json; `volare enable --pdk sky130 <sha>`).
+# install (same pin as sim/pdk.json; `ciel enable --pdk-family sky130 -l sky130_fd_pr <sha>`).
 #
 # Provenance: adapted from 2AMLogic/sky130-bandgap
 # layout/bin/run-trivial-cell-flow.sh (source commit

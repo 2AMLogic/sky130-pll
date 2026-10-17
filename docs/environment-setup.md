@@ -2,7 +2,7 @@
 
 Bootstrap steps for the open-source analog flow used by this repo: xschem
 (schematic capture / netlisting) + ngspice (simulation) against the sky130
-PDK (fetched/managed via [volare](https://github.com/efabless/volare)), plus
+PDK (fetched/managed via [ciel](https://github.com/fossi-foundation/ciel)), plus
 [klayout-tools](https://github.com/2AMLogic/klayout-tools) (`klt`) for the
 layout-side DRC/LVS flow.
 
@@ -25,7 +25,7 @@ its `docs/environment-setup.md`, so this is written fresh from
 |---|---|---|
 | xschem | `XSCHEM V3.4.7` | `/opt/homebrew/bin/xschem` (Homebrew) |
 | ngspice | `ngspice-47` | `/opt/homebrew/bin/ngspice` (Homebrew) |
-| volare | `v0.20.6` | `/opt/homebrew/bin/volare` (Homebrew) |
+| ciel | `2.6.1` | `pip install ciel==2.6.1` (pinned; not the retired volare) |
 | klayout-tools (`klt`) | `0.2.0` | `~/.local/bin/klt` (installed via `uv tool install klayout-tools`, or `layout/bin/setup-venv.sh` for a repo-local pin) |
 
 Verify before reinstalling anything:
@@ -33,7 +33,7 @@ Verify before reinstalling anything:
 ```sh
 xschem -v         # expect: XSCHEM V3.4.7 ...
 ngspice --version # expect: ngspice-47 ... (ngspice-46 also verified to work)
-volare --version  # expect: Volare v0.20.6 ...
+ciel --version    # expect: 2.6.1
 klt --version     # expect: klt 0.2.0
 ```
 
@@ -46,29 +46,29 @@ xschem -n -q -x /opt/homebrew/share/doc/xschem/examples/nand2.sch -o /tmp/xschem
 This should exit 0 and write a `.spice` netlist to `/tmp/xschem_check` with no
 errors printed. It needs no PDK wiring — a bare toolchain sanity check.
 
-## 2. Fetch + enable the sky130 PDK via volare
+## 2. Fetch + enable the sky130 PDK via ciel
 
 ```sh
-volare ls-remote --pdk sky130   # lists open_pdks build commits, newest first
-volare fetch  --pdk sky130 c6d73a35f524070e85faff4a6a9eef49553ebc2b
-volare enable --pdk sky130 c6d73a35f524070e85faff4a6a9eef49553ebc2b
+ciel ls-remote --pdk-family sky130   # lists open_pdks build commits, newest first
+ciel enable --pdk-family sky130 -l sky130_fd_pr f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7
 ```
 
 **Recorded PDK version (pinned, not "latest"), matching `sim/pdk.json`:**
 
 - PDK family: `sky130`
-- open_pdks build commit: `c6d73a35f524070e85faff4a6a9eef49553ebc2b`
-- Chosen because: this is the exact open_pdks commit `sky130-bandgap` already
-  pins for the same PDK family (see that repo's `docs/environment-setup.md`).
-  Using the same build keeps model/PVT provenance consistent across the 2AM
-  Logic sky130 canaries, and it is what was already fetched and enabled in
-  this sandbox.
+- open_pdks build commit: `f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7`
+- Chosen because: this is the open_pdks commit the 2AM Logic sky130 canaries
+  re-pinned to together (#295), after the previous pin lost its volare release
+  feed. Keeping every canary on one build keeps model/PVT provenance
+  consistent. Records made before the re-pin name the older revision
+  (`c6d73a35f524070e85faff4a6a9eef49553ebc2b`); they are append-only and are
+  not rewritten.
 
-After `volare enable`, confirm the variant resolved:
+After `ciel enable`, confirm the variant resolved:
 
 ```sh
-ls -la ~/.volare | grep sky130
-# sky130A -> volare/sky130/versions/c6d73a35f524070e85faff4a6a9eef49553ebc2b/sky130A
+ls -la ~/.ciel | grep sky130
+cat ~/.ciel/sky130A/SOURCES    # expect: open_pdks f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7
 ```
 
 This repo standardizes on the **`sky130A`** variant (same as sky130-bandgap).
@@ -79,14 +79,14 @@ Export these two variables in any shell before running xschem/ngspice against
 sky130 in this repo:
 
 ```sh
-export PDK_ROOT="$(volare path)"   # -> the volare-managed PDK store root
+export PDK_ROOT="$HOME/.ciel"   # -> the ciel-managed PDK store root
 export PDK=sky130A
 ```
 
 Verify:
 
 ```sh
-echo "$PDK_ROOT"          # e.g. /Users/<you>/.volare
+echo "$PDK_ROOT"          # e.g. /Users/<you>/.ciel
 echo "$PDK_ROOT/$PDK"     # must exist and be a real (symlinked) directory
 ls "$PDK_ROOT/$PDK/libs.tech/ngspice/sky130.lib.spice" 2>/dev/null \
   || ls "$PDK_ROOT/$PDK/libs.tech/combined/sky130.lib.spice"   # model include file
@@ -108,7 +108,7 @@ testbench does not encode any ratified supply as a design commitment — the
 1.8 V source here is an arbitrary smoke-test bias, not a spec claim).
 
 ```sh
-export PDK_ROOT="$(volare path)"
+export PDK_ROOT="$HOME/.ciel"
 export PDK=sky130A
 
 # 1. Netlist the schematic with xschem (headless, no X server needed)
@@ -151,9 +151,9 @@ those five verdicts flips.
   working pattern.
 - **`Warning: PDK_ROOT environment variable is set but path not found`**
   (printed by the PDK's own `xschemrc`): `$PDK_ROOT`/`$PDK` aren't exported in
-  the shell running `xschem`, or `volare enable` hasn't been run for the
+  the shell running `xschem`, or `ciel enable` hasn't been run for the
   recorded hash above.
 - **xschem opens a GUI window instead of running headless**: pass `-x`
   (no X) in addition to `-n -q`.
 - **`klt pdk find --pdk sky130A` fails**: same PDK pin as above — run
-  `volare enable --pdk sky130 c6d73a35f524070e85faff4a6a9eef49553ebc2b` first.
+  `ciel enable --pdk-family sky130 -l sky130_fd_pr f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7` first.

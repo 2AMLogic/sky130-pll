@@ -8,7 +8,7 @@
 #   layout/bin/run-pll-layout-flow.sh
 #
 # Requires: layout/.venv (see setup-venv.sh) and a resolvable sky130A PDK
-# install (same pin as sim/pdk.json; `volare enable --pdk sky130 <sha>`).
+# install (same pin as sim/pdk.json; `ciel enable --pdk-family sky130 -l sky130_fd_pr <sha>`).
 #
 # Shape and conventions follow run-trivial-cell-flow.sh (same record-id
 # scheme, same "record.md is the deliverable" rule, same LATEST pointer), but

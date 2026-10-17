@@ -34,7 +34,7 @@
     "agrees in both -- never copied from another PDK's spec:",
     "",
     "  1. The sky130A PDK's own KLayout layer properties file,",
-    "     `libs.tech/klayout/tech/sky130A.lyp` (volare-installed sky130A),",
+    "     `libs.tech/klayout/tech/sky130A.lyp` (ciel-installed sky130A),",
     "     whose <properties>/<source> entries name each purpose:",
     "     poly.drawing 66/20, diff.drawing 65/20, licon1.drawing 66/44,",
     "     li1.drawing 67/20, li1.label 67/5, mcon.drawing 67/44,",
