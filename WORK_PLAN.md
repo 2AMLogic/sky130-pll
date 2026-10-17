@@ -30,7 +30,7 @@ Human-approved issues ready for implementation (`loom:issue`).
 
 Issues currently being built (`loom:building`).
 
-_None._
+- **#321**: Consolidate triplicated parse_floor_record into sim/analysis_common.py
 
 ## PRs Awaiting Review
 
@@ -43,6 +43,7 @@ _None._
 PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
 - **#299**: build: re-pin open_pdks to f6eeac7 and resolve the PDK via ciel with a SOURCES revision check
+- **#322**: refactor: share parse_floor_record via sim/analysis_common
 
 ## Proposed
 
@@ -82,9 +83,9 @@ _None._
 | Very important | 0 |
 | Important | 2 |
 | Ready (`loom:issue`) | 1 |
-| In Progress (`loom:building`) | 0 |
+| In Progress (`loom:building`) | 1 |
 | PRs awaiting review | 0 |
-| Approved PRs awaiting merge | 1 |
+| Approved PRs awaiting merge | 2 |
 | Curated | 16 |
 | Architect / Hermit proposals | 2 |
 | Active epics | 0 |
