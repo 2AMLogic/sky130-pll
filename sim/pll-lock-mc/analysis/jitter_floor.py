@@ -109,7 +109,24 @@ import sys
 from pathlib import Path
 from statistics import fmean, pstdev
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
+# `sim/analysis_common.py` holds the helpers every analysis script shares. These
+# scripts are run directly and also loaded by path via importlib (sim/tests),
+# so `sim/` goes on sys.path explicitly rather than relying on script-directory
+# insertion.
+_SIM_DIR = Path(__file__).resolve().parents[2]
+if str(_SIM_DIR) not in sys.path:
+    sys.path.insert(0, str(_SIM_DIR))
+
+from analysis_common import (  # noqa: E402
+    AnalysisError,
+    REPO_ROOT,
+    cells as _cells,
+    pct as _pct,
+    ps as _ps,
+    record_id as _record_id,
+    repo_rel as _repo_rel,
+)
+
 MC_RECORD = REPO_ROOT / "sim" / "pll-lock-mc" / "records" / "20260924-222341-a9375a5.md"
 FLOOR_EXPERIMENT = REPO_ROOT / "sim" / "jitter-floor"
 CALIBRATION_EXPERIMENT = REPO_ROOT / "sim" / "jitter-calibration"
@@ -129,7 +146,6 @@ PERIOD_MATCH_TOL = 1e-3
 _SUFFIXES = {"f": 1e-15, "p": 1e-12, "n": 1e-9, "u": 1e-6, "m": 1e-3}
 _LITERAL_RE = re.compile(r"^([+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)\s*([a-zA-Z]*)$")
 
-_RECORD_ID_RE = re.compile(r"^- \*\*Record ID\*\*: (?P<record_id>\S+)\s*$", re.M)
 _VARIANT_RE = re.compile(r"THIS RECORD'S VARIANT: (?P<variant>[A-Za-z0-9]+) --")
 _JITTER_IN_DETAIL_RE = re.compile(
     r"period jitter (?P<pct>[\d.]+)% RMS over (?P<cycles>\d+) cycles"
@@ -158,22 +174,6 @@ _MC_HEADER = [
 _PVT_HEADER = ["Corner", "Temp (C)", "Supply (V)", "Verdict", "f_out", "Duty", "Detail"]
 
 
-class AnalysisError(RuntimeError):
-    pass
-
-
-def _repo_rel(path: Path) -> str:
-    """`path` relative to the repo root when it is inside it, else as-is.
-
-    Every real input lives under the repo; the fall-back keeps the unit tests'
-    synthetic temp-directory inputs readable instead of raising.
-    """
-    try:
-        return path.relative_to(REPO_ROOT).as_posix()
-    except ValueError:
-        return path.as_posix()
-
-
 def spice_time(text: str) -> float:
     """Parse a SPICE time literal (`200p`, `3.9170n`, `50u`).
 
@@ -197,13 +197,6 @@ def spice_time(text: str) -> float:
     return value * scale
 
 
-def _cells(line: str) -> list[str] | None:
-    stripped = line.strip()
-    if not stripped.startswith("|") or not stripped.endswith("|"):
-        return None
-    return [cell.strip() for cell in stripped[1:-1].split("|")]
-
-
 def _table_rows(text: str, header: list[str]) -> list[list[str]]:
     rows: list[list[str]] = []
     seen = False
@@ -224,13 +217,6 @@ def _table_rows(text: str, header: list[str]) -> list[list[str]]:
     if not seen:
         raise AnalysisError("record has no result table with the expected header")
     return rows
-
-
-def _record_id(text: str, path: Path) -> str:
-    m = _RECORD_ID_RE.search(text)
-    if m is None:
-        raise AnalysisError(f"{path}: record has no `Record ID` field")
-    return m.group("record_id")
 
 
 def parse_mc_record(path: Path) -> dict:
@@ -649,14 +635,6 @@ def _trials(rows: list[dict]) -> str:
     if len(names) == 1:
         return f"trial {names[0]}"
     return f"trials {', '.join(names[:-1])} and {names[-1]}"
-
-
-def _pct(frac: float | None) -> str:
-    return "-" if frac is None else f"{100.0 * frac:.3f}%"
-
-
-def _ps(seconds: float | None) -> str:
-    return "-" if seconds is None else f"{1e12 * seconds:.1f} ps"
 
 
 def render(mc: dict, floors: list[dict], cal_records: list[dict], derived: dict) -> str:

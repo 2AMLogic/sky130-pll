@@ -95,6 +95,20 @@ import re
 import sys
 from pathlib import Path
 
+# `sim/analysis_common.py` holds the helpers every analysis script shares. These
+# scripts are run directly and also loaded by path via importlib (sim/tests),
+# so `sim/` goes on sys.path explicitly rather than relying on script-directory
+# insertion.
+_SIM_DIR = Path(__file__).resolve().parents[2]
+if str(_SIM_DIR) not in sys.path:
+    sys.path.insert(0, str(_SIM_DIR))
+
+from analysis_common import (  # noqa: E402
+    RECORD_ID_RE as _RECORD_ID_RE,
+    AnalysisError,
+    cells as _cells,
+)
+
 #: Name the sample set gives the measured quantity. Deliberately carries its
 #: unit in the name as well as in `unit`: a bare `period_jitter` would not say
 #: whether 1.0 means one percent or one period.
@@ -140,7 +154,6 @@ _SPEC_LIMITS = "spec-limits.json"
 CONFIDENCE = 0.95
 TARGET_CI_HALFWIDTH = 0.01
 
-_RECORD_ID_RE = re.compile(r"^- \*\*Record ID\*\*: (?P<record_id>\S+)\s*$", re.M)
 _TRIALS_RE = re.compile(
     r"^\s*- Trials: (?P<trials>\d+) \(seeds (?P<first>\d+)\.\.(?P<last>\d+),", re.M
 )
@@ -161,18 +174,6 @@ _HEADER_CELLS = [
     "Detail",
 ]
 _JITTER_RE = re.compile(r"^(?P<pct>[\d.]+)% \((?P<cycles>\d+) cycles\)$")
-
-
-class AnalysisError(RuntimeError):
-    pass
-
-
-def _cells(line: str) -> list[str] | None:
-    """Split a markdown table row into its cells, or `None` if it is not one."""
-    stripped = line.strip()
-    if not stripped.startswith("|") or not stripped.endswith("|"):
-        return None
-    return [cell.strip() for cell in stripped[1:-1].split("|")]
 
 
 def parse_record(text: str) -> dict:
