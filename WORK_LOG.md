@@ -4,6 +4,8 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 ### 2026-10-17
 
+- **PR #318**: refactor(sim): share SPICE-literal and floor-netlist parsing across analysis scripts
+- **Issue #316** (closed): Consolidate duplicated SPICE-literal and floor-record parsing left in sim analysis scripts
 - **PR #315**: refactor(sim): share klt batch capacity-retry submit across runners
 - **PR #313**: refactor(sim): share record-table helpers across analysis scripts
 - **Issue #314** (closed): Consolidate triplicated klt-sim capacity-retry submit loop (fmax_klt / cp_klt / locktiming_cli)
