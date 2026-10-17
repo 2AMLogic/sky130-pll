@@ -98,7 +98,6 @@ import math
 import re
 import sys
 from pathlib import Path
-from statistics import fmean, pstdev
 
 # `sim/analysis_common.py` holds the helpers every analysis script shares. These
 # scripts are run directly and also loaded by path via importlib (sim/tests),
@@ -117,6 +116,7 @@ from analysis_common import (  # noqa: E402
     ps as _ps,
     record_id as _record_id,
     point_netlist as _point_netlist,
+    injected_from_pwl,
     parse_floor_record,
     pwl_points,
     repo_rel as _repo_rel,
@@ -155,50 +155,6 @@ def _reported(text: str, path: Path) -> tuple:
     if m is None:
         raise AnalysisError(f"{path}: point reports no period jitter: {detail!r}")
     return float(m.group("pct")) / 100.0, int(m.group("cycles"))
-
-
-def injected_from_pwl(points: list, path: Path) -> dict:
-    """The exact figure the committed edge schedule injects.
-
-    Every rising segment of the card runs from `v_low` to `v_high` linearly, so
-    the `threshold_frac * v_high` crossing sits at the segment's midpoint when
-    `threshold_frac` is 0.5 -- which is what this campaign's manifest declares
-    and what `_assert_threshold` pins. The returned `injected_frac` is
-    `pstdev(T_k)/mean(T_k)` over those crossings: the **same** estimator
-    `sim/harness/measure.period_jitter` applies to the reduced edges, so the
-    reported and injected figures are the same quantity and are comparable
-    without any conversion.
-    """
-    v_high = max(v for _, v in points)
-    v_low = min(v for _, v in points)
-    if v_high <= v_low:
-        raise AnalysisError(f"{path}: `pwl(` card does not swing")
-    rising, edge_widths = [], []
-    for (t0, v0), (t1, v1) in zip(points, points[1:]):
-        if v0 == v_low and v1 == v_high:
-            rising.append(0.5 * (t0 + t1))
-            edge_widths.append(t1 - t0)
-    if len(rising) < 3:
-        raise AnalysisError(
-            f"{path}: `pwl(` card holds only {len(rising)} rising transitions"
-        )
-    if max(edge_widths) - min(edge_widths) > 1e-15:
-        raise AnalysisError(
-            f"{path}: this restatement assumes one transition time for the whole "
-            f"schedule, got {min(edge_widths):g}..{max(edge_widths):g} s"
-        )
-    periods = [b - a for a, b in zip(rising, rising[1:])]
-    mean_period = fmean(periods)
-    if mean_period <= 0:
-        raise AnalysisError(f"{path}: the committed schedule has a non-positive period")
-    return {
-        "injected_frac": pstdev(periods) / mean_period,
-        "period_s": mean_period,
-        "edge_s": edge_widths[0],
-        "cycles": len(periods),
-        "v_high": v_high,
-        "v_low": v_low,
-    }
 
 
 def parse_calibration_record(record_path: Path, experiment: Path) -> dict:

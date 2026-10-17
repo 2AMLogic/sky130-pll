@@ -107,7 +107,6 @@ import math
 import re
 import sys
 from pathlib import Path
-from statistics import fmean, pstdev
 
 # `sim/analysis_common.py` holds the helpers every analysis script shares. These
 # scripts are run directly and also loaded by path via importlib (sim/tests),
@@ -127,7 +126,8 @@ from analysis_common import (  # noqa: E402
     pct as _pct,
     ps as _ps,
     record_id as _record_id,
-    parse_floor_record,
+    injected_from_pwl,
+    parse_floor_records,
     point_netlist,
     pwl_points,
     repo_rel as _repo_rel,
@@ -217,60 +217,6 @@ def parse_mc_record(path: Path) -> dict:
     return {"record_id": _record_id(text, path), "path": path, "draws": draws}
 
 
-def parse_floor_records(experiment: Path) -> list[dict]:
-    records = sorted((experiment / "records").glob("*.md"))
-    if not records:
-        raise AnalysisError(f"{experiment}/records/ holds no record")
-    parsed = [parse_floor_record(p, experiment) for p in records]
-    steps = {r["step_s"] for r in parsed}
-    if len(steps) != 1:
-        raise AnalysisError(
-            "the floor records do not share one dump grid "
-            f"({sorted(steps)}); this restatement compares floors at one grid"
-        )
-    return parsed
-
-
-def calibration_schedule(points: list[tuple[float, float]], path: Path) -> dict:
-    """The exact period, edge and injected RMS a committed PWL schedule carries.
-
-    This script only needs enough of `sim/jitter-calibration`'s own record to
-    match a variant to a Monte Carlo draw's period -- not the full
-    reported-vs-injected calibration curve `calibration.py` renders -- so the
-    injected figure is re-derived (`pstdev(T_k)/mean(T_k)` over the card's own
-    rising-edge midpoints, the same estimator `sim/harness/measure.period_jitter`
-    applies) but never used as a correction. See this module's docstring.
-    """
-    v_high = max(v for _, v in points)
-    v_low = min(v for _, v in points)
-    if v_high <= v_low:
-        raise AnalysisError(f"{path}: `pwl(` card does not swing")
-    rising, edge_widths = [], []
-    for (t0, v0), (t1, v1) in zip(points, points[1:]):
-        if v0 == v_low and v1 == v_high:
-            rising.append(0.5 * (t0 + t1))
-            edge_widths.append(t1 - t0)
-    if len(rising) < 3:
-        raise AnalysisError(
-            f"{path}: `pwl(` card holds only {len(rising)} rising transitions"
-        )
-    if max(edge_widths) - min(edge_widths) > 1e-15:
-        raise AnalysisError(
-            f"{path}: this restatement assumes one transition time for the whole "
-            f"schedule, got {min(edge_widths):g}..{max(edge_widths):g} s"
-        )
-    periods = [b - a for a, b in zip(rising, rising[1:])]
-    mean_period = fmean(periods)
-    if mean_period <= 0:
-        raise AnalysisError(f"{path}: the committed schedule has a non-positive period")
-    return {
-        "injected_frac": pstdev(periods) / mean_period,
-        "period_s": mean_period,
-        "edge_s": edge_widths[0],
-        "cycles": len(periods),
-    }
-
-
 def parse_calibration_record(record_path: Path, experiment: Path) -> dict:
     """One `sim/jitter-calibration` variant: what it injected, at what period.
 
@@ -299,7 +245,7 @@ def parse_calibration_record(record_path: Path, experiment: Path) -> dict:
 
     netlist_path = point_netlist(experiment, record_id)
     netlist = netlist_path.read_text()
-    schedule = calibration_schedule(pwl_points(netlist, netlist_path), netlist_path)
+    schedule = injected_from_pwl(pwl_points(netlist, netlist_path), netlist_path)
     step_s, _ = tran_card(netlist, netlist_path)
 
     reported_frac = float(jitter.group("pct")) / 100.0
