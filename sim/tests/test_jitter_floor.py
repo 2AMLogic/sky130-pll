@@ -118,7 +118,7 @@ def _pwl_points(period_s: float, edge_s: float, cycles: int) -> list[tuple[float
 
     This test only exercises period matching, never a reported-vs-injected
     figure, so an exact period rather than a jittered one keeps the fixture
-    simple; `calibration_schedule` does not care which it is handed. Requires
+    simple; `injected_from_pwl` does not care which it is handed. Requires
     `edge_s < period_s / 2` so the rising and falling edges never overlap.
     """
     v_low, v_high = 0.0, 1.8

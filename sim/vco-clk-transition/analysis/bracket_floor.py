@@ -68,7 +68,7 @@ from analysis_common import (  # noqa: E402
     pct as _pct,
     record_id as _record_id,
     point_netlist,
-    parse_floor_record,
+    parse_floor_records,
     repo_rel as _repo_rel,
     tran_card,
 )
@@ -113,20 +113,6 @@ def parse_transition_record(experiment: Path) -> dict:
         "n_fall": int(m.group("n_fall")),
         "own_step_s": own_step_s,
     }
-
-
-def parse_floor_records(experiment: Path) -> list:
-    records = sorted((experiment / "records").glob("*.md"))
-    if not records:
-        raise AnalysisError(f"{experiment}/records/ holds no record")
-    parsed = [parse_floor_record(p, experiment) for p in records]
-    steps = {r["step_s"] for r in parsed}
-    if len(steps) != 1:
-        raise AnalysisError(
-            f"the floor records do not share one dump grid ({sorted(steps)}); this "
-            "restatement compares floors at one grid"
-        )
-    return parsed
 
 
 def _ps(seconds: float) -> str:
