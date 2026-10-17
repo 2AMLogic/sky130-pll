@@ -130,8 +130,8 @@ def waveform_only_exit(report: dict) -> bool:
 
 def run_group(item: dict, work: Path, klt: str, runner, *, retries, wait_s, sleep, log) -> dict:
     """Submit one group; -> {"job": provenance, "report": dict | None, "gdir": Path}.
-    The capacity retry mirrors `KltBatchBackend._run_group`, but a failure is
-    recorded on the job instead of aborting the campaign."""
+    The capacity retry is the shared `submit_with_capacity_retry`, but a failure
+    is recorded on the job instead of aborting the campaign."""
     cand, g, gdir = item["cand"], item["group"], work / item["key"]
     gdir.mkdir(parents=True, exist_ok=True)
     body = body_for(cand, g.supply_v)
@@ -144,18 +144,14 @@ def run_group(item: dict, work: Path, klt: str, runner, *, retries, wait_s, slee
     out = {"job": job, "report": None, "gdir": gdir}
     cmd = [klt, "sim", str(gdir / K.REQUEST_NAME), "-o", str(gdir / "out"),
            "--backend", "batch", "--format", "json"]
-    for attempt in range(retries + 1):
-        try:
-            proc = runner(cmd, capture_output=True, text=True,
-                          timeout=int(cand["manifest"]["windows"]["timeout_s"]) + 5400)
-        except (OSError, subprocess.TimeoutExpired) as e:
-            job["failure"] = f"klt sim did not complete: {e}"
-            return out
-        if (proc.returncode in K._USABLE_EXIT or attempt == retries
-                or not K.is_capacity_refusal((proc.stdout or "") + (proc.stderr or ""))):
-            break
-        log(f"  {item['key']}: fleet at capacity; retry {attempt + 1}/{retries}")
-        sleep(wait_s)
+    try:
+        proc, _ = K.submit_with_capacity_retry(
+            cmd, runner=runner, timeout=int(cand["manifest"]["windows"]["timeout_s"]) + 5400,
+            usable_exit=K._USABLE_EXIT, retries=retries, wait_s=wait_s, sleep=sleep, log=log,
+            label=f"  {item['key']}")
+    except (OSError, subprocess.TimeoutExpired) as e:
+        job["failure"] = f"klt sim did not complete: {e}"
+        return out
     job["exit_code"] = proc.returncode
     (gdir / "stderr.log").write_text(proc.stderr or "")
     try:

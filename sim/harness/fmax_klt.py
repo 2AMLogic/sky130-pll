@@ -58,6 +58,7 @@ from pathlib import Path
 
 from . import fmax as fmax_mod
 from . import runner as runner_mod
+from .klt_submit import is_capacity_refusal, submit_with_capacity_retry  # noqa: F401
 
 #: Executor name accepted by `run_fmax.py --executor`.
 BATCH_EXECUTOR = "batch"
@@ -224,15 +225,6 @@ def clip_trace(times: list, values: list, stop_s: float) -> tuple:
                 v_out.append(v0 + frac * (values[i] - v0))
             break
     return t_out, v_out
-
-
-_CAPACITY_MARKERS = ("BATCH_MAX_CONCURRENT_INSTANCES", "batch_no_capacity", "no capacity in any")
-
-
-def is_capacity_refusal(text: str) -> bool:
-    """True when a `klt sim` failure is the fleet refusing to launch for lack of
-    capacity (the job never started), as opposed to a job that ran and failed."""
-    return any(m in text for m in _CAPACITY_MARKERS)
 
 
 def corner_dir_key(process: str, temp_c: float) -> str:
@@ -412,24 +404,14 @@ class KltBatchBackend:
                      f"to the batch fleet")
             cmd = [self.klt, "sim", str(gdir / REQUEST_NAME), "-o", str(gdir / "out"),
                    "--backend", "batch", "--format", "json"]
-            attempt = 0
-            while True:
-                try:
-                    proc = self.runner(cmd, capture_output=True, text=True,
-                                       timeout=timeout_s + 3600 + 1800)
-                except (OSError, subprocess.TimeoutExpired) as e:
-                    raise KltBatchError(f"{gkey}: klt sim did not complete: {e}") from e
-                # The fleet is shared and capped; a launch refused for capacity
-                # ran nothing, so waiting and resubmitting the same job is safe
-                # (never a local fallback). Any other failure aborts below.
-                if (proc.returncode not in _USABLE_EXIT and attempt < self.capacity_retries
-                        and is_capacity_refusal((proc.stdout or "") + (proc.stderr or ""))):
-                    attempt += 1
-                    self.log(f"  {gkey}: fleet at capacity; retry {attempt}/"
-                             f"{self.capacity_retries} in {self.capacity_wait_s:g}s")
-                    self.sleep(self.capacity_wait_s)
-                    continue
-                break
+            try:
+                proc, _ = submit_with_capacity_retry(
+                    cmd, runner=self.runner, timeout=timeout_s + 3600 + 1800,
+                    usable_exit=_USABLE_EXIT, retries=self.capacity_retries,
+                    wait_s=self.capacity_wait_s, sleep=self.sleep, log=self.log,
+                    label=f"  {gkey}")
+            except (OSError, subprocess.TimeoutExpired) as e:
+                raise KltBatchError(f"{gkey}: klt sim did not complete: {e}") from e
             (gdir / "stderr.log").write_text(proc.stderr or "")
             try:
                 report = json.loads(proc.stdout)
