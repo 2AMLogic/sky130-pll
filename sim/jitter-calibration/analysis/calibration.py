@@ -111,12 +111,13 @@ if str(_SIM_DIR) not in sys.path:
 from analysis_common import (  # noqa: E402
     AnalysisError,
     JITTER_IN_DETAIL_RE,
+    PVT_HEADER,
     REPO_ROOT,
     pct as _pct,
     ps as _ps,
     record_id as _record_id,
     point_netlist as _point_netlist,
-    pulse_floor_point,
+    parse_floor_record,
     pwl_points,
     repo_rel as _repo_rel,
     single_point_detail,
@@ -140,10 +141,6 @@ THRESHOLD_FRAC = 0.5
 
 _PWL_VARIANT_RE = re.compile(r"^\*\* GENERATED -- variant (?P<variant>[A-Za-z0-9]+):", re.M)
 _PWL_HEAD_RE = re.compile(r"^VCLK\s+\S+\s+\S+\s+pwl\([ \t]*\r?\n", re.M | re.I)
-_FLOOR_VARIANT_RE = re.compile(r"THIS RECORD'S VARIANT: (?P<variant>[A-Za-z0-9]+) --")
-
-_PVT_HEADER = ["Corner", "Temp (C)", "Supply (V)", "Verdict", "f_out", "Duty", "Detail"]
-
 #: Two periods (or transition times) closer together than this fraction are the
 #: same operating point for the purpose of pairing a calibration variant with a
 #: null-control variant. The two campaigns declare these numbers independently
@@ -153,7 +150,7 @@ _MATCH_TOL = 1e-3
 
 
 def _reported(text: str, path: Path) -> tuple:
-    detail = single_point_detail(text, path, _PVT_HEADER)
+    detail = single_point_detail(text, path, PVT_HEADER)
     m = JITTER_IN_DETAIL_RE.search(detail)
     if m is None:
         raise AnalysisError(f"{path}: point reports no period jitter: {detail!r}")
@@ -237,29 +234,6 @@ def parse_calibration_record(record_path: Path, experiment: Path) -> dict:
         "step_s": step_s,
         "stop_s": stop_s,
         **schedule,
-    }
-
-
-def parse_floor_record(record_path: Path, experiment: Path) -> dict:
-    """One `sim/jitter-floor` null-control variant, for comparison."""
-    text = record_path.read_text()
-    record_id = _record_id(text, record_path)
-    variant = _FLOOR_VARIANT_RE.search(text)
-    if variant is None:
-        raise AnalysisError(
-            f"{record_path}: no `THIS RECORD'S VARIANT: <id> --` line -- is this a "
-            "sim/jitter-floor record?"
-        )
-    floor_frac, cycles = _reported(text, record_path)
-    point = pulse_floor_point(experiment, record_id)
-    return {
-        "record_id": record_id,
-        "variant": variant.group("variant"),
-        "floor_frac": floor_frac,
-        "cycles": cycles,
-        "period_s": point["period_s"],
-        "edge_s": point["edge_s"],
-        "step_s": point["step_s"],
     }
 
 
