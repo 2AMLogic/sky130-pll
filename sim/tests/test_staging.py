@@ -46,7 +46,7 @@ from unittest import mock
 
 SIM_DIR = Path(__file__).resolve().parents[1]
 TESTS_DIR = Path(__file__).resolve().parent
-for _p in (str(SIM_DIR), str(TESTS_DIR)):
+for _p in (str(SIM_DIR), str(TESTS_DIR), str(SIM_DIR.parent)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
@@ -60,8 +60,8 @@ from test_execution import (  # noqa: E402
     _Harness,
     _point_result,
     _StubPdk,
-    _table_rows,
 )
+from scripts.test_support import record_table_rows  # noqa: E402
 
 ALL_POINT_IDS = [p.corner_id for p in corners_mod.build_matrix(MANIFEST, _StubPdk.process_corners)]
 
@@ -555,7 +555,7 @@ class ReapedWorktreeTests(unittest.TestCase):
             # the 4 h 26 min that was lost in the incident is reloaded here.
             self.assertEqual(seen, ALL_POINT_IDS[2:])
 
-            rows = _table_rows(h2.record_path.read_text())
+            rows = record_table_rows(h2.record_path.read_text())
             self.assertEqual(len(rows), len(ALL_POINT_IDS))
             self.assertEqual(sum("first segment" in r for r in rows), 2)
             self.assertEqual(sum("second segment" in r for r in rows), 4)

@@ -49,6 +49,7 @@ from harness import executor as executor_mod  # noqa: E402
 from harness import measure as measure_mod  # noqa: E402
 from harness import montecarlo as mc_mod  # noqa: E402
 from harness import runner  # noqa: E402
+from scripts.test_support import record_table_rows  # noqa: E402
 import test_cpmeasure as cpt  # noqa: E402
 
 RECORD_ID = "20260101-000000-abc1234"
@@ -212,15 +213,6 @@ class _Harness:
         return rc, out.getvalue()
 
 
-def _table_rows(record_text: str) -> list:
-    """The per-point result rows of a rendered record, in file order."""
-    return [
-        line.strip()
-        for line in record_text.splitlines()
-        if line.strip().startswith("| ") and ("PASS" in line or "FAIL" in line)
-    ]
-
-
 class ParallelExecutionTests(unittest.TestCase):
     """`--jobs N` may change *when* a point runs, never *what* the record
     says about it."""
@@ -257,7 +249,7 @@ class ParallelExecutionTests(unittest.TestCase):
             self.assertEqual(sorted(seen), sorted(expected))
             self.assertEqual(len(seen), len(set(seen)))
             # ...and the record's rows are in the manifest's point order.
-            rows = _table_rows(h.record_path.read_text())
+            rows = record_table_rows(h.record_path.read_text())
             self.assertEqual(len(rows), len(expected))
             for corner_id, row in zip(expected, rows):
                 corner, temp, supply = corner_id.split("_")
@@ -282,8 +274,8 @@ class ParallelExecutionTests(unittest.TestCase):
             self.assertEqual(rc_serial, 1)  # the seeded ss/125C failure
             self.assertEqual(rc_parallel, rc_serial)
             self.assertEqual(
-                _table_rows(serial.record_path.read_text()),
-                _table_rows(parallel.record_path.read_text()),
+                record_table_rows(serial.record_path.read_text()),
+                record_table_rows(parallel.record_path.read_text()),
             )
 
     def test_jobs_below_one_is_rejected(self):
@@ -426,7 +418,7 @@ class CheckpointResumeTests(unittest.TestCase):
             # Exactly the four points the first segment never reached.
             self.assertEqual(seen, all_ids[2:])
 
-            rows = _table_rows(h.record_path.read_text())
+            rows = record_table_rows(h.record_path.read_text())
             self.assertEqual(len(rows), len(all_ids))
             self.assertEqual(sum("first segment" in r for r in rows), 2)
             self.assertEqual(sum("second segment" in r for r in rows), 4)
@@ -635,7 +627,7 @@ class CheckpointResumeTests(unittest.TestCase):
             # twice across them.
             self.assertEqual(set(done) & set(seen), set())
             self.assertEqual(sorted(list(done) + seen), sorted(all_ids))
-            rows = _table_rows(h.record_path.read_text())
+            rows = record_table_rows(h.record_path.read_text())
             self.assertEqual(len(rows), len(all_ids))
 
 

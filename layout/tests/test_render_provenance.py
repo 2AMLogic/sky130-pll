@@ -16,22 +16,24 @@ needing `klt` or a PDK install.
 from __future__ import annotations
 
 import argparse
-import importlib.util
+import sys
 import unittest
 from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from scripts.test_support import load_module  # noqa: E402
 
 LAYOUT_BIN = Path(__file__).resolve().parents[1] / "bin"
 
 
-def _load(name: str, filename: str):
-    spec = importlib.util.spec_from_file_location(name, LAYOUT_BIN / filename)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
-render_record = _load("render_record", "render-record.py")
-render_pll_record = _load("render_pll_record", "render-pll-record.py")
+# Deliberately not registered in sys.modules: these are loaded by file path only.
+render_record = load_module("render_record", LAYOUT_BIN / "render-record.py", register=False)
+render_pll_record = load_module(
+    "render_pll_record", LAYOUT_BIN / "render-pll-record.py", register=False
+)
 
 ARGS = argparse.Namespace(record_id="20260101-000000-abc1234")
 KLT_VERSION = "klt 1.2.3"

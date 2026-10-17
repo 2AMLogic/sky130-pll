@@ -23,13 +23,17 @@ Three kinds of case here:
 
 from __future__ import annotations
 
-import importlib.util
 import json
 import sys
 import unittest
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from scripts.test_support import load_module  # noqa: E402
+
 ANALYSIS = REPO_ROOT / "sim" / "pll-lock-mc" / "analysis"
 SCRIPT_PATH = ANALYSIS / "negative_control_reachability.py"
 OUTPUT = ANALYSIS / "negative-control" / "reachability.md"
@@ -40,10 +44,7 @@ ENV_SCRIPT = ANALYSIS / "klt-yield-env.sh"
 # sim/pll-lock-mc/analysis/ is not an importable package (hyphens in the slug),
 # so the module is loaded from its path -- the same pattern
 # sim/tests/test_jitter_floor.py and sim/tests/test_yield_evidence.py use.
-_spec = importlib.util.spec_from_file_location("negative_control_reachability", SCRIPT_PATH)
-ncr = importlib.util.module_from_spec(_spec)
-sys.modules["negative_control_reachability"] = ncr
-_spec.loader.exec_module(ncr)  # type: ignore[union-attr]
+ncr = load_module("negative_control_reachability", SCRIPT_PATH)
 
 
 class CommittedEvidenceTests(unittest.TestCase):

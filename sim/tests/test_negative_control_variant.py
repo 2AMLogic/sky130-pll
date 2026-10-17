@@ -27,38 +27,31 @@ here rather than described in a README:
 
 from __future__ import annotations
 
-import importlib.util
 import json
 import sys
 import unittest
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from scripts.test_support import load_module  # noqa: E402
+
 SIZING = REPO_ROOT / "sim" / "lf-c2-jitter-sensitivity"
 SIZING_C1 = REPO_ROOT / "sim" / "lf-c1-jitter-sensitivity"
 CONTROL = REPO_ROOT / "sim" / "pll-lock-mc-negative-control"
 NOMINAL_MANIFEST = REPO_ROOT / "sim" / "pll-lock-mc" / "testbench" / "tb.json"
 
 
-def _load(name: str, path: Path):
-    """Load a module from its path -- the slugs carry hyphens, so none of these
-    directories is an importable package. Same pattern as
-    `sim/tests/test_jitter_floor.py`."""
-    spec = importlib.util.spec_from_file_location(name, path)
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[name] = module
-    spec.loader.exec_module(module)  # type: ignore[union-attr]
-    return module
-
-
-gen_c2_variant = _load(
+gen_c2_variant = load_module(
     "gen_c2_variant", SIZING / "testbench" / "gen_c2_variant.py"
 )
-gen_c1_variant = _load(
+gen_c1_variant = load_module(
     "gen_c1_variant", SIZING_C1 / "testbench" / "gen_c1_variant.py"
 )
-gen_tb = _load("gen_control_tb", CONTROL / "testbench" / "gen_tb.py")
-yield_evidence = _load(
+gen_tb = load_module("gen_control_tb", CONTROL / "testbench" / "gen_tb.py")
+yield_evidence = load_module(
     "yield_evidence_for_control",
     REPO_ROOT / "sim" / "pll-lock-mc" / "analysis" / "yield_evidence.py",
 )

@@ -16,18 +16,22 @@ The last test checks the real repository: the committed envelope, the
 manifest's pin and the live `measurements/report.md` must all agree.
 """
 
-import hashlib
 import json
 import os
 import pathlib
 import shutil
 import stat
 import subprocess
+import sys
 import tempfile
 import unittest
 
 SIGNOFF_DIR = pathlib.Path(__file__).resolve().parents[1]
 REPO_ROOT = SIGNOFF_DIR.parent
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from scripts.test_support import sha256_tag  # noqa: E402
 
 STUB_KLT = """#!/usr/bin/env bash
 case "${1-}" in
@@ -36,10 +40,6 @@ case "${1-}" in
   *) echo "stub klt: unexpected arguments: $*" >&2; exit 64 ;;
 esac
 """
-
-
-def sha256(data: bytes) -> str:
-    return "sha256:" + hashlib.sha256(data).hexdigest()
 
 
 class GenericEnvelopeGuardTests(unittest.TestCase):
@@ -57,7 +57,7 @@ class GenericEnvelopeGuardTests(unittest.TestCase):
 
         self.report = self.root / "measurements" / "report.md"
         self.report.write_text("# PLL characterization report\n\n| Row | ... |\n")
-        self.pin = sha256(self.report.read_bytes())
+        self.pin = sha256_tag(self.report.read_bytes())
         self.envelope = {
             "schema_version": 1,
             "kind": "generic",
@@ -179,7 +179,7 @@ class GenericEnvelopeGuardTests(unittest.TestCase):
     def test_repinned_manifest_and_envelope_pass_again(self):
         with self.report.open("ab") as handle:
             handle.write(b" ")
-        self.pin = sha256(self.report.read_bytes())
+        self.pin = sha256_tag(self.report.read_bytes())
         self.envelope["provenance"]["input"]["content_hash"] = self.pin
         self._write()
         code, stderr = self._check()
@@ -194,7 +194,7 @@ class CommittedItem8CitationTests(unittest.TestCase):
         self.assertEqual(envelope["kind"], "generic")
         named = envelope["provenance"]["input"]["path"]
         self.assertEqual(named, {"path": "measurements/report.md", "scope": "repo"})
-        live = sha256((REPO_ROOT / named["path"]).read_bytes())
+        live = sha256_tag((REPO_ROOT / named["path"]).read_bytes())
         self.assertEqual(
             entry["content_hash"],
             live,

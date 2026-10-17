@@ -21,7 +21,6 @@ No PDK, ngspice, xschem or `klt` required. Three kinds of test live here:
 
 from __future__ import annotations
 
-import importlib.util
 import json
 import sys
 import tempfile
@@ -29,13 +28,15 @@ import unittest
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from scripts.test_support import load_module  # noqa: E402
+
 SCRIPT_PATH = REPO_ROOT / "signoff" / "item6_preconditions.py"
 DOCUMENT_PATH = REPO_ROOT / "signoff" / "item6-preconditions.md"
 
-_spec = importlib.util.spec_from_file_location("item6_preconditions", SCRIPT_PATH)
-item6 = importlib.util.module_from_spec(_spec)
-sys.modules["item6_preconditions"] = item6
-_spec.loader.exec_module(item6)  # type: ignore[union-attr]
+item6 = load_module("item6_preconditions", SCRIPT_PATH)
 
 
 def facts(**overrides) -> dict:

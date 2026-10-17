@@ -10,7 +10,6 @@ by construction.
 
 from __future__ import annotations
 
-import importlib.util
 import json
 import sys
 import tempfile
@@ -18,21 +17,17 @@ import unittest
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from scripts.test_support import load_module  # noqa: E402
+
 POWER_DIR = REPO_ROOT / "sim" / "power"
 
-
-def _load(name: str):
-    spec = importlib.util.spec_from_file_location(f"power_{name}", POWER_DIR / f"{name}.py")
-    mod = importlib.util.module_from_spec(spec)
-    sys.modules[f"power_{name}"] = mod
-    spec.loader.exec_module(mod)  # type: ignore[union-attr]
-    return mod
-
-
-reduce_mod = _load("reduce")
+reduce_mod = load_module("power_reduce", POWER_DIR / "reduce.py")
 sys.path.insert(0, str(POWER_DIR))
-mint_mod = _load("mint")
-shard_mod = _load("shard")
+mint_mod = load_module("power_mint", POWER_DIR / "mint.py")
+shard_mod = load_module("power_shard", POWER_DIR / "shard.py")
 
 VDD = 1.8
 DT = 0.05e-9
