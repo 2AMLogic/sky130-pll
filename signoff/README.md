@@ -101,6 +101,37 @@ not by `klt sta`/`klt functional-verification`/`klt place-and-route` outputs
 this repo has no flow to produce — but the *reason* differs from the sub-case
 as written, so it is stated here rather than borrowed.
 
+## Items 1, 9, 10: inventories awaiting `klt signoff --attest`
+
+Items 1, 9 and 10 are graded `unmet` / `no_evidence` although the substance is
+committed, because the manifest cites no artifact-anchored envelope for them.
+Those envelopes are meant to be tool-produced by `klt signoff --attest
+{1,9,10} --inventory <file>` (klayout-tools#2844), which landed after the
+0.7.0 release this repo pins (`signoff/run-signoff.sh`, `ci.yml`,
+`scripts/audit-headless.sh`). `klt signoff --help` at 0.7.0 shows no
+`--attest`.
+
+**Decision: wait for a klt release that contains `--attest`.** Nothing here
+hand-writes an envelope or a hash; a repo-local script faking one would defeat
+the tool-produced guarantee. What is committed now:
+
+- `partition_boundary` in `block-manifest.json` (same files as the section
+  above), which the report carries onto every partitioned row.
+- `signoff/inventory/` -- one inventory per attested item (`item1-analog`,
+  `item1-digital`, `item9-analog`, `item9-digital`, `item10`) listing the exact
+  files, bench directories, cold-start and CI commands each claims. The layout
+  is provisional (no klt inventory schema exists at the pin) and
+  `signoff/tests/test_inventories.py` checks every listed path exists.
+  `design/lock-detector` has no block-level schematic and is not inventoried;
+  item 2 is out of scope (routed top level not LVS-clean, #18).
+
+When a release lands: bump the three pins together, check with
+`uvx --from "klayout-tools==X.Y.Z" klt ...`, conform the inventories to the
+real schema, produce the envelopes into `signoff/evidence/`, pin their hashes
+in the manifest, and add the `--attest --check` re-attestation to
+`run-signoff.sh --check` (already run by CI). The open_pdks re-pin (#295-#299)
+changes `sim/pdk.json`, so it will turn item 9 stale by design.
+
 ## Item 3 (met, both partitions), and what it does and does not say
 
 Item 3 cites

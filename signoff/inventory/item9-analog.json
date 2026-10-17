@@ -1,0 +1,33 @@
+{
+  "inventory_version": 0,
+  "status": "provisional-awaiting-klt-attest",
+  "t1_item": 9,
+  "partition": "analog",
+  "bench_dirs": [
+    "sim/pfd-cp",
+    "sim/pfd-cp-resolution",
+    "sim/loop-ac",
+    "sim/loop-ripple",
+    "sim/pll",
+    "sim/pll-lock",
+    "sim/pll-lock-1mhz",
+    "sim/pll-lock-25mhz",
+    "sim/pll-lock-mc",
+    "sim/pll-lock-mc-negative-control",
+    "sim/clk-output",
+    "sim/power",
+    "sim/jitter-calibration",
+    "sim/jitter-floor",
+    "sim/integrator-floor",
+    "sim/lf-c1-jitter-sensitivity",
+    "sim/lf-c2-jitter-sensitivity"
+  ],
+  "files": [
+    "sim/selftest.sh",
+    "sim/pdk.json"
+  ],
+  "cold_start_commands": [
+    "bash sim/selftest.sh"
+  ],
+  "note": "Provisional repo-owned layout: klt 0.7.0 (the pin) has no `klt signoff --attest`, so no klt inventory schema is available to follow. See signoff/README.md \u00a7 'Items 1, 9, 10: inventories awaiting `klt signoff --attest`'."
+}

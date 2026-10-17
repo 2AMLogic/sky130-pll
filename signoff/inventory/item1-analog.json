@@ -1,0 +1,26 @@
+{
+  "inventory_version": 0,
+  "status": "provisional-awaiting-klt-attest",
+  "t1_item": 1,
+  "partition": "analog",
+  "files": [
+    "design/vco/vco_ring5.sch",
+    "design/vco/netlist/vco_ring5.spice",
+    "design/pfd-cp/pfd_cp.sch",
+    "design/pfd-cp/netlist/pfd_cp.spice",
+    "design/loop-filter/loop_filter.sch",
+    "design/loop-filter/netlist/loop_filter.spice",
+    "design/clk-buf/clk_buf.sch",
+    "design/clk-buf/netlist/clk_buf.spice",
+    "design/top/top.sch",
+    "design/top/netlist/top.spice"
+  ],
+  "freshness_check": "python3 signoff/design-snapshot-consistency.py",
+  "partition_notes": [
+    "design/top integrates the divider (it instantiates sky130_fd_sc_hd cells) and is listed here, under the integration level; the divider's own sources are inventoried under item1-digital."
+  ],
+  "out_of_scope": [
+    "design/lock-detector has no .sch of its own at block level (Python reference plus timing/ schematics); not inventoried until the klt inventory schema is known."
+  ],
+  "note": "Provisional repo-owned layout: klt 0.7.0 (the pin) has no `klt signoff --attest`, so no klt inventory schema is available to follow. See signoff/README.md \u00a7 'Items 1, 9, 10: inventories awaiting `klt signoff --attest`'."
+}
