@@ -2,6 +2,13 @@
 
 Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
+### 2026-10-17
+
+- **PR #315**: refactor(sim): share klt batch capacity-retry submit across runners
+- **PR #313**: refactor(sim): share record-table helpers across analysis scripts
+- **Issue #314** (closed): Consolidate triplicated klt-sim capacity-retry submit loop (fmax_klt / cp_klt / locktiming_cli)
+- **Issue #312** (closed): Consolidate helpers copy-pasted across the sim/*/analysis scripts
+
 ### 2026-10-16
 
 - **PR #306**: Bump Repo Skills 0.24.1 -> 0.24.3
