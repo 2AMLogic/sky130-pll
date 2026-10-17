@@ -59,6 +59,8 @@ def _load(name: str, path: Path):
 gen = _load("gen_pwl_clock", GENERATOR_PATH)
 calibration = _load("calibration", ANALYSIS_PATH)
 
+import analysis_common  # noqa: E402  (on sys.path once the script above has loaded)
+
 
 def committed_rows() -> list:
     return calibration._parse_all(EXPERIMENT, calibration.parse_calibration_record)
@@ -584,13 +586,13 @@ class ArithmeticTests(unittest.TestCase):
         )
 
     def test_spice_literals_parse_the_suffixes_this_evidence_uses(self):
-        self.assertAlmostEqual(calibration.spice_literal("200p"), 200e-12)
-        self.assertAlmostEqual(calibration.spice_literal("3.9170n"), 3.9170e-9)
-        self.assertAlmostEqual(calibration.spice_literal("1.2u"), 1.2e-6)
-        self.assertAlmostEqual(calibration.spice_literal("1.8"), 1.8)
-        self.assertAlmostEqual(calibration.spice_literal("0"), 0.0)
+        self.assertAlmostEqual(analysis_common.spice_literal("200p"), 200e-12)
+        self.assertAlmostEqual(analysis_common.spice_literal("3.9170n"), 3.9170e-9)
+        self.assertAlmostEqual(analysis_common.spice_literal("1.2u"), 1.2e-6)
+        self.assertAlmostEqual(analysis_common.spice_literal("1.8"), 1.8)
+        self.assertAlmostEqual(analysis_common.spice_literal("0"), 0.0)
         with self.assertRaises(calibration.AnalysisError):
-            calibration.spice_literal("not-a-number")
+            analysis_common.spice_literal("not-a-number")
 
 
 if __name__ == "__main__":
