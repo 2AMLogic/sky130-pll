@@ -1,0 +1,22 @@
+{
+  "inventory_version": 0,
+  "status": "provisional-awaiting-klt-attest",
+  "t1_item": 9,
+  "partition": "digital",
+  "bench_dirs": [
+    "sim/divider",
+    "sim/divider-fmax",
+    "sim/divider-n4",
+    "sim/divider-n5",
+    "sim/divider-n63",
+    "sim/divider-n64"
+  ],
+  "files": [
+    "sim/selftest.sh",
+    "sim/pdk.json"
+  ],
+  "cold_start_commands": [
+    "bash sim/selftest.sh"
+  ],
+  "note": "Provisional repo-owned layout: klt 0.7.0 (the pin) has no `klt signoff --attest`, so no klt inventory schema is available to follow. See signoff/README.md \u00a7 'Items 1, 9, 10: inventories awaiting `klt signoff --attest`'."
+}

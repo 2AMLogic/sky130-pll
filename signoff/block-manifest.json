@@ -1,6 +1,10 @@
 {
   "block": "sky130-pll",
   "kind": "mixed-signal",
+  "partition_boundary": {
+    "digital": "The programmable integer-N feedback divider, design/divider/divider_intN.sch (netlist design/divider/netlist/divider_intN.spice), every gate of which is an instance of a sky130_fd_sc_hd standard cell. Hand-captured full-custom schematic: no RTL, no synthesis, no place-and-route.",
+    "analog": "Everything else: the ring-oscillator VCO (design/vco/vco_ring5.sch), the tri-state PFD and charge pump (design/pfd-cp/pfd_cp.sch), and the passive loop filter (design/loop-filter/loop_filter.sch)."
+  },
   "evidence": {
     "3": {
       "file": "layout/pll/reports/20260924-041509-c53e7c4/drc.json",

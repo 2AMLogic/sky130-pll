@@ -1,0 +1,12 @@
+{
+  "inventory_version": 0,
+  "status": "provisional-awaiting-klt-attest",
+  "t1_item": 1,
+  "partition": "digital",
+  "files": [
+    "design/divider/divider_intN.sch",
+    "design/divider/netlist/divider_intN.spice"
+  ],
+  "freshness_check": "python3 signoff/design-snapshot-consistency.py",
+  "note": "Provisional repo-owned layout: klt 0.7.0 (the pin) has no `klt signoff --attest`, so no klt inventory schema is available to follow. See signoff/README.md \u00a7 'Items 1, 9, 10: inventories awaiting `klt signoff --attest`'."
+}

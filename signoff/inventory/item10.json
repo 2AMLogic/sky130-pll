@@ -1,0 +1,21 @@
+{
+  "inventory_version": 0,
+  "status": "provisional-awaiting-klt-attest",
+  "t1_item": 10,
+  "files": [
+    "README.md",
+    "LICENSE",
+    ".github/workflows/ci.yml"
+  ],
+  "dirs": [
+    "spec"
+  ],
+  "ci_commands": [
+    "npm run check:ci",
+    "bash signoff/run-signoff.sh --check"
+  ],
+  "excluded_commands": [
+    "PDK smoke job (ci.yml, label/schedule-gated; needs the PDK)"
+  ],
+  "note": "Provisional repo-owned layout: klt 0.7.0 (the pin) has no `klt signoff --attest`, so no klt inventory schema is available to follow. See signoff/README.md \u00a7 'Items 1, 9, 10: inventories awaiting `klt signoff --attest`'."
+}
