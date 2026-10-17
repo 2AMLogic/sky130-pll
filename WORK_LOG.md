@@ -4,6 +4,9 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 ### 2026-10-17
 
+- **PR #330**: feat(signoff): declare partition boundary and inventory items 1, 9, 10
+- **PR #328**: refactor: share test module loader, table-row and sha256 helpers
+- **Issue #326** (closed): Consolidate the importlib path-loader copied across 13 test files
 - **PR #325**: refactor: share injected_from_pwl and parse_floor_records via analysis_common
 - **Issue #324** (closed): Share injected_from_pwl and parse_floor_records via sim/analysis_common (residual duplicates)
 - **PR #322**: refactor: share parse_floor_record via sim/analysis_common
