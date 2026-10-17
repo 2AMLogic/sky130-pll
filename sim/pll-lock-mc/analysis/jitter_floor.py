@@ -120,13 +120,15 @@ if str(_SIM_DIR) not in sys.path:
 from analysis_common import (  # noqa: E402
     AnalysisError,
     JITTER_IN_DETAIL_RE,
+    PVT_HEADER,
     REPO_ROOT,
+    VARIANT_RE,
     cells as _cells,
     pct as _pct,
     ps as _ps,
     record_id as _record_id,
+    parse_floor_record,
     point_netlist,
-    pulse_floor_point,
     pwl_points,
     repo_rel as _repo_rel,
     tran_card,
@@ -148,7 +150,6 @@ ROW_9_MAX_FRAC = 0.01
 #: than the spacing between any two variants either family runs.
 PERIOD_MATCH_TOL = 1e-3
 
-_VARIANT_RE = re.compile(r"THIS RECORD'S VARIANT: (?P<variant>[A-Za-z0-9]+) --")
 _MC_JITTER_CELL_RE = re.compile(r"^(?P<pct>[\d.]+)% \((?P<cycles>\d+) cycles\)$")
 _FREQ_MHZ_RE = re.compile(r"^(?P<mhz>[\d.]+) MHz$")
 _MC_HEADER = [
@@ -162,7 +163,6 @@ _MC_HEADER = [
     "Period jitter",
     "Detail",
 ]
-_PVT_HEADER = ["Corner", "Temp (C)", "Supply (V)", "Verdict", "f_out", "Duty", "Detail"]
 
 
 def _table_rows(text: str, header: list[str]) -> list[list[str]]:
@@ -215,44 +215,6 @@ def parse_mc_record(path: Path) -> dict:
     if not draws:
         raise AnalysisError(f"{path}: no locked draw carries a period-jitter figure")
     return {"record_id": _record_id(text, path), "path": path, "draws": draws}
-
-
-def parse_floor_record(record_path: Path, experiment: Path) -> dict:
-    """One `sim/jitter-floor` variant: its reported floor and what produced it."""
-    text = record_path.read_text()
-    record_id = _record_id(text, record_path)
-
-    variant = _VARIANT_RE.search(text)
-    if variant is None:
-        raise AnalysisError(
-            f"{record_path}: no `THIS RECORD'S VARIANT: <id> --` line -- is this a "
-            "sim/jitter-floor record?"
-        )
-
-    rows = _table_rows(text, _PVT_HEADER)
-    if len(rows) != 1:
-        raise AnalysisError(
-            f"{record_path}: expected exactly one PVT point, found {len(rows)}"
-        )
-    detail = rows[0][6]
-    jitter = JITTER_IN_DETAIL_RE.search(detail)
-    if jitter is None:
-        raise AnalysisError(f"{record_path}: point reports no period jitter: {detail!r}")
-
-    point = pulse_floor_point(experiment, record_id)
-
-    return {
-        "record_id": record_id,
-        "path": record_path,
-        "variant": variant.group("variant"),
-        "floor_frac": float(jitter.group("pct")) / 100.0,
-        "cycles": int(jitter.group("cycles")),
-        "period_s": point["period_s"],
-        "edge_s": point["edge_s"],
-        "step_s": point["step_s"],
-        "stop_s": point["stop_s"],
-        "netlist": _repo_rel(point["netlist_path"]),
-    }
 
 
 def parse_floor_records(experiment: Path) -> list[dict]:
@@ -318,14 +280,14 @@ def parse_calibration_record(record_path: Path, experiment: Path) -> dict:
     text = record_path.read_text()
     record_id = _record_id(text, record_path)
 
-    variant = _VARIANT_RE.search(text)
+    variant = VARIANT_RE.search(text)
     if variant is None:
         raise AnalysisError(
             f"{record_path}: no `THIS RECORD'S VARIANT: <id> --` line -- is this a "
             "sim/jitter-calibration record?"
         )
 
-    rows = _table_rows(text, _PVT_HEADER)
+    rows = _table_rows(text, PVT_HEADER)
     if len(rows) != 1:
         raise AnalysisError(
             f"{record_path}: expected exactly one PVT point, found {len(rows)}"

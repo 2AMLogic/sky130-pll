@@ -96,6 +96,12 @@ def ps(seconds: float | None) -> str:
 _SUFFIXES = {"f": 1e-15, "p": 1e-12, "n": 1e-9, "u": 1e-6, "m": 1e-3}
 _LITERAL_RE = re.compile(r"^([+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)\s*([a-zA-Z]*)$")
 
+#: The `Record`-level header of the one-row per-point PVT result table.
+PVT_HEADER = ["Corner", "Temp (C)", "Supply (V)", "Verdict", "f_out", "Duty", "Detail"]
+#: The `THIS RECORD'S VARIANT: <id> --` line a jitter-floor / jitter-calibration
+#: record carries in its manifest note.
+VARIANT_RE = re.compile(r"THIS RECORD'S VARIANT: (?P<variant>[A-Za-z0-9]+) --")
+
 #: The period-jitter figure a floor/calibration record's `Detail` cell reports.
 JITTER_IN_DETAIL_RE = re.compile(
     r"period jitter (?P<pct>[\d.]+)% RMS over (?P<cycles>\d+) cycles"
@@ -212,3 +218,34 @@ def pwl_points(netlist: str, path: Path) -> list[tuple[float, float]]:
     if any(b <= a for a, b in zip(times, times[1:])):
         raise AnalysisError(f"{path}: `pwl(` times are not strictly increasing")
     return points
+
+
+def parse_floor_record(record_path: Path, experiment: Path) -> dict:
+    """One `sim/jitter-floor` null-control variant: its reported floor and what
+    produced it (period, edge and grid step read from the record's own
+    committed per-point netlist)."""
+    text = record_path.read_text()
+    rid = record_id(text, record_path)
+    variant = VARIANT_RE.search(text)
+    if variant is None:
+        raise AnalysisError(
+            f"{record_path}: no `THIS RECORD'S VARIANT: <id> --` line -- is this a "
+            "sim/jitter-floor record?"
+        )
+    detail = single_point_detail(text, record_path, PVT_HEADER)
+    jitter = JITTER_IN_DETAIL_RE.search(detail)
+    if jitter is None:
+        raise AnalysisError(f"{record_path}: point reports no period jitter: {detail!r}")
+    point = pulse_floor_point(experiment, rid)
+    return {
+        "record_id": rid,
+        "path": record_path,
+        "variant": variant.group("variant"),
+        "floor_frac": float(jitter.group("pct")) / 100.0,
+        "cycles": int(jitter.group("cycles")),
+        "period_s": point["period_s"],
+        "edge_s": point["edge_s"],
+        "step_s": point["step_s"],
+        "stop_s": point["stop_s"],
+        "netlist": repo_rel(point["netlist_path"]),
+    }

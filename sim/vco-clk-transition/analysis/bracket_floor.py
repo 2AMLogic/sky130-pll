@@ -64,14 +64,12 @@ if str(_SIM_DIR) not in sys.path:
 
 from analysis_common import (  # noqa: E402
     AnalysisError,
-    JITTER_IN_DETAIL_RE,
     REPO_ROOT,
     pct as _pct,
     record_id as _record_id,
     point_netlist,
-    pulse_floor_point,
+    parse_floor_record,
     repo_rel as _repo_rel,
-    single_point_detail,
     tran_card,
 )
 
@@ -83,8 +81,6 @@ _TRANSITION_DETAIL_RE = re.compile(
     r"transition time: rise (?P<rise>[\d.]+) ps \(n=(?P<n_rise>\d+)\), "
     r"fall (?P<fall>[\d.]+) ps \(n=(?P<n_fall>\d+)\)"
 )
-_FLOOR_VARIANT_RE = re.compile(r"THIS RECORD'S VARIANT: (?P<variant>[A-Za-z0-9]+) --")
-_PVT_HEADER_NO_TRANSITION = ["Corner", "Temp (C)", "Supply (V)", "Verdict", "f_out", "Duty", "Detail"]
 
 
 def parse_transition_record(experiment: Path) -> dict:
@@ -116,36 +112,6 @@ def parse_transition_record(experiment: Path) -> dict:
         "fall_s": float(m.group("fall")) * 1e-12,
         "n_fall": int(m.group("n_fall")),
         "own_step_s": own_step_s,
-    }
-
-
-def parse_floor_record(record_path: Path, experiment: Path) -> dict:
-    """One `sim/jitter-floor` variant -- its floor, period, edge and grid step,
-    all read from that record and its own committed per-point netlist (the
-    same reading convention `sim/jitter-calibration/analysis/calibration.py`
-    and `sim/pll-lock-mc/analysis/jitter_floor.py` use)."""
-    text = record_path.read_text()
-    record_id = _record_id(text, record_path)
-    variant = _FLOOR_VARIANT_RE.search(text)
-    if variant is None:
-        raise AnalysisError(
-            f"{record_path}: no `THIS RECORD'S VARIANT: <id> --` line -- is this a "
-            "sim/jitter-floor record?"
-        )
-    detail = single_point_detail(text, record_path, _PVT_HEADER_NO_TRANSITION)
-    floor_frac_m = JITTER_IN_DETAIL_RE.search(detail)
-    if floor_frac_m is None:
-        raise AnalysisError(f"{record_path}: point reports no period jitter")
-
-    point = pulse_floor_point(experiment, record_id)
-    return {
-        "record_id": record_id,
-        "variant": variant.group("variant"),
-        "floor_frac": float(floor_frac_m.group("pct")) / 100.0,
-        "cycles": int(floor_frac_m.group("cycles")),
-        "period_s": point["period_s"],
-        "edge_s": point["edge_s"],
-        "step_s": point["step_s"],
     }
 
 
