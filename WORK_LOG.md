@@ -4,6 +4,7 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 ### 2026-10-17
 
+- **PR #335**: docs(spec): add DR-009 recording phase-output scope and consumer clock-gap dispositions
 - **PR #330**: feat(signoff): declare partition boundary and inventory items 1, 9, 10
 - **PR #328**: refactor: share test module loader, table-row and sha256 helpers
 - **Issue #326** (closed): Consolidate the importlib path-loader copied across 13 test files

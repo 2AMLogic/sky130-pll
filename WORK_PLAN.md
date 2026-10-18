@@ -25,7 +25,6 @@ _None._
 Human-approved issues ready for implementation (`loom:issue`).
 
 - **#304**: layout: draw clk_buf and re-mint the top-level layout record against the buffered top (split from #303)
-- **#332**: Clock phase/output gaps for a DDR memory-controller consumer (90 deg or 2x, buffered CLK, band covers 25/50 MHz)
 
 ## In Progress
 
@@ -84,7 +83,7 @@ _None._
 | Operator merge-risk holds | 1 |
 | Very important | 0 |
 | Important | 2 |
-| Ready (`loom:issue`) | 2 |
+| Ready (`loom:issue`) | 1 |
 | In Progress (`loom:building`) | 0 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 1 |
