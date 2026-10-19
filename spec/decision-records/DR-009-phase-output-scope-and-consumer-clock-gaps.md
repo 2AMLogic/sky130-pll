@@ -84,3 +84,9 @@ This record is `proposed`; it takes effect only if the operator accepts it.
 
 Stays `proposed` until the operator accepts or rejects it on #332. Accepting it
 does not ratify row 2, 14 or 15; those close through their own records.
+
+**Follow-on (2026-10-19).** The operator's response on #332 requested a
+proposal for an additional phase or multiplied-clock output rather than
+accepting the single-output default above. That proposal is `DR-010`
+(`DR-010-phase-or-multiplied-output-proposal.md`, proposed). The gap 1 default
+in this record is not accepted by that response and is kept here as history.
