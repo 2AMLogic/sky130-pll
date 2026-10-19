@@ -25,13 +25,12 @@ _None._
 Human-approved issues ready for implementation (`loom:issue`).
 
 - **#304**: layout: draw clk_buf and re-mint the top-level layout record against the buffered top (split from #303)
-- **#339**: Propose a phase-shifted or multiplied-clock output interface for v1 (follow-on to #332)
 
 ## In Progress
 
 Issues currently being built (`loom:building`).
 
-_None._
+- **#333**: Requirement from sky130-lvds-tx: 500 MHz DDR bit clock, 50 ± 2.5 % duty, tight jitter
 
 ## PRs Awaiting Review
 
@@ -44,6 +43,7 @@ _None._
 PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
 - **#299**: build: re-pin open_pdks to f6eeac7 and resolve the PDK via ciel with a SOURCES revision check
+- **#342**: docs: add DR-011 proposed bounded feasibility plan for a 500 MHz output
 
 ## Proposed
 
@@ -66,7 +66,6 @@ Issues carrying `loom:curated`.
 - **#296**: Re-pin open_pdks to f6eeac7 and move PDK install/search to ciel 2.6.1 (part of #295) *(curated)*
 - **#303**: sim: paired buffered-CLK closed-loop runs and layout/LVS for clk_buffer (follow-up to #232) *(curated)*
 - **#329**: Declare the partition boundary and cite T1 items 1, 9 and 10 with artifact-anchored evidence *(curated)*
-- **#332**: Clock phase/output gaps for a DDR memory-controller consumer (90 deg or 2x, buffered CLK, band covers 25/50 MHz) *(curated)*
 - **#333**: Requirement from sky130-lvds-tx: 500 MHz DDR bit clock, 50 ± 2.5 % duty, tight jitter *(curated)*
 
 ## Proposed (Architect / Hermit)
@@ -85,11 +84,11 @@ _None._
 | Operator merge-risk holds | 1 |
 | Very important | 0 |
 | Important | 2 |
-| Ready (`loom:issue`) | 2 |
-| In Progress (`loom:building`) | 0 |
+| Ready (`loom:issue`) | 1 |
+| In Progress (`loom:building`) | 1 |
 | PRs awaiting review | 0 |
-| Approved PRs awaiting merge | 1 |
-| Curated | 19 |
+| Approved PRs awaiting merge | 2 |
+| Curated | 18 |
 | Architect / Hermit proposals | 2 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
