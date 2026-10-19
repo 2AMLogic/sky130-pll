@@ -15,6 +15,7 @@ One file per decision, DR-NNN-<slug>.md. See CLAUDE.md.
 | [DR-007](DR-007-lock-detector-provisional-contract.md) | Provisional `LOCK` detector contract (row 16 stays DRAFT) | proposed |
 | [DR-008](DR-008-clk-output-load-and-buffer-scope.md) | Provisional 1 pF `CLK` characterization load and buffered-output regression scope (rows 14/15 stay DRAFT) | proposed |
 | [DR-009](DR-009-phase-output-scope-and-consumer-clock-gaps.md) | Scope disposition of a phase-shifted / multiplied clock output and related consumer clock gaps (row 2 stays DRAFT) | proposed |
+| [DR-010](DR-010-500mhz-feasibility-plan.md) | Bounded feasibility plan for a proposed 500 MHz clock output (rows 2/14 stay DRAFT, row 9 unchanged; no stage authorized) | proposed |
 
 The "Status" column is authoritative only for records added with this index;
 for earlier records, the record's own header is the source of truth.
