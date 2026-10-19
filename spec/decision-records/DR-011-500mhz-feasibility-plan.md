@@ -1,4 +1,4 @@
-# DR-010: bounded feasibility plan for a proposed 500 MHz clock output
+# DR-011: bounded feasibility plan for a proposed 500 MHz clock output
 
 - **Status**: proposed. This record is a **plan**. It does **not** ratify or
   edit any spec row, authorizes no simulation, spend or circuit change, and
