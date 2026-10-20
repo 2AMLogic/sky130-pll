@@ -5,7 +5,7 @@
 
 Judge-approved PRs under a hold (`loom:blocked` or `loom:operator`) — only a human merge decision is missing.
 
-- **#345**: sim: add behavioral study of the I/Q /2 quadrature output and correct proposal
+_None._
 
 ## Very Important
 
@@ -29,7 +29,7 @@ Human-approved issues ready for implementation (`loom:issue`).
 
 Issues currently being built (`loom:building`).
 
-- **#344**: Test proposed quadrature clock timing with a bounded behavioral model (#332 / DR-010)
+- **#298**: Re-qualify cited layout reference records under open_pdks f6eeac7 (part of #295)
 
 ## PRs Awaiting Review
 
@@ -41,7 +41,7 @@ _None._
 
 PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
-- **#345**: sim: add behavioral study of the I/Q /2 quadrature output and correct proposal
+_None._
 
 ## Proposed
 
@@ -65,7 +65,6 @@ Issues carrying `loom:curated`.
 - **#298**: Re-qualify cited layout reference records under open_pdks f6eeac7 (part of #295) *(curated)*
 - **#303**: sim: paired buffered-CLK closed-loop runs and layout/LVS for clk_buffer (follow-up to #232) *(curated)*
 - **#329**: Declare the partition boundary and cite T1 items 1, 9 and 10 with artifact-anchored evidence *(curated)*
-- **#344**: Test proposed quadrature clock timing with a bounded behavioral model (#332 / DR-010) *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -80,14 +79,14 @@ _None._
 
 | Bucket | Count |
 |------|-------|
-| Operator merge-risk holds | 1 |
+| Operator merge-risk holds | 0 |
 | Very important | 0 |
 | Important | 1 |
 | Ready (`loom:issue`) | 1 |
 | In Progress (`loom:building`) | 1 |
 | PRs awaiting review | 0 |
-| Approved PRs awaiting merge | 1 |
-| Curated | 19 |
+| Approved PRs awaiting merge | 0 |
+| Curated | 18 |
 | Architect / Hermit proposals | 2 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
