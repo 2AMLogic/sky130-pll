@@ -3,11 +3,16 @@
 Resolution order (mirrors 2AMLogic/sky130-bandgap's sim/bin/pdk-env.sh
 convention, source commit a8c4147a6cdf7b7fad467417cbc7b83178ccc9c6):
 
-    PDK_ROOT env  -> `volare path`        -> sim/pdk.json's default_pdk_root
+    PDK_ROOT env  -> `ciel path`          -> sim/pdk.json's default_pdk_root (~/.ciel)
+                                          -> legacy ~/.volare (only if ~/.ciel has
+                                             no variant; flagged as a mismatch unless
+                                             its revision equals the pin)
     PDK env       -> sim/pdk.json's variant
 
-The resolved install is checked against sim/pdk.json's pinned open_pdks
-commit; a mismatch is reported (not silently ignored) so a record can note it.
+The resolved install's open_pdks revision (the variant's `SOURCES` file, else
+the `versions/<hash>` path component) is checked against sim/pdk.json's pinned
+open_pdks commit; a mismatch is reported (not silently ignored) so a record
+can note it, and the corner runner refuses it without --allow-pdk-mismatch.
 """
 
 from __future__ import annotations
@@ -45,13 +50,18 @@ def _load_pdk_json(repo_root: Path) -> dict:
         return json.load(f)
 
 
-def _volare_path() -> Path | None:
-    volare = shutil.which("volare")
-    if volare is None:
+# Retired PDK manager's default store. Historical: searched last, and only so a
+# stray tree is *visibly* flagged as a revision mismatch instead of going unseen.
+_LEGACY_PDK_ROOT = Path("~/.volare")  # historical (volare retired); see module docstring
+
+
+def _ciel_path() -> Path | None:
+    ciel = shutil.which("ciel")
+    if ciel is None:
         return None
     try:
         out = subprocess.run(
-            [volare, "path"], capture_output=True, text=True, timeout=15
+            [ciel, "path"], capture_output=True, text=True, timeout=15
         )
     except (OSError, subprocess.TimeoutExpired):
         return None
@@ -61,12 +71,27 @@ def _volare_path() -> Path | None:
     return Path(candidate).expanduser() if candidate else None
 
 
-def _commit_from_variant_dir(variant_dir: Path) -> str | None:
-    """Extract the open_pdks commit hash from a volare-managed symlink target.
+def _commit_from_sources(variant_dir: Path) -> str | None:
+    """Read the open_pdks revision from the variant's `SOURCES` file.
 
-    volare lays out `<root>/volare/<family>/versions/<commit>/<variant>`, and
-    `<root>/<variant>` is a symlink into it. Parse the real path rather than
-    trusting the symlink name.
+    open_pdks writes `<variant>/SOURCES` with an `open_pdks <hash>` line; this
+    is the authoritative statement of what the tree was built from.
+    """
+    try:
+        text = (variant_dir / "SOURCES").read_text()
+    except OSError:
+        return None
+    m = re.search(r"^\s*open_pdks\s+([0-9a-fA-F]{7,40})\b", text, re.MULTILINE)
+    return m.group(1).lower() if m else None
+
+
+def _commit_from_variant_dir(variant_dir: Path) -> str | None:
+    """Extract the open_pdks commit hash from a managed-store symlink target.
+
+    The PDK manager lays out `<root>/<store>/<family>/versions/<commit>/<variant>`
+    (ciel: `<store>` is `ciel`), and `<root>/<variant>` is a symlink into it.
+    Parse the real path rather than trusting the symlink name. This is the
+    fallback for `_commit_from_sources`.
     """
     try:
         real = variant_dir.resolve()
@@ -83,13 +108,16 @@ def resolve(repo_root: Path) -> ResolvedPdk:
 
     pdk_root_env = os.environ.get("PDK_ROOT")
     pdk_env = os.environ.get("PDK")
+    resolved_variant = pdk_env or variant
 
     if pdk_root_env:
         pdk_root = Path(pdk_root_env).expanduser()
     else:
-        pdk_root = _volare_path() or Path(pdk_json["default_pdk_root"]).expanduser()
+        pdk_root = _ciel_path() or Path(pdk_json["default_pdk_root"]).expanduser()
+        legacy_root = _LEGACY_PDK_ROOT.expanduser()
+        if not (pdk_root / resolved_variant).is_dir() and (legacy_root / resolved_variant).is_dir():
+            pdk_root = legacy_root  # surfaces as a mismatch below unless it is the pin
 
-    resolved_variant = pdk_env or variant
     variant_dir = pdk_root / resolved_variant
 
     if not variant_dir.is_dir():
@@ -106,8 +134,8 @@ def resolve(repo_root: Path) -> ResolvedPdk:
     if not xschem_rc.is_file():
         raise PdkNotFoundError(f"PDK found at {variant_dir} but no xschem rc at {xschem_rc}")
 
-    resolved_commit = _commit_from_variant_dir(variant_dir)
-    mismatch = resolved_commit is not None and resolved_commit != pinned_commit
+    resolved_commit = _commit_from_sources(variant_dir) or _commit_from_variant_dir(variant_dir)
+    mismatch = resolved_commit is not None and resolved_commit.lower() != pinned_commit.lower()
 
     return ResolvedPdk(
         pdk_root=pdk_root,
