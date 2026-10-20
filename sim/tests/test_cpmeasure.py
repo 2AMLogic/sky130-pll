@@ -14,7 +14,6 @@ anything the reducer produced.
 from __future__ import annotations
 
 import copy
-import math
 import random
 import sys
 import unittest

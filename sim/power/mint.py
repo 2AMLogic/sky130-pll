@@ -312,9 +312,6 @@ def at_250(all_data: dict, keys: list) -> list:
     lines = ["  Per-block at the sim/pll-lock operating frequency (250 MHz output / divider input); "
              "NOT summed (no N=25 divider and no 10 MHz PFD point was simulated):", "",
              "  | Block | Case | I typ | P typ | P max over grid | max at |", "  |---|---|---|---|---|---|"]
-    entries = []
-    for key in keys:
-        pass
     # VCO interpolated at 250 MHz
     def vco_val(k):
         i, _ = R.interpolate_at_frequency(vco_points(all_data["vco"], k), F_LOCK_OUT_HZ)

@@ -194,7 +194,6 @@ def pfd_block() -> dict:
     # Stage boundaries sit at 32 ns mod 40 ns (and 872 ns mod 1000 ns): REF and
     # every DIV train are low there, so gating never truncates a pulse.
     t = 112.0
-    specs = []  # (tag, f_hz, lag_ns, length_ns, settle_periods, cycles)
     plan = [
         ("25m_lock", 25e6, 0.1, 10, 12),
         ("25m_acq", 25e6, 10.0, 10, 12),
@@ -387,7 +386,6 @@ def to_body(text: str) -> str:
 
 
 def request_for(b: dict, body_name: str) -> dict:
-    stop_s = max(s["t1"] for s in b["stages"])
     measurements = []
     for s in b["stages"]:
         # Fixed-window mean of i(V1) over the last half of each stage: a coarse
