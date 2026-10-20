@@ -228,3 +228,6 @@ Issue #333 stays open for the later interface-scope disposition. Re-check the
 evidence table's commit pin (`173138f`) and the state of #232/#303/#304 when a
 campaign request is raised; both can drift. The ratifying action for any
 scope outcome is a separate decision record on reviewed evidence.
+
+A proposed, unexecuted Stage A campaign request is in
+`docs/500mhz-stage-a-campaign-request.md`; it authorizes nothing.
