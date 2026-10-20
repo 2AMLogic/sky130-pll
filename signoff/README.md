@@ -230,7 +230,7 @@ Item 8 is cited under the key `"8.analog"` at
 `signoff/evidence/characterization-report.json`, a `"kind": "generic"`
 envelope — the only kind item 8 accepts at the pinned `klt` — whose
 `provenance.input.content_hash` and the manifest's pin are both
-`sha256:cdc2c4cc6eb98084fb8e0ccd050568a2bb71e64381c53bfd827c4b151869af9d`, the
+`sha256:9342763c067772a2f2bae175afdc2bbcc7724c3f869e5412773e95fbb7f65584`, the
 SHA-256 of the committed `measurements/report.md`. Guard 1 re-hashes that file
 from its live bytes on every run.
 

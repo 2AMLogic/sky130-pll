@@ -5,7 +5,6 @@
 
 Judge-approved PRs under a hold (`loom:blocked` or `loom:operator`) — only a human merge decision is missing.
 
-- **#299**: build: re-pin open_pdks to f6eeac7 and resolve the PDK via ciel with a SOURCES revision check
 - **#345**: sim: add behavioral study of the I/Q /2 quadrature output and correct proposal
 
 ## Very Important
@@ -18,7 +17,6 @@ _None._
 
 `loom:important`; taken before unlabelled work.
 
-- **#296**: Re-pin open_pdks to f6eeac7 and move PDK install/search to ciel 2.6.1 (part of #295)
 - **#304**: layout: draw clk_buf and re-mint the top-level layout record against the buffered top (split from #303)
 
 ## Ready
@@ -43,7 +41,6 @@ _None._
 
 PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
-- **#299**: build: re-pin open_pdks to f6eeac7 and resolve the PDK via ciel with a SOURCES revision check
 - **#345**: sim: add behavioral study of the I/Q /2 quadrature output and correct proposal
 
 ## Proposed
@@ -64,7 +61,8 @@ Issues carrying `loom:curated`.
 - **#259**: design: characterize LOCK timing primitives and watchdog over PVT *(curated)*
 - **#276**: design: measure independent watchdog and publish LOCK timing handoff *(curated)*
 - **#290**: sim: klt decks[] batch route for the PFD/charge-pump (cp) campaign, with one-point smoke *(curated)*
-- **#296**: Re-pin open_pdks to f6eeac7 and move PDK install/search to ciel 2.6.1 (part of #295) *(curated)*
+- **#297**: Re-qualify cited sim reference records under open_pdks f6eeac7 (part of #295) *(curated)*
+- **#298**: Re-qualify cited layout reference records under open_pdks f6eeac7 (part of #295) *(curated)*
 - **#303**: sim: paired buffered-CLK closed-loop runs and layout/LVS for clk_buffer (follow-up to #232) *(curated)*
 - **#329**: Declare the partition boundary and cite T1 items 1, 9 and 10 with artifact-anchored evidence *(curated)*
 - **#344**: Test proposed quadrature clock timing with a bounded behavioral model (#332 / DR-010) *(curated)*
@@ -82,14 +80,14 @@ _None._
 
 | Bucket | Count |
 |------|-------|
-| Operator merge-risk holds | 2 |
+| Operator merge-risk holds | 1 |
 | Very important | 0 |
-| Important | 2 |
+| Important | 1 |
 | Ready (`loom:issue`) | 1 |
 | In Progress (`loom:building`) | 1 |
 | PRs awaiting review | 0 |
-| Approved PRs awaiting merge | 2 |
-| Curated | 18 |
+| Approved PRs awaiting merge | 1 |
+| Curated | 19 |
 | Architect / Hermit proposals | 2 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->

@@ -1,6 +1,6 @@
 # PLL characterization report
 
-Generated: 2026-10-20T16:52:31Z by `measurements/aggregate.py` -- this file is a **derived rollup**, not append-only evidence itself; re-run the aggregator to refresh it (see `measurements/README.md`).
+Generated: 2026-10-20T17:16:39Z by `measurements/aggregate.py` -- this file is a **derived rollup**, not append-only evidence itself; re-run the aggregator to refresh it (see `measurements/README.md`).
 
 Rolls up every `sim/*/records/*.md` and `layout/*/reports/*/record.md` evidence record into one table, keyed by `spec/target-spec.md` row number. **A populated row is not a passing row.** Rows 0, 1, 9, 19 and 20 of `spec/target-spec.md` are ratified (`DR-001`/`DR-002`/`DR-003`/`DR-006`); every other numeric row an evidence record appears against is still DRAFT. For a DRAFT row, a record listed against it is *evidence bearing on that row* -- the measured input a future decision record would argue the row from -- never a verdict on it, and never a substitute for the ratification act itself. For a **ratified** row the record's verdict does grade against a binding bound, and a FAIL there is a recorded miss against the spec (never a reason to relax it -- see `CLAUDE.md`). Read each record before quoting it either way: its own `Verdict` column here is the record's overall pass/fail, which for several campaigns means "the harness ran and recorded what happened", including recorded non-lock.
 
@@ -104,6 +104,7 @@ Harness-plumbing evidence, negative controls, and anything whose citation does n
 | sim | pdk-smoke | 20260814-022011-dcd6160 | harness self-test -- proves xschem netlisting + sim/harness PVT-point substitution (process corner, supply, temperature) + ngspice execution work end-to-end ag… | PASS | 27/27 points passed | declares it measures no spec row (declared by `sim/pdk-smoke/testbench/tb.json`; the record itself predates the citation convention and is append-only) | `sim/pdk-smoke/records/20260814-022011-dcd6160.md` |
 | sim | pdk-smoke | 20260817-171010-7823a49 | harness self-test -- proves sim/harness's Monte Carlo trial generation + sky130 MC_MM_SWITCH/MC_PR_SWITCH statistical-sampling patching + ngspice execution wor… | PASS | 10/10 trials passed | declares it measures no spec row (declared by `sim/pdk-smoke/testbench/tb.json`; the record itself predates the citation convention and is append-only) | `sim/pdk-smoke/records/20260817-171010-7823a49.md` |
 | sim | pfd-cp-resolution | 20261011-011743-f9ceac9 | Nominal-point numerical-resolution diagnostic for the pfd-cp campaign (issue #250): re-runs the zero and +/-0.1 ns phase offsets at midrail VCTRL with 2.5 ps d… | FAIL | 0/1 points passed | declares it measures no spec row (cited by the record itself) | `sim/pfd-cp-resolution/records/20261011-011743-f9ceac9.md` |
+| sim | phase-quadrature-model | 20261020-001830-e786d18 | A PDK-free deterministic event model of the proposed two-flip-flop I/Q /2 (DR-010, Proposed) reproduces the closed-form quadrature relationship under the decla… | PASS | 117 of 117 criterion-bearing cases passed; 3 informational FINDING cases carry no pass/fail criterion; 120 cases total | declares it measures no spec row (declared by `sim/phase-quadrature-model/testbench/tb.json`; the record itself predates the citation convention and is append-only) | `sim/phase-quadrature-model/records/20261020-001830-e786d18.md` |
 | sim | pll | 20260819-123508-fe0e6df | first PLL-specific harness campaign -- proves xschem netlisting + sim/harness PVT-point substitution (process corner, supply, temperature) + ngspice execution… | FAIL | 17/27 points passed | declares it measures no spec row (declared by `sim/pll/testbench/tb.json`; the record itself predates the citation convention and is append-only) | `sim/pll/records/20260819-123508-fe0e6df.md` |
 | sim | vco-clk-transition | 20260925-110645-810cd82 | design/vco's own CLK transition (10-90% rise/fall) time, measured open-loop from design/vco/vco_ring5.sch at a single fixed VCTRL near the row-9 operating poin… | PASS | 1/1 points passed | declares it measures no spec row (cited by the record itself) | `sim/vco-clk-transition/records/20260925-110645-810cd82.md` |
 | layout | pll | 20261020-164647-ba142d6 | Device-level layout of the closed-loop PLL schematic (`design/top/netlist/top.spice`), drawn by `layout/bin/run-pll-layout-flow.sh` (issue #16). Read this file… | PASS | 9/9 checks passed | declares it measures no spec row (cited by the record itself) | `layout/pll/reports/20261020-164647-ba142d6/record.md` |
@@ -117,9 +118,9 @@ No Fmax record has been committed yet.
 
 ## Scan summary
 
-- Evidence records scanned: 89
-- Current (non-superseded): 69
+- Evidence records scanned: 90
+- Current (non-superseded): 70
 - Superseded (excluded from the tables above; still retained, append-only, under `sim/`/`layout/`): 20
 - Spec-row citation stated by the record itself: 59
-- Spec-row citation resolved from the experiment's own declaration (`sim/<slug>/testbench/tb.json` / `layout/<block>/spec-rows.json`) because the record predates the convention and is append-only: 10
+- Spec-row citation resolved from the experiment's own declaration (`sim/<slug>/testbench/tb.json` / `layout/<block>/spec-rows.json`) because the record predates the convention and is append-only: 11
 - **Current records with no spec-row declaration at all: 0**
