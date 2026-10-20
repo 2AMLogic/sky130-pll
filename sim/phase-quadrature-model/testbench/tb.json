@@ -1,0 +1,6 @@
+{
+  "experiment": "phase-quadrature-model",
+  "description": "PDK-free behavioral event model of the proposed two-flip-flop I/Q divide-by-2 (issue #344). Run with sim/phase-quadrature-model/run_cases.py; no schematic, netlist or simulator is involved.",
+  "spec_rows": [],
+  "spec_rows_note": "none. This is a behavioral model of a proposed interface (DR-010, Proposed), not a measurement of the PLL: it does not model transistors, PVT, loading or jitter, so it measures no spec/target-spec.md parameter. Deliberately uncited rather than mapped to a row it does not measure; rows 2, 14 and 15 stay DRAFT and row 9 and its recorded misses are unchanged."
+}
