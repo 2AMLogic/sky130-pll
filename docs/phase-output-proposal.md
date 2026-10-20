@@ -9,6 +9,12 @@
   simulation spend, or authorize merge. `DR-009` is kept as history; its
   single-output default is the rejected option, not the accepted one.
 
+**Corrections (issue #344).** A PDK-free behavioral study of the proposed I/Q
+÷2 (`sim/phase-quadrature-model/`, record `sim/phase-quadrature-model/records/20261020-001830-e786d18.md`) qualified the assumptions
+below. Where it changed what this proposal says, the original wording is kept
+and the correction is marked *[corrected by #344]*; §10 summarizes the study.
+Nothing in the study selects a topology or changes a spec row.
+
 Everything below is **analysis from the committed design notes and records**
 unless a sentence cites a `sim/` record. Where a quantity is unknown it is
 marked *unknown*; where a number is a suggestion it is marked *proposed*. No
@@ -71,6 +77,13 @@ Two ways to make it:
   arrangement) clocked on opposite edges of the 2x clock. The quarter-cycle
   relationship is then **one half-period of the 2x clock by construction**,
   independent of ring tap position and tracking frequency automatically.
+  *[corrected by #344: the separation is the **high time** of the 2x clock,
+  D·T2, not a half-period. CLK90 lags CLK by 180·D degrees of the output
+  period: exactly 90° only for a 50 % input duty and matched flop paths; 45 %
+  gives 81°, 55 % gives 99°; a clock-to-output difference δ between the two
+  flops adds 180·δ/T2 degrees. "By construction" holds only conditionally. This
+  matches the primary guidance cited in #344 (Analog Devices AN-2536: 2x-clock
+  quadrature depends on input duty and flip-flop matching).]*
 
 ### Option M — multiplied-clock output (`CLK` + exported 2x or 4x)
 
@@ -79,9 +92,15 @@ contract (proposed): `CLK2X`/`CLK4X` is phase-locked to `CLK` with an edge
 alignment relationship that is itself *unknown* until defined and measured.
 
 - The consumer still has to build its quarter-cycle clock: with 2x it gets
-  edges at T/2, not T/4, so a 90° clock needs a further divider with its own
-  startup ambiguity; with 4x it gets T/4 edges directly but must run the
-  full-rate clock tree.
+  rising edges at T/2, not T/4, so a 90° clock needs a further divider with its
+  own startup ambiguity; with 4x it gets T/4 edges directly but must run the
+  full-rate clock tree. *[corrected by #344: counting both rising **and**
+  falling edges of the 2x clock, the consumer also sees edges T/4 apart when
+  the 2x duty is 50 % — the same D-dependence as P2 (180·D) applies. The
+  comparison between P2 and M2 must count edges the same way on both sides; M2
+  is not categorically unable to give quarter-cycle edges, it hands the
+  consumer the duty dependence, the alignment-to-`CLK` question and the reset
+  responsibility instead.]*
 - A 4x export at the 100 MHz stretch point is 400 MHz and 800 MHz at the 200 MHz
   band edge, past what the 1-pF output stage and the ring's jitter have been
   evaluated at; the exported clock's duty cycle is the raw ring duty, not a
@@ -94,14 +113,14 @@ alignment relationship that is itself *unknown* until defined and measured.
 
 | Aspect | P1 direct taps | **P2 2x VCO + I/Q ÷2** | M2 export 2x | M4 export 4x |
 |---|---|---|---|---|
-| Exact T/4 relationship | no (18° grid error) | **yes, by construction** | no (T/2 edges) | yes, consumer-side |
+| Exact T/4 relationship | no (18° grid error) | **conditional: 180·D°, 90° only at 50 % input duty and matched paths** *[corrected by #344]* | rising edges T/2 apart; with both edges T/4 apart at 50 % duty, consumer-side *[corrected by #344]* | yes, consumer-side |
 | Timing work left to consumer | none claimed, but wrong phase | none | derive 90° itself | distribute 4x clock |
 | VCO / ring | unchanged | **unchanged topology**, runs 2x faster | 2x faster | 4x faster |
 | Divider (counter) | unchanged | unchanged if feedback is taken from `CLK` (after ÷2) | same | needs ÷4 stage |
-| Loop gain | unchanged | Kvco and total ratio both double: loop gain unchanged (analysis) | same as P2 | same, ×4 |
-| Output duty (row 14) | raw ring duty | **÷2 stage gives ~50 % by construction** (flop skew unknown) | raw ring duty on 2x | raw on 4x |
+| Loop gain | unchanged | total ratio doubles; Kvco at the 2x operating point is **unknown** (loop gain unchanged only if Kvco doubles, which is an assumption) *[corrected by #344]* | same as P2 | same, ×4 (same caveat) |
+| Output duty (row 14) | raw ring duty | **÷2 stage gives 50 % for equal rise/fall clock-to-output, independent of input duty** (model, analytical + executed); the input duty error moves into the CLK–CLK90 phase *[corrected by #344]* | raw ring duty on 2x | raw on 4x |
 | Period jitter in % of period (row 9) | unchanged | ÷2 spans two VCO cycles: for uncorrelated noise ≈ 1/√2 better in %, *analysis only* | worse: exposed VCO-rate clock | worse |
-| Startup | n/a | I/Q ordering (+90° vs −90°) is ambiguous at power-up; needs the existing `RESETB` to fix | none | needs reset for ÷4 |
+| Startup | n/a | *[corrected by #344: the Johnson cross-coupling fixes the CLK90-lags-CLK ordering from every power-up state; what is ambiguous is the **alignment of `CLK` to the 2x-clock edge grid** (0, 1 or 2 T2 to the first CLK edge in the model).]* `RESETB` is needed to make that alignment deterministic, and the release timing then sets the phase of `CLK` relative to the reference | none | needs reset for ÷4 |
 | Lock behaviour (REF/FB path, row 16, DR-007) | unchanged | unchanged (feedback from `CLK`) | unchanged | unchanged |
 | Extra loads to characterize | `CLK90` buffer | `CLK90` buffer (matched to `CLK`) | `CLK2X` buffer | `CLK4X` buffer |
 | Dynamic power | + small | + VCO at 2x, + ÷2 and second buffer | + 2x buffer | + 4x buffer |
@@ -116,9 +135,12 @@ that is reset by `RESETB`; feedback to the counter is taken from `CLK`. Do not
 export a multiplied clock in v1.
 
 Why:
-- It is the only option that gives an exact, frequency-tracking T/4
-  relationship, which is the stated need, without moving timing work back to
-  the consumer.
+- It is the only option that gives a frequency-tracking T/4 relationship
+  *[corrected by #344: exact only at 50 % input duty with matched flop paths;
+  otherwise 180·D° plus the path term]*, which is the stated need, without
+  moving timing work back to the consumer *[corrected by #344: the consumer
+  inherits the duty/path tolerance it can accept, and reset/alignment
+  responsibility; neither is recorded in `DR-009`]*.
 - It keeps the VCO topology, so existing VCO, tuning, loop-filter and lock
   evidence stays the reference rather than being thrown away (P1 even-stage
   alternative).
@@ -139,7 +161,10 @@ Key unknowns:
    the load imbalance between the two outputs.
 3. Whether the extra ÷2 stage's noise or supply coupling worsens the already
    recorded row-9 miss. The 1/√2 figure is an idealization.
-4. I/Q ordering at startup and after a missing clock.
+4. Alignment of `CLK` to the 2x-clock grid at startup and after a missing
+   clock *[corrected by #344: ordering itself is fixed by the topology; the
+   alignment is not preserved across a clock stop and depends on reset release
+   timing]*.
 5. Power at 2·f_out on 1.8 V (row 12 is DRAFT).
 
 If the operator prefers Option M, M2 is the lower-risk variant of it, but it
@@ -170,7 +195,7 @@ Each step is a separate issue after operator review; none is started here.
   both outputs, 10 – 90 % edges, V_OH/V_OL (rows 14/15 DRAFT bounds read as
   recorded pass/miss), period jitter at `CLK` per row 9 definition, and
   `CLK90` period jitter.
-- Startup/lock: reset release to a defined I/Q ordering; lock time and lock
+- Startup/lock: reset release to a defined `CLK` alignment (ordering is fixed by the topology, #344); lock time and lock
   assertion unchanged vs. the existing records; behavior with the reference
   absent and restored.
 - Loading: both outputs at the `DR-008` 1 pF contract; sensitivity to
@@ -205,3 +230,77 @@ with measured numbers once the per-point times above are known.
 4. Whether to proceed to the breakdown in §6 and in what order.
 
 #332 stays open and blocked until the operator rules on this.
+
+## 10. Behavioral study of the I/Q ÷2 (issue #344)
+
+Model and record: `sim/phase-quadrature-model/` (`sim/phase-quadrature-model/records/20261020-001830-e786d18.md`). PDK-free, SPICE-free,
+event model with exact rational time; 120 declared cases (≤ 400), 14 038 edges
+(≤ 2 000 000), no remote compute. Analytical predictions and executed results
+are separate columns of the record's case table. **The model does not
+characterize metastability, transistor behavior, PVT, loading or silicon
+jitter, and nothing here is evidence about the physical circuit.**
+
+### 10.1 What the study found (executed, with the record's case numbers in §3)
+
+- The model reproduces the closed form on all 117 criterion-bearing cases:
+  output period 2·T2; CLK90 lag 180·D (+ 180·δ/T2) degrees; 90.000° at 50 %,
+  81.000° at 45 %, 99.000° at 55 %, at 25/50/100 MHz output. An assumed
+  perfect-quarter-cycle generator is caught by the defeating control
+  (9.000° off at 45 %).
+- Output duty is 50 % for equal clock-to-output times regardless of input duty;
+  input duty error appears in the CLK–CLK90 phase instead.
+- Ordering (CLK90 lags CLK) holds from all four power-up states, for every
+  reset-release phase, and through clock stop/restore, including runt
+  restoration. Alignment of CLK to the 2x grid is not preserved: it depends on
+  power-up state (0/1/2 T2), reset-release timing (first CLK edge 0 to 1 T2 after
+  release over the swept cases, including whether an edge exactly at release
+  is captured), and on the
+  duration of a clock absence (the phase column of record cases for group E).
+- A flop-to-flop delay larger than the data window breaks the divide itself
+  (period no longer 2·T2, `test_model.py`), and setup violations are flagged.
+- Sensitivity: 1° of output phase is 111 / 55.6 / 27.8 ps at 25 / 50 / 100 MHz;
+  1° corresponds to 0.556 duty points of the 2x clock or to δ = T2/180.
+
+### 10.2 Timing-error budget — what is and is not known
+
+`DR-009` records the operating points (25 and 50 MHz, 100 MHz stretch) and
+that the consumer today derives its quarter-cycle clock with a delay element.
+It records **no** consumer setup/hold time, data window, permitted CLK90–CLK
+phase window or jitter allowance. The missing requirement is exactly: (a) the
+allowed CLK90–CLK phase window (° or ps) at each frequency, (b) the consumer
+setup/hold times that window protects, (c) the allowance for CLK and CLK90
+jitter. No tolerance is proposed or approved here. The record's §5 gives the
+budget as a *parameterized* table (for a hypothetical ±W° window, the largest
+duty deviation and path mismatch) and separates clock phase/duty, path
+mismatch, setup/hold/data-window (flagged, parameters unknown) and jitter (not
+modelled; the recorded row-9 miss is not used as an input).
+
+### 10.3 Recommendation for #332 (a recommendation; the operator decides)
+
+- **Does the interface merit later circuit feasibility work?** The behavioral
+  model finds no showstopper: the topology gives a deterministic ordering and a
+  frequency-tracking offset, and its error terms are simple and explicit. It
+  also shows the property is **conditional** (duty, path mismatch, and a
+  consumer-side reset/alignment obligation), so the case for P2 over the
+  cheaper `DR-009` single-output default rests on a consumer tolerance that is
+  not yet recorded. Recommended order: obtain the consumer's phase-window
+  requirement first; proceed to circuit feasibility only if P2's conditional
+  quadrature can meet it.
+- **Still uncertain:** the consumer tolerance (a–c above); the VCO's duty at
+  2x (the dominant term), its Kvco and low-end behavior at 2x the output band;
+  flop clock-to-output mismatch and tsu/tcq values; whether the ÷2 stage worsens
+  the recorded row-9 miss; loop dynamics (not simulated by the model).
+- **Bounded next validation request (not authorized here):** (1) one
+  recorded consumer requirement as above; (2) a single-corner `tt/27 °C/1.8 V`
+  measurement of 2x-VCO duty and CLK–CLK90 offset at the three consumer
+  frequencies using the existing VCO bench — stop condition: VCO does not
+  oscillate at 2x (400 MHz) or duty outside the consumer's window at that
+  corner, in which case close the interface question as a recorded miss; stop
+  also if (1) cannot be supplied. Resource unknowns: per-point wall time for
+  the VCO at 2x (the `sim/vco` notes give 5–10 min per swept point at lower
+  frequency, not measured at 2x) and the number of Monte Carlo draws wanted for
+  flop mismatch. No spend, access or PVT/Monte Carlo campaign is requested.
+- `DR-010` stays **Proposed** and #332 stays **open** pending a subsequent
+  interface disposition. This is a behavioral result only; it does not claim
+  physical readiness and does not close the buffer/characterization work
+  (#232, #303, #304) or change rows 2/9/14/15.
