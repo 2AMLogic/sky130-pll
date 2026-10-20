@@ -2,6 +2,11 @@
 
 Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
+### 2026-10-19
+
+- **PR #341**: docs: propose quarter-cycle phase vs multiplied-clock output (DR-010)
+- **Issue #339** (closed): Propose a phase-shifted or multiplied-clock output interface for v1 (follow-on to #332)
+
 ### 2026-10-17
 
 - **PR #335**: docs(spec): add DR-009 recording phase-output scope and consumer clock-gap dispositions
