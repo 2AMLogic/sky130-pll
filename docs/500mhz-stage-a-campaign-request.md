@@ -46,15 +46,21 @@ about lock, duty at the output pin, or jitter.
   values, and the 500 MHz crossing lies between `VCTRL` = 0.9 V and 1.2 V at
   every point. Examples: the table's `ss | 27 | 1.62` row has 415 MHz at
   1.0 V and 583.5 MHz at 1.2 V; its `tt | 27 | 1.80` row has 510.9 MHz at
-  1.0 V. The grid has **no point between 1.0 V and 1.2 V**, so the crossing
-  is bracketed but not located.
+  1.0 V. The grid has **no point between 0.9 V and 1.0 V or between 1.0 V
+  and 1.2 V**, so the crossing is bracketed but not located. Counting the
+  record's 45 PASS rows at `VCTRL` = 1.0 V, 19 of 45 points are already
+  ≥ 500 MHz there (crossing in 0.9 – 1.0 V); the other 26 cross in
+  1.0 – 1.2 V.
 - **Proposed new points** (a bench value change, which this request *names*
-  and does not make): add `VCTRL` = 1.05, 1.10 and 1.15 V to
-  `measure.sweep.values`. That is 3 new values × 45 PVT points = **135 new
-  oscillation measurements**, still 45 `ngspice` invocations (one per PVT
-  point), each now with 9 swept values. The existing 6-value record is
-  reused as-is for the other 270. Total after the request: 9 × 45 = 405
-  measurements, of which 135 are new.
+  and does not make): add `VCTRL` = 0.95, 1.05, 1.10 and 1.15 V to
+  `measure.sweep.values`. The 0.95 V value is one global point that brackets
+  the crossing at the 19 points where it lies in 0.9 – 1.0 V; 1.05 – 1.15 V
+  bracket it at the 26 points where it lies in 1.0 – 1.2 V. That is 4 new
+  values × 45 PVT points = **180 new oscillation measurements** (135 before
+  0.95 V was added), still 45 `ngspice` invocations (one per PVT point),
+  each now with 10 swept values. The existing 6-value record is reused
+  as-is for the other 270. Total after the request: 10 × 45 = 450
+  measurements, of which 180 are new.
 - Caveat inherited from the bench (`tb.json` methodology note, citing
   `sim/tolerance-audit/README.md`): points above roughly 750 MHz carry a
   dump-grid bias of order 1 %; the proposed points (about 500 – 650 MHz at
@@ -63,7 +69,7 @@ about lock, duty at the output pin, or jitter.
   audit's check applies.
 - A reduced fallback if the full 45 is not authorized: the three process
   corners that bound the crossing at nominal supply and temperature
-  (`ss`, `tt`, `ff` at 27 °C, 1.80 V; 3 PVT points × 3 new values = 9 new
+  (`ss`, `tt`, `ff` at 27 °C, 1.80 V; 3 PVT points × 4 new values = 12 new
   measurements). The operator picks the full or reduced matrix in the
   authorization gate (section 6); the reduced one cannot support the
   "slow corner" stop condition below across supply and temperature.
@@ -181,7 +187,8 @@ to make results pass):
    corner** (the `ss` corner at the slow supply and temperature points of
    the screened set; with the reused record, `ss`, −40 °C, 1.62 V reaches
    691.3 MHz at `VCTRL` = 1.6 V, so this condition is *testable*, not
-   pre-decided).
+   pre-decided). Adding the 0.95 V point to the matrix does not change
+   this condition or its threshold.
 2. The divider fails correct division at 500 MHz across the screened
    corners.
 3. Measurement invalid: the reducer's floor is not resolved at the stated
@@ -205,8 +212,8 @@ each bounded; proposed defaults are marked and are **proposals**):
 This request is **not** an authorization. Execution of Stage A requires the
 operator's explicit, written approval recorded on #333, naming:
 
-- [ ] VCO matrix: full 45 PVT points × 3 new `VCTRL` values (135 new
-      measurements) / reduced 3-point fallback (9 new measurements)
+- [ ] VCO matrix: full 45 PVT points × 4 new `VCTRL` values (180 new
+      measurements) / reduced 3-point fallback (12 new measurements)
 - [ ] Divider mapping: M1 (existing moduli, 225 cells) / M2 (add N = 20,
       270 cells; needs the new testbench merged first)
 - [ ] The bench changes in section 3 filed as their own issues and merged
