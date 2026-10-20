@@ -1,0 +1,44 @@
+{
+  "schema": "sky130-pll.harness.tb/1",
+  "claim": "does design/divider/divider_intN.sch (the standalone programmable integer-N feedback divider, issue #27, retimed to a dual-modulus /2-/3 prescaler front-end by issue #114) divide a fixed 250 MHz ideal CLK by N=20 (NSEL[5:0]=010011, i.e. N-1=19 in plain binary per design/divider/DESIGN.md) cleanly. N=20 is the modulus of the proposed 25 MHz x 20 = 500 MHz interface (spec/decision-records/DR-011-500mhz-feasibility-plan.md Step 2, proposed) and sits on the even decode path. This bench is prepared but UNEXECUTED (issue #352): it is a design-input measurement bench, not a spec/target-spec.md ratification; row 4 stays DRAFT, and per CLAUDE.md ratification is a separate decision-record act.",
+  "spec_rows": [
+    4
+  ],
+  "spec_rows_note": "spec/target-spec.md row 4 (multiplication ratio, DRAFT N = 4-64) at N=20, the ratio of the proposed 500 MHz interface. Evidence toward the row once executed, not a verdict on it; no record exists yet.",
+  "schematic": "tb_divider_n20.sch",
+  "corner_pattern": "(\\.lib\\s+\\S*sky130\\.lib\\.spice\\s+)(\\w+)",
+  "supply_pattern": "(V1 VDD GND )([0-9.]+)",
+  "process_corners": [
+    "tt",
+    "ff",
+    "ss",
+    "sf",
+    "fs"
+  ],
+  "temps_c": [
+    -40,
+    27,
+    125
+  ],
+  "supply_nominal": 1.8,
+  "supply_tolerance": 0.1,
+  "measure": {
+    "node": "FBCLK",
+    "tran_step": "20p",
+    "tran_stop": "1000n",
+    "timeout_s": 1800,
+    "threshold_frac": 0.5,
+    "hysteresis_frac": 0.15,
+    "settle_from": "0",
+    "min_edges": 4,
+    "lock": {
+      "target_hz": 12500000,
+      "tolerance_frac": 0.02,
+      "window_cycles": 5,
+      "min_hold_cycles": 5
+    },
+    "require_lock": true
+  },
+  "methodology_note": "this testbench's DUT is design/divider/divider_intN.sch driven open-loop (no VCO, PFD/charge pump or loop filter in the path), exactly as its N=5 sibling sim/divider-n5/testbench/tb.json -- CLK is an ideal rail-to-rail pulse source (12.5 ps edges, 4 ns period = 250 MHz, 50% duty) and NSEL[5:0]=010011 (N-1 = 19, so N=20; derived from design/divider/DESIGN.md's NSEL = N-1 encoding, not copied from a sibling) is strapped statically via lab_pin ties to VDD/GND. RESETB is released by a pwl at 5-6 ns. `measure.lock`'s target_hz (12500000 Hz = f_CLK/N = 250 MHz/20) with a 2% tolerance and a 5-output-period window/hold applies the same sliding-window lock criterion the N=5 bench uses. The frequency-sweep half of the 500 MHz question (a CLK probe at 500 MHz, whose expected output is 25 MHz / 40 ns) is NOT run from this fixed-frequency manifest: it is the mandatory probe of sim/divider-fmax/testbench/fmax-stage-a-500mhz.json. This manifest declares the same full 5-corner x 3-temp x 3-supply default grid every other sim/ manifest declares. No simulation has been run for this manifest under issue #352; the schematic netlist/lock check is outstanding for the execution gate.",
+  "analysis": "transient, standalone divider (`tran 20p 1000n`, injected by sim/harness/measure.py from this manifest's own measure block). The 1000 ns window covers roughly 12.4 output periods at the target frequency (12.5 MHz, 80 ns/period) after RESETB releases at 6 ns -- more than the 11 edges (window_cycles + 1 + min_hold_cycles) the lock criterion needs."
+}

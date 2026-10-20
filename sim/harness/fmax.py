@@ -111,6 +111,10 @@ class FmaxSpec:
     stimulus: Stimulus
     criterion: Criterion
     moduli: tuple
+    #: CLK frequencies (Hz) a campaign must probe and retain in every cell, in
+    #: addition to the grid search (issue #352). Empty for manifests that do not
+    #: declare `mandatory_probes_hz`, which keeps their plan unchanged.
+    mandatory_probes_hz: tuple = ()
 
     @classmethod
     def from_manifest(cls, manifest: dict) -> FmaxSpec:
@@ -178,7 +182,19 @@ class FmaxSpec:
         )
         if not moduli or len({m.n for m in moduli}) != len(moduli):
             raise FmaxError("moduli: need a non-empty list of distinct N")
-        return cls(search=search, stimulus=stim, criterion=crit, moduli=moduli)
+        mandatory = tuple(float(f) for f in manifest.get("mandatory_probes_hz", ()))
+        if len(set(mandatory)) != len(mandatory):
+            raise FmaxError("mandatory_probes_hz: frequencies must be distinct")
+        on_grid = set(grid(search))
+        for f in mandatory:
+            if round(f, 3) not in on_grid:
+                raise FmaxError(
+                    f"mandatory_probes_hz: {f / 1e6:g} MHz is not a point of the declared "
+                    f"{search.f_min_hz / 1e6:g}-{search.f_max_hz / 1e6:g} MHz search grid at "
+                    f"{search.resolution_hz / 1e6:g} MHz resolution"
+                )
+        return cls(search=search, stimulus=stim, criterion=crit, moduli=moduli,
+                   mandatory_probes_hz=mandatory)
 
 
 # --------------------------------------------------------------------------- #
@@ -198,6 +214,32 @@ def coarse_indices(size: int, stride: int) -> list:
     if idx[-1] != size - 1:
         idx.append(size - 1)
     return idx
+
+
+def mandatory_indices(grid_hz: list, spec: FmaxSpec) -> list:
+    """Grid indices of the manifest's mandatory probes (issue #352), ascending.
+
+    The probes are declared explicitly, never inferred from where a boundary
+    falls or from which points the coarse stage happens to visit."""
+    index = {f: i for i, f in enumerate(grid_hz)}
+    try:
+        return sorted(index[round(f, 3)] for f in spec.mandatory_probes_hz)
+    except KeyError as e:  # unreachable for a spec built by from_manifest
+        raise FmaxError(f"mandatory probe {e.args[0] / 1e6:g} MHz is not on the grid") from None
+
+
+def stage1_indices(grid_hz: list, spec: FmaxSpec) -> list:
+    """Stage 1 grid indices: the coarse stage united with the mandatory probes."""
+    return sorted(set(coarse_indices(len(grid_hz), spec.search.coarse_stride))
+                  | set(mandatory_indices(grid_hz, spec)))
+
+
+def mandatory_results(observed: dict, grid_hz: list, spec: FmaxSpec) -> dict:
+    """Per mandatory frequency (Hz): PASS / FAIL / INCONCLUSIVE, or `None` when
+    the probe was never run. Reported apart from the boundary so a censored or
+    inconclusive search can never hide whether the required probe was made, and
+    so an invalid (INCONCLUSIVE) run is never conflated with an electrical FAIL."""
+    return {grid_hz[i]: observed.get(i) for i in mandatory_indices(grid_hz, spec)}
 
 
 def refine_indices(observed: dict) -> list:

@@ -20,6 +20,11 @@ FMAX_TABLE_COLUMNS = (
     "Modulus N", "Corner", "Temp (C)", "Supply (V)", "Status",
     "Highest verified pass (MHz)", "Adjacent failing probe (MHz)", "Probes", "Detail",
 )
+MANDATORY_TABLE_HEADING = "### Mandatory probes per cell"
+MANDATORY_TABLE_COLUMNS = (
+    "Modulus N", "Corner", "Temp (C)", "Supply (V)", "CLK probe (MHz)",
+    "Verdict (PASS / FAIL = electrical / INCONCLUSIVE = invalid run)",
+)
 
 
 def _mhz(hz) -> str:
@@ -36,8 +41,15 @@ def overall(cells) -> tuple:
         counts[c["boundary"].status] = counts.get(c["boundary"].status, 0) + 1
     bad = counts.get(fmax_mod.CELL_INCONCLUSIVE, 0) + counts.get(fmax_mod.CENSORED_LOW, 0)
     summary = ", ".join(f"{k}: {v}" for k, v in sorted(counts.items()))
-    verdict = "FAIL" if bad else "PASS"
-    return verdict, f"{len(cells) - bad}/{len(cells)} cells resolved; {summary}"
+    # A mandatory probe (issue #352) must have run and passed in every cell; a
+    # FAIL, an INCONCLUSIVE and a probe that never ran are each a recorded miss.
+    missed = sum(1 for c in cells for st in c.get("mandatory", {}).values()
+                 if st != fmax_mod.PASS)
+    verdict = "FAIL" if bad or missed else "PASS"
+    detail = f"{len(cells) - bad}/{len(cells)} cells resolved; {summary}"
+    if any(c.get("mandatory") for c in cells):
+        detail += f"; {missed} mandatory probe(s) not passed"
+    return verdict, detail
 
 
 def render(
@@ -145,6 +157,16 @@ def render(
             f"{_mhz(b.pass_hz)} | {_mhz(b.fail_hz)} | {b.probes} | {b.detail.replace('|', '/')} |"
         )
     a("")
+    if spec.mandatory_probes_hz:
+        a(MANDATORY_TABLE_HEADING)
+        a("")
+        a("| " + " | ".join(MANDATORY_TABLE_COLUMNS) + " |")
+        a("|" + "---|" * len(MANDATORY_TABLE_COLUMNS))
+        for x in cells:
+            for f, st in x.get("mandatory", {}).items():
+                a(f"| {x['n']} | {x['corner']} | {x['temp_c']:g} | {x['supply_v']:.2f} | "
+                  f"{_mhz(f)} | {st or 'NOT RUN'} |")
+        a("")
     verdict, detail = overall(cells)
     a(f"  - **Overall: {verdict}** ({detail})")
     report_mod._render_footer(lines_append=a, slug=slug, record_id=record_id, supersedes=supersedes)

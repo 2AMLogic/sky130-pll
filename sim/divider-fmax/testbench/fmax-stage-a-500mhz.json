@@ -1,0 +1,59 @@
+{
+  "schema": "sky130-pll.harness.fmax/1",
+  "claim": "does design/divider/divider_intN.sch, strapped N=20 (NSEL[5:0]=010011), divide correctly -- every individual steady-state output period within tolerance of N/f_CLK -- at the mandatory 500 MHz CLK probe (expected output 25 MHz, 40 ns period) at each DR-003 PVT point, and where does the highest verified passing grid probe lie in the search band, reported per cell as a bracket or an explicit censored/inconclusive status. PREPARED, UNEXECUTED screening configuration for Stage A of spec/decision-records/DR-011-500mhz-feasibility-plan.md (proposed): a design-input characterization of an ideal-input divider, not a spec/target-spec.md ratification and not a guarantee for the real VCO waveform. Rows 2 and 14 stay DRAFT; row 9 is unchanged.",
+  "spec_rows": [
+    4
+  ],
+  "spec_rows_note": "spec/target-spec.md row 4 (multiplication ratio, DRAFT N = 4-64): N=20 is the ratio of the proposed 25 MHz x 20 = 500 MHz interface. Citing the row is not claiming it. This configuration is additive to sim/divider-fmax/testbench/fmax.json (#244), which it does not replace or modify; running both would be two campaigns, so execution needs the operator's explicit gate (docs/500mhz-stage-a-campaign-request.md section 6).",
+  "corner_pattern": "(\\.lib\\s+\\S*sky130\\.lib\\.spice\\s+)(\\w+)",
+  "supply_pattern": "(V1 VDD GND )([0-9.]+)",
+  "process_corners": [
+    "tt",
+    "ff",
+    "ss",
+    "sf",
+    "fs"
+  ],
+  "temps_c": [
+    -40,
+    27,
+    125
+  ],
+  "supply_nominal": 1.8,
+  "supply_tolerance": 0.1,
+  "search": {
+    "f_min_hz": 400000000.0,
+    "f_max_hz": 2600000000.0,
+    "resolution_hz": 25000000.0,
+    "coarse_stride": 8
+  },
+  "stimulus": {
+    "rise_s": 1.25e-11,
+    "duty": 0.5,
+    "reset_low_until_s": 5e-09,
+    "reset_high_at_s": 6e-09,
+    "amplitude": "supply"
+  },
+  "criterion": {
+    "skip_output_periods": 2,
+    "min_periods": 8,
+    "margin_periods": 2,
+    "tolerance_frac": 0.02,
+    "threshold_frac": 0.5,
+    "hysteresis_frac": 0.15,
+    "tran_step_s": 1e-11,
+    "timeout_s": 1800
+  },
+  "moduli": [
+    {
+      "n": 20,
+      "schematic": "../../divider-n20/testbench/tb_divider_n20.sch",
+      "note": "the proposed 500 MHz interface's ratio (25 MHz x 20), even decode path"
+    }
+  ],
+  "methodology_note": "Each probe reuses an existing fixed-frequency divider testbench schematic (NSEL strapped statically for its N, open loop: no VCO, PFD/charge pump or loop filter), netlists it once per modulus, and rewrites only the CLK pulse source and the RESETB pwl source per probe from the single probe frequency. The declared waveform assumptions are: ideal rail-to-rail CLK whose high level tracks each point's own supply (the fixed-frequency records hold it at 1.8 V regardless of supply), 12.5 ps rise and fall, 50% duty at the 50% points, RESETB low until 5 ns and ramping to the supply by 6 ns, NSEL static. Modulus: only N=20 is declared here; N=20 is the ratio of the proposed 500 MHz interface and no adjacent modulus is claimed to stand in for it. The 500 MHz probe is declared in `mandatory_probes_hz`: the driver schedules it in stage 1 of every cell in addition to the coarse probes and reports its verdict apart from the boundary, so it is neither inferred from an Fmax boundary nor dependent on being among the coarse probes (with a 400 MHz floor, 25 MHz resolution and stride 8 the coarse probes are 400, 600, ..., 2600 MHz and 500 MHz is not one of them). An INCONCLUSIVE mandatory probe (simulator trouble, missing or truncated waveform) is an invalid run and is reported as such, distinct from an electrical FAIL (a completed waveform missing the per-period criterion); neither is a passing capability claim.",
+  "analysis": "transient per probe (`tran 10p <stop>`, injected by the Fmax driver); stop = reset release + (skip + min_periods + margin) expected output periods, so the window scales with N and the probe frequency. Search is a two-stage grid search on the declared resolution grid: stage 1 probes every coarse_stride-th grid point (plus the top of the range); stage 2 probes every grid point strictly inside the lowest coarse pass-to-fail transition. A pass island hidden between two coarse probes would be missed and is a stated limitation.",
+  "mandatory_probes_hz": [
+    500000000.0
+  ]
+}

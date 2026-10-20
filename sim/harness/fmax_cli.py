@@ -184,9 +184,10 @@ def run_batch(requests, *, manifest, spec, netlists, work_dir, backend, jobs, st
 
 def run_campaign(cells, grid_hz, *, manifest, spec, netlists, work_dir, backend, jobs, log):
     """Two-stage search over all cells; returns the backend last used."""
-    coarse = fmax_mod.coarse_indices(len(grid_hz), spec.search.coarse_stride)
-    reqs = [(c, i, grid_hz[i]) for c in cells for i in coarse]
-    log(f"fmax: stage 1: {len(reqs)} coarse probes over {len(cells)} cell(s)")
+    stage1 = fmax_mod.stage1_indices(grid_hz, spec)
+    reqs = [(c, i, grid_hz[i]) for c in cells for i in stage1]
+    log(f"fmax: stage 1: {len(reqs)} probes ({len(fmax_mod.mandatory_indices(grid_hz, spec))} "
+        f"mandatory) over {len(cells)} cell(s)")
     backend = run_batch(reqs, manifest=manifest, spec=spec, netlists=netlists,
                         work_dir=work_dir, backend=backend, jobs=jobs, stage_no=1, log=log)
     reqs = [(c, i, grid_hz[i]) for c in cells for i in fmax_mod.refine_indices(c.observed)]
@@ -198,7 +199,7 @@ def run_campaign(cells, grid_hz, *, manifest, spec, netlists, work_dir, backend,
 
 
 def planned_stage1(cells, spec) -> int:
-    return len(cells) * len(fmax_mod.coarse_indices(len(fmax_mod.grid(spec.search)), spec.search.coarse_stride))
+    return len(cells) * len(fmax_mod.stage1_indices(fmax_mod.grid(spec.search), spec))
 
 
 def build_cells(spec, manifest, pdk, args):
@@ -261,6 +262,9 @@ def cmd(args) -> int:
     print(f"fmax: {len(cells)} cell(s), grid {len(grid_hz)} points "
           f"({grid_hz[0] / 1e6:g}-{grid_hz[-1] / 1e6:g} MHz @ {spec.search.resolution_hz / 1e6:g}), "
           f"stage-1 probes {n_stage1}, stage-2 up to {len(cells) * (spec.search.coarse_stride - 1)}")
+    if spec.mandatory_probes_hz:
+        print("fmax: mandatory probes (every cell): "
+              + ", ".join(f"{f / 1e6:g} MHz" for f in spec.mandatory_probes_hz))
     if args.dry_run:
         return 0
 
@@ -337,8 +341,11 @@ def cmd(args) -> int:
             b = fmax_mod.fmax_bracket(c.observed, grid_hz)
             results.append({"n": c.modulus.n, "corner": c.point.corner,
                             "temp_c": c.point.temp_c, "supply_v": c.point.supply_v,
-                            "boundary": b})
+                            "boundary": b,
+                            "mandatory": fmax_mod.mandatory_results(c.observed, grid_hz, spec)})
             print(f"fmax: {c.key}: {b.status}: {b.detail}")
+            for f, st in results[-1]["mandatory"].items():
+                print(f"fmax: {c.key}: mandatory {f / 1e6:g} MHz: {st or 'NOT RUN'}")
         probes = [p for c in cells for p in c.probes]
         if not args.write:
             return 0

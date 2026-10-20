@@ -284,6 +284,7 @@ class DividerFamilySiblingManifestTests(unittest.TestCase):
     SIBLINGS = (
         ("divider-n4", 4, 62500000),
         ("divider-n5", 5, 50000000),
+        ("divider-n20", 20, 12500000),
         ("divider-n63", 63, 3968253.97),
         ("divider-n64", 64, 3906250),
     )
