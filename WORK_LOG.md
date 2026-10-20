@@ -4,6 +4,8 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 ### 2026-10-20
 
+- **PR #353**: feat: add N=20 divider bench and mandatory-probe Stage A Fmax configuration
+- **Issue #352** (closed): Prepare divide-by-20 bench and explicit 500 MHz screening probe for #333; no campaign execution
 - **PR #351**: docs: add 0.95 V VCTRL point to proposed Stage A VCO matrix
 - **PR #350**: refactor: remove dead locals and unused imports in power generators and tests
 - **Issue #349** (closed): Remove dead locals and unused imports flagged by ruff F401/F841 (sim/power, signoff, sim/tests)
