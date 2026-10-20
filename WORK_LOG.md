@@ -4,6 +4,10 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 ### 2026-10-20
 
+- **PR #351**: docs: add 0.95 V VCTRL point to proposed Stage A VCO matrix
+- **PR #350**: refactor: remove dead locals and unused imports in power generators and tests
+- **Issue #349** (closed): Remove dead locals and unused imports flagged by ruff F401/F841 (sim/power, signoff, sim/tests)
+- **Issue #347** (closed): docs: Stage A request's added VCTRL points miss the 500 MHz crossing at 19 of 45 PVT points
 - **PR #346**: docs: propose Stage A campaign request for 500 MHz screening
 
 ### 2026-10-19
