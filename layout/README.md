@@ -309,3 +309,15 @@ that follow it:
   model it has no primitive for, and both the record and
   `layout/tests/test_pll_layout_plan.py` assert every MOS model in the
   schematic is an `_01v8` core device.
+
+## Re-qualified under open_pdks f6eeac7 (issue #298)
+
+The layout evidence was re-run against `open_pdks
+f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7` (`sim/pdk.json`, resolved from
+`~/.ciel`) as part of the re-pin tracked in #295. New records:
+`pll/reports/20261020-164647-ba142d6`, `trivial-cell/reports/20261020-164643-ba142d6`
+and `pll/erc-reports/20261020-165500-ba142d6`; each carries (or, for ERC,
+is) a note naming the records it supersedes and an old-vs-new table. Records
+that name `open_pdks c6d73a3…` are kept unedited as history. Every DRC/LVS/ERC
+verdict is unchanged; the PLL counts that moved did so because the design
+moved (see `pll/reports/20261020-164647-ba142d6/REQUALIFICATION.md`).

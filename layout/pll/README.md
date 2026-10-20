@@ -318,3 +318,13 @@ layout/pll/
 
 `<record-id>` and the `dirty` flag follow the same convention as
 `layout/trivial-cell/reports/` and `sim/` — see `layout/README.md`.
+
+## Re-qualified under open_pdks f6eeac7 (issue #298)
+
+The "measured at `open_pdks c6d73a35`" statements above are historical and
+left as written. The current record, `reports/20261020-164647-ba142d6`
+(`reports/LATEST`), was produced under `open_pdks f6eeac7…` at the current
+schematic; its `REQUALIFICATION.md` states what it supersedes and separates
+the PDK effect (none: DRC clean, spot-check LVS unchanged) from the design
+effect (`clk_buf` added, larger divider). The ERC record is
+`erc-reports/20261020-165500-ba142d6`.

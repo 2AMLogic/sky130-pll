@@ -1,0 +1,136 @@
+{
+  "schema_version": 1,
+  "generator": "gen-compose",
+  "cell_name": "pll_top",
+  "gds_path": "pll_top.gds",
+  "pdk": {
+    "name": "sky130A",
+    "variant": "sky130A",
+    "version": "open_pdks f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+  },
+  "dbu_um": 0.001,
+  "bbox_um": {
+    "x0": -0.19,
+    "y0": -0.15,
+    "x1": 703.95,
+    "y1": 448.77
+  },
+  "ports": [],
+  "blocks": [
+    {
+      "id": "pll_pfd_cp",
+      "source": "generator_report",
+      "generator": "gen-compose",
+      "cell_name": "pll_pfd_cp",
+      "source_path": "pll_pfd_cp.gds",
+      "source_digest": "sha256:3dd6a4c6572b38814017b5761d7f82c14aa50bd1c54e99fb2922162d6652b1ec",
+      "offset_um": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "bbox_um": {
+        "x0": 0.0,
+        "y0": -0.15,
+        "x1": 300.84000000000003,
+        "y1": 26.12
+      },
+      "orientation": "none"
+    },
+    {
+      "id": "pll_loop_filter",
+      "source": "generator_report",
+      "generator": "gen-compose",
+      "cell_name": "pll_loop_filter",
+      "source_path": "pll_loop_filter.gds",
+      "source_digest": "sha256:d1ee861df5dc38e5635fc4449d20f2fc7763b870efcb73eaae27112a9e12476d",
+      "offset_um": {
+        "x": 320.84,
+        "y": 0.0
+      },
+      "bbox_um": {
+        "x0": 320.84,
+        "y0": 0.0,
+        "x1": 643.24,
+        "y1": 403.79999999999995
+      },
+      "orientation": "none"
+    },
+    {
+      "id": "pll_vco_ring5",
+      "source": "generator_report",
+      "generator": "gen-compose",
+      "cell_name": "pll_vco_ring5",
+      "source_path": "pll_vco_ring5.gds",
+      "source_digest": "sha256:e4374be9ca9a13ae43c5ba9bf613927a77e07d3f71114b6210ef6e2b79cb0ae6",
+      "offset_um": {
+        "x": 663.24,
+        "y": 0.0
+      },
+      "bbox_um": {
+        "x0": 663.24,
+        "y0": -0.15,
+        "x1": 703.95,
+        "y1": 16.97
+      },
+      "orientation": "none"
+    },
+    {
+      "id": "pll_divider_intN",
+      "source": "generator_report",
+      "generator": "gen-compose",
+      "cell_name": "pll_divider_intN",
+      "source_path": "pll_divider_intN.gds",
+      "source_digest": "sha256:482491c4b8fe5be36b1c4d7f3961a37b93f7edd51df45e09c0cb97e75ea2e7eb",
+      "offset_um": {
+        "x": 0.0,
+        "y": 423.8
+      },
+      "bbox_um": {
+        "x0": -0.19,
+        "y0": 423.56,
+        "x1": 203.97,
+        "y1": 426.76
+      },
+      "orientation": "none"
+    },
+    {
+      "id": "pll_clk_buf",
+      "source": "generator_report",
+      "generator": "gen-compose",
+      "cell_name": "pll_clk_buf",
+      "source_path": "pll_clk_buf.gds",
+      "source_digest": "sha256:6b063bc94770f8fda5a4e795dec4dcb9244492e2111c9c18a2236567c631e8b4",
+      "offset_um": {
+        "x": 224.16,
+        "y": 423.8
+      },
+      "bbox_um": {
+        "x0": 224.16,
+        "y0": 423.65000000000003,
+        "x1": 240.97,
+        "y1": 448.77
+      },
+      "orientation": "none"
+    }
+  ],
+  "nets": [],
+  "pins": [],
+  "unrouted_nets": [],
+  "drc_hints": {
+    "min_spacing_um": null,
+    "matched_groups": [],
+    "notes": []
+  },
+  "warnings": [],
+  "provenance": {
+    "klt_version": "0.6.0",
+    "klayout_version": "0.30.10",
+    "pdk": {
+      "name": "sky130A",
+      "source": "search root: ~/.ciel",
+      "version": "open_pdks f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+    },
+    "deck": null,
+    "input": null
+  }
+}

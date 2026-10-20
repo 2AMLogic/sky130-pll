@@ -1,0 +1,425 @@
+{
+  "schema": "klt.gen_compose.request/1",
+  "pdk": {
+    "variant": "sky130A"
+  },
+  "blocks": [
+    {
+      "id": "loop_filter_resxhigh_w1_l2p53",
+      "generator_report": {
+        "schema_version": 1,
+        "generator": "res_array",
+        "cell_name": "loop_filter_resxhigh_w1_l2p53",
+        "gds_path": "loop_filter_resxhigh_w1_l2p53.gds",
+        "pdk": {
+          "name": "sky130A",
+          "variant": "sky130A",
+          "version": "open_pdks f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+        },
+        "dbu_um": 0.001,
+        "bbox_um": {
+          "x0": 0.0,
+          "y0": 0.0,
+          "x1": 3.37,
+          "y1": 1.0
+        },
+        "device_count": 1,
+        "ports": [
+          {
+            "name": "R0_A",
+            "net": null,
+            "layer": {
+              "layer": 67,
+              "datatype": 20,
+              "name": null
+            },
+            "x_um": 0.21000000000000002,
+            "y_um": 0.5,
+            "width_um": 1.0,
+            "direction_deg": 180
+          },
+          {
+            "name": "R0_B",
+            "net": null,
+            "layer": {
+              "layer": 67,
+              "datatype": 20,
+              "name": null
+            },
+            "x_um": 3.16,
+            "y_um": 0.5,
+            "width_um": 1.0,
+            "direction_deg": 0
+          }
+        ],
+        "navigable_regions": [],
+        "drc_hints": {
+          "min_spacing_um": 0.5,
+          "matched_group_id": "res_array:1",
+          "snapped_to_grid": false,
+          "notes": []
+        },
+        "warnings": [],
+        "provenance": {
+          "klt_version": "0.6.0",
+          "klayout_version": "0.30.10",
+          "pdk": {
+            "name": "sky130A",
+            "source": "search root: ~/.ciel",
+            "version": "open_pdks f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+          },
+          "deck": null,
+          "input": null
+        }
+      }
+    },
+    {
+      "id": "loop_filter_resxhigh_w1_l5",
+      "generator_report": {
+        "schema_version": 1,
+        "generator": "res_array",
+        "cell_name": "loop_filter_resxhigh_w1_l5",
+        "gds_path": "loop_filter_resxhigh_w1_l5.gds",
+        "pdk": {
+          "name": "sky130A",
+          "variant": "sky130A",
+          "version": "open_pdks f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+        },
+        "dbu_um": 0.001,
+        "bbox_um": {
+          "x0": 0.0,
+          "y0": 0.0,
+          "x1": 5.84,
+          "y1": 1.0
+        },
+        "device_count": 1,
+        "ports": [
+          {
+            "name": "R0_A",
+            "net": null,
+            "layer": {
+              "layer": 67,
+              "datatype": 20,
+              "name": null
+            },
+            "x_um": 0.21000000000000002,
+            "y_um": 0.5,
+            "width_um": 1.0,
+            "direction_deg": 180
+          },
+          {
+            "name": "R0_B",
+            "net": null,
+            "layer": {
+              "layer": 67,
+              "datatype": 20,
+              "name": null
+            },
+            "x_um": 5.63,
+            "y_um": 0.5,
+            "width_um": 1.0,
+            "direction_deg": 0
+          }
+        ],
+        "navigable_regions": [],
+        "drc_hints": {
+          "min_spacing_um": 0.5,
+          "matched_group_id": "res_array:1",
+          "snapped_to_grid": false,
+          "notes": []
+        },
+        "warnings": [],
+        "provenance": {
+          "klt_version": "0.6.0",
+          "klayout_version": "0.30.10",
+          "pdk": {
+            "name": "sky130A",
+            "source": "search root: ~/.ciel",
+            "version": "open_pdks f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+          },
+          "deck": null,
+          "input": null
+        }
+      }
+    },
+    {
+      "id": "loop_filter_XC1",
+      "generator_report": {
+        "schema_version": 1,
+        "generator": "draw",
+        "gds_path": "loop_filter_XC1.gds",
+        "cell_name": "loop_filter_XC1",
+        "dbu_um": 0.001,
+        "shape_count": 2,
+        "label_count": 0,
+        "layers": [
+          {
+            "layer": 70,
+            "datatype": 20,
+            "name": null,
+            "shapes": 1
+          },
+          {
+            "layer": 89,
+            "datatype": 44,
+            "name": null,
+            "shapes": 1
+          }
+        ],
+        "bbox_um": {
+          "x0": 0.0,
+          "y0": 0.0,
+          "x1": 322.40000000000003,
+          "y1": 322.40000000000003
+        },
+        "warnings": [
+          "written verbatim by `klt draw`: no PDK awareness and no rule checking were applied; this cell is not guaranteed to be design-legal"
+        ],
+        "ports": [
+          {
+            "name": "TOP",
+            "layer": {
+              "layer": 89,
+              "datatype": 44
+            },
+            "x_um": 161.2,
+            "y_um": 161.2,
+            "width_um": 322.0,
+            "direction_deg": 90
+          },
+          {
+            "name": "BOT",
+            "layer": {
+              "layer": 70,
+              "datatype": 20
+            },
+            "x_um": 0.1,
+            "y_um": 161.2,
+            "width_um": 0.2,
+            "direction_deg": 180
+          }
+        ]
+      }
+    },
+    {
+      "id": "loop_filter_XC2",
+      "generator_report": {
+        "schema_version": 1,
+        "generator": "draw",
+        "gds_path": "loop_filter_XC2.gds",
+        "cell_name": "loop_filter_XC2",
+        "dbu_um": 0.001,
+        "shape_count": 2,
+        "label_count": 0,
+        "layers": [
+          {
+            "layer": 70,
+            "datatype": 20,
+            "name": null,
+            "shapes": 1
+          },
+          {
+            "layer": 89,
+            "datatype": 44,
+            "name": null,
+            "shapes": 1
+          }
+        ],
+        "bbox_um": {
+          "x0": 0.0,
+          "y0": 0.0,
+          "x1": 72.4,
+          "y1": 72.4
+        },
+        "warnings": [
+          "written verbatim by `klt draw`: no PDK awareness and no rule checking were applied; this cell is not guaranteed to be design-legal"
+        ],
+        "ports": [
+          {
+            "name": "TOP",
+            "layer": {
+              "layer": 89,
+              "datatype": 44
+            },
+            "x_um": 36.2,
+            "y_um": 36.2,
+            "width_um": 72.0,
+            "direction_deg": 90
+          },
+          {
+            "name": "BOT",
+            "layer": {
+              "layer": 70,
+              "datatype": 20
+            },
+            "x_um": 0.1,
+            "y_um": 36.2,
+            "width_um": 0.2,
+            "direction_deg": 180
+          }
+        ]
+      }
+    },
+    {
+      "id": "loop_filter_XC3",
+      "generator_report": {
+        "schema_version": 1,
+        "generator": "draw",
+        "gds_path": "loop_filter_XC3.gds",
+        "cell_name": "loop_filter_XC3",
+        "dbu_um": 0.001,
+        "shape_count": 2,
+        "label_count": 0,
+        "layers": [
+          {
+            "layer": 70,
+            "datatype": 20,
+            "name": null,
+            "shapes": 1
+          },
+          {
+            "layer": 89,
+            "datatype": 44,
+            "name": null,
+            "shapes": 1
+          }
+        ],
+        "bbox_um": {
+          "x0": 0.0,
+          "y0": 0.0,
+          "x1": 40.4,
+          "y1": 40.4
+        },
+        "warnings": [
+          "written verbatim by `klt draw`: no PDK awareness and no rule checking were applied; this cell is not guaranteed to be design-legal"
+        ],
+        "ports": [
+          {
+            "name": "TOP",
+            "layer": {
+              "layer": 89,
+              "datatype": 44
+            },
+            "x_um": 20.2,
+            "y_um": 20.2,
+            "width_um": 40.0,
+            "direction_deg": 90
+          },
+          {
+            "name": "BOT",
+            "layer": {
+              "layer": 70,
+              "datatype": 20
+            },
+            "x_um": 0.1,
+            "y_um": 20.2,
+            "width_um": 0.2,
+            "direction_deg": 180
+          }
+        ]
+      }
+    }
+  ],
+  "placement": {
+    "strategy": "explicit",
+    "order": [
+      "loop_filter_resxhigh_w1_l2p53",
+      "loop_filter_resxhigh_w1_l5",
+      "loop_filter_XC1",
+      "loop_filter_XC2",
+      "loop_filter_XC3"
+    ],
+    "origins_um": {
+      "loop_filter_resxhigh_w1_l2p53": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "loop_filter_resxhigh_w1_l5": {
+        "x": 7.37,
+        "y": 0.0
+      },
+      "loop_filter_XC1": {
+        "x": 0.0,
+        "y": 5.0
+      },
+      "loop_filter_XC2": {
+        "x": 0.0,
+        "y": 331.4
+      },
+      "loop_filter_XC3": {
+        "x": 76.4,
+        "y": 331.4
+      }
+    }
+  },
+  "options": {
+    "cell_name": "pll_loop_filter",
+    "output": "pll_loop_filter.gds"
+  },
+  "connectivity": [
+    {
+      "net": "CP",
+      "pins": [
+        {
+          "block": "loop_filter_resxhigh_w1_l2p53",
+          "port": "R0_B"
+        },
+        {
+          "block": "loop_filter_resxhigh_w1_l5",
+          "port": "R0_B"
+        },
+        {
+          "block": "loop_filter_XC2",
+          "port": "TOP"
+        }
+      ]
+    },
+    {
+      "net": "GND",
+      "pins": [
+        {
+          "block": "loop_filter_XC1",
+          "port": "BOT"
+        },
+        {
+          "block": "loop_filter_XC2",
+          "port": "BOT"
+        },
+        {
+          "block": "loop_filter_XC3",
+          "port": "BOT"
+        }
+      ]
+    },
+    {
+      "net": "VCTRL",
+      "pins": [
+        {
+          "block": "loop_filter_resxhigh_w1_l5",
+          "port": "R0_A"
+        },
+        {
+          "block": "loop_filter_XC3",
+          "port": "TOP"
+        }
+      ]
+    },
+    {
+      "net": "Z1",
+      "pins": [
+        {
+          "block": "loop_filter_resxhigh_w1_l2p53",
+          "port": "R0_A"
+        },
+        {
+          "block": "loop_filter_XC1",
+          "port": "TOP"
+        }
+      ]
+    }
+  ],
+  "routing": {
+    "layer_role": "metal2",
+    "width_um": 0.3
+  }
+}
