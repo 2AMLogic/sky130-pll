@@ -4,6 +4,8 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 ### 2026-10-20
 
+- **PR #345**: sim: add behavioral study of the I/Q /2 quadrature output and correct proposal
+- **Issue #344** (closed): Test proposed quadrature clock timing with a bounded behavioral model (#332 / DR-010)
 - **PR #299**: build: re-pin open_pdks to f6eeac7 and resolve the PDK via ciel with a SOURCES revision check
 - **Issue #296** (closed): Re-pin open_pdks to f6eeac7 and move PDK install/search to ciel 2.6.1 (part of #295)
 - **PR #353**: feat: add N=20 divider bench and mandatory-probe Stage A Fmax configuration
