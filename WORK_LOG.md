@@ -4,6 +4,8 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 ### 2026-10-20
 
+- **PR #299**: build: re-pin open_pdks to f6eeac7 and resolve the PDK via ciel with a SOURCES revision check
+- **Issue #296** (closed): Re-pin open_pdks to f6eeac7 and move PDK install/search to ciel 2.6.1 (part of #295)
 - **PR #353**: feat: add N=20 divider bench and mandatory-probe Stage A Fmax configuration
 - **Issue #352** (closed): Prepare divide-by-20 bench and explicit 500 MHz screening probe for #333; no campaign execution
 - **PR #351**: docs: add 0.95 V VCTRL point to proposed Stage A VCO matrix
