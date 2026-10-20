@@ -32,6 +32,7 @@ Human-approved issues ready for implementation (`loom:issue`).
 Issues currently being built (`loom:building`).
 
 - **#344**: Test proposed quadrature clock timing with a bounded behavioral model (#332 / DR-010)
+- **#352**: Prepare divide-by-20 bench and explicit 500 MHz screening probe for #333; no campaign execution
 
 ## PRs Awaiting Review
 
@@ -45,6 +46,7 @@ PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
 - **#299**: build: re-pin open_pdks to f6eeac7 and resolve the PDK via ciel with a SOURCES revision check
 - **#345**: sim: add behavioral study of the I/Q /2 quadrature output and correct proposal
+- **#353**: feat: add N=20 divider bench and mandatory-probe Stage A Fmax configuration
 
 ## Proposed
 
@@ -68,6 +70,7 @@ Issues carrying `loom:curated`.
 - **#303**: sim: paired buffered-CLK closed-loop runs and layout/LVS for clk_buffer (follow-up to #232) *(curated)*
 - **#329**: Declare the partition boundary and cite T1 items 1, 9 and 10 with artifact-anchored evidence *(curated)*
 - **#344**: Test proposed quadrature clock timing with a bounded behavioral model (#332 / DR-010) *(curated)*
+- **#352**: Prepare divide-by-20 bench and explicit 500 MHz screening probe for #333; no campaign execution *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -86,10 +89,10 @@ _None._
 | Very important | 0 |
 | Important | 2 |
 | Ready (`loom:issue`) | 1 |
-| In Progress (`loom:building`) | 1 |
+| In Progress (`loom:building`) | 2 |
 | PRs awaiting review | 0 |
-| Approved PRs awaiting merge | 2 |
-| Curated | 18 |
+| Approved PRs awaiting merge | 3 |
+| Curated | 19 |
 | Architect / Hermit proposals | 2 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
