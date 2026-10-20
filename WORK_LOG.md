@@ -2,8 +2,13 @@
 
 Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
+### 2026-10-20
+
+- **PR #346**: docs: propose Stage A campaign request for 500 MHz screening
+
 ### 2026-10-19
 
+- **PR #342**: docs: add DR-011 proposed bounded feasibility plan for a 500 MHz output
 - **PR #341**: docs: propose quarter-cycle phase vs multiplied-clock output (DR-010)
 - **Issue #339** (closed): Propose a phase-shifted or multiplied-clock output interface for v1 (follow-on to #332)
 

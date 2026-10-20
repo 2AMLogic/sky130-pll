@@ -6,6 +6,7 @@
 Judge-approved PRs under a hold (`loom:blocked` or `loom:operator`) — only a human merge decision is missing.
 
 - **#299**: build: re-pin open_pdks to f6eeac7 and resolve the PDK via ciel with a SOURCES revision check
+- **#345**: sim: add behavioral study of the I/Q /2 quadrature output and correct proposal
 
 ## Very Important
 
@@ -30,7 +31,7 @@ Human-approved issues ready for implementation (`loom:issue`).
 
 Issues currently being built (`loom:building`).
 
-- **#333**: Requirement from sky130-lvds-tx: 500 MHz DDR bit clock, 50 ± 2.5 % duty, tight jitter
+- **#344**: Test proposed quadrature clock timing with a bounded behavioral model (#332 / DR-010)
 
 ## PRs Awaiting Review
 
@@ -43,7 +44,7 @@ _None._
 PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
 - **#299**: build: re-pin open_pdks to f6eeac7 and resolve the PDK via ciel with a SOURCES revision check
-- **#342**: docs: add DR-011 proposed bounded feasibility plan for a 500 MHz output
+- **#345**: sim: add behavioral study of the I/Q /2 quadrature output and correct proposal
 
 ## Proposed
 
@@ -66,7 +67,7 @@ Issues carrying `loom:curated`.
 - **#296**: Re-pin open_pdks to f6eeac7 and move PDK install/search to ciel 2.6.1 (part of #295) *(curated)*
 - **#303**: sim: paired buffered-CLK closed-loop runs and layout/LVS for clk_buffer (follow-up to #232) *(curated)*
 - **#329**: Declare the partition boundary and cite T1 items 1, 9 and 10 with artifact-anchored evidence *(curated)*
-- **#333**: Requirement from sky130-lvds-tx: 500 MHz DDR bit clock, 50 ± 2.5 % duty, tight jitter *(curated)*
+- **#344**: Test proposed quadrature clock timing with a bounded behavioral model (#332 / DR-010) *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -81,7 +82,7 @@ _None._
 
 | Bucket | Count |
 |------|-------|
-| Operator merge-risk holds | 1 |
+| Operator merge-risk holds | 2 |
 | Very important | 0 |
 | Important | 2 |
 | Ready (`loom:issue`) | 1 |
