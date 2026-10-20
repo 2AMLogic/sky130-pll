@@ -13,7 +13,6 @@ exercised without a PDK, ngspice, AWS or a fleet.
 from __future__ import annotations
 
 import json
-import subprocess
 import sys
 import tempfile
 import unittest
@@ -98,7 +97,7 @@ class FakeKlt:
     def _dump(self, name):
         if name.endswith("cp_op.raw"):
             return "0 0.7 0.8 1e-05\n"
-        vi, pj = int(name.split("_v")[1][:2]), int(name.split("_p")[1][:2])
+        pj = int(name.split("_p")[1][:2])
         return synth_dump(self.spec, self.spec.phase_offsets_s[pj])
 
 

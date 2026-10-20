@@ -94,7 +94,6 @@ def main():
     for record_id, position in record_ids:
         # Check if this is the historical reference by examining context
         # Look for "now-superseded" or "before issue #157" in nearby text
-        line_start = readme_text.rfind("\n", 0, position) + 1
         line_end = readme_text.find("\n", position)
         if line_end == -1:
             line_end = len(readme_text)
