@@ -2,6 +2,10 @@
 
 Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
+### 2026-10-21
+
+- **Issue #103** (closed, not planned): Re-run full sim/pll-lock 45-point PVT grid against widened harness defaults (depends on #102)
+
 ### 2026-10-20
 
 - **PR #345**: sim: add behavioral study of the I/Q /2 quadrature output and correct proposal
