@@ -41,7 +41,7 @@ _None._
 
 PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
-_None._
+- **#362**: Bump Repo Skills 0.24.3 -> 0.24.7
 
 ## Proposed
 
@@ -50,7 +50,6 @@ Issues carrying `loom:curated`.
 - **#18**: Get the PLL netlist-vs-layout LVS-clean via klt (T1 item 4) *(curated)*
 - **#21**: Run post-layout (PEX) verification for the PLL netlist (T1 item 7) — blocked on klayout-tools klt pex *(curated)*
 - **#98**: Closed-loop cold-start lock convergence still broadly fails across PVT after #95's loop-filter re-size *(curated)*
-- **#103**: Re-run full sim/pll-lock 45-point PVT grid against widened harness defaults (depends on #102) *(curated)*
 - **#159**: sim: no VCO supply-pushing or transient rail-ripple campaign exists, so spec row 13 cannot be derived *(curated)*
 - **#166**: sim: measure transient VDD/VCTRL ripple-in-lock of the assembled loop (DR-006 row 13 Budget 1, part 2) *(curated)*
 - **#182**: signoff: cite T1 item 6 once row 9's Monte Carlo campaign has a negative control and a sized population *(curated)*
@@ -85,8 +84,8 @@ _None._
 | Ready (`loom:issue`) | 1 |
 | In Progress (`loom:building`) | 1 |
 | PRs awaiting review | 0 |
-| Approved PRs awaiting merge | 0 |
-| Curated | 18 |
+| Approved PRs awaiting merge | 1 |
+| Curated | 17 |
 | Architect / Hermit proposals | 2 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
