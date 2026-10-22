@@ -2,6 +2,10 @@
 
 Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
+### 2026-10-22
+
+- **PR #366**: feat(sim): route transient measure campaigns through the batch decks[] executor
+
 ### 2026-10-21
 
 - **PR #362**: Bump Repo Skills 0.24.3 -> 0.24.7
