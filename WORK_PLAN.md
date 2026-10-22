@@ -30,12 +30,13 @@ Human-approved issues ready for implementation (`loom:issue`).
 Issues currently being built (`loom:building`).
 
 - **#298**: Re-qualify cited layout reference records under open_pdks f6eeac7 (part of #295)
+- **#365**: sim: extend --executor batch (klt decks[] route) to the pll-lock and loop-ripple transient campaigns
 
 ## PRs Awaiting Review
 
 PRs waiting on Judge (`loom:review-requested`).
 
-_None._
+- **#366**: feat(sim): route transient measure campaigns through the batch decks[] executor
 
 ## Approved (Awaiting Merge)
 
@@ -64,6 +65,7 @@ Issues carrying `loom:curated`.
 - **#298**: Re-qualify cited layout reference records under open_pdks f6eeac7 (part of #295) *(curated)*
 - **#303**: sim: paired buffered-CLK closed-loop runs and layout/LVS for clk_buffer (follow-up to #232) *(curated)*
 - **#329**: Declare the partition boundary and cite T1 items 1, 9 and 10 with artifact-anchored evidence *(curated)*
+- **#365**: sim: extend --executor batch (klt decks[] route) to the pll-lock and loop-ripple transient campaigns *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -82,10 +84,10 @@ _None._
 | Very important | 0 |
 | Important | 1 |
 | Ready (`loom:issue`) | 1 |
-| In Progress (`loom:building`) | 1 |
-| PRs awaiting review | 0 |
+| In Progress (`loom:building`) | 2 |
+| PRs awaiting review | 1 |
 | Approved PRs awaiting merge | 0 |
-| Curated | 17 |
+| Curated | 18 |
 | Architect / Hermit proposals | 2 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
