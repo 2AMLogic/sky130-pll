@@ -1,4 +1,9 @@
-"""`klt sim` `decks[]` batch route for the PFD/charge-pump (`cp`) campaign (issue #290).
+"""`klt sim` `decks[]` batch route for the `cp` campaign (issue #290) and the
+transient `measure` campaigns, e.g. `pll-lock` / `loop-ripple` (issue #365).
+
+A transient `measure` manifest takes the same route: its patched deck (the
+manifest-owned `tran` window plus `wrdata` dumps) ships as one `decks[]` entry
+and the `<corner_id>-pointNNN.raw` dumps come back beside the unit.
 
 The `cp` analysis owns its own `.control` block (`cpmeasure.build_cp_control_block`):
 an operating point plus one transient per VCTRL x phase-offset coordinate, each
@@ -89,11 +94,27 @@ def reroot_pdk(netlist_text: str, local_pdk_root: str) -> str:
     return netlist_text.replace(root, "$PDK_ROOT")
 
 
-def unit_outputs(cp_spec, corner_id: str) -> list:
-    """The dump files a unit's control block promises, as declared outputs."""
-    from . import cpmeasure as cp_mod
+def unit_outputs(spec, corner_id: str) -> list:
+    """The dump files a unit's control block promises, as declared outputs.
 
-    return cp_mod.waveform_names(cp_spec, f"{corner_id}-")
+    `spec` is a `cp` block (`cpmeasure.CpSpec`) or a transient `measure` block
+    (`measure.MeasureSpec`, issue #365); both name their dumps
+    `<corner_id>-<name>` through their own `waveform_names`."""
+    from . import cpmeasure as cp_mod
+    from . import measure as measure_mod
+
+    names = cp_mod.waveform_names if isinstance(spec, cp_mod.CpSpec) else measure_mod.waveform_names
+    return names(spec, f"{corner_id}-")
+
+
+def batch_spec(manifest: dict):
+    """The analysis spec the batch route submits for `manifest`, or `None` when
+    the manifest carries neither a `cp` block nor a transient `measure` block
+    (an `ac` or plumbing-only manifest has no deck-list route)."""
+    from . import cpmeasure as cp_mod
+    from . import measure as measure_mod
+
+    return cp_mod.CpSpec.from_manifest(manifest) or measure_mod.MeasureSpec.from_manifest(manifest)
 
 
 def build_request(units, *, pdk_variant: str, outputs_for, timeout_s: int,
@@ -130,18 +151,22 @@ def build_request(units, *, pdk_variant: str, outputs_for, timeout_s: int,
 
 
 class CpBatchBackend(executor_mod.ExecutionBackend):
-    """Runs the whole `cp` unit set through one `klt sim` deck-list request."""
+    """Runs the whole unit set (`cp` or transient `measure`) through one `klt sim`
+    deck-list request."""
 
     name = BATCH_EXECUTOR
     requested = BATCH_EXECUTOR
 
-    def __init__(self, *, pdk, spiceinit: Path, cp_spec, klt: str | None = None,
+    def __init__(self, *, pdk, spiceinit: Path, cp_spec=None, measure_spec=None, klt: str | None = None,
                  runner=None, log=print, capacity_retries: int = 30,
                  capacity_wait_s: float = 120.0, sleep=time.sleep,
                  max_workers: int = 2, environ: dict | None = None):
         self._pdk = pdk
         self._spiceinit = Path(spiceinit)
-        self._cp_spec = cp_spec
+        # Exactly one analysis spec names the dumps a unit promises.
+        self._spec = cp_spec if cp_spec is not None else measure_spec
+        if self._spec is None:
+            raise CpBatchError("the batch route needs a `cp` or transient `measure` block")
         self._environ = os.environ if environ is None else environ
         self.klt = klt or self._environ.get("SKY130_PLL_KLT") or shutil.which("klt")
         self.runner = runner or subprocess.run  # injectable for tests
@@ -199,7 +224,7 @@ class CpBatchBackend(executor_mod.ExecutionBackend):
         timeout_s = max(u.timeout_s for u in units)
         req = build_request(
             units, pdk_variant=self._pdk.variant,
-            outputs_for=lambda u: unit_outputs(self._cp_spec, u.corner_id),
+            outputs_for=lambda u: unit_outputs(self._spec, u.corner_id),
             timeout_s=timeout_s, max_workers=self.max_workers,
         )
         (bdir / REQUEST_NAME).write_text(json.dumps(req, indent=1, sort_keys=True) + "\n")
@@ -293,7 +318,7 @@ class CpBatchBackend(executor_mod.ExecutionBackend):
             unit.log_path.write_text(log_text)
             unit.spice_path.write_text((bdir / f"{unit.corner_id}.spice").read_text())
             missing = set(entry.get("missing_outputs") or [])
-            for name in unit_outputs(self._cp_spec, unit.corner_id):
+            for name in unit_outputs(self._spec, unit.corner_id):
                 src = udir / name
                 if name not in missing and src.is_file():
                     shutil.copy2(src, unit.work_dir / name)

@@ -780,7 +780,8 @@ KLT_SIM_BACKEND=batch python3 sim/run_corners.py pfd-cp # chosen automatically f
   manifest with no `--executor`/`"executor"` key resolves to `batch`
   (`executor.resolve_name`). `--executor remote` for a `cp` manifest on such a
   host is **refused** (it would degrade to a local run of the grid), and
-  `--executor batch` for any other manifest is refused. An explicit
+  `--executor batch` for a manifest with neither a `cp` nor a transient
+  `measure` block is refused. An explicit
   `--executor local` is still honoured (a single debug point).
 - **No fallback, ever**: a submit failure, a capacity refusal (retried by waiting
   and resubmitting the same job, never by running locally), a `klt` or fleet
@@ -794,7 +795,15 @@ KLT_SIM_BACKEND=batch python3 sim/run_corners.py pfd-cp # chosen automatically f
   executing host); the record states this and carries the job id, instance type,
   lifecycle, ngspice version and runner/client `klt` versions. The model library
   is the fleet image's, not the local pinned install.
-- **Tests**: `sim/tests/test_cp_klt.py` (mocked `klt`, stdlib only).
+- **Transient `measure` campaigns (issue #365)**: `sim/pll-lock` and
+  `sim/loop-ripple` take the same route with `--executor batch`. Each point's
+  patched deck (manifest-owned `tran` window plus `wrdata` dumps) is one
+  `decks[]` entry; `outputs` are `measure.waveform_names` (`<corner_id>-pointNNN.raw`),
+  copied back beside the unit so the unchanged `measure` reducer and judge read
+  them. Same failure policy (raise, no record, no local fallback). These
+  manifests are **not** auto-routed on a `KLT_SIM_BACKEND=batch` host: pass
+  `--executor batch` explicitly. `remote` is unchanged.
+- **Tests**: `sim/tests/test_cp_klt.py`, `sim/tests/test_measure_batch.py` (mocked `klt`, stdlib only).
 - **Fleet status (2026-10-15)**: the installed client (`klt 0.7.1.dev500`)
   accepts and launches `decks[]` batch requests, but the fleet runner's own `klt`
   rejects them (`request is missing required field: netlist`); tracked in

@@ -765,7 +765,9 @@ def resolve_name(cli_value: str | None, manifest: dict, environ: dict | None = N
     Raises :class:`ExecutorRefused` for the two requests that would otherwise
     simulate a `cp` grid on a batch-configured host: `remote` (which degrades
     to `local` on an unprovisioned host) and `batch` for a manifest that has
-    no `cp` block (the batch route only knows how to submit that analysis).
+    neither a `cp` nor a transient `measure` block (the batch route only knows
+    how to submit those analyses). Only `cp` auto-routes to `batch`; a `measure`
+    manifest uses it when asked for.
     """
     from . import cp_klt  # lazy: cp_klt imports this module
 
@@ -780,10 +782,10 @@ def resolve_name(cli_value: str | None, manifest: dict, environ: dict | None = N
                 "KLT_SIM_BACKEND=batch would degrade to a local run of the whole grid "
                 "if the SSH fleet is not provisioned; use --executor batch"
             )
-        if name == "batch" and not is_cp:
+        if name == "batch" and not (is_cp or manifest.get("measure")):
             raise ExecutorRefused(
-                "--executor batch is implemented for `cp` manifests only (it submits "
-                "the charge-pump analysis as a klt sim decks[] request)"
+                "--executor batch is implemented for `cp` and transient `measure` "
+                "manifests only (it submits each patched deck as a klt sim decks[] request)"
             )
         return name
     if is_cp and on_batch_host:
@@ -808,11 +810,13 @@ def build(
     if name == "batch":
         from . import cp_klt  # lazy: cp_klt imports this module
         from . import cpmeasure as cp_mod
+        from . import measure as measure_mod
 
         return cp_klt.CpBatchBackend(
             pdk=pdk,
             spiceinit=spiceinit,
             cp_spec=cp_mod.CpSpec.from_manifest(manifest),
+            measure_spec=measure_mod.MeasureSpec.from_manifest(manifest),
             log=log,
             max_workers=min(max(1, int(jobs)), 2),
         )
