@@ -2,6 +2,11 @@
 
 Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
+### 2026-10-23
+
+- **PR #372**: feat: store run evidence bytes in the artifact store, commit manifest and record
+- **Issue #370** (closed): Adopt the common artifact store for sim evidence (manifests in git, bytes via klt artifact)
+
 ### 2026-10-22
 
 - **PR #366**: feat(sim): route transient measure campaigns through the batch decks[] executor
