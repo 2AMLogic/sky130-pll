@@ -561,9 +561,10 @@ class ReapedWorktreeTests(unittest.TestCase):
             self.assertEqual(sum("second segment" in r for r in rows), 4)
 
             # The record landed in the surviving checkout, with its evidence
-            # artifacts promoted beside it in the usual place...
-            corners_dir = h2.exp_dir / "corners" / RECORD_ID
-            landed = sorted(p.name for p in corners_dir.iterdir())
+            # artifacts handed to the artifact store (DR-012), not to git...
+            prefix = f"sim/fake-exp/corners/{RECORD_ID}/"
+            landed = sorted(n[len(prefix):] for n in h2.stored if n.startswith(prefix))
+            self.assertFalse((h2.exp_dir / "corners").exists())
             self.assertIn(f"{ALL_POINT_IDS[2]}.log", landed)
             self.assertIn(f"{ALL_POINT_IDS[2]}.spice", landed)
             # ...without the waveform dumps or the checkpoint.
@@ -650,9 +651,9 @@ class ReapedWorktreeTests(unittest.TestCase):
 
             self.assertEqual(rc, 0, out)
             self.assertEqual(seen, ALL_POINT_IDS)
-            self.assertFalse(cache.exists())  # nothing was staged at all
-            self.assertNotIn("staging this campaign's work", out)
-            corners_dir = h.exp_dir / "corners" / RECORD_ID
+            self.assertFalse(cache.exists())  # nothing was staged under the cache
+            self.assertNotIn("sim-stage", out)
+            corners_dir = h.root / "build" / "fake-exp" / RECORD_ID  # git-ignored scratch
             # Including the waveform dumps, which an unstaged run has always
             # left in place next to the logs.
             self.assertTrue((corners_dir / f"{ALL_POINT_IDS[0]}-v-clk.raw").is_file())
@@ -687,14 +688,8 @@ class ReapedWorktreeTests(unittest.TestCase):
             # The promoted tree holds exactly what an unstaged run committed:
             # the waveform dumps are the only difference, and they are not
             # committed evidence either way (sim/README.md's retention policy).
-            promoted = sorted(
-                p.name for p in (staged.exp_dir / "corners" / RECORD_ID).iterdir()
-            )
-            unstaged = sorted(
-                p.name
-                for p in (plain.exp_dir / "corners" / RECORD_ID).iterdir()
-                if not p.name.endswith(".raw")
-            )
+            promoted = sorted(staged.stored)
+            unstaged = sorted(plain.stored)
             self.assertEqual(promoted, unstaged)
 
 

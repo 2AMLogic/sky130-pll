@@ -485,8 +485,10 @@ edited to add a back-reference — read forward to find what superseded it.
 
 ## Append-only rule
 
-`records/*.md`, `netlist-snapshots/*.spice`, and `corners/<record-id>/*` are
-written once and never edited or deleted after creation, even to fix a typo.
+`records/*.md`, `netlist-snapshots/*.spice`, `corners/<record-id>/*` and
+`manifests/artifacts/*.manifest.json` are written once and never edited or
+deleted after creation, even to fix a typo. (For a run minted after DR-012
+the last of these replaces the two middle ones; see "Retention policy".)
 A correction is a new record naming the one it supersedes. Only `testbench/`
 and this README are mutable.
 
@@ -506,26 +508,49 @@ above — which governs committed evidence — is unaffected.
 
 ## Retention policy
 
-| Artifact | Retained? | Why |
-|---|---|---|
-| Summary record (`records/<id>.md`) | **Always, committed** | the citable evidence object |
-| Frozen netlist snapshot (`netlist-snapshots/<id>.spice`) | **Always, committed** | the record's claim is meaningless without the exact DUT |
-| Raw per-point ngspice logs (`corners/<id>/*.log`) | **Always, committed** | the primary evidence the pass/fail table was read from |
-| Per-point patched netlists (`corners/<id>/*.spice`) | **Always, committed** | reproduces exactly what ngspice ran at that point |
-| Full waveform rawfiles (`.raw`) | **No, not committed** | regenerable from the frozen netlist + logged environment |
+Changed by [DR-012](../spec/decision-records/DR-012-evidence-bytes-in-artifact-store.md).
+Records minted **before** DR-012 committed their raw bytes, and those files
+stay in git exactly as they are: history is not rewritten and no existing
+record is edited. For a run minted **after** DR-012:
 
-Root `.gitignore` ignores `*.raw` and `*.log` tree-wide; a scoped negation
-un-ignores exactly the evidence path:
+| Artifact | Where | Why |
+|---|---|---|
+| Summary record (`records/<id>.md`) | **Committed** | the citable evidence object; ends with a "Stored evidence" table naming every stored object by sha256 |
+| Manifest (`manifests/artifacts/<bench>-<id>.manifest.json`) | **Committed** | names each stored object by sha256 and size; no storage location (see `manifests/README.md`) |
+| Frozen netlist snapshot (`netlist-snapshots/<id>.spice`) | **Artifact store** | the record's claim is meaningless without the exact DUT, so the manifest pins it |
+| Raw per-point ngspice logs (`corners/<id>/*.log`) | **Artifact store** | the primary evidence the pass/fail table was read from |
+| Per-point patched netlists (`corners/<id>/*.spice`) | **Artifact store** | reproduces exactly what ngspice ran at that point |
+| Full waveform rawfiles (`.raw`) | **No, not stored** | regenerable from the frozen netlist + logged environment |
+
+The record keeps citing the logical paths `sim/<slug>/corners/<id>/...` and
+`sim/<slug>/netlist-snapshots/<id>.spice`; they are the manifest `name`s of the
+stored objects, not files in the checkout. Check them with
+`klt artifact verify manifests/artifacts/<bench>-<id>.manifest.json` and fetch
+one with `klt artifact get <manifest>#<name> -o <out>` (needs
+`KLT_ARTIFACT_BROKER`).
+
+**How a run stores its bytes.** `run_corners.py` and `run_fmax.py` work in the
+git-ignored scratch tree `sim/build/<slug>/<record-id>/` (a linked worktree
+still stages under `$XDG_CACHE_HOME`, issue #212). Before simulating they check
+the store is usable (broker configured, `klt` with `artifact put`, broker
+reachable); when the run finishes they put every file with `klt artifact put`
+and only then install the manifest and the record. Any failure exits nonzero
+and commits nothing; the staged bytes stay in scratch and nothing falls back to
+committing them. `scripts/check_artifact_manifests.py` (in `npm run check:ci`)
+fails if a manifest is malformed, names a storage location, or if a tracked
+file has the same sha256 as a stored object.
+
+Root `.gitignore` ignores `*.raw` and `*.log` tree-wide, with no negation for
+`corners/`; the resume checkpoint stays ignored:
 
 ```gitignore
 *.raw
 *.log
-!sim/*/corners/**/*.log
 sim/*/corners/**/checkpoint.json
 ```
 
-(The last line keeps the transient resume checkpoint out of the committed
-trail — see "Interrupted and parallel runs" above.)
+`run_locktiming.py` still writes its own JSON records and group directories
+directly; moving it to the store is tracked separately.
 
 **Nothing is pruned.** Old records stay after they are superseded.
 
