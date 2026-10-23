@@ -209,4 +209,6 @@ python3 sim/run_locktiming.py --candidate sim/lockdet-timing/phase/candidates/s5
     --points all --records-dir sim/lockdet-timing/phase/records
 ```
 
-A rerun of an already recorded matrix needs `--supersedes <record-id>`.
+A rerun of an already recorded matrix needs `--supersedes <record-id>`. Each
+group's bytes are stored with `klt artifact put` (DR-013), so the run needs
+`KLT_ARTIFACT_BROKER`; git keeps the JSON records and the manifests.

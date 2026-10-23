@@ -26,12 +26,16 @@ from datetime import datetime, timezone
 from pathlib import Path
 from types import SimpleNamespace
 
+from . import evidence_store as E
 from . import fmax_klt as K
 from . import locktiming as L
 
 RECORD_SCHEMA = "sky130-pll.lockdet-timing.record/1"
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_RECORDS = REPO_ROOT / "sim" / "lockdet-timing" / "records"
+BENCH = "lockdet-timing"
+EVIDENCE_FILES = (K.REQUEST_NAME, K.NET_NAME, "report.json", "stderr.log")
+_NOT_RID = re.compile(r"[^A-Za-z0-9._-]")
 _STRIP = re.compile(r"^\s*(\.lib\s.*|\.end|\.control|\.endc)\s*$", re.IGNORECASE)
 
 
@@ -228,31 +232,69 @@ def group_done(recs: list) -> dict | None:
     return ok[-1] if ok else None
 
 
-def write_group_record(gdir: Path, item: dict, res: dict, rows: list, supersedes) -> Path:
-    """Persist one finished group immediately; exclusive create, never overwrite."""
+class GroupStore:
+    """Stages one finished group's bytes under the git-ignored `sim/build/` and
+    stores them with `klt artifact put` (DR-012, DR-013). `put=None` is the real
+    `klt`; tests inject a fake. `repo_root` decides where manifests land."""
+
+    def __init__(self, repo_root: Path = REPO_ROOT, put=None, preflight=E.preflight):
+        self.repo_root, self.put, self._preflight = repo_root, put, preflight
+
+    @property
+    def stage_root(self) -> Path:
+        return self.repo_root / "sim" / "build" / BENCH
+
+    def preflight(self) -> None:
+        self._preflight(self.repo_root)
+
+    def store_group(self, mid: str, stem: str, src: Path) -> str:
+        """Stage `src`'s evidence files, store them, install the group manifest;
+        -> the manifest path relative to the repo. Raises `E.StoreError`, leaving
+        the staged bytes in place and nothing in git."""
+        rid = _NOT_RID.sub("_", stem)
+        stage = self.stage_root / mid / rid
+        stage.mkdir(parents=True, exist_ok=True)
+        for name in EVIDENCE_FILES:
+            if (src / name).is_file():
+                shutil.copy2(src / name, stage / name)
+        files = E.stage_files(stage, f"sim/{BENCH}/groups/{mid}/{rid}")
+        mpath = E.manifest_path(self.repo_root, BENCH, rid)
+        if mpath.exists():
+            raise E.StoreError(f"{mpath.name} already exists; refusing to overwrite evidence")
+        manifest, _empty = (self.put or E.put_files)(files, self.repo_root)
+        E.install_manifest(manifest, mpath)
+        return mpath.relative_to(self.repo_root).as_posix()
+
+
+def write_group_record(gdir: Path, item: dict, res: dict, rows: list, supersedes,
+                       store: GroupStore) -> Path:
+    """Persist one finished group immediately; exclusive create, never overwrite.
+    The group's bytes go to the artifact store first; only the small JSON record
+    (the resume state) and the manifest reference land in git."""
     gdir.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S-%f")
     stem = f"{item['key']}.{stamp}"
     path = gdir / f"{stem}.json"
+    if path.exists():
+        raise FileExistsError(path)
+    res["job"]["evidence_manifest"] = store.store_group(gdir.name, stem, res["gdir"])
     rec = {"schema": GROUP_SCHEMA, "group": item["key"], "job": res["job"], "rows": rows,
            "supersedes": supersedes}
     with open(path, "x") as f:  # raises FileExistsError rather than editing a record
         f.write(json.dumps(rec, indent=1, sort_keys=True, default=list) + "\n")
-    dst = gdir / stem
-    dst.mkdir()
-    for name in (K.REQUEST_NAME, K.NET_NAME, "report.json", "stderr.log"):
-        if (res["gdir"] / name).is_file():
-            shutil.copy2(res["gdir"] / name, dst / name)
     return path
 
 
 def execute(cands, points, *, klt, runner, work, retries=30, wait_s=120.0,
             sleep=time.sleep, log=print, split_temps=False, groups_dir=None,
-            resume=False, max_groups=None, only=None) -> dict:
+            resume=False, max_groups=None, only=None, store=None) -> dict:
     """Run the plan. With `groups_dir`, every finished group is written there at once
     (append-only). `resume` skips groups that already have a successful record;
     `max_groups` bounds the jobs submitted in this invocation. `pending` lists the
-    group keys still lacking a successful record."""
+    group keys still lacking a successful record. `store` (a `GroupStore`) is
+    required with `groups_dir`: the group bytes never go to git."""
+    if groups_dir and store is None:
+        raise RunnerError("group records need an evidence store (DR-013)")
     by_uid, jobs, pending, submitted = {}, [], [], 0
     prior = load_group_records(groups_dir) if groups_dir else {}
     for item in plan(cands, points, split_temps):
@@ -275,7 +317,7 @@ def execute(cands, points, *, klt, runner, work, retries=30, wait_s=120.0,
         if groups_dir:
             hist = prior.get(key) or []
             write_group_record(groups_dir, item, res, rows,
-                               hist[-1]["_stem"] if hist else None)
+                               hist[-1]["_stem"] if hist else None, store)
         if res["job"].get("failure"):
             pending.append(key)
         jobs.append(res["job"])
@@ -319,7 +361,8 @@ def write_record(rec: dict, records_dir: Path, supersedes: str | None) -> Path:
     return path
 
 
-def main(argv=None, *, runner=subprocess.run, sleep=time.sleep, now=None) -> int:
+def main(argv=None, *, runner=subprocess.run, sleep=time.sleep, now=None,
+         store=None) -> int:
     ap = argparse.ArgumentParser(prog="run_locktiming.py", description=__doc__.split("\n")[0])
     ap.add_argument("--candidate", action="append", required=True, metavar="MANIFEST=NETLIST")
     ap.add_argument("--points", default="nominal", choices=("nominal", "all"))
@@ -344,6 +387,7 @@ def main(argv=None, *, runner=subprocess.run, sleep=time.sleep, now=None) -> int
                     help="with --resume/--max-groups, write the combined record even though "
                          "groups are missing or failed (they grade SIM_FAILED/absent)")
     args = ap.parse_args(argv)
+    store = store or GroupStore()
     try:
         cands = [load_candidate(s) for s in args.candidate]
         if len({c["uid"] for c in cands}) != len(cands):
@@ -371,6 +415,11 @@ def main(argv=None, *, runner=subprocess.run, sleep=time.sleep, now=None) -> int
         if args.fixture and not args.records_dir:
             raise RunnerError("--fixture needs an explicit --records-dir (never the default)")
         records_dir = args.records_dir or DEFAULT_RECORDS
+        try:  # DR-013: refuse before spending fleet time on a run that cannot be stored
+            store.preflight()
+        except E.StoreError as e:
+            raise RunnerError(f"cannot store evidence: {e}; no fallback to committing "
+                              "the bytes (DR-012)") from e
         with tempfile.TemporaryDirectory(prefix="sky130-pll-locktiming-") as tmp:
             probe = K.KltBatchBackend(spec=None, manifest=None, work_dir=Path(tmp),
                                       cache_dir=Path(tmp), klt=args.klt)
@@ -382,7 +431,7 @@ def main(argv=None, *, runner=subprocess.run, sleep=time.sleep, now=None) -> int
             run = execute(cands, points, klt=probe.klt, runner=runner, work=Path(tmp),
                           sleep=sleep, split_temps=args.split_temps,
                           groups_dir=records_dir / "groups" / mid, resume=args.resume,
-                          max_groups=args.max_groups, only=args.only)
+                          max_groups=args.max_groups, only=args.only, store=store)
             if (args.resume or args.max_groups is not None or args.only) and run["pending"] \
                     and not args.finalize_incomplete:
                 print(f"{len(run['pending'])} group(s) still lacking a good record "
@@ -404,10 +453,13 @@ def main(argv=None, *, runner=subprocess.run, sleep=time.sleep, now=None) -> int
                    {"scope": "SUBSET", "products_absent": "required products not declared",
                     "handoff_ready": False}}
             path = write_record(rec, records_dir, args.supersedes)
-            probe.jobs = run["jobs"]  # retain request, body, report, stderr per group
-            probe.export_jobs(records_dir / rec["record_id"])
         print(f"wrote {path} ({rec['evidence_class']})")
         return 0
+    except E.StoreError as e:
+        print(f"run_locktiming.py: evidence NOT stored, group record not written: {e}. "
+              f"Staged bytes are kept under {store.stage_root}; nothing was committed "
+              "(DR-012, no fallback to committing bytes)", file=sys.stderr)
+        return 1
     except (RunnerError, L.LockTimingError, OSError) as e:
         print(f"run_locktiming.py: {e}", file=sys.stderr)
         return 1

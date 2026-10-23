@@ -114,8 +114,15 @@ Rules the runner enforces:
   deliberately declares no klt measurements, so a real batch run returns 4
   (found by the first physical smoke, `phase/records/lt-20261012-154414-443931`).
 * Records are JSON (`sky130-pll.lockdet-timing.record/1`) in
-  `sim/lockdet-timing/records/`, append-only; the request, body netlist and
-  report of every group are kept under `records/<record-id>/<group>/`. Each
+  `sim/lockdet-timing/records/`, append-only. The request, body netlist,
+  report and stderr of every group are evidence bytes: since DR-013 they go to
+  the artifact store (`klt artifact put`), not git, and each `jobs[]` entry
+  names the manifest `manifests/artifacts/lockdet-timing-<group-record>.manifest.json`
+  in `evidence_manifest`. Records minted before DR-013 keep their byte copies
+  under `records/<record-id>/<group>/`. The runner needs `KLT_ARTIFACT_BROKER`
+  and checks it before submitting a job; a failed put exits nonzero, writes no
+  group record and leaves the staged bytes in `sim/build/lockdet-timing/`
+  (no fallback to committing them). Each
   carries input/netlist hashes, PDK pin, job ids, engine and runner/client klt
   versions (`version_skew: true` when they differ), `points_scope` and the
   `handoff` scope. A rerun of the same matrix

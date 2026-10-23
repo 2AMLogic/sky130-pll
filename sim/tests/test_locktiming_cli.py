@@ -19,6 +19,7 @@ from pathlib import Path
 from types import SimpleNamespace as NS
 
 sys.path[:0] = [str(Path(__file__).resolve().parents[1]), str(Path(__file__).resolve().parent)]
+from harness import evidence_store as E  # noqa: E402
 from harness import locktiming as L  # noqa: E402
 from harness import locktiming_cli as C  # noqa: E402
 from test_locktiming import manifest, waves  # noqa: E402
@@ -39,6 +40,17 @@ def wave_json(w, drop=(), nonuniform=False, truncate=False):
     if nonuniform:
         pts[2][0] = pts[1][0]
     return {"variables": [{"name": "time"}] + [{"name": f"v({n})"} for n in names], "points": pts}
+
+
+def fake_put(files, repo_root):
+    """Stands in for `klt artifact put`: a valid manifest, nothing stored."""
+    entries = []
+    for path, name in files:
+        sha, size = E.sha256_file(path)
+        if size:
+            entries.append({"name": name, "sha256": sha, "size": size, "kind": "evidence",
+                            "uri": f"artifact:evidence/{sha}", "producer": {"tool": "fake"}})
+    return {"schema_version": 1, "entries": entries}, []
 
 
 class FakeKlt:
@@ -87,6 +99,13 @@ class Base(unittest.TestCase):
         (self.tmp / "prov.sh").write_text("")
         self.cands = self.make(("p1", "c0"), ("p2", "c1"))
         self.clock = (datetime(2026, 1, 1) + timedelta(seconds=i) for i in range(100))
+        self.root = self.tmp / "repo"  # stands in for the repo: manifests + sim/build
+        self.puts = []
+        self.store = C.GroupStore(self.root, put=self.put, preflight=lambda root: None)
+
+    def put(self, files, repo_root):
+        self.puts.append([n for _, n in files])
+        return fake_put(files, repo_root)
 
     def make(self, *uids):
         out = []
@@ -97,12 +116,12 @@ class Base(unittest.TestCase):
             out.append(f"{self.tmp}/m{i}.json={self.tmp}/n{i}.spice")
         return out
 
-    def cli(self, *extra, runner=None, cands=None, now=None):
+    def cli(self, *extra, runner=None, cands=None, now=None, store=None):
         args = [a for c in (cands or self.cands) for a in ("--candidate", c)] + list(extra)
         out, err = io.StringIO(), io.StringIO()
         with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
             rc = C.main(args, runner=runner or FakeKlt(), sleep=lambda s: None,
-                        now=now or (lambda: next(self.clock)))
+                        now=now or (lambda: next(self.clock)), store=store or self.store)
         return rc, out.getvalue(), err.getvalue()
 
     def fix(self, *extra, **kw):
@@ -160,7 +179,11 @@ class Run(Base):
         j = rec["jobs"][0]
         self.assertEqual((j["job_id"], j["exit_code"], j["version_skew"], j["pdk"]["pdk"]),
                          ("job-1", 0, True, "sky130A"))
-        body = (self.tmp / "rec" / rec["record_id"] / j["group"] / "body.spice").read_text()
+        man = json.loads((self.root / j["evidence_manifest"]).read_text())
+        self.assertEqual(sorted(e["name"].rsplit("/", 1)[1] for e in man["entries"]),
+                         ["body.spice", "report.json", "request.json"])  # stderr.log is empty
+        stage = self.root / "sim" / "build" / "lockdet-timing"
+        body = next(stage.glob(f"*/{j['group']}.*/body.spice")).read_text()
         self.assertIn("V1 VDD GND 1.62", body)
         self.assertNotIn(".lib", body)
         self.assertIn(".save v(in)", body)
@@ -173,8 +196,9 @@ class Run(Base):
         self.assertEqual([len(c["rows"]) for c in rec["candidates"]], [1, 1])
         self.assertEqual(rec["points_scope"], "SUBSET_POINTS:nominal")
         self.assertEqual({c["result"]["verdict"] for c in rec["candidates"]}, {L.INCONCLUSIVE})
+        stage = self.root / "sim" / "build" / "lockdet-timing"
         for j in rec["jobs"]:
-            report = self.tmp / "rec" / rec["record_id"] / j["group"] / "report.json"
+            report = next(stage.glob(f"*/{j['group']}.*/report.json"))
             self.assertEqual(json.loads(report.read_text())["environment"]["remote"]["job_id"],
                              j["job_id"])
 
@@ -224,6 +248,77 @@ class Run(Base):
         self.assertEqual(C.evidence_class({"jobs": [{"job_id": None, "failure": "x"}]}, False),
                          "incomplete-not-physical")
 
+
+
+class Evidence(Base):
+    def tracked_bytes(self):
+        """Every file the run left under records/ other than JSON records."""
+        return [p for p in (self.tmp / "rec").rglob("*") if p.is_file() and p.suffix != ".json"]
+
+    def test_no_bytes_in_records_and_manifest_cited(self):
+        self.assertEqual(self.fix()[0], 0)
+        self.assertEqual(self.tracked_bytes(), [])
+        rec = self.rec()
+        for j in rec["jobs"]:
+            self.assertRegex(j["evidence_manifest"], r"^manifests/artifacts/lockdet-timing-.*\.manifest\.json$")
+            self.assertTrue((self.root / j["evidence_manifest"]).is_file())
+        (g,) = [p for p in (self.tmp / "rec" / "groups").glob("*/p1*.json")]
+        self.assertEqual(json.loads(g.read_text())["job"]["evidence_manifest"],
+                         rec["jobs"][0]["evidence_manifest"])
+        self.assertEqual(len(self.puts), 2)
+
+    def test_failed_group_still_stores_stderr(self):
+        self.assertEqual(self.fix(runner=FakeKlt("boom"))[0], 0)
+        names = [n for put in self.puts for n in put]
+        self.assertTrue(any(n.endswith("/stderr.log") for n in names))
+        self.assertFalse(any(n.endswith("/report.json") for n in names))
+
+    def test_put_failure_fails_closed(self):
+        def boom(files, repo_root):
+            raise E.StoreError("klt artifact put x failed (exit 1): nope")
+        rc, _, err = self.fix(store=C.GroupStore(self.root, put=boom, preflight=lambda r: None))
+        self.assertEqual(rc, 1)
+        self.assertIn("evidence NOT stored", err)
+        self.assertEqual(list((self.tmp / "rec").rglob("*.json")), [])  # no record at all
+        self.assertFalse((self.root / "manifests").exists())
+        self.assertTrue(list((self.root / "sim" / "build").rglob("request.json")))  # kept
+
+    def test_preflight_refuses_before_any_job(self):
+        def no_broker(root):
+            raise E.StoreError("no artifact broker configured ($KLT_ARTIFACT_BROKER is unset)")
+        k = FakeKlt()
+        rc, _, err = self.fix(runner=k, store=C.GroupStore(self.root, preflight=no_broker))
+        self.assertEqual((rc, k.calls), (1, []))
+        self.assertIn("no fallback to committing the bytes", err)
+        self.assertFalse((self.tmp / "rec").exists())
+
+    def test_dry_run_needs_no_broker(self):
+        def no_broker(root):
+            raise E.StoreError("unset")
+        self.assertEqual(self.cli("--dry-run", store=C.GroupStore(self.root, preflight=no_broker))[0], 0)
+
+    def test_hash_mismatch_from_put_files_is_a_store_error(self):
+        def lying(files, repo_root):
+            raise E.StoreError("klt manifest entry for x does not match the file's local sha256/size")
+        rc, _, err = self.fix(store=C.GroupStore(self.root, put=lying, preflight=lambda r: None))
+        self.assertEqual(rc, 1)
+        self.assertIn("does not match", err)
+
+    def test_resume_cites_stored_bytes_and_stores_each_group_once(self):
+        args = ("--points", "all", "--split-temps")
+        self.assertEqual(self.fix(*args, "--max-groups", "3")[0], 0)
+        self.assertEqual(len(self.puts), 3)
+        self.assertEqual(self.fix(*args, "--resume")[0], 0)
+        self.assertEqual(len(self.puts), 18)  # 3 + 15, none re-stored
+        rec = self.rec()
+        self.assertEqual(len({j["evidence_manifest"] for j in rec["jobs"]}), 18)
+
+    def test_existing_manifest_is_never_overwritten(self):
+        self.assertEqual(self.fix()[0], 0)
+        m = next((self.root / "manifests" / "artifacts").iterdir())
+        stem = m.name[len("lockdet-timing-"):-len(".manifest.json")]
+        with self.assertRaises(E.StoreError):
+            self.store.store_group("mid", stem, self.tmp)
 
 
 class Resume(Base):
