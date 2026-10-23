@@ -1,14 +1,19 @@
 #!/usr/bin/env bash
 # layout/bin/run-pll-layout-flow.sh -- draw the PLL layout from the authored
-# schematic (issue #16) and check the evidence into
-# layout/pll/reports/<record-id>/.
+# schematic (issue #16) and record the evidence: the raw outputs go to the
+# artifact store (DR-012, issue #371); git keeps only
+# manifests/artifacts/layout-pll-<record-id>.manifest.json and
+# layout/pll/reports/<record-id>/record.md.
 #
 # Usage:
 #   layout/bin/setup-venv.sh            # once, or after bumping requirements.txt
 #   layout/bin/run-pll-layout-flow.sh
 #
-# Requires: layout/.venv (see setup-venv.sh) and a resolvable sky130A PDK
-# install (same pin as sim/pdk.json; `ciel enable --pdk-family sky130 -l sky130_fd_pr <sha>`).
+# Requires: layout/.venv (see setup-venv.sh), a resolvable sky130A PDK
+# install (same pin as sim/pdk.json; `ciel enable --pdk-family sky130 -l sky130_fd_pr <sha>`),
+# and a configured artifact store ($KLT_ARTIFACT_BROKER, a klt with
+# `artifact put`). Fails closed (nonzero, nothing committed) without them;
+# the raw bytes are never committed as a fallback.
 #
 # Shape and conventions follow run-trivial-cell-flow.sh (same record-id
 # scheme, same "record.md is the deliverable" rule, same LATEST pointer), but
@@ -59,8 +64,19 @@ fi
 
 flow_require_pdk "$SCRIPT_NAME"
 
+# Refuse before spending any drawing time if the evidence could not be stored.
+if ! python3 "$LAYOUT_DIR/bin/store_pll_evidence.py" preflight --klt "$KLT"; then
+  echo "$SCRIPT_NAME: artifact store unavailable; refusing to run (nothing committed)" >&2
+  exit 1
+fi
+
 flow_new_record_id
-flow_setup_out_dir "$SCRIPT_NAME" "$PLL_DIR"
+# Raw outputs are staged in a git-ignored scratch dir (layout/pll/build/), then
+# stored in step 8. flow_setup_out_dir would put them under reports/ (in git),
+# so the scratch dir is set up here instead.
+OUT_DIR="$PLL_DIR/build/$RECORD_ID"
+mkdir -p "$OUT_DIR"
+echo "$SCRIPT_NAME: record $RECORD_ID -> $OUT_DIR (staging; stored in the artifact store)"
 
 # --- 1. Draw + compose the schematic's device set (shipped, unrouted) ------
 python3 "$LAYOUT_DIR/bin/pll_layout.py" \
@@ -160,11 +176,23 @@ find "$SPOT_DIR" \( -name 'gen.*.json' -o -name 'draw.*.json' \
 "$KLT" report "$OUT_DIR/drc.json" --format github-summary > "$OUT_DIR/report.md"
 
 # --- 7. Record summary (verdicts, evidence-record style) --------------------
+# The renderer exits nonzero after writing the record if a verdict it asserts
+# fails; the record is still stored (it is the evidence of the miss), and the
+# flow exits with that status afterwards.
+RENDER_RC=0
 python3 "$LAYOUT_DIR/bin/render-pll-record.py" \
   --out-dir "$OUT_DIR" --record-id "$RECORD_ID" --repo-root "$REPO_ROOT" \
   --klt "$KLT" --pdk-variant "$PDK_VARIANT" --netlist "$NETLIST" \
-  > "$OUT_DIR/record.md"
+  > "$OUT_DIR/record.md" || RENDER_RC=$?
 
-flow_write_latest "$PLL_DIR"
+# --- 8. Store the raw outputs; commit only the manifest and record.md --------
+python3 "$LAYOUT_DIR/bin/store_pll_evidence.py" store \
+  --stage-dir "$OUT_DIR" --record-id "$RECORD_ID" --klt "$KLT"
 
-echo "$SCRIPT_NAME: done. See $OUT_DIR/record.md"
+# A record whose verdicts failed is stored but not made LATEST (as before).
+if [[ "$RENDER_RC" -eq 0 ]]; then
+  flow_write_latest "$PLL_DIR"
+fi
+
+echo "$SCRIPT_NAME: done. See $PLL_DIR/reports/$RECORD_ID/record.md"
+exit "$RENDER_RC"

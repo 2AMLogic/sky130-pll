@@ -19,7 +19,7 @@ Reads every manifest committed in ``REV`` (default ``HEAD``; blob contents via
 git, so a sparse working tree does not matter) and fails if one is malformed
 (wrong schema, unknown or missing field, a ``uri`` that is not
 ``artifact:<key>`` ending in the entry's sha256, a ``name`` that is not a
-canonical ``sim/...`` path, a duplicate name), or if the sha256 of any
+canonical ``sim/...`` or ``layout/...`` path, a duplicate name), or if the sha256 of any
 git-tracked file equals a manifest entry: the point of a manifest is that the
 bytes are *not* committed.
 
@@ -61,8 +61,11 @@ class ToolError(Exception):
     """Git failure: exit 2, fail closed."""
 
 
+NAME_ROOTS = ("sim/", "layout/")
+
+
 def canonical_name(name) -> bool:
-    return (isinstance(name, str) and name.startswith("sim/")
+    return (isinstance(name, str) and name.startswith(NAME_ROOTS)
             and "\\" not in name and "\0" not in name
             and posixpath.normpath(name) == name
             and not {"", ".", ".."} & set(name.split("/")))
@@ -102,9 +105,9 @@ def entry_problems(entry) -> list[str]:
     elif m.group(1).rsplit("/", 1)[-1] != sha:
         problems.append("uri key does not end in the entry's sha256")
     if "name" not in entry:
-        problems.append("name is required here (the logical sim/ path of the bytes)")
+        problems.append("name is required here (the logical sim/ or layout/ path of the bytes)")
     elif not canonical_name(entry["name"]):
-        problems.append("name must be a canonical relative sim/... path")
+        problems.append("name must be a canonical relative sim/... or layout/... path")
     if "media_type" in entry and not isinstance(entry["media_type"], str):
         problems.append("media_type must be a string")
     return problems

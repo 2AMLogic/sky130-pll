@@ -2,7 +2,8 @@
 
 `manifests/artifacts/<bench>-<run-id>.manifest.json` is written by
 `sim/run_corners.py` and `sim/run_fmax.py` (via `sim/harness/evidence_store.py`)
-for every evidence run minted after
+(and by `layout/bin/run-pll-layout-flow.sh`, via `layout/bin/store_pll_evidence.py`,
+as `layout-pll-<run-id>.manifest.json`) for every evidence run minted after
 [DR-012](../spec/decision-records/DR-012-evidence-bytes-in-artifact-store.md).
 One manifest per run; one entry per stored file:
 
@@ -22,7 +23,8 @@ One manifest per run; one entry per stored file:
 }
 ```
 
-`name` is the logical path the bytes would have had under `sim/` and the path
+`name` is the logical path the bytes would have had under `sim/` (or
+`layout/pll/reports/` for the PLL layout flow) and the path
 the run's record cites. `uri` is `artifact:<key>`, a logical name that only the
 artifact broker resolves. **A manifest names no storage location** — no
 bucket, endpoint or account — so nothing in this directory identifies where the

@@ -24,6 +24,9 @@ sim/build/
 
 # layout/ DRC/LVS flow: local klt install, created by layout/bin/setup-venv.sh
 layout/.venv/
+# PLL layout flow scratch: raw outputs are staged here, then stored in the
+# artifact store (DR-012); only the manifest and record.md are committed.
+layout/pll/build/
 # >>> loom-managed (do not edit) >>>
 # Loom runtime state (don't commit these)
 .loom-in-use

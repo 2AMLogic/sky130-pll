@@ -2,12 +2,22 @@
 
 Issue #16's deliverable: a **device-level layout of the closed-loop PLL
 schematic**, drawn headlessly from `design/top/netlist/top.spice` by
-`layout/bin/run-pll-layout-flow.sh` and checked in as an append-only
-evidence record under `reports/<record-id>/`.
+`layout/bin/run-pll-layout-flow.sh`. Each run is an append-only evidence
+record: `reports/<record-id>/record.md` and
+`manifests/artifacts/layout-pll-<record-id>.manifest.json` are committed; the
+raw outputs (GDS, extracts, JSON envelopes, renders) are in the fleet artifact
+store (DR-012). Records minted before #371 still carry their bytes in git.
 
 **Read the current record's `record.md` first** — it is the actual pass/fail
 evidence this issue delivers, not this file. `reports/LATEST` names it.
-The layout stream itself is `reports/<record-id>/pll_top.gds`.
+The layout stream itself is `reports/<record-id>/pll_top.gds` in a pre-#371
+record; in a newer one it is the manifest entry of that name
+(`klt artifact get manifests/artifacts/layout-pll-<record-id>.manifest.json#layout/pll/reports/<record-id>/pll_top.gds -o pll_top.gds`).
+
+The flow fails closed: without `$KLT_ARTIFACT_BROKER`, a `klt` with
+`artifact put`, and a reachable broker it exits nonzero before drawing and
+commits nothing. It never falls back to committing the bytes. It stages in the
+git-ignored `layout/pll/build/<record-id>/`.
 
 ```bash
 layout/bin/setup-venv.sh            # once, or after bumping requirements.txt
@@ -292,6 +302,10 @@ block `orientation` (#1166), which the divider's single row does not need
 today.
 
 ## Directory layout
+
+The tree below is the layout of a run's output. For a record minted after
+#371 only `record.md` sits in `reports/<record-id>/`; every other file is a
+manifest entry named `layout/pll/reports/<record-id>/<path>`.
 
 ```
 layout/pll/

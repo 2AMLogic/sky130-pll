@@ -93,6 +93,18 @@ class CheckTests(unittest.TestCase):
         self.assertEqual(rc, 1)
         self.assertIn("sim/b/corners/r2/copy.log", err)
 
+    def test_layout_names_are_valid(self):
+        name = "layout/pll/reports/r1/pll_top.gds"
+        self.assertEqual(self.run_check(self.mfile(manifest(entry(name=name))))[0], 0)
+
+    def test_layout_bytes_committed_under_reports_fail(self):
+        name = "layout/pll/reports/r1/pll_top.gds"
+        files = self.mfile(manifest(entry(name=name)))
+        files[name] = DATA
+        rc, err = self.run_check(files)
+        self.assertEqual(rc, 1)
+        self.assertIn(name, err)
+
     def test_same_size_different_bytes_is_not_a_match(self):
         files = self.mfile(manifest(entry()))
         files["sim/b/other.log"] = b"X" * len(DATA)

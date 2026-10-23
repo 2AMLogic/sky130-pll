@@ -187,7 +187,8 @@ layout/
     run-trivial-cell-flow.sh  # the repeatable driver: gen -> drc -> extract -> lvs -> report
     render-record.py          # renders + verdict-checks a trivial-cell record's record.md
     pll_layout.py             # schematic -> layout plan -> `klt gen`/`draw`/`gen-compose`
-    run-pll-layout-flow.sh    # the PLL layout driver: plan -> draw -> compose -> drc/extract -> report
+    run-pll-layout-flow.sh    # the PLL layout driver: plan -> draw -> compose -> drc/extract -> report -> store (artifact store; fails closed)
+    store_pll_evidence.py     # the PLL flow's last step: klt artifact put + manifest + record.md (issue #371)
     render-pll-record.py      # renders + verdict-checks a PLL record's record.md
   tests/                      # PDK-free unit coverage
   .venv/                      # gitignored -- `klt` install, created by setup-venv.sh
