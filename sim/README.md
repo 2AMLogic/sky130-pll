@@ -549,8 +549,9 @@ Root `.gitignore` ignores `*.raw` and `*.log` tree-wide, with no negation for
 sim/*/corners/**/checkpoint.json
 ```
 
-`run_locktiming.py` still writes its own JSON records and group directories
-directly; moving it to the store is tracked separately.
+`run_locktiming.py` follows the same rule (DR-013): its JSON records stay in
+git, and each group's request, body netlist, report and stderr go to the store
+under a per-group manifest named in the record's `jobs[].evidence_manifest`.
 
 **Nothing is pruned.** Old records stay after they are superseded.
 
