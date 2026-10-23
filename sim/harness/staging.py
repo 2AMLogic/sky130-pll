@@ -169,6 +169,7 @@ def resolve(
     disabled: bool = False,
     resuming: bool = False,
     environ: dict | None = None,
+    scratch_root: Path | None = None,
 ) -> Staging | None:
     """Where this run's units should write. `None` means "in the tree, as
     always" -- `sim/<slug>/corners/<record-id>/`.
@@ -183,8 +184,19 @@ def resolve(
     """
     environ = os.environ if environ is None else environ
     final_dir = Path(exp_dir) / "corners" / record_id
+    # With `scratch_root` (DR-012: evidence bytes go to the artifact store, not
+    # git) a run that would otherwise work in the tree works under that
+    # git-ignored scratch root instead (sim/build/<slug>/<record-id>/).
+    scratch = (
+        _staging(Path(scratch_root), slug, record_id, final_dir,
+                 "evidence bytes are stored outside git (DR-012); work stays in the "
+                 "git-ignored scratch tree")
+        if scratch_root is not None else None
+    )
     if disabled:
-        return None
+        if scratch is not None:
+            _check_usable(scratch.work_dir)
+        return scratch
 
     if explicit and explicit.strip():
         root, reason = Path(explicit.strip()).expanduser(), "--stage-dir was given"
@@ -211,7 +223,7 @@ def resolve(
             "remove under a running campaign (issue #212)",
         )
     else:
-        staging = None
+        staging = scratch
 
     if resuming:
         in_tree_checkpoint = (final_dir / checkpoint_mod.CHECKPOINT_NAME).is_file()

@@ -45,6 +45,7 @@ from harness import checkpoint as checkpoint_mod  # noqa: E402
 from harness import cli  # noqa: E402
 from harness import corners  # noqa: E402
 from harness import cpmeasure as cp_mod  # noqa: E402
+from harness import evidence_store as evidence_store_mod  # noqa: E402
 from harness import executor as executor_mod  # noqa: E402
 from harness import measure as measure_mod  # noqa: E402
 from harness import montecarlo as mc_mod  # noqa: E402
@@ -53,6 +54,7 @@ from scripts.test_support import record_table_rows  # noqa: E402
 import test_cpmeasure as cpt  # noqa: E402
 
 RECORD_ID = "20260101-000000-abc1234"
+_REAL_STORE_FILES = evidence_store_mod.store_files
 
 
 class _StubPdk:
@@ -170,6 +172,19 @@ def cp_execute(*, iup: float = 100e-6, drop=(), log: str = CP_LOG, rc: int = 0, 
 
 
 
+def fake_put(files, repo_root):
+    """Stand-in for `klt artifact put`: hashes the files, stores nothing."""
+    entries = []
+    for path, name in files:
+        sha, size = evidence_store_mod.sha256_file(path)
+        entries.append({
+            "sha256": sha, "size": size, "kind": "evidence", "name": name,
+            "producer": {"tool": "klt", "version": "t", "loom.repo": "o/r", "commit": None},
+            "uri": f"artifact:evidence/o__r/{sha[:2]}/{sha}",
+        })
+    return {"schema_version": 1, "entries": sorted(entries, key=lambda e: e["name"])}, []
+
+
 class _Harness:
     """A temp experiment directory plus the stubs that let `cli.main` run one
     end to end without a PDK."""
@@ -187,7 +202,14 @@ class _Harness:
 
     @property
     def checkpoint_path(self) -> Path:
-        return self.exp_dir / "corners" / RECORD_ID / checkpoint_mod.CHECKPOINT_NAME
+        # Work lives in the git-ignored scratch tree (DR-012), not corners/.
+        return self.root / "build" / self.slug / RECORD_ID / checkpoint_mod.CHECKPOINT_NAME
+
+    def fake_store_files(self, files, **kw):
+        """The real writer with `klt artifact put` replaced by a hash-only fake,
+        installing the manifest under this harness's temp root."""
+        self.stored = [n for _, n in files]
+        return _REAL_STORE_FILES(files, **dict(kw, repo_root=self.root, put=fake_put))
 
     @property
     def record_path(self) -> Path:
@@ -204,6 +226,8 @@ class _Harness:
              mock.patch.object(cli.runner_mod, "netlist_schematic", return_value=netlist), \
              mock.patch.object(cli.runner_mod, "run_point", run_point), \
              mock.patch.object(cli.report_mod, "make_record_id", return_value=RECORD_ID), \
+             mock.patch.object(cli.evidence_store_mod, "preflight", return_value=None), \
+             mock.patch.object(cli.evidence_store_mod, "store_files", self.fake_store_files), \
              mock.patch.dict(os.environ, clear=False):
             # A batch dispatch host exports KLT_SIM_BACKEND=batch, which routes a `cp`
             # manifest to the batch executor (#290); these tests pin the local seam.

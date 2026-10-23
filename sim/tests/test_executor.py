@@ -344,6 +344,16 @@ class _Harness:
     def record_path(self) -> Path:
         return self.exp_dir / "records" / f"{RECORD_ID}.md"
 
+    @property
+    def work_dir(self) -> Path:
+        # Work lives in the git-ignored scratch tree (DR-012), not corners/.
+        return self.root / "build" / self.slug / RECORD_ID
+
+    def _fake_store_files(self, files, **kw):
+        from test_execution import _REAL_STORE_FILES, fake_put
+        self.stored = [n for _, n in files]
+        return _REAL_STORE_FILES(files, **dict(kw, repo_root=self.root, put=fake_put))
+
     def _fake_local(self, log_text=GOOD_LOG, returncode=0):
         def run_ngspice_locally(unit, *, pdk, spiceinit):
             self.local_calls.append(unit.corner_id)
@@ -386,6 +396,8 @@ class _Harness:
                 self._fake_local(local_log, local_rc),
             ),
             mock.patch.object(cli.report_mod, "make_record_id", return_value=RECORD_ID),
+            mock.patch.object(cli.evidence_store_mod, "preflight", return_value=None),
+            mock.patch.object(cli.evidence_store_mod, "store_files", self._fake_store_files),
             mock.patch.dict("os.environ", env or {}, clear=False),
         ]
         with contextlib.ExitStack() as stack:
@@ -605,7 +617,7 @@ class RemoteExecutorTests(unittest.TestCase):
         """
         with tempfile.TemporaryDirectory() as tmp:
             h = _Harness(Path(tmp))
-            corners_dir = h.exp_dir / "corners" / RECORD_ID
+            corners_dir = h.work_dir
             corners_dir.mkdir(parents=True)
             stale = corners_dir / "tt_27c_1.80v-v-clk.dat"
             stale.write_text("stale dump from a previous attempt\n")
@@ -796,7 +808,7 @@ class CpRemoteTests(unittest.TestCase):
     def test_a_stale_cp_dump_is_purged_before_the_pull_lands_new_artifacts(self):
         with tempfile.TemporaryDirectory() as tmp:
             h = _Harness(Path(tmp), manifest=CP_REMOTE_MANIFEST)
-            corners_dir = h.exp_dir / "corners" / RECORD_ID
+            corners_dir = h.work_dir
             corners_dir.mkdir(parents=True)
             stale = corners_dir / "tt_27c_1.80v-cp_v00_p00.raw"
             stale.write_text("stale\n")

@@ -24,6 +24,7 @@ import tempfile
 from pathlib import Path
 
 from . import corners as corners_mod
+from . import evidence_store as evidence_store_mod
 from . import executor as executor_mod
 from . import fmax as fmax_mod
 from . import fmax_klt
@@ -286,6 +287,15 @@ def cmd(args) -> int:
     if args.write and record_path.exists():
         print(f"run_fmax.py: {record_path} exists; records are append-only", file=sys.stderr)
         return 1
+    if args.write:
+        # DR-012: evidence bytes go to the artifact store, never to git. Refuse
+        # before spending probe time on a run that could not be stored.
+        try:
+            evidence_store_mod.preflight(REPO_ROOT)
+        except evidence_store_mod.StoreError as e:
+            print(f"run_fmax.py: cannot store evidence: {e}; no fallback to "
+                  "committing the bytes (DR-012)", file=sys.stderr)
+            return 1
 
     with tempfile.TemporaryDirectory(prefix=f"sky130-pll-fmax-{record_id}-") as tmp:
         work_dir = Path(tmp)
@@ -350,14 +360,16 @@ def cmd(args) -> int:
         if not args.write:
             return 0
 
-        snap_dir = exp_dir / "netlist-snapshots"
-        snap_dir.mkdir(parents=True, exist_ok=True)
-        snapshot = snap_dir / f"{record_id}.spice"
+        # Evidence is staged in the git-ignored scratch tree (sim/build/), stored
+        # through the artifact store, and only its manifest and the record land
+        # in git (DR-012). The record cites the logical sim/<slug>/... names.
+        scratch = exp_dir.parent / "build" / slug / record_id
+        scratch.mkdir(parents=True, exist_ok=True)
+        snapshot = scratch.parent / f"{record_id}.spice"
         snapshot.write_text("".join(
             f"* ---- unpatched netlist for N={n} ----\n{netlists[n]}\n" for n in sorted(netlists)
         ))
-        corners_dir = exp_dir / "corners" / record_id
-        corners_dir.mkdir(parents=True, exist_ok=True)
+        corners_dir = scratch
         for p in probes:
             src = work_dir / p["log_file"]
             if src.is_file():
@@ -376,8 +388,18 @@ def cmd(args) -> int:
             subset_reason=args.subset_reason, supersedes=args.supersedes,
             execution_note=note,
         )
-        record_path.parent.mkdir(parents=True, exist_ok=True)
-        record_path.write_text(text)
+        try:
+            evidence_store_mod.store_files(
+                evidence_store_mod.stage_files(corners_dir, f"sim/{slug}/corners/{record_id}")
+                + [(snapshot, f"sim/{slug}/netlist-snapshots/{record_id}.spice")],
+                repo_root=REPO_ROOT, bench=slug, rid=record_id,
+                summary_text=text, summary_path=record_path,
+            )
+        except evidence_store_mod.StoreError as e:
+            print(f"run_fmax.py: evidence NOT stored, no record written: {e}. The run's "
+                  f"bytes are kept in {scratch}; nothing was committed (DR-012, no "
+                  "fallback to committing bytes)", file=sys.stderr)
+            return 1
         print(f"run_fmax.py: wrote {record_path}")
         verdict, detail = fmax_report.overall(results)
         print(f"run_fmax.py: overall {verdict} ({detail})")

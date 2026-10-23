@@ -16,6 +16,7 @@ from . import checkpoint as checkpoint_mod
 from . import corners as corners_mod
 from . import cpmeasure as cp_mod
 from . import cp_klt as cp_klt_mod
+from . import evidence_store as evidence_store_mod
 from . import executor as executor_mod
 from . import measure as measure_mod
 from . import montecarlo as mc_mod
@@ -447,7 +448,6 @@ def _run_experiment(
 
     record_id = resume_id or report_mod.make_record_id(REPO_ROOT)
     exp_dir = manifest_path.parent.parent
-    snapshots_dir = exp_dir / "netlist-snapshots"
     records_dir = exp_dir / "records"
     record_path = records_dir / f"{record_id}.md"
     if args.write and record_path.exists():
@@ -470,6 +470,14 @@ def _run_experiment(
     # checkpoint that makes the finished ones resumable.
     staging = None
     if args.write:
+        # DR-012: evidence bytes go to the artifact store, never to git. Refuse
+        # before spending simulation time on a run that could not be stored.
+        try:
+            evidence_store_mod.preflight(REPO_ROOT)
+        except evidence_store_mod.StoreError as e:
+            print(f"run_corners.py: cannot store evidence: {e}; no fallback to "
+                  "committing the bytes (DR-012)", file=sys.stderr)
+            return 1
         try:
             staging = staging_mod.resolve(
                 exp_dir=exp_dir,
@@ -478,6 +486,7 @@ def _run_experiment(
                 explicit=getattr(args, "stage_dir", None),
                 disabled=not getattr(args, "stage", True),
                 resuming=bool(resume_id),
+                scratch_root=exp_dir.parent / "build",
             )
         except staging_mod.StagingError as e:
             print(f"run_corners.py: {e}", file=sys.stderr)
@@ -485,8 +494,8 @@ def _run_experiment(
         if staging is not None:
             print(
                 f"run_corners.py: staging this campaign's work in {staging.work_dir} "
-                f"({staging.reason}); its evidence artifacts are copied into "
-                f"{staging.final_dir} when the record is written"
+                f"({staging.reason}); its evidence artifacts are stored in the artifact "
+                "store when the record is written"
             )
 
     with _corners_dir(args.write, exp_dir, record_id, staging) as corners_dir:
@@ -644,22 +653,11 @@ def _run_experiment(
         failed = [r for r in results if not r.passed]
 
         if args.write:
+            # The snapshot lives beside (not inside) the work directory, in the
+            # git-ignored scratch tree; the record only hashes it.
+            snapshot_path = corners_dir.parent / f"{record_id}.spice"
             try:
-                snapshots_dir.mkdir(parents=True, exist_ok=True)
-                records_dir.mkdir(parents=True, exist_ok=True)
-                snapshot_path = snapshots_dir / f"{record_id}.spice"
                 snapshot_path.write_text(netlist_text)
-                if staging is not None:
-                    # Before the record is rendered, so it is written against
-                    # a tree that already holds every artifact it cites -- and
-                    # before the checkpoint is discarded, so a checkout that
-                    # went away leaves the campaign resumable rather than
-                    # half-landed.
-                    promoted = staging_mod.promote(staging)
-                    print(
-                        f"run_corners.py: copied {len(promoted)} staged artifact(s) "
-                        f"into {staging.final_dir}"
-                    )
             except OSError as e:
                 print(
                     _checkout_gone(e, staging, record_id, args, "writing this record's artifacts"),
@@ -686,7 +684,27 @@ def _run_experiment(
                         executor_note=_executor_note(backend.provenance()),
                     ),
                 )
-                record_path.write_text(record_md)
+                evidence = evidence_store_mod.stage_files(
+                    corners_dir,
+                    f"sim/{slug}/corners/{record_id}",
+                    skip=lambda p: p.relative_to(corners_dir) not in set(staging_mod.promotable(corners_dir)),
+                ) + [(snapshot_path, f"sim/{slug}/netlist-snapshots/{record_id}.spice")]
+                evidence_store_mod.store_files(
+                    evidence,
+                    repo_root=REPO_ROOT,
+                    bench=slug,
+                    rid=record_id,
+                    summary_text=record_md,
+                    summary_path=record_path,
+                )
+            except evidence_store_mod.StoreError as e:
+                print(
+                    f"run_corners.py: evidence NOT stored, no record written: {e}. The "
+                    f"run's bytes are kept in {corners_dir}; nothing was committed "
+                    "(DR-012, no fallback to committing bytes)",
+                    file=sys.stderr,
+                )
+                return 1
             except OSError as e:
                 print(
                     _checkout_gone(e, staging, record_id, args, "writing this record"),
