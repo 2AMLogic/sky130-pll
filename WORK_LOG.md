@@ -4,6 +4,10 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 ### 2026-10-23
 
+- **PR #377**: feat: route LOCK timing group bytes through the artifact store
+- **PR #376**: feat: store PLL layout flow outputs in the artifact store
+- **Issue #373** (closed): Route run_locktiming.py evidence bytes through the artifact store
+- **Issue #371** (closed): Route layout flow reports through the artifact store (manifest in git, bytes via klt artifact)
 - **PR #372**: feat: store run evidence bytes in the artifact store, commit manifest and record
 - **Issue #370** (closed): Adopt the common artifact store for sim evidence (manifests in git, bytes via klt artifact)
 
