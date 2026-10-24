@@ -135,9 +135,9 @@ changes `sim/pdk.json`, so it will turn item 9 stale by design.
 ## Item 3 (met, both partitions), and what it does and does not say
 
 Item 3 cites
-`layout/pll/reports/20260924-041509-c53e7c4/drc.json` — the DRC envelope of
+`layout/pll/reports/20261020-164647-ba142d6/drc.json` — the DRC envelope of
 the record `layout/pll/reports/LATEST` currently names — with its input pinned
-to `sha256:939f97e05b9e4a2a0f866a44bb6f758c030cfd611eaa0a567d5dc3002fa68d4c`,
+to `sha256:5133a0ac0340a28a736414a3f6664a036b6a3361498ddfbbf2ba5ca8583abeb4`,
 which is the SHA-256 of `pll_top.gds` committed in that same record directory
 (re-hashed on every run, see "Three guards this repo adds"). It is cited once,
 with a kind-independent `"3"` key, so it grades both partitions' rows: the
@@ -192,11 +192,11 @@ the expected direction of travel, not a regression to be argued away.
 This same record already carries evidence for exactly one of those 35 rules,
 and it complicates the forecast rather than simply confirming it. The
 record's own routed spot-check
-(`layout/pll/reports/20260924-041509-c53e7c4/route-spot-check/drc.json`)
+(`layout/pll/reports/20261020-164647-ba142d6/route-spot-check/drc.json`)
 reports `status: "clean"`, zero violations — but not because a full route
 passed `met1.space.1` clean. Per that same record's `record.md` ("Routing
 spot-check"), the router's spacing-aware collision check (new at `klt`
-0.6.0) declined 51 of the 923 undrawn two-pin legs specifically because
+0.6.0) declined 51 of the 929 undrawn two-pin legs specifically because
 drawing them would violate `met1.space.1`, which is exactly why the rule no
 longer appears in the spot-check's violation list. The zero reflects legs
 the router refused to draw, not legs it drew and that passed, so it does not
@@ -230,7 +230,7 @@ Item 8 is cited under the key `"8.analog"` at
 `signoff/evidence/characterization-report.json`, a `"kind": "generic"`
 envelope — the only kind item 8 accepts at the pinned `klt` — whose
 `provenance.input.content_hash` and the manifest's pin are both
-`sha256:9ce2d90e095f13a5dc063c0e0fd55b20b628a4ef9dc82eb07ab7fefdc45d4f90`, the
+`sha256:9342763c067772a2f2bae175afdc2bbcc7724c3f869e5412773e95fbb7f65584`, the
 SHA-256 of the committed `measurements/report.md`. Guard 1 re-hashes that file
 from its live bytes on every run.
 
