@@ -2,6 +2,11 @@
 
 Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
+### 2026-10-27
+
+- **PR #383**: chore: bump klayout-tools pin to 0.8.0 and re-render tier report
+- **Issue #382** (closed): Bump klayout-tools pin 0.6.0, 0.7.0 → 0.8.0
+
 ### 2026-10-23
 
 - **PR #377**: feat: route LOCK timing group bytes through the artifact store
