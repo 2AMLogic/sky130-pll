@@ -90,6 +90,9 @@ $ .venv/bin/klt yield <samples> --limits <limits>
    `maturin develop --release` inside native/yield/ ..."}}
 ```
 
+The `klt-yield-env.sh` pin was bumped to 0.8.0 in #382; the transcript above is
+from 0.6.0 and has not been re-measured.
+
 `klt yield --help`'s own text says so ("NOT published as a prebuilt wheel and is
 therefore unreachable from a single-package `pip install`/`uv tool install`
 (including its git-pinned `@git+...` form) — it needs a full repo checkout plus

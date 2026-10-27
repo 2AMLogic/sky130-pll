@@ -54,7 +54,7 @@ bash scripts/audit-headless.sh
 ```
 
 It uses `uv` (a prerequisite it never installs; so are bash, node and npm) to
-build a cached Python 3.11 + `klayout-tools==0.7.0` environment outside the
+build a cached Python 3.11 + `klayout-tools==0.8.0` environment outside the
 checkout, then runs `npm run check:ci` and `bash signoff/run-signoff.sh --check`
 with that environment on PATH, stopping at the first failure. It never runs
 simulation, installs the PDK or regenerates signoff evidence. When reporting,

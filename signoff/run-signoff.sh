@@ -48,7 +48,7 @@ REPORT="signoff/tier-report.json"
 # checklist revision or render a different report shape, which shows up as a
 # confusing `--check` diff rather than an obvious version mismatch -- hence
 # the warning below.
-KLT_PIN="0.7.0"
+KLT_PIN="0.8.0"
 
 mode="write"
 case "${1-}" in

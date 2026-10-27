@@ -30,7 +30,7 @@ reason this directory exists before the evidence does rather than after.
 ## Reproducing
 
 ```sh
-pip install 'klayout-tools==0.7.0'
+pip install 'klayout-tools==0.8.0'
 bash signoff/run-signoff.sh --check    # verify the committed report
 bash signoff/run-signoff.sh            # re-render it after changing the manifest
 

@@ -20,7 +20,7 @@ Two layers:
   * Release0_7_0RenderTests run the *real* `klt signoff` over the same
     disposable citations and assert the status and reason each renders, so the
     table in run-signoff.sh and signoff/README.md case 4b is measured rather
-    than assumed. They are skipped unless `klt` 0.7.0 is on PATH (CI installs it).
+    than assumed. They are skipped unless `klt` 0.8.0 is on PATH (CI installs it).
 """
 
 import copy
@@ -44,7 +44,7 @@ YIELD_DIR = REPO_ROOT / "sim" / "pll-lock-mc" / "analysis" / "yield-evidence"
 
 STUB_KLT = """#!/usr/bin/env bash
 case "${1-}" in
-  --version) echo "klt 0.7.0" ;;
+  --version) echo "klt 0.8.0" ;;
   signoff) cat signoff/tier-report.json; exit 3 ;;
   *) echo "stub klt: unexpected arguments: $*" >&2; exit 64 ;;
 esac
@@ -192,17 +192,21 @@ class GuardPolicyTests(unittest.TestCase):
         return result.returncode, result.stderr
 
 
-def _real_klt_is_0_7_0():
+def _real_klt_is_0_8_0():
     try:
         out = subprocess.run(["klt", "--version"], capture_output=True, text=True)
     except OSError:
         return False
-    return out.returncode == 0 and "0.7.0" in out.stdout
+    return out.returncode == 0 and "0.8.0" in out.stdout
 
 
-@unittest.skipUnless(_real_klt_is_0_7_0(), "needs klt 0.7.0 on PATH")
+@unittest.skipUnless(_real_klt_is_0_8_0(), "needs klt 0.8.0 on PATH")
 class Release0_7_0RenderTests(unittest.TestCase):
-    """What the real 0.7.0 grader renders for item 6 (analog column)."""
+    """What the real grader renders for item 6 (analog column).
+
+    The class name is historical (0.7.0 introduced the render); the skip
+    guard above now requires 0.8.0.
+    """
 
     EXPECTED = {
         "sufficient_detected": ("met", None, "detected"),

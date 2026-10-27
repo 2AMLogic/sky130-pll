@@ -125,7 +125,7 @@ any directory:
 bash scripts/audit-headless.sh
 ```
 
-The wrapper creates (or reuses) a Python 3.11 + `klayout-tools==0.7.0`
+The wrapper creates (or reuses) a Python 3.11 + `klayout-tools==0.8.0`
 environment under `${XDG_CACHE_HOME:-~/.cache}/sky130-pll-audit-headless`
 (override with `AUDIT_HEADLESS_CACHE`), then runs `npm run check:ci` followed by
 `bash signoff/run-signoff.sh --check`, and prints the commit, tool versions and
