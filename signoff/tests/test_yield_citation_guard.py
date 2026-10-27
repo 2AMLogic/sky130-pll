@@ -202,7 +202,11 @@ def _real_klt_is_0_8_0():
 
 @unittest.skipUnless(_real_klt_is_0_8_0(), "needs klt 0.8.0 on PATH")
 class Release0_7_0RenderTests(unittest.TestCase):
-    """What the real 0.7.0 grader renders for item 6 (analog column)."""
+    """What the real grader renders for item 6 (analog column).
+
+    The class name is historical (0.7.0 introduced the render); the skip
+    guard above now requires 0.8.0.
+    """
 
     EXPECTED = {
         "sufficient_detected": ("met", None, "detected"),

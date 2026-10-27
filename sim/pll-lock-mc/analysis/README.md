@@ -83,12 +83,15 @@ wheel. Confirmed in a clean virtualenv at the exact pin before any of the work
 here was built on it:
 
 ```
-$ python3 -m venv .venv && .venv/bin/pip install 'klayout-tools==0.8.0'
+$ python3 -m venv .venv && .venv/bin/pip install 'klayout-tools==0.6.0'
 $ .venv/bin/klt yield <samples> --limits <limits>
 {"schema_version": 1, "error": {"command": "yield", "message":
   "the klt_yield_native extension is not installed -- from a repo checkout, run
    `maturin develop --release` inside native/yield/ ..."}}
 ```
+
+The `klt-yield-env.sh` pin was bumped to 0.8.0 in #382; the transcript above is
+from 0.6.0 and has not been re-measured.
 
 `klt yield --help`'s own text says so ("NOT published as a prebuilt wheel and is
 therefore unreachable from a single-package `pip install`/`uv tool install`
