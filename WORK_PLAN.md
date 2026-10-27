@@ -24,12 +24,13 @@ _None._
 Human-approved issues ready for implementation (`loom:issue`).
 
 - **#304**: layout: draw clk_buf and re-mint the top-level layout record against the buffered top (split from #303)
+- **#298**: Re-qualify cited layout reference records under open_pdks f6eeac7 (part of #295)
 
 ## In Progress
 
 Issues currently being built (`loom:building`).
 
-- **#298**: Re-qualify cited layout reference records under open_pdks f6eeac7 (part of #295)
+_None._
 
 ## PRs Awaiting Review
 
@@ -81,8 +82,8 @@ _None._
 | Operator merge-risk holds | 0 |
 | Very important | 0 |
 | Important | 1 |
-| Ready (`loom:issue`) | 1 |
-| In Progress (`loom:building`) | 1 |
+| Ready (`loom:issue`) | 2 |
+| In Progress (`loom:building`) | 0 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
 | Curated | 17 |
