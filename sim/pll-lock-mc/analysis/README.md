@@ -83,7 +83,7 @@ wheel. Confirmed in a clean virtualenv at the exact pin before any of the work
 here was built on it:
 
 ```
-$ python3 -m venv .venv && .venv/bin/pip install 'klayout-tools==0.6.0'
+$ python3 -m venv .venv && .venv/bin/pip install 'klayout-tools==0.8.0'
 $ .venv/bin/klt yield <samples> --limits <limits>
 {"schema_version": 1, "error": {"command": "yield", "message":
   "the klt_yield_native extension is not installed -- from a repo checkout, run

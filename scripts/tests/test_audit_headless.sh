@@ -55,7 +55,7 @@ P
     echo "uv $*" >> "$FAKE_LOG"
     [ -n "${FAKE_PIP_FAIL:-}" ] && exit 8
     d="$(dirname "$(dirname "$4")")"
-    echo "${FAKE_KLTVER:-0.7.0}" > "$d/kltver";;
+    echo "${FAKE_KLTVER:-0.8.0}" > "$d/kltver";;
 esac
 X
 chmod +x "$fakebin"/*
@@ -76,11 +76,11 @@ run() { : > "$FAKE_LOG"; ( cd "$T" && PATH="$fakebin:$sysbin" AUDIT_HEADLESS_CAC
 rm -rf "$cache"; run env
 rc=$?
 expect "happy path exits 0" $rc
-grep -q "npm run check:ci cwd=$repo python=$cache/venv-py3.11-klt0.7.0/bin/python3 klt=$cache/venv-py3.11-klt0.7.0/bin/klt" "$FAKE_LOG"
+grep -q "npm run check:ci cwd=$repo python=$cache/venv-py3.11-klt0.8.0/bin/python3 klt=$cache/venv-py3.11-klt0.8.0/bin/klt" "$FAKE_LOG"
 expect "npm check runs from repo root with env python/klt first on PATH" $?
 grep -q "signoff --check cwd=$repo python=$cache/.*bin/python3" "$FAKE_LOG"
 expect "signoff check runs after, from repo root, with env on PATH" $?
-grep -q "^commit:" "$T/out" && grep -q "python:  *3.11.9" "$T/out" && grep -q "klayout-tools:  *0.7.0" "$T/out"
+grep -q "^commit:" "$T/out" && grep -q "python:  *3.11.9" "$T/out" && grep -q "klayout-tools:  *0.8.0" "$T/out"
 expect "summary records commit and tool versions" $?
 
 # 2. reuse
@@ -90,7 +90,7 @@ expect "second run exits 0" $rc
 grep -q "reusing" "$T/out"; expect "second run says it reused the env" $?
 
 # 3. incompatible env
-echo 3.12.1 > "$cache/venv-py3.11-klt0.7.0/pyver"
+echo 3.12.1 > "$cache/venv-py3.11-klt0.8.0/pyver"
 run env; rc=$?
 [ $rc -eq 1 ]; expect "incompatible env stops with exit 1" $?
 grep -q "incompatible" "$T/out" && ! grep -q "^npm " "$FAKE_LOG"; expect "incompatible env is reported and no check runs" $?
@@ -110,7 +110,7 @@ mv "$T/npm.off" "$fakebin/npm"
 rm -rf "$cache"; run env FAKE_UV_FAIL=1; rc=$?
 [ $rc -eq 3 ] && ! grep -q "^npm " "$FAKE_LOG"; expect "uv venv failure -> exit 3, no checks" $?
 rm -rf "$cache"; run env FAKE_PIP_FAIL=1; rc=$?
-[ $rc -eq 3 ] && [ ! -e "$cache/venv-py3.11-klt0.7.0" ]; expect "install failure -> exit 3, partial env removed" $?
+[ $rc -eq 3 ] && [ ! -e "$cache/venv-py3.11-klt0.8.0" ]; expect "install failure -> exit 3, partial env removed" $?
 
 # 6. check failures
 rm -rf "$cache"; run env FAKE_NPM_RC=7; rc=$?

@@ -35,7 +35,7 @@ from scripts.test_support import sha256_tag  # noqa: E402
 
 STUB_KLT = """#!/usr/bin/env bash
 case "${1-}" in
-  --version) echo "klt 0.7.0" ;;
+  --version) echo "klt 0.8.0" ;;
   signoff) cat signoff/tier-report.json; exit 3 ;;
   *) echo "stub klt: unexpected arguments: $*" >&2; exit 64 ;;
 esac

@@ -36,9 +36,9 @@
 
 set -euo pipefail
 
-TAG="v0.6.0"
-EXPECT_COMMIT="c622e8addb362491664d44ba4d717f354ca88bbd"
-WHEEL_PIN="klayout-tools==0.6.0"
+TAG="v0.8.0"
+EXPECT_COMMIT="c572046be644e0407f693f2410f3abb799d68a3a"
+WHEEL_PIN="klayout-tools==0.8.0"
 
 MODE="verify"
 [[ "${1:-}" == "--write" ]] && MODE="write"

@@ -105,7 +105,7 @@
 # layout/bin/run-trivial-cell-flow.sh and layout/bin/run-pll-layout-flow.sh,
 # checking the refreshed records in, as the non-regression proof.
 #
-# `klt --version` reports `0.6.0` at this pin (upstream has bumped the package
+# `klt --version` reports `0.8.0` at this pin (upstream has bumped the package
 # version on every release since `0.3.0`, unlike the #46 commit-pin era where
 # `klt --version` stayed at `0.2.0` across different commits) -- but
 # `layout/bin/setup-venv.sh` still installs with `--force-reinstall`
@@ -149,5 +149,10 @@
 # without re-running both flows (per the bump-discipline paragraph above) to
 # confirm the engine-mismatch warning is gone and to check in the refreshed
 # records.
-klayout-tools==0.6.0
-klayout==0.30.10
+# Bump to 0.8.0 (issue #382): `klayout-tools==0.8.0`'s own build info
+# (`klayout_tools/_build_info.py`, `KLAYOUT_VERSION_EXPECTED`) names
+# `klayout 0.30.12` as the tested-against engine, so the companion pin below
+# moved from 0.30.10 to 0.30.12 in the same commit, per the rule above. The
+# paragraphs above describe the 0.6.0-era pin and are kept as history.
+klayout-tools==0.8.0
+klayout==0.30.12

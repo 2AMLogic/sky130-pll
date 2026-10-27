@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Opt-in headless audit bootstrap: provision Python 3.11 + klayout-tools
-# 0.7.0 in a dedicated virtual environment outside the checkout, then run the
+# 0.8.0 in a dedicated virtual environment outside the checkout, then run the
 # two PDK-free repository checks CI runs, in order:
 #
 #   1. npm run check:ci
@@ -29,7 +29,7 @@
 set -uo pipefail
 
 PY_VERSION="3.11"
-KLT_VERSION="0.7.0"
+KLT_VERSION="0.8.0"
 
 die() { local code=$1; shift; echo "audit-headless: $*" >&2; exit "$code"; }
 
