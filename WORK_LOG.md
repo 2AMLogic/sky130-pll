@@ -2,13 +2,42 @@
 
 Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
+### 2026-10-28
+
+- **PR #421**: sim: add klt sim wrapper for schematic closed-loop-psrr
+- **Issue #4** (closed): Track the gap to T1 sim-validated / bronze (klayout-tools design-evidence tiers)
+- **PR #418**: sim: add klt sim wrappers for closed-loop-iq and closed-loop-startup
+- **Issue #411** (closed): T1 item 11 (power delivery): commit a klt erc supply spec and report for the SG13G2 bandgap_top instead of citing the SG13CMOS5L port's ERC
+- **PR #417**: feat: add SG13G2 bandgap_top ERC evidence and cite it for T1 item 11
+
 ### 2026-10-27
 
+- **Issue #408** (closed): Bump klayout-tools pin 7ee09483b748 → 0.8.0
+- **PR #409**: ci: pin klayout-tools to PyPI 0.8.0 and regenerate signoff verdict
+- **Issue #405** (closed): SG13CMOS5L committed netlists drift from schematics at the dev PDK pin
+- **PR #406**: docs: classify archived-pin mm_ok netlist delta in drift check
 - **PR #383**: chore: bump klayout-tools pin to 0.8.0 and re-render tier report
 - **Issue #382** (closed): Bump klayout-tools pin 0.6.0, 0.7.0 → 0.8.0
 
+### 2026-10-25
+
+- **Issue #399** (closed): Remove dead helpers _interp_log and _fmt_vdd from enrich_ac_report.py
+- **PR #400**: refactor(sim): remove uncalled helpers from enrich_ac_report
+- **PR #398**: feat(sim): convert closed-loop-vref-pvt-boxtc to the klt sim fleet harness
+
+### 2026-10-24
+
+- **Issue #385** (closed): Remove dead riser 'bridge' machinery in sg13cmos5l-bandgap_top generate.py
+
 ### 2026-10-23
 
+- **Issue #389** (closed): sim/README: list the 6 other manifest-less experiments with non-run_pvt_sweep runners
+- **PR #393**: docs(sim): list all 18 experiments without run_klt_sim.sh as unconverted
+- **Issue #386** (closed): Follow-on from PR #382: convert legacy corners/-writing sim runners to the artifact store
+- **PR #388**: ci(sim): fail manifest-less evidence records dated on/after DR-0015
+- **Issue #310** (closed): signoff: execute the deferred cold-start testbench audit for T1 item 9
+- **PR #391**: fix(sim): make PEX klt-sim record step work cold; add partial item-9 audit log
+- **PR #382**: feat(sim): store new klt-sim evidence in the artifact store, commit manifests
 - **PR #377**: feat: route LOCK timing group bytes through the artifact store
 - **PR #376**: feat: store PLL layout flow outputs in the artifact store
 - **Issue #373** (closed): Route run_locktiming.py evidence bytes through the artifact store
@@ -22,6 +51,13 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 ### 2026-10-21
 
+- **PR #365**: Bump Repo Skills 0.24.3 -> 0.24.7
+- **Issue #374** (closed): Condense layout/README.md: resolved-blocker history and triplicated Reproducing sections
+- **PR #375**: docs: condense resolved-blocker history in layout/README.md
+- **Issue #366** (closed): Consolidate five near-identical sim run_klt_sim.sh runners into a shared driver
+- **PR #369**: refactor(sim): share one driver across the five PEX run_klt_sim.sh runners
+- **Issue #367** (closed): CI: hygiene/signoff-manifest fails building klayout wheel on Python 3.15 (red main)
+- **PR #368**: ci: pin hygiene signoff-manifest Python to 3.14
 - **PR #362**: Bump Repo Skills 0.24.3 -> 0.24.7
 - **Issue #103** (closed, not planned): Re-run full sim/pll-lock 45-point PVT grid against widened harness defaults (depends on #102)
 
@@ -45,8 +81,15 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 - **PR #341**: docs: propose quarter-cycle phase vs multiplied-clock output (DR-010)
 - **Issue #339** (closed): Propose a phase-shifted or multiplied-clock output interface for v1 (follow-on to #332)
 
+### 2026-10-18
+
+- **Issue #360** (closed): Consolidate PEX klt-sim batch runners: zout-pex duplicates psrr-pex, three bypass pex_merge_call.sh
+- **PR #361**: refactor: route remaining PEX batch runners through pex_merge_shards
+
 ### 2026-10-17
 
+- **Issue #356** (closed): Consolidate duplicated sha256-pin validation in CI evidence checkers
+- **PR #357**: refactor(ci): single-source containment and sha256 pin check
 - **PR #335**: docs(spec): add DR-009 recording phase-output scope and consumer clock-gap dispositions
 - **PR #330**: feat(signoff): declare partition boundary and inventory items 1, 9, 10
 - **PR #328**: refactor: share test module loader, table-row and sha256 helpers
@@ -68,6 +111,7 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 ### 2026-10-15
 
+- **PR #347**: Bump Repo Skills 0.19.5 -> 0.24.1
 - **PR #302**: design: add provisional buffered CLK output stage and 1 pF load contract (DR-008)
 - **PR #301**: sim: shard the power campaign to fit the batch fleet job ceiling
 - **PR #292**: sim: add klt sim decks[] batch route for the pfd-cp campaign
@@ -80,11 +124,28 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 ### 2026-10-13
 
+- **Issue #337** (closed): sim: convert the four SG13CMOS5L experiments to the klt sim harness (Part of #322)
+- **Issue #342** (closed): Simplify CI checkers: hoist duplicated manifest discovery, report printing and sha256: wrapper into _ci_common
+- **PR #344**: ci: hoist duplicated checker scaffolding into _ci_common
+- **Issue #341** (closed): docs: add the five unindexed sim/ experiments to sim/README.md and enforce index completeness
+- **PR #343**: docs(sim): index five missing experiments, enforce index completeness
+- **Issue #333** (closed): sim: reject unresolved local include closures before minting snapshots
+- **PR #340**: sim: reject unresolved local include closures before minting snapshots
+- **Issue #332** (closed): sim: bind resumed batch reports to the exact submitted inputs
+- **PR #338**: sim: bind resumed batch reports to the exact submitted inputs
+- **Issue #331** (closed): sim: repair PEX batch callers missing the mandatory expected-grid arguments
+- **PR #334**: sim: repair PEX batch callers missing the mandatory expected-grid arguments
 - **PR #285**: design: wdb watchdog nominal, split-temp runner and incomplete-grid evidence (#276)
 - **PR #284**: design: watchdog primitive, controls and partial timing handoff (#276)
 
 ### 2026-10-12
 
+- **Issue #328** (closed): sim: enforce append-only staged publication in the evidence adapter
+- **Issue #327** (closed): sim: reject incomplete and malformed batch shard grids before publishing evidence
+- **PR #329**: sim: reject incomplete and malformed batch shard grids before publishing evidence
+- **Issue #325** (closed): Guard blocks read-only rg search patterns in Codex
+- **PR #326**: ci: detect stale inputs behind the active T1 design-source audit
+- **PR #323**: docs: re-stamp SG13CMOS5L target pin to IHP-Open-PDK dev f7bca326 (Refs #322)
 - **PR #281**: sim: full PVT grids for LOCK phase-window delay chains (measured miss)
 - **Issue #275** (closed): design: measure acquisition and release delay-chain PVT envelopes
 - **PR #280**: design: phase-window delay-chain candidates and PVT evidence (#275)
@@ -108,6 +169,11 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 ### 2026-10-09
 
+- **Issue #315** (closed): ci: detect dependency drift in the active characterization summary
+- **PR #316**: ci: detect dependency drift in the active characterization report (#315)
+- **PR #314**: design: opt-in netlist drift check (#312)
+- **Issue #309** (closed): sim: bind PEX simulation records to their consumed extraction hashes
+- **PR #311**: sim: bind PEX simulation records to their consumed extraction hashes
 - **PR #257**: sim: klt batch route for the divider Fmax campaign with capacity retry (part of #244)
 - **PR #256**: Add opt-in headless audit bootstrap wrapper
 - **Issue #253** (closed): Auditor Capability Request: Python 3 unavailable for headless repository checks
@@ -123,6 +189,13 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 ### 2026-10-08
 
+- **Issue #300** (closed): measurements: refresh the aggregated characterization report against the current spec and trim-bearing core, and wrap it for T1 item 8
+- **PR #307**: measurements: October characterization report bound to T1 item 8 (#300)
+- **Issue #265** (closed): Trimmed-line disposition: DR-0011's +/-0.5% does not hold on #229's aids-free trim-domain MC evidence
+- **PR #305**: docs(readme): Trim-row disposition now tracked in #303
+- **Issue #297** (closed): Run the loop-gain solve-quality test in hygiene CI and add harness self-tests
+- **Issue #295** (closed): Orphan helper .loom/scripts/tracker-state-comment.sh: upstream it or pin it
+- **PR #296**: chore: pin tracker-state-comment helper as repo-owned (#295)
 - **PR #234**: signoff: bump grader to klayout-tools 0.7.0 and narrow guard 3 (#200)
 - **Issue #200** (closed): signoff: klayout-tools#2467 has landed — bump the grader pin and decide what guard 3 becomes
 - **PR #229**: README: dated, pointer-based status summary (fix stale claims)
@@ -136,21 +209,52 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 ### 2026-10-04
 
+- **PR #293**: sim(pex): re-run three of the five PEX grids through the klt-sim batch bridge (part of #278)
 - **PR #221**: Consolidate duplicated C1/C2 variant generator mechanics
 - **Issue #220** (closed): Consolidate duplicated C1/C2 variant generator mechanics
 
+### 2026-10-03
+
+- **Issue #289** (closed): loop-gain bench: a single AC sweep can return a numerically corrupted solve that PASSes (36.3 deg / 43.9 deg were artifacts); add a solve-quality guard
+- **PR #291**: sim(loop-gain): solve-quality gate and guarded 45-point record (#289)
+- **Issue #271** (closed): Trim ladder costs real loop phase margin at wcs/125C/2.97V (36.3 deg vs 88.5 deg pre-trim)
+- **PR #290**: sim(loop-gain): trim-code axis of phase margin; 36.3 deg is a corrupted AC solve, accept and disclose (#271)
+- **Issue #285** (closed): Trim row: should the ratified 1-point 27 °C trim become 2-point (room+hot) with the CTAT knob? It is the only measured path to ±0.5%
+
 ### 2026-10-02
 
+- **Issue #277** (closed): Infra: the EDA batch fleet image carries no ihp-sg13g2 PDK (and no OSDI build step), so klt sim cannot run this repo's corner grids
+- **PR #287**: feat: run the klt sim probe on the batch fleet (--batch)
+- **Issue #267** (closed): Second trim degree of freedom: the 1-point R1 trim converts offset into TC at a measured 0.058%/code, which is what sets the trimmed line
+- **Issue #269** (closed): TC row: the trim-bearing, aids-free core reads 20.2-45.7 ppm/C box TC - target still met, <20 ppm/C stretch is not
+- **Issue #282** (closed): sim/closed-loop-vref-boxtc-trim/README.md attributes the ±0.5% budget to DR-0010 in one line and DR-0011 in another
+- **PR #283**: docs: attribute the ±0.5% trimmed budget to DR-0011 in boxtc-trim README
+- **Issue #280** (closed): sim/harness: the klt sim path records one fewer significant figure than run_pvt_sweep.sh, undisclosed
 - **Issue #195** (closed): sim(pll-lock-mc): T1 item 6's negative control needs a degraded *design* variant, which this repo has none of
 
 ### 2026-10-01
 
+- **Issue #272** (closed): Re-layout and re-extract the block against the trim-bearing core, then refresh the 5 PEX experiments
+- **PR #276**: layout: re-draw the summing resistor as #229's trim ladder, re-run DRC/LVS/PEX
+- **Issue #264** (closed): Refresh sim/ evidence against the trim-bearing core netlist (post-#229)
+- **PR #274**: test(sim): refresh 9 schematic-DUT experiments against the trim-bearing core
+- **Issue #229** (closed): Design the trim network obligated by the re-cast Output-reference row (DR-0009: range >= +/-15%, <= 0.25%/step, 1-point @ 27C)
 - **Issue #173** (closed): Sweep host cannot load ngspice/xschem: Homebrew dylibs fail code-signature validation (mig callout failed)
 - **Issue #172** (closed): CI runs stuck in queued status for 3.5+ hours (self-hosted runner likely offline)
 
 ### 2026-09-30
 
+- **Issue #262** (closed): spec: duplicate decision-record number 0010 on main (hygiene CI failing since PR #230 merge)
+- **Issue #231** (closed): Apply the two ratification keys to PR #230 (DR-0009, Output-reference re-cast) — non-author
+- **Issue #221** (closed): Output-reference row: decide its disposition (re-target vs. defend ±1% untrimmed) — both ratification keys escalated it
+- **PR #230**: ratification: re-cast the Output-reference row (DR-0010)
 - **PR #82**: fix(ratification): remove unwrapped private-repo reference from market-key/SKILL.md
+
+### 2026-09-29
+
+- **Issue #260** (closed): Remove duplicated Report/sha256_file scaffolding across .github/scripts CI checkers
+- **PR #261**: Remove duplicated Report/sha256_file scaffolding across .github/scripts CI checkers
+- **PR #259**: chore: resync installed Loom surfaces (--force past obsolete local edits)
 
 ### 2026-09-27
 
@@ -258,3 +362,4 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 - **Issue #131** (closed): Run the sim/divider-n4/-n5/-n63/-n64 PVT campaigns and mint their first sim/ evidence records (deferred by #129)
 - **Issue #130** (closed): Complete the full DR-003 45-point PVT grid for sim/divider-n64 and sim/divider-n63 (deferred by #129)
 - **Issue #129** (closed): Ship a standalone `sim/divider` PVT testbench and mint the first `sim/` evidence record for divider_intN (turn #114's informal top-frequency and modulus diagnostics into committed 45-point evidence; spec row 4)
+
