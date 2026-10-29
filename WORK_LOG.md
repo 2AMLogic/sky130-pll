@@ -2,6 +2,10 @@
 
 Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
+### 2026-10-29
+
+- **Issue #154** (closed): README: embed the fleet burndown chart (one line)
+
 ### 2026-10-28
 
 - **PR #421**: sim: add klt sim wrapper for schematic closed-loop-psrr
