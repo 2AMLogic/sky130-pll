@@ -1,0 +1,54 @@
+{
+  "schema": "sky130-pll.harness.tb/1",
+  "claim": "Bounded single-corner (tt / 27 C / 1.80 V) measurement of the open-loop VCO's output duty and oscillation at the VCTRL values that reach the 2x-VCO rates 50, 100, 200 and 400 MHz (docs/phase-output-proposal.md section 10.3, issue #387). Duty D gives the derived CLK-CLK90 offset 180*D degrees from the closed form in sim/phase-quadrature-model/README.md; no divide-by-2 stage is simulated. Ratifies nothing; DR-010 stays Proposed.",
+  "spec_rows": [
+    2
+  ],
+  "spec_rows_note": "Measured input to the DR-010 interface question only; no spec row is ratified.",
+  "schematic": "tb_vco_2x.sch",
+  "corner_pattern": "(\\.lib\\s+\\S*sky130\\.lib\\.spice\\s+)(\\w+)",
+  "supply_pattern": "(V1 VDD GND )([0-9.]+)",
+  "process_corners": [
+    "tt"
+  ],
+  "temps_c": [
+    27
+  ],
+  "supply_nominal": 1.8,
+  "supply_tolerance": 0,
+  "measure": {
+    "node": "clk",
+    "tran_step": "50p",
+    "tran_stop": "800n",
+    "settle_from": "400n",
+    "threshold_frac": 0.5,
+    "hysteresis_frac": 0.15,
+    "min_edges": 4,
+    "ic": [
+      "v(xxxvco.ring0)=0"
+    ],
+    "uic": true,
+    "require_oscillation": false,
+    "min_oscillating_points": 1,
+    "timeout_s": 3600,
+    "sweep": {
+      "source": "V2",
+      "quantity": "VCTRL",
+      "values": [
+        0.3,
+        0.4,
+        0.5,
+        0.55,
+        0.6,
+        0.65,
+        0.7,
+        0.75,
+        0.85,
+        0.95,
+        1.0
+      ]
+    }
+  },
+  "methodology_note": "One PVT point, one batched VCTRL grid (11 values, 0.3-1.0 V) in a single ngspice deck submitted with --executor batch; sub-0.8 V points lie below the lowest previously characterized VCTRL (sim/vco/records/20260904-163130-f3ae976.md) so non-oscillation there is data. tran_stop 800 ns / settle 400 ns so a 50 MHz (20 ns) period still yields several edges. Simulator options left at ngspice defaults, as in sim/vco.",
+  "analysis": "transient per swept VCTRL value (`tran 50p 800n uic`, eleven values, one ngspice invocation at tt/27C/1.80V)"
+}
