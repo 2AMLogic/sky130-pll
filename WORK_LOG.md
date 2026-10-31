@@ -2,6 +2,10 @@
 
 Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
+### 2026-10-30
+
+- **PR #390**: sim: add single-corner 2x-VCO duty testbench; fleet run blocked by model-library load
+
 ### 2026-10-29
 
 - **Issue #154** (closed): README: embed the fleet burndown chart (one line)
