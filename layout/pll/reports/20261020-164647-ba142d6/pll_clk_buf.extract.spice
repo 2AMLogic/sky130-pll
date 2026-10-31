@@ -1,0 +1,15 @@
+* extracted by klt extract --deck sky130
+
+* cell pll_clk_buf
+* pin vsubs
+.SUBCKT pll_clk_buf vsubs
+* device instance $1 r0 *1 0.545,0.5 nfet
+M$1 \$2 \$5 \$1 vsubs nfet L=0.15U W=1U AS=0.47P AD=0.47P PS=2.94U PD=2.94U
+* device instance $2 r0 *1 5.635,6 nfet
+M$2 \$4 \$6 \$3 vsubs nfet L=0.15U W=12U AS=5.64P AD=5.64P PS=24.94U PD=24.94U
+* device instance $3 r0 *1 10.725,1 pfet
+M$3 \$8 \$11 \$7 \$13 pfet L=0.15U W=2U AS=0.94P AD=0.94P PS=4.94U PD=4.94U
+* device instance $4 r0 *1 16.115,12 pfet
+M$4 \$10 \$12 \$9 \$14 pfet L=0.15U W=24U AS=11.28P AD=11.28P PS=48.94U
++ PD=48.94U
+.ENDS pll_clk_buf
