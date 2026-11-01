@@ -2,6 +2,10 @@
 
 Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
+### 2026-11-01
+
+- **PR #392**: chore(loom): Bump Repo Skills 0.24.7 -> 0.25.1 and resync installed Loom
+
 ### 2026-10-30
 
 - **PR #390**: sim: add single-corner 2x-VCO duty testbench; fleet run blocked by model-library load
