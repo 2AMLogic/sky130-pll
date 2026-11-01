@@ -107,16 +107,6 @@ def unit_outputs(spec, corner_id: str) -> list:
     return names(spec, f"{corner_id}-")
 
 
-def batch_spec(manifest: dict):
-    """The analysis spec the batch route submits for `manifest`, or `None` when
-    the manifest carries neither a `cp` block nor a transient `measure` block
-    (an `ac` or plumbing-only manifest has no deck-list route)."""
-    from . import cpmeasure as cp_mod
-    from . import measure as measure_mod
-
-    return cp_mod.CpSpec.from_manifest(manifest) or measure_mod.MeasureSpec.from_manifest(manifest)
-
-
 def build_request(units, *, pdk_variant: str, outputs_for, timeout_s: int,
                   max_workers: int, deck_name_for=lambda u: f"{u.corner_id}.spice",
                   spiceinit_name: str = ".spiceinit") -> dict:
