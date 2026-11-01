@@ -4,6 +4,8 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 ### 2026-11-01
 
+- **PR #395**: refactor(sim): remove unused batch_spec helper from cp_klt
+- **Issue #394** (closed): Remove unused cp_klt.batch_spec helper
 - **PR #392**: chore(loom): Bump Repo Skills 0.24.7 -> 0.25.1 and resync installed Loom
 
 ### 2026-10-30
