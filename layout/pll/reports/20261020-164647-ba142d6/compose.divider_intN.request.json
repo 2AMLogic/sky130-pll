@@ -1,0 +1,859 @@
+{
+  "schema": "klt.gen_compose.request/1",
+  "pdk": {
+    "variant": "sky130A"
+  },
+  "blocks": [
+    {
+      "id": "divider_intN_XCNT0",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__dfrtp_2",
+        "gds_path": "../../../../../../../../../.ciel/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 9.85,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XLDMUX0",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__mux2_2",
+        "gds_path": "../../../../../../../../../.ciel/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 4.33,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XQINV0",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__inv_2",
+        "gds_path": "../../../../../../../../../.ciel/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 1.57,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XCNT1",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__dfrtp_2",
+        "gds_path": "../../../../../../../../../.ciel/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 9.85,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XLDMUX1",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__mux2_2",
+        "gds_path": "../../../../../../../../../.ciel/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 4.33,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XDECXOR1",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__xor2_2",
+        "gds_path": "../../../../../../../../../.ciel/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 6.17,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XQINV1",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__inv_2",
+        "gds_path": "../../../../../../../../../.ciel/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 1.57,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XCNT2",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__dfrtp_2",
+        "gds_path": "../../../../../../../../../.ciel/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 9.85,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XLDMUX2",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__mux2_2",
+        "gds_path": "../../../../../../../../../.ciel/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 4.33,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XDECXOR2",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__xor2_2",
+        "gds_path": "../../../../../../../../../.ciel/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 6.17,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XBORAND2",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__and2_2",
+        "gds_path": "../../../../../../../../../.ciel/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 2.95,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XQINV2",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__inv_2",
+        "gds_path": "../../../../../../../../../.ciel/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 1.57,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XCNT3",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__dfrtp_2",
+        "gds_path": "../../../../../../../../../.ciel/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 9.85,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XLDMUX3",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__mux2_2",
+        "gds_path": "../../../../../../../../../.ciel/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 4.33,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XDECXOR3",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__xor2_2",
+        "gds_path": "../../../../../../../../../.ciel/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 6.17,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XBORAND3",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__and3_2",
+        "gds_path": "../../../../../../../../../.ciel/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 2.95,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XQINV3",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__inv_2",
+        "gds_path": "../../../../../../../../../.ciel/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 1.57,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XCNT4",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__dfrtp_2",
+        "gds_path": "../../../../../../../../../.ciel/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 9.85,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XLDMUX4",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__mux2_2",
+        "gds_path": "../../../../../../../../../.ciel/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 4.33,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XDECXOR4",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__xor2_2",
+        "gds_path": "../../../../../../../../../.ciel/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 6.17,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XBORAND4",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__and4_2",
+        "gds_path": "../../../../../../../../../.ciel/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 3.87,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XQINV4",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__inv_2",
+        "gds_path": "../../../../../../../../../.ciel/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 1.57,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XZDET",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__and2_2",
+        "gds_path": "../../../../../../../../../.ciel/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 2.95,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XPA",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__dfrtp_2",
+        "gds_path": "../../../../../../../../../.ciel/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 9.85,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XPANOR",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__nor2_2",
+        "gds_path": "../../../../../../../../../.ciel/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 2.49,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XPB",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__dfrtp_2",
+        "gds_path": "../../../../../../../../../.ciel/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 9.85,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XPBAND",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__and2_2",
+        "gds_path": "../../../../../../../../../.ciel/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 2.95,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XPCKINV",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__inv_2",
+        "gds_path": "../../../../../../../../../.ciel/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 1.57,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XMCFF",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__dfrtp_2",
+        "gds_path": "../../../../../../../../../.ciel/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 9.85,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XMCAND",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__and2_2",
+        "gds_path": "../../../../../../../../../.ciel/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 2.95,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XFBFF",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__dfxtp_2",
+        "gds_path": "../../../../../../../../../.ciel/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 8.01,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XODD",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__inv_2",
+        "gds_path": "../../../../../../../../../.ciel/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 1.57,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XNB2",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__nor2_2",
+        "gds_path": "../../../../../../../../../.ciel/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 2.49,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XNB3",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__nor3_2",
+        "gds_path": "../../../../../../../../../.ciel/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 3.87,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XNB4",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__nor4_2",
+        "gds_path": "../../../../../../../../../.ciel/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 4.79,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XNS4INV",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__inv_2",
+        "gds_path": "../../../../../../../../../.ciel/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 1.57,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XNB5",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__and2_2",
+        "gds_path": "../../../../../../../../../.ciel/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 2.95,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XLDEC0",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__xnor2_2",
+        "gds_path": "../../../../../../../../../.ciel/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 6.17,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XLDEC1",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__xor2_2",
+        "gds_path": "../../../../../../../../../.ciel/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 6.17,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XLDEC2",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__xor2_2",
+        "gds_path": "../../../../../../../../../.ciel/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 6.17,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XLDEC3",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__xor2_2",
+        "gds_path": "../../../../../../../../../.ciel/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 6.17,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    },
+    {
+      "id": "divider_intN_XLDEC4",
+      "generator_report": {
+        "generator": "library",
+        "cell_name": "sky130_fd_sc_hd__xor2_2",
+        "gds_path": "../../../../../../../../../.ciel/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds",
+        "bbox_um": {
+          "x0": -0.19,
+          "y0": -0.24,
+          "x1": 6.17,
+          "y1": 2.96
+        },
+        "ports": []
+      }
+    }
+  ],
+  "placement": {
+    "strategy": "explicit",
+    "order": [
+      "divider_intN_XCNT0",
+      "divider_intN_XLDMUX0",
+      "divider_intN_XQINV0",
+      "divider_intN_XCNT1",
+      "divider_intN_XLDMUX1",
+      "divider_intN_XDECXOR1",
+      "divider_intN_XQINV1",
+      "divider_intN_XCNT2",
+      "divider_intN_XLDMUX2",
+      "divider_intN_XDECXOR2",
+      "divider_intN_XBORAND2",
+      "divider_intN_XQINV2",
+      "divider_intN_XCNT3",
+      "divider_intN_XLDMUX3",
+      "divider_intN_XDECXOR3",
+      "divider_intN_XBORAND3",
+      "divider_intN_XQINV3",
+      "divider_intN_XCNT4",
+      "divider_intN_XLDMUX4",
+      "divider_intN_XDECXOR4",
+      "divider_intN_XBORAND4",
+      "divider_intN_XQINV4",
+      "divider_intN_XZDET",
+      "divider_intN_XPA",
+      "divider_intN_XPANOR",
+      "divider_intN_XPB",
+      "divider_intN_XPBAND",
+      "divider_intN_XPCKINV",
+      "divider_intN_XMCFF",
+      "divider_intN_XMCAND",
+      "divider_intN_XFBFF",
+      "divider_intN_XODD",
+      "divider_intN_XNB2",
+      "divider_intN_XNB3",
+      "divider_intN_XNB4",
+      "divider_intN_XNS4INV",
+      "divider_intN_XNB5",
+      "divider_intN_XLDEC0",
+      "divider_intN_XLDEC1",
+      "divider_intN_XLDEC2",
+      "divider_intN_XLDEC3",
+      "divider_intN_XLDEC4"
+    ],
+    "origins_um": {
+      "divider_intN_XCNT0": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "divider_intN_XLDMUX0": {
+        "x": 9.66,
+        "y": 0.0
+      },
+      "divider_intN_XQINV0": {
+        "x": 13.8,
+        "y": 0.0
+      },
+      "divider_intN_XCNT1": {
+        "x": 15.18,
+        "y": 0.0
+      },
+      "divider_intN_XLDMUX1": {
+        "x": 24.84,
+        "y": 0.0
+      },
+      "divider_intN_XDECXOR1": {
+        "x": 28.98,
+        "y": 0.0
+      },
+      "divider_intN_XQINV1": {
+        "x": 34.96,
+        "y": 0.0
+      },
+      "divider_intN_XCNT2": {
+        "x": 36.34,
+        "y": 0.0
+      },
+      "divider_intN_XLDMUX2": {
+        "x": 46.0,
+        "y": 0.0
+      },
+      "divider_intN_XDECXOR2": {
+        "x": 50.14,
+        "y": 0.0
+      },
+      "divider_intN_XBORAND2": {
+        "x": 56.12,
+        "y": 0.0
+      },
+      "divider_intN_XQINV2": {
+        "x": 58.88,
+        "y": 0.0
+      },
+      "divider_intN_XCNT3": {
+        "x": 60.26,
+        "y": 0.0
+      },
+      "divider_intN_XLDMUX3": {
+        "x": 69.92,
+        "y": 0.0
+      },
+      "divider_intN_XDECXOR3": {
+        "x": 74.06,
+        "y": 0.0
+      },
+      "divider_intN_XBORAND3": {
+        "x": 80.04,
+        "y": 0.0
+      },
+      "divider_intN_XQINV3": {
+        "x": 82.8,
+        "y": 0.0
+      },
+      "divider_intN_XCNT4": {
+        "x": 84.18,
+        "y": 0.0
+      },
+      "divider_intN_XLDMUX4": {
+        "x": 93.84,
+        "y": 0.0
+      },
+      "divider_intN_XDECXOR4": {
+        "x": 97.98,
+        "y": 0.0
+      },
+      "divider_intN_XBORAND4": {
+        "x": 103.96,
+        "y": 0.0
+      },
+      "divider_intN_XQINV4": {
+        "x": 107.64,
+        "y": 0.0
+      },
+      "divider_intN_XZDET": {
+        "x": 109.02,
+        "y": 0.0
+      },
+      "divider_intN_XPA": {
+        "x": 111.78,
+        "y": 0.0
+      },
+      "divider_intN_XPANOR": {
+        "x": 121.44,
+        "y": 0.0
+      },
+      "divider_intN_XPB": {
+        "x": 123.74,
+        "y": 0.0
+      },
+      "divider_intN_XPBAND": {
+        "x": 133.4,
+        "y": 0.0
+      },
+      "divider_intN_XPCKINV": {
+        "x": 136.16,
+        "y": 0.0
+      },
+      "divider_intN_XMCFF": {
+        "x": 137.54,
+        "y": 0.0
+      },
+      "divider_intN_XMCAND": {
+        "x": 147.2,
+        "y": 0.0
+      },
+      "divider_intN_XFBFF": {
+        "x": 149.96,
+        "y": 0.0
+      },
+      "divider_intN_XODD": {
+        "x": 157.78,
+        "y": 0.0
+      },
+      "divider_intN_XNB2": {
+        "x": 159.16,
+        "y": 0.0
+      },
+      "divider_intN_XNB3": {
+        "x": 161.46,
+        "y": 0.0
+      },
+      "divider_intN_XNB4": {
+        "x": 165.14,
+        "y": 0.0
+      },
+      "divider_intN_XNS4INV": {
+        "x": 169.74,
+        "y": 0.0
+      },
+      "divider_intN_XNB5": {
+        "x": 171.12,
+        "y": 0.0
+      },
+      "divider_intN_XLDEC0": {
+        "x": 173.88,
+        "y": 0.0
+      },
+      "divider_intN_XLDEC1": {
+        "x": 179.86,
+        "y": 0.0
+      },
+      "divider_intN_XLDEC2": {
+        "x": 185.84,
+        "y": 0.0
+      },
+      "divider_intN_XLDEC3": {
+        "x": 191.82,
+        "y": 0.0
+      },
+      "divider_intN_XLDEC4": {
+        "x": 197.8,
+        "y": 0.0
+      }
+    }
+  },
+  "options": {
+    "cell_name": "pll_divider_intN",
+    "output": "pll_divider_intN.gds"
+  }
+}

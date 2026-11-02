@@ -1,0 +1,349 @@
+{
+  "schema_version": 1,
+  "generator": "gen-compose",
+  "cell_name": "pll_loop_filter",
+  "gds_path": "pll_loop_filter.gds",
+  "pdk": {
+    "name": "sky130A",
+    "variant": "sky130A",
+    "version": "open_pdks f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+  },
+  "dbu_um": 0.001,
+  "bbox_um": {
+    "x0": 0.0,
+    "y0": 0.0,
+    "x1": 322.40000000000003,
+    "y1": 403.79999999999995
+  },
+  "ports": [],
+  "blocks": [
+    {
+      "id": "loop_filter_resxhigh_w1_l2p53",
+      "source": "generator_report",
+      "generator": "res_array",
+      "cell_name": "loop_filter_resxhigh_w1_l2p53",
+      "source_path": "loop_filter_resxhigh_w1_l2p53.gds",
+      "source_digest": "sha256:d9aea8bfd3b6d744f14d0d8eed8f184cae94d168fc6d3b2e459d16c3837d1cda",
+      "offset_um": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "bbox_um": {
+        "x0": 0.0,
+        "y0": 0.0,
+        "x1": 3.37,
+        "y1": 1.0
+      },
+      "orientation": "none"
+    },
+    {
+      "id": "loop_filter_resxhigh_w1_l5",
+      "source": "generator_report",
+      "generator": "res_array",
+      "cell_name": "loop_filter_resxhigh_w1_l5",
+      "source_path": "loop_filter_resxhigh_w1_l5.gds",
+      "source_digest": "sha256:1e09e15d8156501c6a2c1d1eceea0718a5a4c04fb9c7465afb6f82996b3582b9",
+      "offset_um": {
+        "x": 7.37,
+        "y": 0.0
+      },
+      "bbox_um": {
+        "x0": 7.37,
+        "y0": 0.0,
+        "x1": 13.21,
+        "y1": 1.0
+      },
+      "orientation": "none"
+    },
+    {
+      "id": "loop_filter_XC1",
+      "source": "generator_report",
+      "generator": "draw",
+      "cell_name": "loop_filter_XC1",
+      "source_path": "loop_filter_XC1.gds",
+      "source_digest": "sha256:53626b6bbe029e1e88c9225312145a81379f2ac3789f2cffcf5527d6d33495a2",
+      "offset_um": {
+        "x": 0.0,
+        "y": 5.0
+      },
+      "bbox_um": {
+        "x0": 0.0,
+        "y0": 5.0,
+        "x1": 322.40000000000003,
+        "y1": 327.40000000000003
+      },
+      "orientation": "none"
+    },
+    {
+      "id": "loop_filter_XC2",
+      "source": "generator_report",
+      "generator": "draw",
+      "cell_name": "loop_filter_XC2",
+      "source_path": "loop_filter_XC2.gds",
+      "source_digest": "sha256:b74cb20fd48a756bfe8765539d2a9d6b4855fac4f83cefe488cf8e912c59fe0b",
+      "offset_um": {
+        "x": 0.0,
+        "y": 331.4
+      },
+      "bbox_um": {
+        "x0": 0.0,
+        "y0": 331.4,
+        "x1": 72.4,
+        "y1": 403.79999999999995
+      },
+      "orientation": "none"
+    },
+    {
+      "id": "loop_filter_XC3",
+      "source": "generator_report",
+      "generator": "draw",
+      "cell_name": "loop_filter_XC3",
+      "source_path": "loop_filter_XC3.gds",
+      "source_digest": "sha256:230e7a347b696beb69da758fa09023c01b3a1b687cafd14417968783b0bb7c1d",
+      "offset_um": {
+        "x": 76.4,
+        "y": 331.4
+      },
+      "bbox_um": {
+        "x0": 76.4,
+        "y0": 331.4,
+        "x1": 116.80000000000001,
+        "y1": 371.79999999999995
+      },
+      "orientation": "none"
+    }
+  ],
+  "nets": [
+    {
+      "net": "CP",
+      "pins": [
+        {
+          "block": "loop_filter_resxhigh_w1_l2p53",
+          "port": "R0_B"
+        },
+        {
+          "block": "loop_filter_resxhigh_w1_l5",
+          "port": "R0_B"
+        },
+        {
+          "block": "loop_filter_XC2",
+          "port": "TOP"
+        }
+      ],
+      "routed": true,
+      "route_length_um": 400.13999999999993,
+      "status": "routed",
+      "landed_on_block": true,
+      "legs": [
+        {
+          "pins": [
+            {
+              "block": "loop_filter_resxhigh_w1_l2p53",
+              "port": "R0_B"
+            },
+            {
+              "block": "loop_filter_resxhigh_w1_l5",
+              "port": "R0_B"
+            }
+          ],
+          "routed": true,
+          "route_length_um": 9.84,
+          "reason": null,
+          "channel_track": 0,
+          "landed_on_block": true
+        },
+        {
+          "pins": [
+            {
+              "block": "loop_filter_resxhigh_w1_l5",
+              "port": "R0_B"
+            },
+            {
+              "block": "loop_filter_XC2",
+              "port": "TOP"
+            }
+          ],
+          "routed": true,
+          "route_length_um": 390.29999999999995,
+          "reason": null,
+          "channel_track": 0,
+          "landed_on_block": true
+        }
+      ]
+    },
+    {
+      "net": "GND",
+      "pins": [
+        {
+          "block": "loop_filter_XC1",
+          "port": "BOT"
+        },
+        {
+          "block": "loop_filter_XC2",
+          "port": "BOT"
+        },
+        {
+          "block": "loop_filter_XC3",
+          "port": "BOT"
+        }
+      ],
+      "routed": false,
+      "route_length_um": 202.0,
+      "status": "partial",
+      "landed_on_block": true,
+      "legs": [
+        {
+          "pins": [
+            {
+              "block": "loop_filter_XC2",
+              "port": "BOT"
+            },
+            {
+              "block": "loop_filter_XC3",
+              "port": "BOT"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "crosses already-routed net 'CP'"
+        },
+        {
+          "pins": [
+            {
+              "block": "loop_filter_XC1",
+              "port": "BOT"
+            },
+            {
+              "block": "loop_filter_XC2",
+              "port": "BOT"
+            }
+          ],
+          "routed": true,
+          "route_length_um": 202.0,
+          "reason": null,
+          "channel_track": 0,
+          "landed_on_block": true
+        },
+        {
+          "pins": [
+            {
+              "block": "loop_filter_XC1",
+              "port": "BOT"
+            },
+            {
+              "block": "loop_filter_XC3",
+              "port": "BOT"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "crosses already-routed net 'CP'"
+        }
+      ]
+    },
+    {
+      "net": "VCTRL",
+      "pins": [
+        {
+          "block": "loop_filter_resxhigh_w1_l5",
+          "port": "R0_A"
+        },
+        {
+          "block": "loop_filter_XC3",
+          "port": "TOP"
+        }
+      ],
+      "routed": false,
+      "route_length_um": null,
+      "status": "unrouted",
+      "landed_on_block": null,
+      "legs": [
+        {
+          "pins": [
+            {
+              "block": "loop_filter_resxhigh_w1_l5",
+              "port": "R0_A"
+            },
+            {
+              "block": "loop_filter_XC3",
+              "port": "TOP"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "crosses already-routed net 'CP'"
+        }
+      ]
+    },
+    {
+      "net": "Z1",
+      "pins": [
+        {
+          "block": "loop_filter_resxhigh_w1_l2p53",
+          "port": "R0_A"
+        },
+        {
+          "block": "loop_filter_XC1",
+          "port": "TOP"
+        }
+      ],
+      "routed": false,
+      "route_length_um": null,
+      "status": "unrouted",
+      "landed_on_block": null,
+      "legs": [
+        {
+          "pins": [
+            {
+              "block": "loop_filter_resxhigh_w1_l2p53",
+              "port": "R0_A"
+            },
+            {
+              "block": "loop_filter_XC1",
+              "port": "TOP"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "crosses already-routed net 'CP'"
+        }
+      ]
+    }
+  ],
+  "pins": [],
+  "unrouted_nets": [
+    "GND",
+    "VCTRL",
+    "Z1"
+  ],
+  "drc_hints": {
+    "min_spacing_um": null,
+    "matched_groups": [
+      {
+        "matched_group_id": "res_array:1",
+        "blocks": [
+          "loop_filter_resxhigh_w1_l2p53",
+          "loop_filter_resxhigh_w1_l5"
+        ],
+        "placement_symmetric": null
+      }
+    ],
+    "notes": [
+      "net 'GND' could not be routed: 1 of 3 pins could not be connected into one net ('loop_filter_XC3.BOT') -- every candidate leg reaching them was rejected (per-leg detail in nets[].legs[]); nearest rejection ('loop_filter_XC2.BOT' -> 'loop_filter_XC3.BOT'): crosses already-routed net 'CP'",
+      "net 'VCTRL' could not be routed: crosses already-routed net 'CP'",
+      "net 'Z1' could not be routed: crosses already-routed net 'CP'"
+    ]
+  },
+  "warnings": [],
+  "provenance": {
+    "klt_version": "0.6.0",
+    "klayout_version": "0.30.10",
+    "pdk": {
+      "name": "sky130A",
+      "source": "search root: ~/.ciel",
+      "version": "open_pdks f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+    },
+    "deck": null,
+    "input": null
+  }
+}

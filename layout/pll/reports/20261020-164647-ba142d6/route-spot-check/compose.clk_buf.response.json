@@ -1,0 +1,398 @@
+{
+  "schema_version": 1,
+  "generator": "gen-compose",
+  "cell_name": "pll_clk_buf",
+  "gds_path": "pll_clk_buf.gds",
+  "pdk": {
+    "name": "sky130A",
+    "variant": "sky130A",
+    "version": "open_pdks f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+  },
+  "dbu_um": 0.001,
+  "bbox_um": {
+    "x0": 0.0,
+    "y0": -0.15,
+    "x1": 16.81,
+    "y1": 24.97
+  },
+  "ports": [],
+  "blocks": [
+    {
+      "id": "clk_buf_nfet_w1_l0p15",
+      "source": "generator_report",
+      "generator": "mos_array",
+      "cell_name": "clk_buf_nfet_w1_l0p15",
+      "source_path": "clk_buf_nfet_w1_l0p15.gds",
+      "source_digest": "sha256:ed47e2e74f17e2c6c4f2435eb99c1000cfe7f19442c544bbd91a1e7f9b24f300",
+      "offset_um": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "bbox_um": {
+        "x0": 0.0,
+        "y0": 0.0,
+        "x1": 1.09,
+        "y1": 1.82
+      },
+      "orientation": "none"
+    },
+    {
+      "id": "clk_buf_nfet_w12_l0p15",
+      "source": "generator_report",
+      "generator": "mos_array",
+      "cell_name": "clk_buf_nfet_w12_l0p15",
+      "source_path": "clk_buf_nfet_w12_l0p15.gds",
+      "source_digest": "sha256:2a4a11372832fea2b870e1bc7ec8bbe0f4c30459970312147afa05dda588852e",
+      "offset_um": {
+        "x": 5.09,
+        "y": 0.0
+      },
+      "bbox_um": {
+        "x0": 5.09,
+        "y0": 0.0,
+        "x1": 6.18,
+        "y1": 12.82
+      },
+      "orientation": "none"
+    },
+    {
+      "id": "clk_buf_pfet_w2_l0p15",
+      "source": "generator_report",
+      "generator": "mos_array",
+      "cell_name": "clk_buf_pfet_w2_l0p15",
+      "source_path": "clk_buf_pfet_w2_l0p15.gds",
+      "source_digest": "sha256:219a935aa1f0be0297ed7db15bba0e75384c6ac4939e6efc7e889431f426218c",
+      "offset_um": {
+        "x": 10.18,
+        "y": 0.0
+      },
+      "bbox_um": {
+        "x0": 10.03,
+        "y0": -0.15,
+        "x1": 11.42,
+        "y1": 2.97
+      },
+      "orientation": "none"
+    },
+    {
+      "id": "clk_buf_pfet_w24_l0p15",
+      "source": "generator_report",
+      "generator": "mos_array",
+      "cell_name": "clk_buf_pfet_w24_l0p15",
+      "source_path": "clk_buf_pfet_w24_l0p15.gds",
+      "source_digest": "sha256:f8bb2b2314c1ee58bd9a66930c2a6298937ea8d709bbf0f3214430e6d4ea0e8f",
+      "offset_um": {
+        "x": 15.57,
+        "y": 0.0
+      },
+      "bbox_um": {
+        "x0": 15.42,
+        "y0": -0.15,
+        "x1": 16.81,
+        "y1": 24.97
+      },
+      "orientation": "none"
+    }
+  ],
+  "nets": [
+    {
+      "net": "CLKIN",
+      "pins": [
+        {
+          "block": "clk_buf_nfet_w1_l0p15",
+          "port": "U0_G"
+        },
+        {
+          "block": "clk_buf_pfet_w2_l0p15",
+          "port": "U0_G"
+        }
+      ],
+      "routed": true,
+      "route_length_um": 12.5,
+      "status": "routed",
+      "landed_on_block": true,
+      "legs": [
+        {
+          "pins": [
+            {
+              "block": "clk_buf_nfet_w1_l0p15",
+              "port": "U0_G"
+            },
+            {
+              "block": "clk_buf_pfet_w2_l0p15",
+              "port": "U0_G"
+            }
+          ],
+          "routed": true,
+          "route_length_um": 12.5,
+          "reason": null,
+          "channel_track": 0,
+          "landed_on_block": true
+        }
+      ]
+    },
+    {
+      "net": "CLKOUT",
+      "pins": [
+        {
+          "block": "clk_buf_nfet_w12_l0p15",
+          "port": "U0_D"
+        },
+        {
+          "block": "clk_buf_pfet_w24_l0p15",
+          "port": "U0_D"
+        }
+      ],
+      "routed": true,
+      "route_length_um": 16.479999999999997,
+      "status": "routed",
+      "landed_on_block": true,
+      "legs": [
+        {
+          "pins": [
+            {
+              "block": "clk_buf_nfet_w12_l0p15",
+              "port": "U0_D"
+            },
+            {
+              "block": "clk_buf_pfet_w24_l0p15",
+              "port": "U0_D"
+            }
+          ],
+          "routed": true,
+          "route_length_um": 16.479999999999997,
+          "reason": null,
+          "channel_track": 0,
+          "landed_on_block": true
+        }
+      ]
+    },
+    {
+      "net": "GND",
+      "pins": [
+        {
+          "block": "clk_buf_nfet_w1_l0p15",
+          "port": "U0_S"
+        },
+        {
+          "block": "clk_buf_nfet_w12_l0p15",
+          "port": "U0_S"
+        }
+      ],
+      "routed": false,
+      "route_length_um": null,
+      "status": "unrouted",
+      "landed_on_block": null,
+      "legs": [
+        {
+          "pins": [
+            {
+              "block": "clk_buf_nfet_w1_l0p15",
+              "port": "U0_S"
+            },
+            {
+              "block": "clk_buf_nfet_w12_l0p15",
+              "port": "U0_S"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "crosses already-routed net 'CLKIN'"
+        }
+      ]
+    },
+    {
+      "net": "N1",
+      "pins": [
+        {
+          "block": "clk_buf_nfet_w1_l0p15",
+          "port": "U0_D"
+        },
+        {
+          "block": "clk_buf_nfet_w12_l0p15",
+          "port": "U0_G"
+        },
+        {
+          "block": "clk_buf_pfet_w2_l0p15",
+          "port": "U0_D"
+        },
+        {
+          "block": "clk_buf_pfet_w24_l0p15",
+          "port": "U0_G"
+        }
+      ],
+      "routed": false,
+      "route_length_um": 34.480000000000004,
+      "status": "partial",
+      "landed_on_block": true,
+      "legs": [
+        {
+          "pins": [
+            {
+              "block": "clk_buf_nfet_w1_l0p15",
+              "port": "U0_D"
+            },
+            {
+              "block": "clk_buf_pfet_w2_l0p15",
+              "port": "U0_D"
+            }
+          ],
+          "routed": true,
+          "route_length_um": 10.68,
+          "reason": null,
+          "channel_track": 0,
+          "landed_on_block": true
+        },
+        {
+          "pins": [
+            {
+              "block": "clk_buf_nfet_w1_l0p15",
+              "port": "U0_D"
+            },
+            {
+              "block": "clk_buf_nfet_w12_l0p15",
+              "port": "U0_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "crosses already-routed net 'CLKIN'"
+        },
+        {
+          "pins": [
+            {
+              "block": "clk_buf_nfet_w12_l0p15",
+              "port": "U0_G"
+            },
+            {
+              "block": "clk_buf_pfet_w2_l0p15",
+              "port": "U0_D"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "crosses already-routed net 'CLKIN'"
+        },
+        {
+          "pins": [
+            {
+              "block": "clk_buf_nfet_w12_l0p15",
+              "port": "U0_G"
+            },
+            {
+              "block": "clk_buf_pfet_w24_l0p15",
+              "port": "U0_G"
+            }
+          ],
+          "routed": true,
+          "route_length_um": 23.8,
+          "reason": null,
+          "channel_track": 0,
+          "landed_on_block": true
+        },
+        {
+          "pins": [
+            {
+              "block": "clk_buf_pfet_w2_l0p15",
+              "port": "U0_D"
+            },
+            {
+              "block": "clk_buf_pfet_w24_l0p15",
+              "port": "U0_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "crosses already-routed net 'CLKOUT'"
+        },
+        {
+          "pins": [
+            {
+              "block": "clk_buf_nfet_w1_l0p15",
+              "port": "U0_D"
+            },
+            {
+              "block": "clk_buf_pfet_w24_l0p15",
+              "port": "U0_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "crosses already-routed net 'CLKOUT'"
+        }
+      ]
+    },
+    {
+      "net": "VDD",
+      "pins": [
+        {
+          "block": "clk_buf_pfet_w2_l0p15",
+          "port": "U0_S"
+        },
+        {
+          "block": "clk_buf_pfet_w24_l0p15",
+          "port": "U0_S"
+        }
+      ],
+      "routed": false,
+      "route_length_um": null,
+      "status": "unrouted",
+      "landed_on_block": null,
+      "legs": [
+        {
+          "pins": [
+            {
+              "block": "clk_buf_pfet_w2_l0p15",
+              "port": "U0_S"
+            },
+            {
+              "block": "clk_buf_pfet_w24_l0p15",
+              "port": "U0_S"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "crosses already-routed net 'CLKOUT'"
+        }
+      ]
+    }
+  ],
+  "pins": [],
+  "unrouted_nets": [
+    "GND",
+    "N1",
+    "VDD"
+  ],
+  "drc_hints": {
+    "min_spacing_um": null,
+    "matched_groups": [
+      {
+        "matched_group_id": "mos_array:1x1:array",
+        "blocks": [
+          "clk_buf_nfet_w1_l0p15",
+          "clk_buf_nfet_w12_l0p15",
+          "clk_buf_pfet_w2_l0p15",
+          "clk_buf_pfet_w24_l0p15"
+        ],
+        "placement_symmetric": null
+      }
+    ],
+    "notes": [
+      "net 'GND' could not be routed: crosses already-routed net 'CLKIN'",
+      "net 'N1' could not be routed: 2 of 4 pins could not be connected into one net ('clk_buf_nfet_w12_l0p15.U0_G', 'clk_buf_pfet_w24_l0p15.U0_G') -- every candidate leg reaching them was rejected (per-leg detail in nets[].legs[]); nearest rejection ('clk_buf_nfet_w1_l0p15.U0_D' -> 'clk_buf_nfet_w12_l0p15.U0_G'): crosses already-routed net 'CLKIN'",
+      "net 'VDD' could not be routed: crosses already-routed net 'CLKOUT'"
+    ]
+  },
+  "warnings": [],
+  "provenance": {
+    "klt_version": "0.6.0",
+    "klayout_version": "0.30.10",
+    "pdk": {
+      "name": "sky130A",
+      "source": "search root: ~/.ciel",
+      "version": "open_pdks f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+    },
+    "deck": null,
+    "input": null
+  }
+}

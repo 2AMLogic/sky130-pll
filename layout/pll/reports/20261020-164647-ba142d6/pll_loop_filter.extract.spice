@@ -1,0 +1,16 @@
+* extracted by klt extract --deck sky130
+
+* cell pll_loop_filter
+* pin vsubs
+.SUBCKT pll_loop_filter vsubs
+* device instance $1 r0 *1 161.2,166.2 sky130_fd_pr__model__cap_mim
+C$1 \$5 \$8 2.0761272e-10
+* device instance $2 r0 *1 36.2,367.6 sky130_fd_pr__model__cap_mim
+C$2 \$6 \$9 1.042272e-11
+* device instance $3 r0 *1 96.6,351.6 sky130_fd_pr__model__cap_mim
+C$3 \$7 \$10 3.2304e-12
+* device instance $4 r0 *1 1.685,0.5 res_xhigh_po
+R$4 \$1 \$2 vsubs 5060 res_xhigh_po L=2.53U W=1U
+* device instance $5 r0 *1 10.29,0.5 res_xhigh_po
+R$5 \$3 \$4 vsubs 10000 res_xhigh_po L=5U W=1U
+.ENDS pll_loop_filter
