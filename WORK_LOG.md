@@ -2,6 +2,10 @@
 
 Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
+### 2026-11-02
+
+- **Issue #387** (closed): Single-corner 2x VCO duty and CLK-CLK90 offset measurement for DR-010 (tt/27C/1.8V, batch, cap $20)
+
 ### 2026-11-01
 
 - **PR #395**: refactor(sim): remove unused batch_spec helper from cp_klt
