@@ -35,20 +35,19 @@
       "source": "V2",
       "quantity": "VCTRL",
       "values": [
-        0.3,
-        0.4,
-        0.5,
-        0.55,
-        0.6,
-        0.65,
-        0.7,
-        0.75,
-        0.85,
-        0.95,
-        1.0
+        0.715,
+        0.72,
+        0.725,
+        0.765,
+        0.77,
+        0.775,
+        0.83,
+        0.835,
+        0.84,
+        0.94
       ]
     }
   },
-  "methodology_note": "One PVT point, one batched VCTRL grid (11 values, 0.3-1.0 V) in a single ngspice deck submitted with --executor batch; sub-0.8 V points lie below the lowest previously characterized VCTRL (sim/vco/records/20260904-163130-f3ae976.md) so non-oscillation there is data. tran_stop 800 ns / settle 400 ns so a 50 MHz (20 ns) period still yields several edges. Simulator options left at ngspice defaults, as in sim/vco.",
-  "analysis": "transient per swept VCTRL value (`tran 50p 800n uic`, eleven values, one ngspice invocation at tt/27C/1.80V)"
+  "methodology_note": "Refinement round (the one the issue allows) after a first 11-value grid, 0.3-1.0 V, run as record 20261102-172016-7b7f96b: 10 VCTRL values bracketing log-interpolated targets for 50 MHz (0.715-0.725 V), 100 MHz (0.765-0.775 V), 200 MHz (0.83-0.84 V) and 400 MHz (0.94 V), in a single ngspice deck submitted with --executor batch. tran_stop 800 ns / settle 400 ns so a 50 MHz (20 ns) period still yields several edges. Simulator options left at ngspice defaults, as in sim/vco.",
+  "analysis": "transient per swept VCTRL value (`tran 50p 800n uic`, ten values, one ngspice invocation at tt/27C/1.80V)"
 }
