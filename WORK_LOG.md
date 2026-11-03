@@ -2,6 +2,11 @@
 
 Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
+### 2026-11-03
+
+- **PR #402**: harness: skip boilerplate .spiceinit when staging stored evidence
+- **Issue #400** (closed): Stored-evidence manifest check rejects boilerplate .spiceinit whose bytes match committed copies (blocks PR #398)
+
 ### 2026-11-02
 
 - **Issue #387** (closed): Single-corner 2x VCO duty and CLK-CLK90 offset measurement for DR-010 (tt/27C/1.8V, batch, cap $20)
