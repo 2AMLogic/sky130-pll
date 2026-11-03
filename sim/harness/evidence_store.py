@@ -262,18 +262,26 @@ def install_manifest(manifest: dict, path: Path) -> None:
         raise StoreError(f"{path.name} already exists; refusing to overwrite") from exc
 
 
+# Boilerplate ngspice init file the harness drops into every run directory. It
+# is not evidence, and its bytes equal 72 older committed copies, which the
+# manifest checker refuses to see again as stored bytes (DR-014).
+BOILERPLATE_NAMES = frozenset({".spiceinit"})
+
+
 def stage_files(stage_dir: Path, name_prefix: str, *, exclude=(),
                 skip=lambda path: False) -> list[tuple[Path, str]]:
     """Every regular file under ``stage_dir`` as ``(path, name_prefix/rel)``,
     sorted; symlinks are refused (their bytes are not what is stored).
     ``skip(path)`` drops a file that is not evidence (a waveform dump, the
-    resume checkpoint)."""
+    resume checkpoint). Files named in ``BOILERPLATE_NAMES`` are always
+    dropped (DR-014)."""
     out = []
     excluded = {Path(p).resolve() for p in exclude}
     for path in sorted(stage_dir.rglob("*")):
         if path.is_symlink():
             raise StoreError(f"staged evidence contains a symlink: {path.name}")
-        if not path.is_file() or path.resolve() in excluded or skip(path):
+        if not path.is_file() or path.resolve() in excluded \
+                or path.name in BOILERPLATE_NAMES or skip(path):
             continue
         rel = path.relative_to(stage_dir).as_posix()
         out.append((path, f"{name_prefix}/{rel}"))

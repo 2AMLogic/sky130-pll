@@ -19,6 +19,7 @@ One file per decision, DR-NNN-<slug>.md. See CLAUDE.md.
 | [DR-011](DR-011-500mhz-feasibility-plan.md) | Bounded feasibility plan for a proposed 500 MHz clock output (rows 2/14 stay DRAFT, row 9 unchanged; no stage authorized) | proposed |
 | [DR-012](DR-012-evidence-bytes-in-artifact-store.md) | Raw run evidence goes to the artifact store; git keeps the manifest and the Markdown record (no spec row touched) | ratified |
 | [DR-013](DR-013-locktiming-evidence-in-artifact-store.md) | The LOCK timing runner stores its group bytes in the artifact store; git keeps manifests and the JSON records (supersedes one sentence of DR-012; no spec row touched) | ratified |
+| [DR-014](DR-014-spiceinit-not-stored-evidence.md) | The boilerplate `.spiceinit` is not staged as run evidence (narrows what DR-012 stores; no spec row touched) | ratified |
 
 The "Status" column is authoritative only for records added with this index;
 for earlier records, the record's own header is the source of truth.
