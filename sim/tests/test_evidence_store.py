@@ -70,6 +70,14 @@ class Base(unittest.TestCase):
         self.summary = self.root / "sim/b/records/r1.md"
         self.files = es.stage_files(self.stage, "sim/b/corners/r1")
 
+    def test_stage_files_omits_boilerplate_spiceinit(self):
+        (self.stage / ".spiceinit").write_text("set ngbehavior=hsa\n")
+        sub = self.stage / "sub"
+        sub.mkdir()
+        (sub / ".spiceinit").write_text("set ngbehavior=hsa\n")
+        names = [n for _, n in es.stage_files(self.stage, "sim/b/corners/r1")]
+        self.assertEqual(names, ["sim/b/corners/r1/tt.log", "sim/b/corners/r1/tt.spice"])
+
     def store(self, run, **kw):
         put = lambda files, root: es.put_files(files, root, run=run)  # noqa: E731
         return es.store_files(self.files, repo_root=self.root, bench="b", rid="r1",
