@@ -67,23 +67,23 @@ class McTrialResult:
 def netlist_schematic(
     pdk: ResolvedPdk, xschemrc: Path, schematic: Path, out_dir: Path, repo_root: Path
 ) -> str:
-    """Netlist `schematic` with xschem, headless, against the resolved PDK.
+    """Netlist `schematic` via `klt netlist` (headless xschem), against the resolved PDK.
 
     Returns the netlisted text. Raises NetlistError on any nonzero exit or
     missing output file.
     """
     out_dir.mkdir(parents=True, exist_ok=True)
     stem = schematic.stem
+    netlist_path = out_dir / f"{stem}.spice"
+    # `klt netlist` owns the headless xschem invocation (forces -x/-n/-s/-q and
+    # kills a hung run); a raw `xschem` can hang the host in the Tk event loop.
     cmd = [
-        "xschem",
-        "-x",
-        "-n",
-        "-s",
-        "-q",
+        "klt",
+        "netlist",
         "--rcfile",
         str(xschemrc),
         "-o",
-        str(out_dir),
+        str(netlist_path),
         str(schematic),
     ]
     proc = subprocess.run(
@@ -92,12 +92,11 @@ def netlist_schematic(
         text=True,
         cwd=repo_root,
         env=_env_with_pdk(pdk),
-        timeout=120,
+        timeout=180,
     )
-    netlist_path = out_dir / f"{stem}.spice"
     if proc.returncode != 0 or not netlist_path.is_file():
         raise NetlistError(
-            f"xschem netlisting failed (exit {proc.returncode}):\n"
+            f"klt netlist failed (exit {proc.returncode}):\n"
             f"stdout:\n{proc.stdout}\nstderr:\n{proc.stderr}"
         )
     return netlist_path.read_text()

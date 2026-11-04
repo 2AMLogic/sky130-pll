@@ -1,6 +1,6 @@
 # PLL characterization report
 
-Generated: 2026-11-02T17:43:58Z by `measurements/aggregate.py` -- this file is a **derived rollup**, not append-only evidence itself; re-run the aggregator to refresh it (see `measurements/README.md`).
+Generated: 2026-11-04T21:02:18Z by `measurements/aggregate.py` -- this file is a **derived rollup**, not append-only evidence itself; re-run the aggregator to refresh it (see `measurements/README.md`).
 
 Rolls up every `sim/*/records/*.md` and `layout/*/reports/*/record.md` evidence record into one table, keyed by `spec/target-spec.md` row number. **A populated row is not a passing row.** Rows 0, 1, 9, 19 and 20 of `spec/target-spec.md` are ratified (`DR-001`/`DR-002`/`DR-003`/`DR-006`); every other numeric row an evidence record appears against is still DRAFT. For a DRAFT row, a record listed against it is *evidence bearing on that row* -- the measured input a future decision record would argue the row from -- never a verdict on it, and never a substitute for the ratification act itself. For a **ratified** row the record's verdict does grade against a binding bound, and a FAIL there is a recorded miss against the spec (never a reason to relax it -- see `CLAUDE.md`). Read each record before quoting it either way: its own `Verdict` column here is the record's overall pass/fail, which for several campaigns means "the harness ran and recorded what happened", including recorded non-lock.
 
@@ -16,8 +16,8 @@ Rolls up every `sim/*/records/*.md` and `layout/*/reports/*/record.md` evidence 
 |  |  |  | sim/vco (20260927-093607-25bc597) | PASS | `sim/vco/records/20260927-093607-25bc597.md` |
 |  |  |  | sim/vco-2x-duty (20261102-172016-7b7f96b) | PASS | `sim/vco-2x-duty/records/20261102-172016-7b7f96b.md` |
 |  |  |  | sim/vco-2x-duty (20261102-172209-7b7f96b) | PASS | `sim/vco-2x-duty/records/20261102-172209-7b7f96b.md` |
-| 3 | Reference input | 1 – 25 MHz, CMOS square wave, rising-edge triggered, duty 30–70 % | sim/pll-lock-1mhz (20260904-152129-f00ce3e) | FAIL | `sim/pll-lock-1mhz/records/20260904-152129-f00ce3e.md` -- rows via `sim/pll-lock-1mhz/testbench/tb.json` |
-|  |  |  | sim/pll-lock-25mhz (20260904-152213-f00ce3e) | FAIL | `sim/pll-lock-25mhz/records/20260904-152213-f00ce3e.md` -- rows via `sim/pll-lock-25mhz/testbench/tb.json` |
+| 3 | Reference input | 1 – 25 MHz, CMOS square wave, rising-edge triggered, duty 30–70 % | sim/pll-lock-1mhz (20261104-193837-d1e79d4) | FAIL | `sim/pll-lock-1mhz/records/20261104-193837-d1e79d4.md` |
+|  |  |  | sim/pll-lock-25mhz (20261104-194108-d1e79d4) | FAIL | `sim/pll-lock-25mhz/records/20261104-194108-d1e79d4.md` |
 | 4 | Multiplication ratio | N = 4 – 64, every integer, static configuration | sim/divider (20260910-234943-ec91425) | PASS | `sim/divider/records/20260910-234943-ec91425.md` |
 |  |  |  | sim/divider-n4 (20260911-091838-7d2f839) | PASS | `sim/divider-n4/records/20260911-091838-7d2f839.md` |
 |  |  |  | sim/divider-n5 (20260911-095824-7d2f839) | PASS | `sim/divider-n5/records/20260911-095824-7d2f839.md` |
@@ -40,8 +40,8 @@ Rolls up every `sim/*/records/*.md` and `layout/*/reports/*/record.md` evidence 
 | 7 | Phase margin | ≥ 45° everywhere in the contracted space | sim/loop-ac (20260904-204534-3fcd920) | PASS | `sim/loop-ac/records/20260904-204534-3fcd920.md` -- rows via `sim/loop-ac/testbench/tb.json` |
 | 8 | Lock time | < 100 µs to a stated lock criterion | sim/pll-lock (20260904-165409-f3ae976) | FAIL | `sim/pll-lock/records/20260904-165409-f3ae976.md` -- rows via `sim/pll-lock/testbench/tb.json` |
 |  |  |  | sim/pll-lock (20260905-193322-0f1934d) | FAIL | `sim/pll-lock/records/20260905-193322-0f1934d.md` -- rows via `sim/pll-lock/testbench/tb.json` |
-|  |  |  | sim/pll-lock-1mhz (20260904-152129-f00ce3e) | FAIL | `sim/pll-lock-1mhz/records/20260904-152129-f00ce3e.md` -- rows via `sim/pll-lock-1mhz/testbench/tb.json` |
-|  |  |  | sim/pll-lock-25mhz (20260904-152213-f00ce3e) | FAIL | `sim/pll-lock-25mhz/records/20260904-152213-f00ce3e.md` -- rows via `sim/pll-lock-25mhz/testbench/tb.json` |
+|  |  |  | sim/pll-lock-1mhz (20261104-193837-d1e79d4) | FAIL | `sim/pll-lock-1mhz/records/20261104-193837-d1e79d4.md` |
+|  |  |  | sim/pll-lock-25mhz (20261104-194108-d1e79d4) | FAIL | `sim/pll-lock-25mhz/records/20261104-194108-d1e79d4.md` |
 | 9 | Period jitter | ≤ 1.0 % of the output period, RMS, at `CLK` in lock, under a **DC-quiet supply** within row 1's ran… | sim/pll-lock (20260904-165409-f3ae976) | FAIL | `sim/pll-lock/records/20260904-165409-f3ae976.md` -- rows via `sim/pll-lock/testbench/tb.json` |
 |  |  |  | sim/pll-lock (20260905-193322-0f1934d) | FAIL | `sim/pll-lock/records/20260905-193322-0f1934d.md` -- rows via `sim/pll-lock/testbench/tb.json` |
 |  |  |  | sim/pll-lock-mc (20260925-224917-3a2dd6e) | PASS | `sim/pll-lock-mc/records/20260925-224917-3a2dd6e.md` |
@@ -55,8 +55,8 @@ Rolls up every `sim/*/records/*.md` and `layout/*/reports/*/record.md` evidence 
 |  |  |  | sim/vco-supply-pushing (20260927-093854-25bc597) | PASS | `sim/vco-supply-pushing/records/20260927-093854-25bc597.md` |
 | 14 | Output duty cycle | 45 – 55 % at CLK, whole band, all corners | sim/pll-lock (20260904-165409-f3ae976) | FAIL | `sim/pll-lock/records/20260904-165409-f3ae976.md` -- rows via `sim/pll-lock/testbench/tb.json` |
 |  |  |  | sim/pll-lock (20260905-193322-0f1934d) | FAIL | `sim/pll-lock/records/20260905-193322-0f1934d.md` -- rows via `sim/pll-lock/testbench/tb.json` |
-|  |  |  | sim/pll-lock-1mhz (20260904-152129-f00ce3e) | FAIL | `sim/pll-lock-1mhz/records/20260904-152129-f00ce3e.md` -- rows via `sim/pll-lock-1mhz/testbench/tb.json` |
-|  |  |  | sim/pll-lock-25mhz (20260904-152213-f00ce3e) | FAIL | `sim/pll-lock-25mhz/records/20260904-152213-f00ce3e.md` -- rows via `sim/pll-lock-25mhz/testbench/tb.json` |
+|  |  |  | sim/pll-lock-1mhz (20261104-193837-d1e79d4) | FAIL | `sim/pll-lock-1mhz/records/20261104-193837-d1e79d4.md` |
+|  |  |  | sim/pll-lock-25mhz (20261104-194108-d1e79d4) | FAIL | `sim/pll-lock-25mhz/records/20261104-194108-d1e79d4.md` |
 | 15 | Output levels and drive | rail-to-rail CMOS, V_OH ≥ 0.9·VDD / V_OL ≤ 0.1·VDD into a stated load | No evidence | -- | -- |
 | 16 | Lock detector | digital `lock` output; assert window + hysteresis criteria | No evidence | -- | -- |
 | 17 | Standby / power-down | no power-down mode in v1 (always-on) | No evidence | -- | -- |
@@ -120,9 +120,9 @@ No Fmax record has been committed yet.
 
 ## Scan summary
 
-- Evidence records scanned: 90
+- Evidence records scanned: 92
 - Current (non-superseded): 72
-- Superseded (excluded from the tables above; still retained, append-only, under `sim/`/`layout/`): 18
-- Spec-row citation stated by the record itself: 61
-- Spec-row citation resolved from the experiment's own declaration (`sim/<slug>/testbench/tb.json` / `layout/<block>/spec-rows.json`) because the record predates the convention and is append-only: 11
+- Superseded (excluded from the tables above; still retained, append-only, under `sim/`/`layout/`): 20
+- Spec-row citation stated by the record itself: 63
+- Spec-row citation resolved from the experiment's own declaration (`sim/<slug>/testbench/tb.json` / `layout/<block>/spec-rows.json`) because the record predates the convention and is append-only: 9
 - **Current records with no spec-row declaration at all: 0**
