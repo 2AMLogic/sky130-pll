@@ -1,0 +1,191 @@
+{
+  "schema_version": 1,
+  "kind": "generic",
+  "status": "pass",
+  "t1_item": 10,
+  "summary": "T1 item 10 (Repo hygiene): 22/22 attestation checks passed (klt signoff --attest)",
+  "source": "signoff/inventory/item10.json",
+  "attestation": {
+    "producer": "klt signoff --attest",
+    "inventory_schema_version": 1,
+    "hash_algorithm": "sha256-raw-bytes",
+    "check_count": 22,
+    "passed_count": 22,
+    "checks": [
+      {
+        "check": "present",
+        "role": "hygiene",
+        "path": ".github/workflows/ci.yml",
+        "passed": true,
+        "content_hash": "sha256:b33170c261c44bdc142dd79e190c7060ae01e79740c4efc754037c569d2fc79c"
+      },
+      {
+        "check": "present",
+        "role": "hygiene",
+        "path": "LICENSE",
+        "passed": true,
+        "content_hash": "sha256:cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+      },
+      {
+        "check": "present",
+        "role": "hygiene",
+        "path": "README.md",
+        "passed": true,
+        "content_hash": "sha256:f4c89a9c9def3afee569d1369d444f062326b9229507346d629852d52bf64081"
+      },
+      {
+        "check": "present",
+        "role": "hygiene",
+        "path": "spec/README.md",
+        "passed": true,
+        "content_hash": "sha256:53749dcdb1be106ab9117ee5acefa05abe2c4bf343f8dade04019aaf4e716f9e"
+      },
+      {
+        "check": "present",
+        "role": "hygiene",
+        "path": "spec/decision-records/DR-001-supply-flavor-scope.md",
+        "passed": true,
+        "content_hash": "sha256:75bc5dd2de34276e47ede13f3f8943e437db044e8d0be7e796f9b605c73be647"
+      },
+      {
+        "check": "present",
+        "role": "hygiene",
+        "path": "spec/decision-records/DR-002-row1-supply-range-ratification.md",
+        "passed": true,
+        "content_hash": "sha256:a396ff5ac059620c9b9465bb35bb6c98b8dadf1a9dfe428415857def4091aa49"
+      },
+      {
+        "check": "present",
+        "role": "hygiene",
+        "path": "spec/decision-records/DR-003-corner-and-temperature-scope.md",
+        "passed": true,
+        "content_hash": "sha256:2ec705678cfc23de319ed22bc25bc0f964fc44b928d15d9c630a9ad73a5dec9a"
+      },
+      {
+        "check": "present",
+        "role": "hygiene",
+        "path": "spec/decision-records/DR-004-pll-lock-cold-start-nudge-and-window.md",
+        "passed": true,
+        "content_hash": "sha256:4fe1e343f4ce80a0a4adf16a4ac676d70ee5fa275dae0934465a7a9045ad2627"
+      },
+      {
+        "check": "present",
+        "role": "hygiene",
+        "path": "spec/decision-records/DR-005-pll-lock-cold-start-initial-conditions.md",
+        "passed": true,
+        "content_hash": "sha256:e2589790f1fa6a0a07e92fc66f4d2ecc1c1950db49e3e01ccda38126d7a27aee"
+      },
+      {
+        "check": "present",
+        "role": "hygiene",
+        "path": "spec/decision-records/DR-006-statistical-rows-ratification.md",
+        "passed": true,
+        "content_hash": "sha256:dd06cf8b5e1c05df31141d9e661951eb26f6392fab592f8fa96e8a9bab1df09b"
+      },
+      {
+        "check": "present",
+        "role": "hygiene",
+        "path": "spec/decision-records/DR-007-lock-detector-provisional-contract.md",
+        "passed": true,
+        "content_hash": "sha256:229a9f494018c1fd40436c64c3e42a6fb5e42557accb03dcf189858b34db0bf7"
+      },
+      {
+        "check": "present",
+        "role": "hygiene",
+        "path": "spec/decision-records/DR-008-clk-output-load-and-buffer-scope.md",
+        "passed": true,
+        "content_hash": "sha256:ca8d322101e60b6b488eedc6ea29dfcd7e27919f1fcec388a494f80cceca671c"
+      },
+      {
+        "check": "present",
+        "role": "hygiene",
+        "path": "spec/decision-records/DR-009-phase-output-scope-and-consumer-clock-gaps.md",
+        "passed": true,
+        "content_hash": "sha256:9259dbf6ca407fd0fad32cde076013e923e33a75e8ce01e08833df665de7bf7a"
+      },
+      {
+        "check": "present",
+        "role": "hygiene",
+        "path": "spec/decision-records/DR-010-phase-or-multiplied-output-proposal.md",
+        "passed": true,
+        "content_hash": "sha256:547606edbe5f20ddf9026f6e96b92f02a9ae581057c3ed88fde845b62a02230e"
+      },
+      {
+        "check": "present",
+        "role": "hygiene",
+        "path": "spec/decision-records/DR-011-500mhz-feasibility-plan.md",
+        "passed": true,
+        "content_hash": "sha256:e2ca55636cfd6366fb716764b7e453042cc82b646cbea270534548e438e2288a"
+      },
+      {
+        "check": "present",
+        "role": "hygiene",
+        "path": "spec/decision-records/DR-012-evidence-bytes-in-artifact-store.md",
+        "passed": true,
+        "content_hash": "sha256:d896830067b34605152312f4b378d94e57289771896420a00b27c9d6e696c38f"
+      },
+      {
+        "check": "present",
+        "role": "hygiene",
+        "path": "spec/decision-records/DR-013-locktiming-evidence-in-artifact-store.md",
+        "passed": true,
+        "content_hash": "sha256:75d5af0c5fefc69d63c7b5e6fb658aa890cd0ef4c4c7e5cd36ada34134ce1cd7"
+      },
+      {
+        "check": "present",
+        "role": "hygiene",
+        "path": "spec/decision-records/DR-014-spiceinit-not-stored-evidence.md",
+        "passed": true,
+        "content_hash": "sha256:70846fb8c73b7a2a5c8ac9c45fb740c8e7134200732200bd2d536f1721988622"
+      },
+      {
+        "check": "present",
+        "role": "hygiene",
+        "path": "spec/decision-records/README.md",
+        "passed": true,
+        "content_hash": "sha256:489a1e9723620e769ebaa083df85cc5e64dca286af035d28354aee14b16d1ab4"
+      },
+      {
+        "check": "present",
+        "role": "hygiene",
+        "path": "spec/decision-records/TEMPLATE.md",
+        "passed": true,
+        "content_hash": "sha256:7ca533ad63dba947c511d49bc4b8a8467d901403bcd5522d6d8977be82cd1bfa"
+      },
+      {
+        "check": "present",
+        "role": "hygiene",
+        "path": "spec/target-spec.md",
+        "passed": true,
+        "content_hash": "sha256:cb006d3dbfe14f6e3f6e50f3bb4d9a5fcb18dd7858d1a522daa68d7ecfb0c5b3"
+      },
+      {
+        "check": "command",
+        "role": "audit",
+        "name": "check-ci",
+        "argv": [
+          "npm",
+          "run",
+          "check:ci"
+        ],
+        "cwd": ".",
+        "exit_status": 0,
+        "passed": true,
+        "local_only": true
+      }
+    ]
+  },
+  "provenance": {
+    "klt_version": "0.8.0",
+    "klayout_version": null,
+    "pdk": null,
+    "deck": null,
+    "input": {
+      "path": {
+        "path": "signoff/inventory/item10.json",
+        "scope": "repo"
+      },
+      "content_hash": "sha256:9442717a7261b82c624dcc4d6dfd35bfc5f18c92dc23d0cb426d782ae1b87e9e"
+    }
+  }
+}

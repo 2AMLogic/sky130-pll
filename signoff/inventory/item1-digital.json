@@ -1,12 +1,21 @@
 {
-  "inventory_version": 0,
-  "status": "provisional-awaiting-klt-attest",
+  "schema_version": 1,
+  "kind": "t1-attestation-inventory",
   "t1_item": 1,
-  "partition": "digital",
-  "files": [
-    "design/divider/divider_intN.sch",
-    "design/divider/netlist/divider_intN.spice"
+  "description": "Item 1, digital partition: schematic sources and derived netlist snapshots.",
+  "sources": [
+    "design/divider/divider_intN.sch"
   ],
-  "freshness_check": "python3 signoff/design-snapshot-consistency.py",
-  "note": "Provisional repo-owned layout: klt 0.7.0 (the pin) has no `klt signoff --attest`, so no klt inventory schema is available to follow. See signoff/README.md \u00a7 'Items 1, 9, 10: inventories awaiting `klt signoff --attest`'."
+  "derived": [
+    {
+      "path": "design/divider/netlist/divider_intN.spice",
+      "generator": "xschem netlist snapshot, freshness-checked by signoff/design-snapshot-consistency.py",
+      "check": {
+        "argv": [
+          "python3",
+          "signoff/design-snapshot-consistency.py"
+        ]
+      }
+    }
+  ]
 }

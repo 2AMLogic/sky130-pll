@@ -416,6 +416,26 @@ case "$status" in
 esac
 
 if [ "$mode" = "check" ]; then
+  # Re-attest items 1, 9 and 10 (issue #329): each committed envelope under
+  # signoff/evidence/attest-*.json is rebuilt from its inventory by
+  # `klt signoff --attest N --inventory F --check ENVELOPE`, which fails when an
+  # inventoried file, a freshness command, the cold start or a pin has drifted.
+  # Skipped when the repo carries no inventories (scratch repos in the tests).
+  if [ -d signoff/inventory ]; then
+    for inv in signoff/inventory/item*.json; do
+      [ -e "$inv" ] || continue
+      name="$(basename "$inv" .json)"
+      item="${name#item}"
+      item="${item%%-*}"
+      if ! klt signoff --attest "$item" --inventory "$inv" \
+        --check "signoff/evidence/attest-${name}.json" >&2; then
+        echo "error: item $item attestation (${name}) is stale or failing -- re-attest with:" >&2
+        echo "         klt signoff --attest $item --inventory $inv -o signoff/evidence/attest-${name}.json" >&2
+        echo "       then re-pin its inventory hash in $MANIFEST and re-render." >&2
+        exit 1
+      fi
+    done
+  fi
   if ! diff -u "$REPORT" "$tmp"; then
     echo >&2
     echo "error: $REPORT is stale -- re-render it with:" >&2
