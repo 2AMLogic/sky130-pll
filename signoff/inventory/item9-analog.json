@@ -1,33 +1,70 @@
 {
-  "inventory_version": 0,
-  "status": "provisional-awaiting-klt-attest",
+  "schema_version": 1,
+  "kind": "t1-attestation-inventory",
   "t1_item": 9,
-  "partition": "analog",
-  "bench_dirs": [
-    "sim/pfd-cp",
-    "sim/pfd-cp-resolution",
-    "sim/loop-ac",
-    "sim/loop-ripple",
-    "sim/pll",
-    "sim/pll-lock",
-    "sim/pll-lock-1mhz",
-    "sim/pll-lock-25mhz",
-    "sim/pll-lock-mc",
-    "sim/pll-lock-mc-negative-control",
-    "sim/clk-output",
-    "sim/power",
-    "sim/jitter-calibration",
-    "sim/jitter-floor",
-    "sim/integrator-floor",
-    "sim/lf-c1-jitter-sensitivity",
-    "sim/lf-c2-jitter-sensitivity"
-  ],
-  "files": [
+  "description": "Item 9, analog partition: testbench definitions backing the claimed figures, the headless cold start, and the PDK/tool pins (sim/pdk.json). The cold start is the PDK-free default of sim/selftest.sh; the PDK-gated smoke stages are not declared.",
+  "testbenches": [
+    "sim/pfd-cp/testbench/tb.json",
+    "sim/pfd-cp/testbench/tb_pfd_cp.sch",
+    "sim/pfd-cp-resolution/testbench/tb.json",
+    "sim/loop-ac/testbench/tb.json",
+    "sim/loop-ac/testbench/tb_loop_ac.sch",
+    "sim/loop-ripple/testbench/tb.json",
+    "sim/loop-ripple/testbench/tb_loop_ripple.sch",
+    "sim/pll/testbench/tb.json",
+    "sim/pll/testbench/tb_pll.sch",
+    "sim/pll-lock/testbench/tb.json",
+    "sim/pll-lock/testbench/tb_pll_lock.sch",
+    "sim/pll-lock-1mhz/testbench/tb.json",
+    "sim/pll-lock-1mhz/testbench/tb_pll_lock_1mhz.sch",
+    "sim/pll-lock-25mhz/testbench/tb.json",
+    "sim/pll-lock-25mhz/testbench/tb_pll_lock_25mhz.sch",
+    "sim/pll-lock-mc/testbench/tb.json",
+    "sim/pll-lock-mc/testbench/tb_pll_lock_mc.sch",
+    "sim/pll-lock-mc-negative-control/testbench/tb.json",
+    "sim/pll-lock-mc-negative-control/testbench/tb_pll_lock_mc_negative_control.sch",
+    "sim/clk-output/testbench/tb.json",
+    "sim/clk-output/testbench/tb_clk_output.sch",
+    "sim/power/testbench/divider-n4.request.json",
+    "sim/power/testbench/divider-n64.request.json",
+    "sim/power/testbench/pfd-cp.request.json",
+    "sim/power/testbench/tb_power_divider_n4.sch",
+    "sim/power/testbench/tb_power_divider_n64.sch",
+    "sim/power/testbench/tb_power_pfd_cp.sch",
+    "sim/power/testbench/tb_power_vco.sch",
+    "sim/power/testbench/vco.request.json",
+    "sim/jitter-calibration/testbench/tb.json",
+    "sim/jitter-calibration/testbench/tb_jitter_calibration.sch",
+    "sim/jitter-floor/testbench/tb.json",
+    "sim/jitter-floor/testbench/tb_jitter_floor.sch",
+    "sim/integrator-floor/testbench/tb.json",
+    "sim/integrator-floor/testbench/tb_integrator_floor.sch",
+    "sim/lf-c1-jitter-sensitivity/testbench/tb.json",
+    "sim/lf-c1-jitter-sensitivity/testbench/tb_lf_c1_jitter_c1div12.sch",
+    "sim/lf-c1-jitter-sensitivity/testbench/tb_lf_c1_jitter_c1div16.sch",
+    "sim/lf-c1-jitter-sensitivity/testbench/tb_lf_c1_jitter_c1div25.sch",
+    "sim/lf-c1-jitter-sensitivity/testbench/tb_lf_c1_jitter_c1div9.sch",
+    "sim/lf-c2-jitter-sensitivity/testbench/tb.json",
+    "sim/lf-c2-jitter-sensitivity/testbench/tb_lf_c2_jitter_c2div4.sch",
+    "sim/lf-c2-jitter-sensitivity/testbench/tb_lf_c2_jitter_c2div9.sch",
+    "sim/lf-c2-jitter-sensitivity/testbench/tb_lf_c2_jitter_nominal.sch",
     "sim/selftest.sh",
     "sim/pdk.json"
   ],
-  "cold_start_commands": [
-    "bash sim/selftest.sh"
-  ],
-  "note": "Provisional repo-owned layout: klt 0.7.0 (the pin) has no `klt signoff --attest`, so no klt inventory schema is available to follow. See signoff/README.md \u00a7 'Items 1, 9, 10: inventories awaiting `klt signoff --attest`'."
+  "cold_start": {
+    "argv": [
+      "bash",
+      "sim/selftest.sh"
+    ]
+  },
+  "pins": {
+    "pdk": {
+      "name": "sky130A",
+      "revision": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+    },
+    "tools": {
+      "ngspice": "46",
+      "klt": "0.8.0"
+    }
+  }
 }

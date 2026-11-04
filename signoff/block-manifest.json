@@ -6,6 +6,14 @@
     "analog": "Everything else: the ring-oscillator VCO (design/vco/vco_ring5.sch), the tri-state PFD and charge pump (design/pfd-cp/pfd_cp.sch), and the passive loop filter (design/loop-filter/loop_filter.sch)."
   },
   "evidence": {
+    "1.analog": {
+      "file": "signoff/evidence/attest-item1-analog.json",
+      "content_hash": "sha256:e68515a9bff37cf0c063314a85134f9c023c3d499cc77e53e9f53d7fba98893a"
+    },
+    "1.digital": {
+      "file": "signoff/evidence/attest-item1-digital.json",
+      "content_hash": "sha256:2134a77a6a5871bf485eaae93cbb6baaa817ead7323532be6640b64c4ec33ee1"
+    },
     "3": {
       "file": "layout/pll/reports/20260924-041509-c53e7c4/drc.json",
       "content_hash": "sha256:939f97e05b9e4a2a0f866a44bb6f758c030cfd611eaa0a567d5dc3002fa68d4c"
@@ -13,6 +21,18 @@
     "8.analog": {
       "file": "signoff/evidence/characterization-report.json",
       "content_hash": "sha256:3e56c1a6a8bcb8732e7bfd94229df2234fc353e5b7850783b55523846c022f8d"
+    },
+    "9.analog": {
+      "file": "signoff/evidence/attest-item9-analog.json",
+      "content_hash": "sha256:19535143986a67a2c95a852875552618fe85f1785dd6fe1036e93a36b4ac3197"
+    },
+    "9.digital": {
+      "file": "signoff/evidence/attest-item9-digital.json",
+      "content_hash": "sha256:bb931685f13d494838bd6817237bbb297218788f08f11bfa2039c278d04a1f36"
+    },
+    "10": {
+      "file": "signoff/evidence/attest-item10.json",
+      "content_hash": "sha256:9442717a7261b82c624dcc4d6dfd35bfc5f18c92dc23d0cb426d782ae1b87e9e"
     }
   }
 }

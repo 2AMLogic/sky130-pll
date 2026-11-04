@@ -16,7 +16,15 @@ import unittest
 
 _REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
 _INVENTORY = _REPO_ROOT / "signoff" / "inventory"
-_PATH_KEYS = ("files", "bench_dirs", "dirs")
+
+
+def _listed_paths(data):
+    """Every repo path a klt schema_version-1 inventory names."""
+    paths = []
+    for key in ("sources", "testbenches", "hygiene"):
+        paths += data.get(key, [])
+    paths += [d["path"] for d in data.get("derived", [])]
+    return paths
 
 
 def _inventories():
@@ -34,10 +42,12 @@ class TestInventories(unittest.TestCase):
     def test_every_inventoried_path_exists(self):
         for inv in _inventories():
             data = json.loads(inv.read_text())
-            listed = [p for k in _PATH_KEYS for p in data.get(k, [])]
+            self.assertEqual(data.get("schema_version"), 1, inv.name)
+            self.assertEqual(data.get("kind"), "t1-attestation-inventory", inv.name)
+            listed = _listed_paths(data)
             self.assertTrue(listed, f"{inv.name} lists no paths")
             for rel in listed:
-                self.assertTrue((_REPO_ROOT / rel).exists(), f"{inv.name}: missing {rel}")
+                self.assertTrue((_REPO_ROOT / rel).is_file(), f"{inv.name}: missing {rel}")
 
     def test_partition_boundary_matches_readme(self):
         manifest = json.loads((_REPO_ROOT / "signoff" / "block-manifest.json").read_text())

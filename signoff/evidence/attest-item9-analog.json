@@ -1,0 +1,381 @@
+{
+  "schema_version": 1,
+  "kind": "generic",
+  "status": "pass",
+  "t1_item": 9,
+  "summary": "T1 item 9 (Testbenches shipped): 49/49 attestation checks passed (klt signoff --attest)",
+  "source": "signoff/inventory/item9-analog.json",
+  "attestation": {
+    "producer": "klt signoff --attest",
+    "inventory_schema_version": 1,
+    "hash_algorithm": "sha256-raw-bytes",
+    "check_count": 49,
+    "passed_count": 49,
+    "checks": [
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/clk-output/testbench/tb.json",
+        "passed": true,
+        "content_hash": "sha256:d69f87ed8d7266f2bd67449f8d93f211491cc715e9e1c1819e71419a3398117d"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/clk-output/testbench/tb_clk_output.sch",
+        "passed": true,
+        "content_hash": "sha256:4cea952179b8cccd33c322203f837d25eba4a755b4947fd9a5f2e8d8821a2ad4"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/integrator-floor/testbench/tb.json",
+        "passed": true,
+        "content_hash": "sha256:6fc9bc75f8803f669625b70d2dd22b48e6bbd3134f70cad1adb125945d9543df"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/integrator-floor/testbench/tb_integrator_floor.sch",
+        "passed": true,
+        "content_hash": "sha256:db6f0390ee5c3b6e7c6c50a71ae7a50c0cfbaae331733f7f5abd13ac5bc66250"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/jitter-calibration/testbench/tb.json",
+        "passed": true,
+        "content_hash": "sha256:b60cdc7d409c982ccb9cce64869aaac254bd8e807b76faa7bc91901d6580385a"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/jitter-calibration/testbench/tb_jitter_calibration.sch",
+        "passed": true,
+        "content_hash": "sha256:658a0be1ab03007eac3526d66af80ad5cbd71c16922a0e5847b3e53ce7f9fabe"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/jitter-floor/testbench/tb.json",
+        "passed": true,
+        "content_hash": "sha256:c9a71497feafb64e2c4a13c25b3fbd124491fc399ff2481200841d4c9400fa00"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/jitter-floor/testbench/tb_jitter_floor.sch",
+        "passed": true,
+        "content_hash": "sha256:8239ff2692a44ed763f0519beaaf2e54677a164305febd71b6c75f0916519338"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/lf-c1-jitter-sensitivity/testbench/tb.json",
+        "passed": true,
+        "content_hash": "sha256:f03ce23853cce78b98b83963d169994b96a3a24c55bd2eeb2e05aaf0444023aa"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/lf-c1-jitter-sensitivity/testbench/tb_lf_c1_jitter_c1div12.sch",
+        "passed": true,
+        "content_hash": "sha256:f3614088d42760cdcf084abb34004b8b51b996c230cf360193c91f53b160d85b"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/lf-c1-jitter-sensitivity/testbench/tb_lf_c1_jitter_c1div16.sch",
+        "passed": true,
+        "content_hash": "sha256:feea141e147c3e515edbe3ce8e2090e7333ad41f3401adbd081de740fba3f704"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/lf-c1-jitter-sensitivity/testbench/tb_lf_c1_jitter_c1div25.sch",
+        "passed": true,
+        "content_hash": "sha256:34328ccb0081e7f230199219b0cd9e41e6cc3d20453336c433ef0f3d8fbbd850"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/lf-c1-jitter-sensitivity/testbench/tb_lf_c1_jitter_c1div9.sch",
+        "passed": true,
+        "content_hash": "sha256:d30c096882c581e406b9c3dacc0c2d922646965da2f255bfa71531ad2d971064"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/lf-c2-jitter-sensitivity/testbench/tb.json",
+        "passed": true,
+        "content_hash": "sha256:255753efb9b049531ca6936037155ba391a3488fed47b4bbba822f64e740c3e4"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/lf-c2-jitter-sensitivity/testbench/tb_lf_c2_jitter_c2div4.sch",
+        "passed": true,
+        "content_hash": "sha256:10bf435f7b35ba4c0db0f04bd77b28b7b13ba68008e399a86ef7dfafc7686952"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/lf-c2-jitter-sensitivity/testbench/tb_lf_c2_jitter_c2div9.sch",
+        "passed": true,
+        "content_hash": "sha256:891b5c1574292e4d59596e574882443c58aa32e7b66fb6dad22eaf601c0726f2"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/lf-c2-jitter-sensitivity/testbench/tb_lf_c2_jitter_nominal.sch",
+        "passed": true,
+        "content_hash": "sha256:15b6480e860ec1f12488ebbecec0137d8d1787b0b1d23fd6a48d267f8877b093"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/loop-ac/testbench/tb.json",
+        "passed": true,
+        "content_hash": "sha256:1731e20584c13549ce09002c6c5179a3be26528ac6076eafe8044818939ac201"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/loop-ac/testbench/tb_loop_ac.sch",
+        "passed": true,
+        "content_hash": "sha256:09087a12772d34d5f263ded20d4adae076a16d6ee6a35c377f149d8368e58a62"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/loop-ripple/testbench/tb.json",
+        "passed": true,
+        "content_hash": "sha256:aca0a8ef3763d22aebeb3c53fca2bff842e00a31750cc6404b28717b6ed21715"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/loop-ripple/testbench/tb_loop_ripple.sch",
+        "passed": true,
+        "content_hash": "sha256:923a048a2199fff30634e12514bee98ff2f938b40ef7f3e1287cafbc2a420bac"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/pdk.json",
+        "passed": true,
+        "content_hash": "sha256:e8d905ce748db0291a97f35b15541ed2efabc1f10a601c4474c71254f5c5ecc4"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/pfd-cp-resolution/testbench/tb.json",
+        "passed": true,
+        "content_hash": "sha256:45956eca39f2f3120fc5b5b98aad5547338c0aece981d6baa5cc302fdefc3043"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/pfd-cp/testbench/tb.json",
+        "passed": true,
+        "content_hash": "sha256:dea6a59357095c836b8a30743c88c0ba5f1f5c552c1dbdba46073b0ca20f56c1"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/pfd-cp/testbench/tb_pfd_cp.sch",
+        "passed": true,
+        "content_hash": "sha256:bad61e818d8a99026548a7fb45477c8d7a55a9ee831bb9debc451990a250a9f6"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/pll-lock-1mhz/testbench/tb.json",
+        "passed": true,
+        "content_hash": "sha256:841e9cf59a90b360398fdab1c15831fc2154237e631be63e684ac2dfe159be52"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/pll-lock-1mhz/testbench/tb_pll_lock_1mhz.sch",
+        "passed": true,
+        "content_hash": "sha256:14b340e3e422c02f1970506f91061669d3c58228d84c9e66358f9ecc2f94deef"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/pll-lock-25mhz/testbench/tb.json",
+        "passed": true,
+        "content_hash": "sha256:0e9a1f74d7f84c2c2f7435618f2885920237466420ba7e5659f605328440a311"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/pll-lock-25mhz/testbench/tb_pll_lock_25mhz.sch",
+        "passed": true,
+        "content_hash": "sha256:6cb6bdd5c1158331b336940e3e7b79cb5f75edbcb2991996a9bee001f4fbde31"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/pll-lock-mc-negative-control/testbench/tb.json",
+        "passed": true,
+        "content_hash": "sha256:8da73fbc005c592971274d966b60a51d5b8d787c7e8f1d3a126ce1a981b70cf3"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/pll-lock-mc-negative-control/testbench/tb_pll_lock_mc_negative_control.sch",
+        "passed": true,
+        "content_hash": "sha256:f7e5f05d3d4b7603e875a835088a845be321870d311cdd7768c684297fac993f"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/pll-lock-mc/testbench/tb.json",
+        "passed": true,
+        "content_hash": "sha256:944bc8ca0e5767fe9184cf7b2470003864f696fb5934abbdde41af8c4917e14f"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/pll-lock-mc/testbench/tb_pll_lock_mc.sch",
+        "passed": true,
+        "content_hash": "sha256:229f27aad0a0a37a0079774c0e6afbd37791df5ef27320e987476f80762a789e"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/pll-lock/testbench/tb.json",
+        "passed": true,
+        "content_hash": "sha256:8ea3c56c2d665721a57f3f3f0cef8a15301a5c2dcda1ac3a390ec1adba48393b"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/pll-lock/testbench/tb_pll_lock.sch",
+        "passed": true,
+        "content_hash": "sha256:d1332dd68feba6171c8b8ed9030fc6ad3d990319c608277d1e3c82195b2e7179"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/pll/testbench/tb.json",
+        "passed": true,
+        "content_hash": "sha256:15e22800a2bdf5c3e8d5c76e8ae385727ee56c00c70f4df525ac9f8935e560d9"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/pll/testbench/tb_pll.sch",
+        "passed": true,
+        "content_hash": "sha256:30ef0d041c8810a1d583337ed71648640ee59945cb32c27c42f95520925f2ca9"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/power/testbench/divider-n4.request.json",
+        "passed": true,
+        "content_hash": "sha256:a5a9e37f18f093cb1e1a381b46141c43d56e64c704ac21f8dc4ca67e429a5184"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/power/testbench/divider-n64.request.json",
+        "passed": true,
+        "content_hash": "sha256:9d5f085b94d674051b0bed5737513b71669ee1de3082aa43644f52de2c7361aa"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/power/testbench/pfd-cp.request.json",
+        "passed": true,
+        "content_hash": "sha256:077af3063e72201b4638b2075de0b6fc7d166509e4b4eb3020ad6486033909db"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/power/testbench/tb_power_divider_n4.sch",
+        "passed": true,
+        "content_hash": "sha256:0c14c5182cbbd8c272d05971a823e8c0f135a1ede2092bf148fe25d795711f79"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/power/testbench/tb_power_divider_n64.sch",
+        "passed": true,
+        "content_hash": "sha256:1e2d879ddec293889143740e8e9d3ee9bb61c6c2ab8539ca332545186d6ae085"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/power/testbench/tb_power_pfd_cp.sch",
+        "passed": true,
+        "content_hash": "sha256:a8529ad01c8f4ed56c8c3996c921a38563435df6bcd7361d08b67bfd2298cbe3"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/power/testbench/tb_power_vco.sch",
+        "passed": true,
+        "content_hash": "sha256:4f1800cb5801cb78a3b4e7ab81e26c73874ca3da2a60f7bbc4f36cdfda0b6b7b"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/power/testbench/vco.request.json",
+        "passed": true,
+        "content_hash": "sha256:05d195b2a7fd7f83d81a05df98880258a86170166b4b84654cd9497fae677382"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/selftest.sh",
+        "passed": true,
+        "content_hash": "sha256:926c352a750bb4740a6c1d795953fca4fc4cb52918083edff6d14a897ed8eb03"
+      },
+      {
+        "check": "command",
+        "role": "cold_start",
+        "argv": [
+          "bash",
+          "sim/selftest.sh"
+        ],
+        "cwd": ".",
+        "exit_status": 0,
+        "passed": true
+      },
+      {
+        "check": "pin",
+        "role": "pdk",
+        "passed": true,
+        "value": {
+          "name": "sky130A",
+          "revision": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+        }
+      },
+      {
+        "check": "pin",
+        "role": "tools",
+        "passed": true,
+        "value": {
+          "klt": "0.8.0",
+          "ngspice": "46"
+        }
+      }
+    ]
+  },
+  "provenance": {
+    "klt_version": "0.8.0",
+    "klayout_version": null,
+    "pdk": null,
+    "deck": null,
+    "input": {
+      "path": {
+        "path": "signoff/inventory/item9-analog.json",
+        "scope": "repo"
+      },
+      "content_hash": "sha256:19535143986a67a2c95a852875552618fe85f1785dd6fe1036e93a36b4ac3197"
+    }
+  }
+}

@@ -12,8 +12,9 @@ it. Read those, not a hand-maintained table here.
 As rendered today: the manifest declares `kind: "mixed-signal"` (the
 programmable divider, built from `sky130_fd_sc_hd` standard cells, is the
 digital partition; everything else is analog; see `signoff/README.md`'s "Block
-kind" section for the boundary). The report reads **3 of 22 T1 rows met** —
-item 3 (DRC clean) once per partition, and item 8 (characterization report)
+kind" section for the boundary). The report reads **9 of 22 T1 rows met** —
+items 1, 3, 9 and 10 once per partition (items 1, 9 and 10 from
+`klt signoff --attest` envelopes), and item 8 (characterization report)
 for the analog partition only — and `tier: null`. Item 8's row means only
 that `measurements/report.md` is the artifact the item names. It does not
 mean any spec row is met. That report itself records FAIL rows (lock time,

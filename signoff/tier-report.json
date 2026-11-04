@@ -9,7 +9,7 @@
   "tier": null,
   "t1_item_count": 22,
   "build_t1_item_count": 22,
-  "t1_met_count": 3,
+  "t1_met_count": 9,
   "source_doc": "docs/design-evidence-tiers.md",
   "source_doc_content_hash": "sha256:a26b90262320d0fbd32b3f549a02b6300832706041797a559d8bf6bdb62efdc7",
   "build": {
@@ -30,10 +30,35 @@
       "partition_boundary": "Everything else: the ring-oscillator VCO (design/vco/vco_ring5.sch), the tri-state PFD and charge pump (design/pfd-cp/pfd_cp.sch), and the passive loop filter (design/loop-filter/loop_filter.sch).",
       "text": "committed schematic sources (or generator) plus the netlist derived from them, regenerated on design change.",
       "notes": [],
-      "status": "unmet",
-      "reason": "no_evidence",
+      "status": "met",
+      "reason": null,
       "graded_by_build": true,
-      "citation": null
+      "citation": {
+        "file": "signoff/evidence/attest-item1-analog.json",
+        "command": null,
+        "kind": "generic",
+        "check_status": "pass",
+        "content_hash": "sha256:e68515a9bff37cf0c063314a85134f9c023c3d499cc77e53e9f53d7fba98893a",
+        "input_verified": true,
+        "exit_status": 0,
+        "artifact_binding": {
+          "t1_item": 1,
+          "path": {
+            "path": "signoff/inventory/item1-analog.json",
+            "scope": "repo"
+          },
+          "content_hash": "sha256:e68515a9bff37cf0c063314a85134f9c023c3d499cc77e53e9f53d7fba98893a",
+          "input_verified": true,
+          "summary": "T1 item 1 (Design sources): 15/15 attestation checks passed (klt signoff --attest)",
+          "source": "signoff/inventory/item1-analog.json",
+          "attestation": {
+            "producer": "klt signoff --attest",
+            "inventory_schema_version": 1,
+            "check_count": 15,
+            "passed_count": 15
+          }
+        }
+      }
     },
     {
       "tier": "T1",
@@ -43,10 +68,35 @@
       "partition_boundary": "The programmable integer-N feedback divider, design/divider/divider_intN.sch (netlist design/divider/netlist/divider_intN.spice), every gate of which is an instance of a sky130_fd_sc_hd standard cell. Hand-captured full-custom schematic: no RTL, no synthesis, no place-and-route.",
       "text": "committed RTL sources plus the synthesized gate-level netlist derived from them, regenerated on design change. For a hand-captured full-custom digital partition (no RTL, no synthesis step \u2014 see \"Full-custom digital sub-case\" above), this item is satisfied instead by the Analog column's artifact: committed schematic sources (or generator) plus the netlist derived from them, regenerated on design change, with every logic gate captured as a schematic exactly like an analog partition's.",
       "notes": [],
-      "status": "unmet",
-      "reason": "no_evidence",
+      "status": "met",
+      "reason": null,
       "graded_by_build": true,
-      "citation": null
+      "citation": {
+        "file": "signoff/evidence/attest-item1-digital.json",
+        "command": null,
+        "kind": "generic",
+        "check_status": "pass",
+        "content_hash": "sha256:2134a77a6a5871bf485eaae93cbb6baaa817ead7323532be6640b64c4ec33ee1",
+        "input_verified": true,
+        "exit_status": 0,
+        "artifact_binding": {
+          "t1_item": 1,
+          "path": {
+            "path": "signoff/inventory/item1-digital.json",
+            "scope": "repo"
+          },
+          "content_hash": "sha256:2134a77a6a5871bf485eaae93cbb6baaa817ead7323532be6640b64c4ec33ee1",
+          "input_verified": true,
+          "summary": "T1 item 1 (Design sources): 3/3 attestation checks passed (klt signoff --attest)",
+          "source": "signoff/inventory/item1-digital.json",
+          "attestation": {
+            "producer": "klt signoff --attest",
+            "inventory_schema_version": 1,
+            "check_count": 3,
+            "passed_count": 3
+          }
+        }
+      }
     },
     {
       "tier": "T1",
@@ -424,10 +474,35 @@
       "partition_boundary": "Everything else: the ring-oscillator VCO (design/vco/vco_ring5.sch), the tri-state PFD and charge pump (design/pfd-cp/pfd_cp.sch), and the passive loop filter (design/loop-filter/loop_filter.sch).",
       "text": "every claimed measurement's testbench committed, with a documented cold-start invocation a third party can run; pinned PDK revision.",
       "notes": [],
-      "status": "unmet",
-      "reason": "no_evidence",
+      "status": "met",
+      "reason": null,
       "graded_by_build": true,
-      "citation": null
+      "citation": {
+        "file": "signoff/evidence/attest-item9-analog.json",
+        "command": null,
+        "kind": "generic",
+        "check_status": "pass",
+        "content_hash": "sha256:19535143986a67a2c95a852875552618fe85f1785dd6fe1036e93a36b4ac3197",
+        "input_verified": true,
+        "exit_status": 0,
+        "artifact_binding": {
+          "t1_item": 9,
+          "path": {
+            "path": "signoff/inventory/item9-analog.json",
+            "scope": "repo"
+          },
+          "content_hash": "sha256:19535143986a67a2c95a852875552618fe85f1785dd6fe1036e93a36b4ac3197",
+          "input_verified": true,
+          "summary": "T1 item 9 (Testbenches shipped): 49/49 attestation checks passed (klt signoff --attest)",
+          "source": "signoff/inventory/item9-analog.json",
+          "attestation": {
+            "producer": "klt signoff --attest",
+            "inventory_schema_version": 1,
+            "check_count": 49,
+            "passed_count": 49
+          }
+        }
+      }
     },
     {
       "tier": "T1",
@@ -437,10 +512,35 @@
       "partition_boundary": "The programmable integer-N feedback divider, design/divider/divider_intN.sch (netlist design/divider/netlist/divider_intN.spice), every gate of which is an instance of a sky130_fd_sc_hd standard cell. Hand-captured full-custom schematic: no RTL, no synthesis, no place-and-route.",
       "text": "every claimed measurement's testbench committed, with a documented cold-start invocation a third party can run; pinned PDK revision.",
       "notes": [],
-      "status": "unmet",
-      "reason": "no_evidence",
+      "status": "met",
+      "reason": null,
       "graded_by_build": true,
-      "citation": null
+      "citation": {
+        "file": "signoff/evidence/attest-item9-digital.json",
+        "command": null,
+        "kind": "generic",
+        "check_status": "pass",
+        "content_hash": "sha256:bb931685f13d494838bd6817237bbb297218788f08f11bfa2039c278d04a1f36",
+        "input_verified": true,
+        "exit_status": 0,
+        "artifact_binding": {
+          "t1_item": 9,
+          "path": {
+            "path": "signoff/inventory/item9-digital.json",
+            "scope": "repo"
+          },
+          "content_hash": "sha256:bb931685f13d494838bd6817237bbb297218788f08f11bfa2039c278d04a1f36",
+          "input_verified": true,
+          "summary": "T1 item 9 (Testbenches shipped): 17/17 attestation checks passed (klt signoff --attest)",
+          "source": "signoff/inventory/item9-digital.json",
+          "attestation": {
+            "producer": "klt signoff --attest",
+            "inventory_schema_version": 1,
+            "check_count": 17,
+            "passed_count": 17
+          }
+        }
+      }
     },
     {
       "tier": "T1",
@@ -450,10 +550,35 @@
       "partition_boundary": "Everything else: the ring-oscillator VCO (design/vco/vco_ring5.sch), the tri-state PFD and charge pump (design/pfd-cp/pfd_cp.sch), and the passive loop filter (design/loop-filter/loop_filter.sch).",
       "text": "a README stating what the block is, its spec table, and how to reproduce every result; a license; CI that at minimum keeps the harness and evidence formats valid.",
       "notes": [],
-      "status": "unmet",
-      "reason": "no_evidence",
+      "status": "met",
+      "reason": null,
       "graded_by_build": true,
-      "citation": null
+      "citation": {
+        "file": "signoff/evidence/attest-item10.json",
+        "command": null,
+        "kind": "generic",
+        "check_status": "pass",
+        "content_hash": "sha256:9442717a7261b82c624dcc4d6dfd35bfc5f18c92dc23d0cb426d782ae1b87e9e",
+        "input_verified": true,
+        "exit_status": 0,
+        "artifact_binding": {
+          "t1_item": 10,
+          "path": {
+            "path": "signoff/inventory/item10.json",
+            "scope": "repo"
+          },
+          "content_hash": "sha256:9442717a7261b82c624dcc4d6dfd35bfc5f18c92dc23d0cb426d782ae1b87e9e",
+          "input_verified": true,
+          "summary": "T1 item 10 (Repo hygiene): 22/22 attestation checks passed (klt signoff --attest)",
+          "source": "signoff/inventory/item10.json",
+          "attestation": {
+            "producer": "klt signoff --attest",
+            "inventory_schema_version": 1,
+            "check_count": 22,
+            "passed_count": 22
+          }
+        }
+      }
     },
     {
       "tier": "T1",
@@ -463,10 +588,35 @@
       "partition_boundary": "The programmable integer-N feedback divider, design/divider/divider_intN.sch (netlist design/divider/netlist/divider_intN.spice), every gate of which is an instance of a sky130_fd_sc_hd standard cell. Hand-captured full-custom schematic: no RTL, no synthesis, no place-and-route.",
       "text": "a README stating what the block is, its spec table, and how to reproduce every result; a license; CI that at minimum keeps the harness and evidence formats valid.",
       "notes": [],
-      "status": "unmet",
-      "reason": "no_evidence",
+      "status": "met",
+      "reason": null,
       "graded_by_build": true,
-      "citation": null
+      "citation": {
+        "file": "signoff/evidence/attest-item10.json",
+        "command": null,
+        "kind": "generic",
+        "check_status": "pass",
+        "content_hash": "sha256:9442717a7261b82c624dcc4d6dfd35bfc5f18c92dc23d0cb426d782ae1b87e9e",
+        "input_verified": true,
+        "exit_status": 0,
+        "artifact_binding": {
+          "t1_item": 10,
+          "path": {
+            "path": "signoff/inventory/item10.json",
+            "scope": "repo"
+          },
+          "content_hash": "sha256:9442717a7261b82c624dcc4d6dfd35bfc5f18c92dc23d0cb426d782ae1b87e9e",
+          "input_verified": true,
+          "summary": "T1 item 10 (Repo hygiene): 22/22 attestation checks passed (klt signoff --attest)",
+          "source": "signoff/inventory/item10.json",
+          "attestation": {
+            "producer": "klt signoff --attest",
+            "inventory_schema_version": 1,
+            "check_count": 22,
+            "passed_count": 22
+          }
+        }
+      }
     },
     {
       "tier": "T1",

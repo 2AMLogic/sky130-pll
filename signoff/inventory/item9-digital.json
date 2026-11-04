@@ -1,22 +1,38 @@
 {
-  "inventory_version": 0,
-  "status": "provisional-awaiting-klt-attest",
+  "schema_version": 1,
+  "kind": "t1-attestation-inventory",
   "t1_item": 9,
-  "partition": "digital",
-  "bench_dirs": [
-    "sim/divider",
-    "sim/divider-fmax",
-    "sim/divider-n4",
-    "sim/divider-n5",
-    "sim/divider-n63",
-    "sim/divider-n64"
-  ],
-  "files": [
+  "description": "Item 9, digital partition: testbench definitions backing the claimed figures, the headless cold start, and the PDK/tool pins (sim/pdk.json). The cold start is the PDK-free default of sim/selftest.sh; the PDK-gated smoke stages are not declared.",
+  "testbenches": [
+    "sim/divider/testbench/tb.json",
+    "sim/divider/testbench/tb_divider.sch",
+    "sim/divider-fmax/testbench/fmax-stage-a-500mhz.json",
+    "sim/divider-fmax/testbench/fmax.json",
+    "sim/divider-n4/testbench/tb.json",
+    "sim/divider-n4/testbench/tb_divider_n4.sch",
+    "sim/divider-n5/testbench/tb.json",
+    "sim/divider-n5/testbench/tb_divider_n5.sch",
+    "sim/divider-n63/testbench/tb.json",
+    "sim/divider-n63/testbench/tb_divider_n63.sch",
+    "sim/divider-n64/testbench/tb.json",
+    "sim/divider-n64/testbench/tb_divider_n64.sch",
     "sim/selftest.sh",
     "sim/pdk.json"
   ],
-  "cold_start_commands": [
-    "bash sim/selftest.sh"
-  ],
-  "note": "Provisional repo-owned layout: klt 0.7.0 (the pin) has no `klt signoff --attest`, so no klt inventory schema is available to follow. See signoff/README.md \u00a7 'Items 1, 9, 10: inventories awaiting `klt signoff --attest`'."
+  "cold_start": {
+    "argv": [
+      "bash",
+      "sim/selftest.sh"
+    ]
+  },
+  "pins": {
+    "pdk": {
+      "name": "sky130A",
+      "revision": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+    },
+    "tools": {
+      "ngspice": "46",
+      "klt": "0.8.0"
+    }
+  }
 }
