@@ -1,21 +1,40 @@
 {
-  "inventory_version": 0,
-  "status": "provisional-awaiting-klt-attest",
+  "schema_version": 1,
+  "kind": "t1-attestation-inventory",
   "t1_item": 10,
-  "files": [
+  "description": "Item 10: README, LICENSE, the CI workflow, and the spec tree, plus the PDK-free CI command (local_only: --check skips it and carries the committed outcome, because CI runs `npm run check:ci` as its own step just before `run-signoff.sh --check`). The PDK smoke job is label/schedule-gated and needs the PDK, so it is not declared; run-signoff.sh --check is the re-attestation itself and is not declared (it would recurse).",
+  "hygiene": [
     "README.md",
     "LICENSE",
-    ".github/workflows/ci.yml"
+    ".github/workflows/ci.yml",
+    "spec/README.md",
+    "spec/decision-records/DR-001-supply-flavor-scope.md",
+    "spec/decision-records/DR-002-row1-supply-range-ratification.md",
+    "spec/decision-records/DR-003-corner-and-temperature-scope.md",
+    "spec/decision-records/DR-004-pll-lock-cold-start-nudge-and-window.md",
+    "spec/decision-records/DR-005-pll-lock-cold-start-initial-conditions.md",
+    "spec/decision-records/DR-006-statistical-rows-ratification.md",
+    "spec/decision-records/DR-007-lock-detector-provisional-contract.md",
+    "spec/decision-records/DR-008-clk-output-load-and-buffer-scope.md",
+    "spec/decision-records/DR-009-phase-output-scope-and-consumer-clock-gaps.md",
+    "spec/decision-records/DR-010-phase-or-multiplied-output-proposal.md",
+    "spec/decision-records/DR-011-500mhz-feasibility-plan.md",
+    "spec/decision-records/DR-012-evidence-bytes-in-artifact-store.md",
+    "spec/decision-records/DR-013-locktiming-evidence-in-artifact-store.md",
+    "spec/decision-records/DR-014-spiceinit-not-stored-evidence.md",
+    "spec/decision-records/README.md",
+    "spec/decision-records/TEMPLATE.md",
+    "spec/target-spec.md"
   ],
-  "dirs": [
-    "spec"
-  ],
-  "ci_commands": [
-    "npm run check:ci",
-    "bash signoff/run-signoff.sh --check"
-  ],
-  "excluded_commands": [
-    "PDK smoke job (ci.yml, label/schedule-gated; needs the PDK)"
-  ],
-  "note": "Provisional repo-owned layout: klt 0.7.0 (the pin) has no `klt signoff --attest`, so no klt inventory schema is available to follow. See signoff/README.md \u00a7 'Items 1, 9, 10: inventories awaiting `klt signoff --attest`'."
+  "checks": [
+    {
+      "name": "check-ci",
+      "argv": [
+        "npm",
+        "run",
+        "check:ci"
+      ],
+      "local_only": true
+    }
+  ]
 }

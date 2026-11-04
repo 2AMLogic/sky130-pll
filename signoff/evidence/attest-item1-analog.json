@@ -1,0 +1,165 @@
+{
+  "schema_version": 1,
+  "kind": "generic",
+  "status": "pass",
+  "t1_item": 1,
+  "summary": "T1 item 1 (Design sources): 15/15 attestation checks passed (klt signoff --attest)",
+  "source": "signoff/inventory/item1-analog.json",
+  "attestation": {
+    "producer": "klt signoff --attest",
+    "inventory_schema_version": 1,
+    "hash_algorithm": "sha256-raw-bytes",
+    "check_count": 15,
+    "passed_count": 15,
+    "checks": [
+      {
+        "check": "present",
+        "role": "source",
+        "path": "design/clk-buf/clk_buf.sch",
+        "passed": true,
+        "content_hash": "sha256:71301ba2d57db271a12e09e65721155001257d08f1bf0b72bad53da1e0fa86ad"
+      },
+      {
+        "check": "present",
+        "role": "source",
+        "path": "design/loop-filter/loop_filter.sch",
+        "passed": true,
+        "content_hash": "sha256:68d1fb112a8eda67d3f56968c56b163638dcd7bf54e6710060cb0dae6c21d8a6"
+      },
+      {
+        "check": "present",
+        "role": "source",
+        "path": "design/pfd-cp/pfd_cp.sch",
+        "passed": true,
+        "content_hash": "sha256:d07e253af795f47665c9f46e3fca2e45b51da74d1bcb44d330e4e3cf340d53e6"
+      },
+      {
+        "check": "present",
+        "role": "source",
+        "path": "design/top/top.sch",
+        "passed": true,
+        "content_hash": "sha256:bd64a7688cc4d4879b551c7c78d2616e87e566cd5ba3f110c5ddb5f5349f41f3"
+      },
+      {
+        "check": "present",
+        "role": "source",
+        "path": "design/vco/vco_ring5.sch",
+        "passed": true,
+        "content_hash": "sha256:49f0291c760b202a66ba64a1e2ad6de9c10a83e9f7189c64bdb2e2a6dafaab18"
+      },
+      {
+        "check": "present",
+        "role": "derived",
+        "path": "design/clk-buf/netlist/clk_buf.spice",
+        "passed": true,
+        "content_hash": "sha256:16f266152370f6253d486c70db9ad7bc7711fecf2afad63a8294e167e0533f5a"
+      },
+      {
+        "check": "present",
+        "role": "derived",
+        "path": "design/loop-filter/netlist/loop_filter.spice",
+        "passed": true,
+        "content_hash": "sha256:642f25a9d5316e040e7e224cb87969ff2b110a7b5baacd52d47521a5298cd5b8"
+      },
+      {
+        "check": "present",
+        "role": "derived",
+        "path": "design/pfd-cp/netlist/pfd_cp.spice",
+        "passed": true,
+        "content_hash": "sha256:51446ffdf49ca061b96d64e994b7cc334f8e153ecd85faf6cb2b4f9e4d5d84d7"
+      },
+      {
+        "check": "present",
+        "role": "derived",
+        "path": "design/top/netlist/top.spice",
+        "passed": true,
+        "content_hash": "sha256:4885e951d6be249431152b47568369b20e6ea64cddcbc7cc3e7e437b15a3c042"
+      },
+      {
+        "check": "present",
+        "role": "derived",
+        "path": "design/vco/netlist/vco_ring5.spice",
+        "passed": true,
+        "content_hash": "sha256:5cbf1d5ef5a0c511573de1eeaf2767f1dc8ab570fc8339bf943626c98ed18a2a"
+      },
+      {
+        "check": "command",
+        "role": "freshness",
+        "target": "design/clk-buf/netlist/clk_buf.spice",
+        "generator": "xschem netlist snapshot, freshness-checked by signoff/design-snapshot-consistency.py",
+        "argv": [
+          "python3",
+          "signoff/design-snapshot-consistency.py"
+        ],
+        "cwd": ".",
+        "exit_status": 0,
+        "passed": true
+      },
+      {
+        "check": "command",
+        "role": "freshness",
+        "target": "design/loop-filter/netlist/loop_filter.spice",
+        "generator": "xschem netlist snapshot, freshness-checked by signoff/design-snapshot-consistency.py",
+        "argv": [
+          "python3",
+          "signoff/design-snapshot-consistency.py"
+        ],
+        "cwd": ".",
+        "exit_status": 0,
+        "passed": true
+      },
+      {
+        "check": "command",
+        "role": "freshness",
+        "target": "design/pfd-cp/netlist/pfd_cp.spice",
+        "generator": "xschem netlist snapshot, freshness-checked by signoff/design-snapshot-consistency.py",
+        "argv": [
+          "python3",
+          "signoff/design-snapshot-consistency.py"
+        ],
+        "cwd": ".",
+        "exit_status": 0,
+        "passed": true
+      },
+      {
+        "check": "command",
+        "role": "freshness",
+        "target": "design/top/netlist/top.spice",
+        "generator": "xschem netlist snapshot, freshness-checked by signoff/design-snapshot-consistency.py",
+        "argv": [
+          "python3",
+          "signoff/design-snapshot-consistency.py"
+        ],
+        "cwd": ".",
+        "exit_status": 0,
+        "passed": true
+      },
+      {
+        "check": "command",
+        "role": "freshness",
+        "target": "design/vco/netlist/vco_ring5.spice",
+        "generator": "xschem netlist snapshot, freshness-checked by signoff/design-snapshot-consistency.py",
+        "argv": [
+          "python3",
+          "signoff/design-snapshot-consistency.py"
+        ],
+        "cwd": ".",
+        "exit_status": 0,
+        "passed": true
+      }
+    ]
+  },
+  "provenance": {
+    "klt_version": "0.8.0",
+    "klayout_version": null,
+    "pdk": null,
+    "deck": null,
+    "input": {
+      "path": {
+        "path": "signoff/inventory/item1-analog.json",
+        "scope": "repo"
+      },
+      "content_hash": "sha256:e68515a9bff37cf0c063314a85134f9c023c3d499cc77e53e9f53d7fba98893a"
+    }
+  }
+}

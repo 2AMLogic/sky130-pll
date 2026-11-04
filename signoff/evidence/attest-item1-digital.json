@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "kind": "generic",
+  "status": "pass",
+  "t1_item": 1,
+  "summary": "T1 item 1 (Design sources): 3/3 attestation checks passed (klt signoff --attest)",
+  "source": "signoff/inventory/item1-digital.json",
+  "attestation": {
+    "producer": "klt signoff --attest",
+    "inventory_schema_version": 1,
+    "hash_algorithm": "sha256-raw-bytes",
+    "check_count": 3,
+    "passed_count": 3,
+    "checks": [
+      {
+        "check": "present",
+        "role": "source",
+        "path": "design/divider/divider_intN.sch",
+        "passed": true,
+        "content_hash": "sha256:1053401730e5cba97154ac7fcd3e95e6fb18069090a9373a7e5d70596c31e706"
+      },
+      {
+        "check": "present",
+        "role": "derived",
+        "path": "design/divider/netlist/divider_intN.spice",
+        "passed": true,
+        "content_hash": "sha256:c37d7911fc0857d750845b8f99112ccf01be4b935b1ae3a08df663db118af6da"
+      },
+      {
+        "check": "command",
+        "role": "freshness",
+        "target": "design/divider/netlist/divider_intN.spice",
+        "generator": "xschem netlist snapshot, freshness-checked by signoff/design-snapshot-consistency.py",
+        "argv": [
+          "python3",
+          "signoff/design-snapshot-consistency.py"
+        ],
+        "cwd": ".",
+        "exit_status": 0,
+        "passed": true
+      }
+    ]
+  },
+  "provenance": {
+    "klt_version": "0.8.0",
+    "klayout_version": null,
+    "pdk": null,
+    "deck": null,
+    "input": {
+      "path": {
+        "path": "signoff/inventory/item1-digital.json",
+        "scope": "repo"
+      },
+      "content_hash": "sha256:2134a77a6a5871bf485eaae93cbb6baaa817ead7323532be6640b64c4ec33ee1"
+    }
+  }
+}

@@ -1,0 +1,157 @@
+{
+  "schema_version": 1,
+  "kind": "generic",
+  "status": "pass",
+  "t1_item": 9,
+  "summary": "T1 item 9 (Testbenches shipped): 17/17 attestation checks passed (klt signoff --attest)",
+  "source": "signoff/inventory/item9-digital.json",
+  "attestation": {
+    "producer": "klt signoff --attest",
+    "inventory_schema_version": 1,
+    "hash_algorithm": "sha256-raw-bytes",
+    "check_count": 17,
+    "passed_count": 17,
+    "checks": [
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/divider-fmax/testbench/fmax-stage-a-500mhz.json",
+        "passed": true,
+        "content_hash": "sha256:b1986840e202363e5e076bc3b255b9a24a907bab07bf5d3e3d9049034e6fdcdb"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/divider-fmax/testbench/fmax.json",
+        "passed": true,
+        "content_hash": "sha256:0b7abecca797b3e996452d8eec5536ab9d55e57d9dbb28df4942886241536348"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/divider-n4/testbench/tb.json",
+        "passed": true,
+        "content_hash": "sha256:0b1f4d0288dcc69f9365ad4dfa1a6df39dfe6ba67c7bd572518811aaf65ab52b"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/divider-n4/testbench/tb_divider_n4.sch",
+        "passed": true,
+        "content_hash": "sha256:974c4b747c404bb025e94279b0eb792f907090f9656ff0990fc3a30067551877"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/divider-n5/testbench/tb.json",
+        "passed": true,
+        "content_hash": "sha256:c1296f7302822870264d7569cf1af890a240a630ae8e44fc88b7ee3ac39d6988"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/divider-n5/testbench/tb_divider_n5.sch",
+        "passed": true,
+        "content_hash": "sha256:00c2db97e74d2c774e08b48286abebe129aa6e0292ce3d46d29104f8701faf1c"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/divider-n63/testbench/tb.json",
+        "passed": true,
+        "content_hash": "sha256:be2eb114a04a344f75399f5df8ffaf2c4081be0166d2b96337e906293d091d25"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/divider-n63/testbench/tb_divider_n63.sch",
+        "passed": true,
+        "content_hash": "sha256:32885181ef72578665a248eca55e81bdd3ce97ab59b3b1580d523f52467f217a"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/divider-n64/testbench/tb.json",
+        "passed": true,
+        "content_hash": "sha256:98fb4278c0456bf98fdd94bda1fdbcca8775819be82b558ce6cad98b1c0f01ea"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/divider-n64/testbench/tb_divider_n64.sch",
+        "passed": true,
+        "content_hash": "sha256:c691e7e2df6f7196b94170ab731f6f3af22f2d7116eb640a93a505e06b4a042f"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/divider/testbench/tb.json",
+        "passed": true,
+        "content_hash": "sha256:d614d9c11412463ad3e50707cea535a275f36487ef689823e44cfcd70b01702c"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/divider/testbench/tb_divider.sch",
+        "passed": true,
+        "content_hash": "sha256:f8013a263e6e07cc21e8b9f461ae6cccecd6c4f448e100c71851b5429df7cc6f"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/pdk.json",
+        "passed": true,
+        "content_hash": "sha256:e8d905ce748db0291a97f35b15541ed2efabc1f10a601c4474c71254f5c5ecc4"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/selftest.sh",
+        "passed": true,
+        "content_hash": "sha256:926c352a750bb4740a6c1d795953fca4fc4cb52918083edff6d14a897ed8eb03"
+      },
+      {
+        "check": "command",
+        "role": "cold_start",
+        "argv": [
+          "bash",
+          "sim/selftest.sh"
+        ],
+        "cwd": ".",
+        "exit_status": 0,
+        "passed": true
+      },
+      {
+        "check": "pin",
+        "role": "pdk",
+        "passed": true,
+        "value": {
+          "name": "sky130A",
+          "revision": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+        }
+      },
+      {
+        "check": "pin",
+        "role": "tools",
+        "passed": true,
+        "value": {
+          "klt": "0.8.0",
+          "ngspice": "46"
+        }
+      }
+    ]
+  },
+  "provenance": {
+    "klt_version": "0.8.0",
+    "klayout_version": null,
+    "pdk": null,
+    "deck": null,
+    "input": {
+      "path": {
+        "path": "signoff/inventory/item9-digital.json",
+        "scope": "repo"
+      },
+      "content_hash": "sha256:bb931685f13d494838bd6817237bbb297218788f08f11bfa2039c278d04a1f36"
+    }
+  }
+}
