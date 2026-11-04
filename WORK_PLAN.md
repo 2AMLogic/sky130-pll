@@ -30,7 +30,8 @@ Human-approved issues ready for implementation (`loom:issue`).
 
 Issues currently being built (`loom:building`).
 
-_None._
+- **#303**: sim: paired buffered-CLK closed-loop runs and layout/LVS for clk_buffer (follow-up to #232)
+- **#329**: Declare the partition boundary and cite T1 items 1, 9 and 10 with artifact-anchored evidence
 
 ## PRs Awaiting Review
 
@@ -42,7 +43,7 @@ _None._
 
 PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
-_None._
+- **#405**: feat(signoff): attest T1 items 1, 9 and 10 with klt and re-attest in --check
 
 ## Proposed
 
@@ -55,6 +56,7 @@ Issues carrying `loom:curated`.
 - **#166**: sim: measure transient VDD/VCTRL ripple-in-lock of the assembled loop (DR-006 row 13 Budget 1, part 2) *(curated)*
 - **#182**: signoff: cite T1 item 6 once row 9's Monte Carlo campaign has a negative control and a sized population *(curated)*
 - **#215**: sim(pll-lock-mc-negative-control): draw the six-trial control campaign and grade it with klt yield *(curated)*
+- **#232**: design: CLK is the raw VCO node — add an output stage so rows 14/15 have a pin to measure *(curated)*
 - **#233**: sim: no sky130 power measurement exists, so spec row 12 cannot be re-budgeted *(curated)*
 - **#239**: Guard: recognize bounded explicit /tmp mktemp templates while preserving containment *(curated)*
 - **#244**: sim: record divider Fmax boundaries across PVT for digital T1 characterization *(curated)*
@@ -83,10 +85,10 @@ _None._
 | Very important | 0 |
 | Important | 1 |
 | Ready (`loom:issue`) | 2 |
-| In Progress (`loom:building`) | 0 |
+| In Progress (`loom:building`) | 2 |
 | PRs awaiting review | 0 |
-| Approved PRs awaiting merge | 0 |
-| Curated | 17 |
+| Approved PRs awaiting merge | 1 |
+| Curated | 18 |
 | Architect / Hermit proposals | 2 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
