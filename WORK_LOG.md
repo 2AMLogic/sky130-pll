@@ -2,6 +2,11 @@
 
 Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
+### 2026-11-04
+
+- **PR #405**: feat(signoff): attest T1 items 1, 9 and 10 with klt and re-attest in --check
+- **Issue #329** (closed): Declare the partition boundary and cite T1 items 1, 9 and 10 with artifact-anchored evidence
+
 ### 2026-11-03
 
 - **PR #402**: harness: skip boilerplate .spiceinit when staging stored evidence
