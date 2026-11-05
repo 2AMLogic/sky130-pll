@@ -1,0 +1,102 @@
+{
+ "group": "watchdog.wdb_1.80v_+125c",
+ "job": {
+  "client_klt_version": "0.9.1.dev102+gef1ec19c95f6",
+  "dir": "watchdog.wdb_1.80v_+125c",
+  "engine_version": "46",
+  "evidence_manifest": "manifests/artifacts/lockdet-timing-watchdog.wdb_1.80v__125c.20261105-200250-672240.manifest.json",
+  "exit_code": 4,
+  "failure": null,
+  "group": "watchdog.wdb_1.80v_+125c",
+  "instance_type": "c7i.8xlarge",
+  "job_id": "klt-sim-191022c821c7",
+  "netlist_sha256": "ef0772d5f74c18e93644498f571ecada71039d4cea512ec0b25ee22f50704fa5",
+  "pdk": {
+   "lib": "libs.tech/combined/sky130.lib.spice",
+   "pdk": "sky130A"
+  },
+  "request_sha256": "56ee77937a9bd85b51d159498cf1050dcecd2399aa477b9e2b63346686bb60c6",
+  "runner_klt_version": "0.9.0",
+  "supply_v": 1.8,
+  "version_skew": true
+ },
+ "rows": [
+  {
+   "coord": {
+    "process": "tt",
+    "temp_c": 125.0,
+    "vdd_v": 1.8
+   },
+   "error": null,
+   "raw_period_s": 3.5067153461383704e-09,
+   "reason": null,
+   "startup_latency_s": 3.534194790409929e-09,
+   "status": "OK",
+   "tick_s": 2.244282211863081e-07,
+   "w_acq_s": 1.486142483874377e-07,
+   "w_rel_s": 1.486142483874377e-07
+  },
+  {
+   "coord": {
+    "process": "ff",
+    "temp_c": 125.0,
+    "vdd_v": 1.8
+   },
+   "error": null,
+   "raw_period_s": 3.0979842670124473e-09,
+   "reason": null,
+   "startup_latency_s": 3.1330673936549794e-09,
+   "status": "OK",
+   "tick_s": 1.9827132607788678e-07,
+   "w_acq_s": 1.2192456796666096e-07,
+   "w_rel_s": 1.2192456796666096e-07
+  },
+  {
+   "coord": {
+    "process": "ss",
+    "temp_c": 125.0,
+    "vdd_v": 1.8
+   },
+   "error": null,
+   "raw_period_s": 4.241808679768558e-09,
+   "reason": null,
+   "startup_latency_s": 4.2603343184734466e-09,
+   "status": "OK",
+   "tick_s": 2.714757426984423e-07,
+   "w_acq_s": 1.9685651917534562e-07,
+   "w_rel_s": 1.9685651917534562e-07
+  },
+  {
+   "coord": {
+    "process": "fs",
+    "temp_c": 125.0,
+    "vdd_v": 1.8
+   },
+   "error": null,
+   "raw_period_s": 3.5427137187436666e-09,
+   "reason": null,
+   "startup_latency_s": 3.5623027852159494e-09,
+   "status": "OK",
+   "tick_s": 2.2673372654253925e-07,
+   "w_acq_s": 1.5018318691923316e-07,
+   "w_rel_s": 1.5018318691923316e-07
+  },
+  {
+   "coord": {
+    "process": "sf",
+    "temp_c": 125.0,
+    "vdd_v": 1.8
+   },
+   "error": null,
+   "raw_period_s": 3.532134854655531e-09,
+   "reason": null,
+   "startup_latency_s": 3.5666883972215513e-09,
+   "status": "OK",
+   "tick_s": 2.260568186500991e-07,
+   "w_acq_s": 1.4962589884362824e-07,
+   "w_rel_s": 1.4962589884362824e-07
+  }
+ ],
+ "schema": "sky130-pll.lockdet-timing.group/1",
+ "supersedes": null
+}

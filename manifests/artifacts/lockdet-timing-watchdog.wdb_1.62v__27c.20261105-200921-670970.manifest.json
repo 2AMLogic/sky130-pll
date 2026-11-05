@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "entries": [
+    {
+      "sha256": "0c576499450251895d76b03c18cd0e63d2c9c201bcb2f0ca3cc950d4a821b45a",
+      "size": 5626,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.1.dev102+gef1ec19c95f6",
+        "loom.repo": "2AMLogic/sky130-pll",
+        "commit": "0772a9d6ee5dd7a2d78332e55043cb86b7d6ced3"
+      },
+      "uri": "artifact:evidence/2AMLogic__sky130-pll/0c/0c576499450251895d76b03c18cd0e63d2c9c201bcb2f0ca3cc950d4a821b45a",
+      "name": "sim/lockdet-timing/groups/19d174789afd2403/watchdog.wdb_1.62v__27c.20261105-200921-670970/body.spice"
+    },
+    {
+      "sha256": "7c57a83483c0ee702ef836331a0f747134d65acf1917f7e9cd9c6ff81dbd3562",
+      "size": 11852,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.1.dev102+gef1ec19c95f6",
+        "loom.repo": "2AMLogic/sky130-pll",
+        "commit": "0772a9d6ee5dd7a2d78332e55043cb86b7d6ced3"
+      },
+      "uri": "artifact:evidence/2AMLogic__sky130-pll/7c/7c57a83483c0ee702ef836331a0f747134d65acf1917f7e9cd9c6ff81dbd3562",
+      "name": "sim/lockdet-timing/groups/19d174789afd2403/watchdog.wdb_1.62v__27c.20261105-200921-670970/report.json",
+      "media_type": "application/json"
+    },
+    {
+      "sha256": "832d69cee686fac6bddff9582a128e64baba37f2f22d6ed61bdb222f2d4d30e6",
+      "size": 561,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.1.dev102+gef1ec19c95f6",
+        "loom.repo": "2AMLogic/sky130-pll",
+        "commit": "0772a9d6ee5dd7a2d78332e55043cb86b7d6ced3"
+      },
+      "uri": "artifact:evidence/2AMLogic__sky130-pll/83/832d69cee686fac6bddff9582a128e64baba37f2f22d6ed61bdb222f2d4d30e6",
+      "name": "sim/lockdet-timing/groups/19d174789afd2403/watchdog.wdb_1.62v__27c.20261105-200921-670970/request.json",
+      "media_type": "application/json"
+    },
+    {
+      "sha256": "a1007027518795a6f9c8581b94da24bfd4b9b5a2b5d1db85f36539c07fab6047",
+      "size": 1320,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.1.dev102+gef1ec19c95f6",
+        "loom.repo": "2AMLogic/sky130-pll",
+        "commit": "0772a9d6ee5dd7a2d78332e55043cb86b7d6ced3"
+      },
+      "uri": "artifact:evidence/2AMLogic__sky130-pll/a1/a1007027518795a6f9c8581b94da24bfd4b9b5a2b5d1db85f36539c07fab6047",
+      "name": "sim/lockdet-timing/groups/19d174789afd2403/watchdog.wdb_1.62v__27c.20261105-200921-670970/stderr.log"
+    }
+  ]
+}
