@@ -4,6 +4,8 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 ### 2026-11-04
 
+- **PR #407**: sim: buffered-top nominal-point records for 1 MHz and 25 MHz references
+- **Issue #303** (closed): sim: paired buffered-CLK closed-loop runs and layout/LVS for clk_buffer (follow-up to #232)
 - **PR #405**: feat(signoff): attest T1 items 1, 9 and 10 with klt and re-attest in --check
 - **Issue #329** (closed): Declare the partition boundary and cite T1 items 1, 9 and 10 with artifact-anchored evidence
 
