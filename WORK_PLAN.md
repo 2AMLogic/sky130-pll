@@ -30,7 +30,7 @@ Human-approved issues ready for implementation (`loom:issue`).
 
 Issues currently being built (`loom:building`).
 
-- **#303**: sim: paired buffered-CLK closed-loop runs and layout/LVS for clk_buffer (follow-up to #232)
+_None._
 
 ## PRs Awaiting Review
 
@@ -64,7 +64,6 @@ Issues carrying `loom:curated`.
 - **#290**: sim: klt decks[] batch route for the PFD/charge-pump (cp) campaign, with one-point smoke *(curated)*
 - **#297**: Re-qualify cited sim reference records under open_pdks f6eeac7 (part of #295) *(curated)*
 - **#298**: Re-qualify cited layout reference records under open_pdks f6eeac7 (part of #295) *(curated)*
-- **#303**: sim: paired buffered-CLK closed-loop runs and layout/LVS for clk_buffer (follow-up to #232) *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -83,10 +82,10 @@ _None._
 | Very important | 0 |
 | Important | 1 |
 | Ready (`loom:issue`) | 2 |
-| In Progress (`loom:building`) | 1 |
+| In Progress (`loom:building`) | 0 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
-| Curated | 17 |
+| Curated | 16 |
 | Architect / Hermit proposals | 2 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
