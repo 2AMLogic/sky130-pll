@@ -3,14 +3,14 @@
   "kind": "generic",
   "status": "pass",
   "t1_item": 10,
-  "summary": "T1 item 10 (Repo hygiene): 22/22 attestation checks passed (klt signoff --attest)",
+  "summary": "T1 item 10 (Repo hygiene): 23/23 attestation checks passed (klt signoff --attest)",
   "source": "signoff/inventory/item10.json",
   "attestation": {
     "producer": "klt signoff --attest",
     "inventory_schema_version": 1,
     "hash_algorithm": "sha256-raw-bytes",
-    "check_count": 22,
-    "passed_count": 22,
+    "check_count": 23,
+    "passed_count": 23,
     "checks": [
       {
         "check": "present",
@@ -141,9 +141,16 @@
       {
         "check": "present",
         "role": "hygiene",
+        "path": "spec/decision-records/DR-015-pinned-boilerplate-not-stored-evidence.md",
+        "passed": true,
+        "content_hash": "sha256:dfe134070e98584e7313fb255b61fe44f2b7c7468b33d2723a506d8c150087dc"
+      },
+      {
+        "check": "present",
+        "role": "hygiene",
         "path": "spec/decision-records/README.md",
         "passed": true,
-        "content_hash": "sha256:489a1e9723620e769ebaa083df85cc5e64dca286af035d28354aee14b16d1ab4"
+        "content_hash": "sha256:2baee9ac9ec12c16f2c2de4751b2259404df387886974fe541a9ad5484b6576b"
       },
       {
         "check": "present",
@@ -185,7 +192,7 @@
         "path": "signoff/inventory/item10.json",
         "scope": "repo"
       },
-      "content_hash": "sha256:9442717a7261b82c624dcc4d6dfd35bfc5f18c92dc23d0cb426d782ae1b87e9e"
+      "content_hash": "sha256:fa929607e17e586048860364a8d278144c24f111dc826c7747dc87be8daa5c5d"
     }
   }
 }

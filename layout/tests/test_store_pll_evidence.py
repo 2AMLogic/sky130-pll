@@ -44,5 +44,25 @@ class FailClosedTests(unittest.TestCase):
         self.assertFalse((repo / "layout/pll/reports/r-1").exists())
 
 
+class PinnedBoilerplateTests(unittest.TestCase):
+    """The layout store path never stages the pinned lvs.request.json bytes."""
+
+    def test_layout_stage_drops_pinned_request_keeps_variant(self):
+        src = mod.REPO_ROOT / ("layout/pll/reports/20260923-084911-13ecfe9/"
+                               "route-spot-check/lvs.request.json")
+        if not src.is_file():
+            self.skipTest("legacy record not present")
+        with tempfile.TemporaryDirectory() as td:
+            sub = Path(td) / "route-spot-check"
+            sub.mkdir()
+            (sub / "lvs.request.json").write_bytes(src.read_bytes())
+            (Path(td) / "pll_top.gds").write_bytes(b"gds")
+            names = [n for _, n in mod.evidence_store.stage_files(Path(td), "r")]
+            self.assertEqual(names, ["r/pll_top.gds"])
+            (sub / "lvs.request.json").write_bytes(src.read_bytes() + b" ")
+            names = [n for _, n in mod.evidence_store.stage_files(Path(td), "r")]
+            self.assertIn("r/route-spot-check/lvs.request.json", names)
+
+
 if __name__ == "__main__":
     unittest.main()

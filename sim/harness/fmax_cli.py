@@ -270,13 +270,19 @@ def cmd(args) -> int:
         return 0
 
     n_requested = 1 if args.probe_mhz is not None else n_stage1
-    name = executor_mod.resolve_name(args.executor, manifest)
+    requested = (args.executor or manifest.get("executor") or "").strip()
+    if requested == fmax_klt.BATCH_EXECUTOR:
+        # The Fmax driver owns its own batch route (fmax_klt); resolve_name only
+        # knows the cp/measure batch adapters and would refuse this manifest.
+        name = requested
+    else:
+        name = executor_mod.resolve_name(args.executor, manifest)
     if name not in executor_mod.EXECUTORS and name != fmax_klt.BATCH_EXECUTOR:
         print(f"run_fmax.py: unknown executor {name!r}", file=sys.stderr)
         return 1
     if name == "local" and n_requested > args.max_local_probes:
         print(f"run_fmax.py: refusing to run {n_requested} probes on this host "
-              f"(--max-local-probes {args.max_local_probes}); use --executor remote "
+              f"(--max-local-probes {args.max_local_probes}); use --executor batch "
               "(Spot batch fleet) or narrow to one cell with --probe-mhz", file=sys.stderr)
         return 1
 
