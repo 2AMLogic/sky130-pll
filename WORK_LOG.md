@@ -4,6 +4,8 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 ### 2026-11-06
 
+- **PR #411**: design: complete wdb 45-point watchdog grid, watchdog PASS, combined handoff graded
+- **Issue #276** (closed): design: measure independent watchdog and publish LOCK timing handoff
 - **PR #415**: fix: skip pinned boilerplate bytes when staging run evidence
 - **PR #412**: layout: derive PLL record block count from plan and mint buffered-top record
 - **Issue #417** (closed): run_fmax.py --executor batch: stop executor.resolve_name refusing the fmax manifest
