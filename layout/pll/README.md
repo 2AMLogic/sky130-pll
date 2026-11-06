@@ -34,7 +34,7 @@ and does not establish. Issue #147.
 ## What it is
 
 Every device the schematic declares is physically drawn, at the schematic's
-own W/L, and the four blocks are composed into one `pll_top` cell:
+own W/L, and the five blocks (four PLL blocks plus the `clk_buf` output buffer, issue #232) are composed into one `pll_top` cell:
 
 | Block | What is drawn |
 | --- | --- |
