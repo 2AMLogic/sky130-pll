@@ -21,8 +21,9 @@ on repo state at run time") and a checker exemption ("loosens a verification gat
 
 1. `evidence_store.split_resumed` omits a staged file only when the run is a
    **resume of a named prior record** and the file's (sha256, size) equals a file
-   committed **under that lineage**: the record named by `--supersedes` and, for a
-   group, the group record it supersedes. The lineage is declared by the run
+   committed **under that lineage**: the record named by `--supersedes` and the
+   group records already present under the matrix's `groups/` directory when the
+   resume started (the ones `--resume` reads). The lineage is declared by the run
    (`--resume`, `--supersedes`), so completeness depends on the run's own
    declared ancestry and not on whatever else is in the repo. Without a resume the
    lineage is empty and nothing is omitted. Open-ended content dedupe stays rejected.
@@ -34,7 +35,7 @@ on repo state at run time") and a checker exemption ("loosens a verification gat
    and size. A missing or mismatched pointer fails. Such an entry is not counted
    as stored bytes, so it cannot collide with its own pointer.
 4. PR #411's 8 `lockdet-timing-watchdog.wdb_*` manifests are rewritten under the
-   rule (11 entries converted, bytes already in the store, no new upload). The
+   rule (13 entries converted, bytes already in the store, no new upload). The
    October records are untouched.
 
 ## Alternatives considered
