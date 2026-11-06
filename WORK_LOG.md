@@ -2,6 +2,13 @@
 
 Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
+### 2026-11-06
+
+- **PR #415**: fix: skip pinned boilerplate bytes when staging run evidence
+- **PR #412**: layout: derive PLL record block count from plan and mint buffered-top record
+- **Issue #417** (closed): run_fmax.py --executor batch: stop executor.resolve_name refusing the fmax manifest
+- **Issue #414** (closed): layout: PLL evidence store must skip files whose bytes are already committed (PR #412 manifest fails check_artifact_manifests)
+
 ### 2026-11-04
 
 - **PR #407**: sim: buffered-top nominal-point records for 1 MHz and 25 MHz references
