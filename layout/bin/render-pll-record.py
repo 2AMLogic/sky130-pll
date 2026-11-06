@@ -78,10 +78,9 @@ from render_common import (  # noqa: E402
 )
 
 MOS_CARD_RE = re.compile(r"^M\S+\s+(?:\S+\s+){4}(\S+)\s+L=([\d.eE+-]+)U\s+W=([\d.eE+-]+)U")
-RES_CARD_RE = re.compile(r"^R\S+\s+(?:\S+\s+){3}([\d.eE+-]+)\s+(\S+)")
-# No `C` card regex: the extracted capacitor multiset comes from `klt
-# extract`'s JSON `devices[]`, not from the written deck -- see
-# `extracted_cap_set` for why.
+# No `R` or `C` card regex: the extracted resistor and capacitor multisets come
+# from `klt extract`'s JSON `devices[]`, not from the written deck -- see
+# `extracted_cap_set` and `extracted_res_set` for why.
 
 _load = load_json  # local alias, kept short for the calls below
 
@@ -115,21 +114,35 @@ def extracted_cap_set(extract_json: dict[str, Any]) -> Counter:
     return cap
 
 
+def extracted_res_set(extract_json: dict[str, Any]) -> Counter:
+    """The extracted resistor multiset, read from `klt extract`'s JSON.
+
+    Same reason as `extracted_cap_set`: the written deck is not a stable
+    carrier. At `klayout-tools==0.6.0` a resistor was an `R` card; at `0.8.0`
+    it is an `X` subcircuit card (`X$4 \\$1 \\$2 vsubs res_xhigh_po r=5060
+    L=2.53U W=1U`), which an `R`-card regex silently counts as zero resistors
+    (issue #304: a FAIL record with 0 extracted against 3 drawn). `devices[]`
+    carries `class` and `params.r_ohm` at both pins, so the same resistors at
+    the same ohms are still compared against the plan.
+    """
+    res: Counter = Counter()
+    for device in extract_json.get("devices") or []:
+        ohms = (device.get("params") or {}).get("r_ohm")
+        if ohms is None:
+            continue
+        res[(device.get("class"), round(float(ohms), 6))] += 1
+    return res
+
+
 def extracted_sets(spice: str, extract_json: dict[str, Any]) -> dict[str, Counter]:
     """Multisets of what `klt extract` read back out of a drawn cell."""
     mos: Counter = Counter()
-    res: Counter = Counter()
     for line in spice.splitlines():
         match = MOS_CARD_RE.match(line)
         if match:
             klass, length, width = match.group(1), float(match.group(2)), float(match.group(3))
             mos[(klass, round(width, 6), round(length, 6))] += 1
-            continue
-        match = RES_CARD_RE.match(line)
-        if match:
-            res[(match.group(2), round(float(match.group(1)), 6))] += 1
-            continue
-    return {"mos": mos, "res": res, "cap": extracted_cap_set(extract_json)}
+    return {"mos": mos, "res": extracted_res_set(extract_json), "cap": extracted_cap_set(extract_json)}
 
 
 def planned_sets(block: dict[str, Any]) -> dict[str, Counter]:
