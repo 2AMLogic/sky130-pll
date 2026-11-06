@@ -304,6 +304,66 @@ def stage_files(stage_dir: Path, name_prefix: str, *, exclude=(),
     return out
 
 
+def lineage_index(repo_root: Path, lineage) -> dict[tuple[str, int], str]:
+    """``{(sha256, size): repo-relative path}`` of every committed regular file
+    under the ``lineage`` directories (the record(s) a resumed run declares it
+    resumed from, DR-016). A missing directory contributes nothing."""
+    root = Path(repo_root).resolve()
+    out: dict[tuple[str, int], str] = {}
+    for d in lineage:
+        d = Path(d)
+        d = d if d.is_absolute() else root / d
+        if not d.is_dir():
+            continue
+        for path in sorted(d.rglob("*")):
+            if path.is_symlink() or not path.is_file():
+                continue
+            sha, size = sha256_file(path)
+            if size:
+                out.setdefault((sha, size), path.resolve().relative_to(root).as_posix())
+    return out
+
+
+def split_resumed(files: list[tuple[Path, str]], index: dict) -> tuple[list, list]:
+    """Partition staged ``(path, name)`` into ``(to_store, supplied)``. A file
+    whose (sha256, size) is in ``index`` is already committed under the declared
+    lineage and is not stored again: ``supplied`` lists ``(name, sha, size,
+    committed_path)`` for it (DR-016). Only a resume passes a non-empty index."""
+    kept, supplied = [], []
+    for path, name in files:
+        sha, size = sha256_file(path)
+        hit = index.get((sha, size)) if size else None
+        if hit:
+            supplied.append((name, sha, size, hit))
+        else:
+            kept.append((path, name))
+    return kept, supplied
+
+
+def to_supplied(entry: dict, committed_path: str) -> dict:
+    """The ``supplied_by`` form of a manifest entry: no ``uri``, a pointer to the
+    committed file that carries the same bytes."""
+    out = {k: v for k, v in entry.items() if k != "uri"}
+    out["supplied_by"] = committed_path
+    return out
+
+
+def add_supplied(manifest: dict, supplied: list) -> dict:
+    """Add ``supplied_by`` entries for ``supplied`` (from :func:`split_resumed`)
+    to a manifest returned by :func:`put_files`; entries stay sorted by name."""
+    if not supplied:
+        return manifest
+    entries = manifest["entries"]
+    if not entries:
+        raise StoreError("cannot derive a producer: no stored entry in the manifest")
+    producer = entries[0]["producer"]
+    for name, sha, size, hit in supplied:
+        entries.append({"sha256": sha, "size": size, "kind": "evidence",
+                        "producer": dict(producer), "name": name, "supplied_by": hit})
+    manifest["entries"] = sorted(entries, key=lambda e: e["name"])
+    return manifest
+
+
 def summary_section(manifest_rel: str, manifest: dict, empty: list[str]) -> str:
     """Markdown appended to a run's committed summary: where its bytes are."""
     total = sum(e["size"] for e in manifest["entries"])
