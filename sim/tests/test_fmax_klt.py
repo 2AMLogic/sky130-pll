@@ -308,5 +308,50 @@ class CampaignViaFakeKlt(unittest.TestCase):
         self.assertEqual(cells[0].observed, cells2[0].observed)
 
 
+class CliBatchRoute(unittest.TestCase):
+    """`run_fmax.py --executor batch` must get past executor resolution (#417)."""
+
+    def _run(self, argv):
+        import contextlib
+        import io
+        from unittest import mock
+
+        reached = []
+
+        class StubBackend:
+            def __init__(self, **kw):
+                reached.append(kw)
+
+            def preflight(self):
+                raise K.KltBatchError("stub: batch submit layer reached")
+
+        pdk = SimpleNamespace(process_corners=("tt",), commit_mismatch=False)
+        err = io.StringIO()
+        with mock.patch.object(C.pdk_mod, "resolve", return_value=pdk), \
+                mock.patch.object(C.runner_mod, "netlist_schematic", return_value=NETLIST), \
+                mock.patch.object(C.evidence_store_mod, "preflight", return_value=None), \
+                mock.patch.object(K, "KltBatchBackend", StubBackend), \
+                mock.patch.dict("os.environ", {}, clear=False), \
+                contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(err):
+            rc = C.main(argv)
+        return rc, err.getvalue(), reached
+
+    def test_batch_reaches_the_submit_layer_without_executor_refusal(self):
+        rc, err, reached = self._run(["divider-fmax", "--executor", "batch", "--moduli", "25",
+                                      "--corners", "tt", "--temps", "27", "--supply-tol", "0",
+                                      "--no-write"])
+        self.assertEqual(len(reached), 1, err)
+        self.assertIn("submit layer reached", err)
+        self.assertNotIn("implemented for", err)
+        self.assertEqual(rc, 1)
+
+    def test_local_refusal_message_names_batch_as_the_spot_route(self):
+        rc, err, _ = self._run(["divider-fmax", "--executor", "local", "--max-local-probes", "0",
+                                "--moduli", "25", "--corners", "tt", "--temps", "27",
+                                "--supply-tol", "0", "--no-write"])
+        self.assertEqual(rc, 1)
+        self.assertIn("use --executor batch", err)
+
+
 if __name__ == "__main__":
     unittest.main()
