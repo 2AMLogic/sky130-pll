@@ -22,6 +22,7 @@
     "spec/decision-records/DR-012-evidence-bytes-in-artifact-store.md",
     "spec/decision-records/DR-013-locktiming-evidence-in-artifact-store.md",
     "spec/decision-records/DR-014-spiceinit-not-stored-evidence.md",
+    "spec/decision-records/DR-015-pinned-boilerplate-not-stored-evidence.md",
     "spec/decision-records/README.md",
     "spec/decision-records/TEMPLATE.md",
     "spec/target-spec.md"
