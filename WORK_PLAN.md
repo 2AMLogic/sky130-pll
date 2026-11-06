@@ -29,14 +29,13 @@ Human-approved issues ready for implementation (`loom:issue`).
 
 Issues currently being built (`loom:building`).
 
-- **#276**: design: measure independent watchdog and publish LOCK timing handoff
 - **#304**: layout: draw clk_buf and re-mint the top-level layout record against the buffered top (split from #303)
 
 ## PRs Awaiting Review
 
 PRs waiting on Judge (`loom:review-requested`).
 
-- **#412**: layout: derive PLL record block count from plan and mint buffered-top record
+_None._
 
 ## Approved (Awaiting Merge)
 
@@ -60,7 +59,6 @@ Issues carrying `loom:curated`.
 - **#239**: Guard: recognize bounded explicit /tmp mktemp templates while preserving containment *(curated)*
 - **#244**: sim: record divider Fmax boundaries across PVT for digital T1 characterization *(curated)*
 - **#259**: design: characterize LOCK timing primitives and watchdog over PVT *(curated)*
-- **#276**: design: measure independent watchdog and publish LOCK timing handoff *(curated)*
 - **#290**: sim: klt decks[] batch route for the PFD/charge-pump (cp) campaign, with one-point smoke *(curated)*
 - **#297**: Re-qualify cited sim reference records under open_pdks f6eeac7 (part of #295) *(curated)*
 - **#298**: Re-qualify cited layout reference records under open_pdks f6eeac7 (part of #295) *(curated)*
@@ -83,10 +81,10 @@ _None._
 | Very important | 0 |
 | Important | 1 |
 | Ready (`loom:issue`) | 1 |
-| In Progress (`loom:building`) | 2 |
-| PRs awaiting review | 1 |
+| In Progress (`loom:building`) | 1 |
+| PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
-| Curated | 17 |
+| Curated | 16 |
 | Architect / Hermit proposals | 2 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
