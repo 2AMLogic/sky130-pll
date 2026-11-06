@@ -303,6 +303,13 @@ def execute(cands, points, *, klt, runner, work, retries=30, wait_s=120.0,
         raise RunnerError("group records need an evidence store (DR-013)")
     by_uid, jobs, pending, submitted = {}, [], [], 0
     prior = load_group_records(groups_dir) if groups_dir else {}
+    # DR-016: the group records this run resumed over (as they stood at its start)
+    # plus the combined record it supersedes are its declared lineage.
+    lineage = []
+    if resume and groups_dir:
+        lineage = [groups_dir / r["_stem"] for recs in prior.values() for r in recs]
+        if resume_from is not None:
+            lineage.append(resume_from)
     for item in plan(cands, points, split_temps):
         key, done = item["key"], group_done(prior.get(item["key"], []))
         if resume and done:
@@ -322,12 +329,6 @@ def execute(cands, points, *, klt, runner, work, retries=30, wait_s=120.0,
                 for p in pts]
         if groups_dir:
             hist = prior.get(key) or []
-            lineage = []
-            if resume:  # DR-016: the declared lineage only, never repo-wide content
-                if hist:
-                    lineage.append(groups_dir / hist[-1]["_stem"])
-                if resume_from is not None:
-                    lineage.append(resume_from)
             write_group_record(groups_dir, item, res, rows,
                                hist[-1]["_stem"] if hist else None, store, lineage)
         if res["job"].get("failure"):

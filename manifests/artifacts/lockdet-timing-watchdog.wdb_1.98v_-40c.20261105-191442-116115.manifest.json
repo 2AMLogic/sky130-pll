@@ -38,9 +38,9 @@
         "loom.repo": "2AMLogic/sky130-pll",
         "commit": "0772a9d6ee5dd7a2d78332e55043cb86b7d6ced3"
       },
-      "uri": "artifact:evidence/2AMLogic__sky130-pll/53/5310dba852fcce1c2c1b1b72edcd6e7226d71cfe4f54081927bde6047806f58b",
       "name": "sim/lockdet-timing/groups/19d174789afd2403/watchdog.wdb_1.98v_-40c.20261105-191442-116115/request.json",
-      "media_type": "application/json"
+      "media_type": "application/json",
+      "supplied_by": "sim/lockdet-timing/watchdog/records/groups/19d174789afd2403/watchdog.wdb_1.80v_-40c.20261013-234632-948353/request.json"
     },
     {
       "sha256": "0e3cc30e22fce584267feaf07fba8afae771b8796ce7ff39caf7659e053197a9",
