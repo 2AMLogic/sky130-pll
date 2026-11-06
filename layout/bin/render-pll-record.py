@@ -469,6 +469,10 @@ def _render_header(a: Any, args: argparse.Namespace, netlist_display: str) -> No
     # spec/target-spec.md mapping (or an explicit "measures none") in its own
     # body -- see render_common.spec_rows_line and measurements/README.md.
     a(f"- **Spec row(s)**: {spec_rows_line(args.out_dir)}")
+    latest = Path(args.repo_root) / "layout" / "pll" / "reports" / "LATEST"
+    prior = latest.read_text().strip() if latest.is_file() else ""
+    if prior and prior != args.record_id:
+        a(f"- **Supersedes**: `{prior}` (the `LATEST` record when this one was minted; it is kept unedited)")
     a("")
 
 
@@ -480,13 +484,23 @@ def _render_verdict(a: Any, checks: list[tuple[str, bool, str]], all_pass: bool)
     a("")
 
 
+_NUMBER_WORDS = {1: "one", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight"}
+
+
+def _block_count_words(source: dict[str, Any]) -> str:
+    """Block count as a word, taken from a plan or build dict -- never typed in."""
+    n = len(source["blocks"])
+    return _NUMBER_WORDS.get(n, str(n))
+
+
 def _render_layout_is(a: Any, plan: dict[str, Any], build: dict[str, Any], out_dir: Path) -> None:
     a("## What this layout is")
     a("")
     a(
         "A **device-level floorplan**: every device the schematic declares is "
         "physically drawn, at the schematic's own W/L, in a matched array "
-        "grouped by `(flavor, W, L)`, and the four blocks are composed into "
+        "grouped by `(flavor, W, L)`, and "
+        f"the {_block_count_words(plan)} blocks are composed into "
         f"one `{plan['top_cell_name']}` cell. The device set is derived from "
         "the schematic netlist at build time -- nothing about it is typed in "
         "by hand -- which is what makes the device-set checks above "
@@ -531,7 +545,7 @@ def _render_layout_is_not(a: Any, build: dict[str, Any], drc: dict[str, Any]) ->
         "(every group member carries its schematic device name and its "
         "port-to-net mapping), and "
         f"{sum(e['declared_nets'] for e in build['blocks'])} nets are declared "
-        "across the four blocks -- but the composed GDS carries no wires "
+        f"across the {_block_count_words(build)} blocks -- but the composed GDS carries no wires "
         "between them. See the routing spot-check below for why."
     )
     violation_count = drc.get("violation_count")
