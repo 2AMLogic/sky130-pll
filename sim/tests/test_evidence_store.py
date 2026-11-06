@@ -18,6 +18,7 @@ import sys
 import tempfile
 import threading
 import unittest
+from unittest import mock
 from pathlib import Path
 
 SIM_DIR = Path(__file__).resolve().parents[1]
@@ -77,6 +78,32 @@ class Base(unittest.TestCase):
         (sub / ".spiceinit").write_text("set ngbehavior=hsa\n")
         names = [n for _, n in es.stage_files(self.stage, "sim/b/corners/r1")]
         self.assertEqual(names, ["sim/b/corners/r1/tt.log", "sim/b/corners/r1/tt.spice"])
+
+    def test_stage_files_pinned_boilerplate_needs_name_and_bytes(self):
+        pinned = b"x"
+        sub = self.stage / "route-spot-check"
+        sub.mkdir()
+        (sub / "lvs.request.json").write_bytes(pinned)
+        (self.stage / "other.json").write_bytes(pinned)
+        pin = frozenset({("lvs.request.json", hashlib.sha256(pinned).hexdigest())})
+        with mock.patch.object(es, "PINNED_BOILERPLATE", pin):
+            names = [n for _, n in es.stage_files(self.stage, "p")]
+            self.assertNotIn("p/route-spot-check/lvs.request.json", names)
+            self.assertIn("p/other.json", names)
+            (sub / "lvs.request.json").write_bytes(b"different")
+            names = [n for _, n in es.stage_files(self.stage, "p")]
+            self.assertIn("p/route-spot-check/lvs.request.json", names)
+
+    def test_real_pin_drops_committed_lvs_request(self):
+        repo = Path(__file__).resolve().parents[2]
+        src = repo / "layout/pll/reports/20260923-084911-13ecfe9/route-spot-check/lvs.request.json"
+        if not src.is_file():
+            self.skipTest("legacy record not present")
+        sub = self.stage / "route-spot-check"
+        sub.mkdir()
+        (sub / "lvs.request.json").write_bytes(src.read_bytes())
+        names = [n for _, n in es.stage_files(self.stage, "p")]
+        self.assertNotIn("p/route-spot-check/lvs.request.json", names)
 
     def store(self, run, **kw):
         put = lambda files, root: es.put_files(files, root, run=run)  # noqa: E731
