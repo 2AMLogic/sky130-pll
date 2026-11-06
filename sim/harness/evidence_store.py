@@ -267,6 +267,20 @@ def install_manifest(manifest: dict, path: Path) -> None:
 # manifest checker refuses to see again as stored bytes (DR-014).
 BOILERPLATE_NAMES = frozenset({".spiceinit"})
 
+#: Boilerplate dropped only when BOTH basename and sha256 match (DR-015). The
+#: layout flow's templated ``lvs.request.json`` is evidence when its bytes vary
+#: (other top cell or deck), so only the exact pinned bytes are omitted.
+PINNED_BOILERPLATE = frozenset({
+    ("lvs.request.json",
+     "2a9e80c7cc57a8ffe78770839ebd37f9ca630947758b8ff8d04eb8143d54f7ad"),
+})
+
+
+def _is_pinned_boilerplate(path: Path) -> bool:
+    if not any(path.name == n for n, _ in PINNED_BOILERPLATE):
+        return False
+    return (path.name, sha256_file(path)[0]) in PINNED_BOILERPLATE
+
 
 def stage_files(stage_dir: Path, name_prefix: str, *, exclude=(),
                 skip=lambda path: False) -> list[tuple[Path, str]]:
@@ -274,14 +288,16 @@ def stage_files(stage_dir: Path, name_prefix: str, *, exclude=(),
     sorted; symlinks are refused (their bytes are not what is stored).
     ``skip(path)`` drops a file that is not evidence (a waveform dump, the
     resume checkpoint). Files named in ``BOILERPLATE_NAMES`` are always
-    dropped (DR-014)."""
+    dropped (DR-014); files whose (basename, sha256) is in
+    ``PINNED_BOILERPLATE`` are dropped too (DR-015)."""
     out = []
     excluded = {Path(p).resolve() for p in exclude}
     for path in sorted(stage_dir.rglob("*")):
         if path.is_symlink():
             raise StoreError(f"staged evidence contains a symlink: {path.name}")
         if not path.is_file() or path.resolve() in excluded \
-                or path.name in BOILERPLATE_NAMES or skip(path):
+                or path.name in BOILERPLATE_NAMES or _is_pinned_boilerplate(path) \
+                or skip(path):
             continue
         rel = path.relative_to(stage_dir).as_posix()
         out.append((path, f"{name_prefix}/{rel}"))
@@ -298,7 +314,9 @@ def summary_section(manifest_rel: str, manifest: dict, empty: list[str]) -> str:
         f"The raw bytes of this run are in the fleet artifact store, not in git "
         f"(DR-012). Manifest: `{manifest_rel}` "
         f"({len(manifest['entries'])} objects, {total} B). Paths cited above "
-        "are the manifest `name`s. Check them against the store, or fetch one "
+        "are the manifest `name`s. Pinned harness boilerplate (`.spiceinit`, "
+        "the exact `lvs.request.json` bytes in `PINNED_BOILERPLATE`) is omitted "
+        "by rule (DR-014, DR-015). Check them against the store, or fetch one "
         "hash-verified, with:",
         "",
         "```",
