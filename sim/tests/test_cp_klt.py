@@ -292,6 +292,13 @@ class SelectionTests(unittest.TestCase):
         with self.assertRaises(executor_mod.ExecutorRefused):
             executor_mod.resolve_name("batch", {}, ENV)
 
+    def test_batch_for_fmax_shaped_manifest_stays_refused_here(self):
+        # The Fmax driver resolves `batch` itself (fmax_cli); the shared
+        # resolver is deliberately not widened (#417).
+        fmax_like = {"search": {}, "moduli": [], "criterion": {}}
+        with self.assertRaises(executor_mod.ExecutorRefused):
+            executor_mod.resolve_name("batch", fmax_like, ENV)
+
     def test_build_batch_returns_the_cp_backend(self):
         be = executor_mod.build("batch", pdk=PDK, spiceinit=Path("x"), jobs=8, manifest=MANIFEST)
         self.assertIsInstance(be, K.CpBatchBackend)
