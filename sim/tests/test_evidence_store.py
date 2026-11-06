@@ -94,6 +94,40 @@ class Base(unittest.TestCase):
             names = [n for _, n in es.stage_files(self.stage, "p")]
             self.assertIn("p/route-spot-check/lvs.request.json", names)
 
+    def test_split_resumed_omits_only_files_under_declared_lineage(self):
+        root = Path(tempfile.mkdtemp())
+        self.addCleanup(lambda: __import__("shutil").rmtree(root, ignore_errors=True))
+        old = root / "sim/b/records/old"
+        elsewhere = root / "sim/b/records/other"
+        old.mkdir(parents=True)
+        elsewhere.mkdir(parents=True)
+        (old / "body.spice").write_bytes(b"same netlist\n")
+        (elsewhere / "req.json").write_bytes(b"same request\n")
+        (self.stage / "body.spice").write_bytes(b"same netlist\n")
+        (self.stage / "req.json").write_bytes(b"same request\n")
+        files = es.stage_files(self.stage, "p")
+        kept, supplied = es.split_resumed(files, es.lineage_index(root, [old]))
+        self.assertIn("p/req.json", [n for _, n in kept])      # outside the lineage: kept
+        self.assertEqual([(n, h) for n, _, _, h in supplied],
+                         [("p/body.spice", "sim/b/records/old/body.spice")])
+        # not a resume: empty lineage, nothing is omitted
+        kept, supplied = es.split_resumed(files, es.lineage_index(root, []))
+        self.assertEqual((len(kept), supplied), (len(files), []))
+
+    def test_add_supplied_writes_pointer_entry_without_uri(self):
+        manifest = {"schema_version": 1, "entries": [
+            {"sha256": "a" * 64, "size": 1, "kind": "evidence", "name": "p/z",
+             "producer": {"tool": "klt"}, "uri": "artifact:k/" + "a" * 64}]}
+        es.add_supplied(manifest, [("p/a", "b" * 64, 3, "sim/b/old/a")])
+        first = manifest["entries"][0]
+        self.assertEqual(first["name"], "p/a")
+        self.assertEqual(first["supplied_by"], "sim/b/old/a")
+        self.assertNotIn("uri", first)
+
+    def test_to_supplied_swaps_uri_for_pointer(self):
+        e = es.to_supplied({"sha256": "a" * 64, "size": 1, "uri": "artifact:x"}, "sim/p")
+        self.assertEqual(e, {"sha256": "a" * 64, "size": 1, "supplied_by": "sim/p"})
+
     def test_real_pin_drops_committed_lvs_request(self):
         repo = Path(__file__).resolve().parents[2]
         src = repo / "layout/pll/reports/20260923-084911-13ecfe9/route-spot-check/lvs.request.json"

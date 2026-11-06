@@ -19,7 +19,9 @@ Reads every manifest committed in ``REV`` (default ``HEAD``; blob contents via
 git, so a sparse working tree does not matter) and fails if one is malformed
 (wrong schema, unknown or missing field, a ``uri`` that is not
 ``artifact:<key>`` ending in the entry's sha256, a ``name`` that is not a
-canonical ``sim/...`` or ``layout/...`` path, a duplicate name), or if the sha256 of any
+canonical ``sim/...`` or ``layout/...`` path, a duplicate name; an entry may
+carry ``supplied_by: <path>`` instead of ``uri`` (DR-016) and the path must
+exist in ``REV`` with the entry's sha256 and size), or if the sha256 of any
 git-tracked file equals a manifest entry: the point of a manifest is that the
 bytes are *not* committed.
 
@@ -49,6 +51,9 @@ SCHEMA_VERSION = 1
 KIND = "evidence"
 REQUIRED = ("sha256", "size", "kind", "producer", "uri")
 OPTIONAL = ("name", "media_type")
+#: A resumed run's entry whose bytes already live under the record it resumed
+#: from (DR-016): no ``uri``; ``supplied_by`` names the committed file.
+SUPPLIED_REQUIRED = ("sha256", "size", "kind", "producer", "supplied_by")
 PRODUCER_FIELDS = ("tool", "version", "loom.repo", "commit")
 
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
@@ -75,8 +80,10 @@ def entry_problems(entry) -> list[str]:
     if not isinstance(entry, dict):
         return ["entry is not an object"]
     problems = []
-    missing = [f for f in REQUIRED if f not in entry]
-    extra = sorted(set(entry) - set(REQUIRED) - set(OPTIONAL))
+    supplied = "supplied_by" in entry
+    required = SUPPLIED_REQUIRED if supplied else REQUIRED
+    missing = [f for f in required if f not in entry]
+    extra = sorted(set(entry) - set(required) - set(OPTIONAL))
     if missing:
         problems.append(f"missing {', '.join(missing)}")
     if extra:
@@ -98,12 +105,20 @@ def entry_problems(entry) -> list[str]:
                 problems.append(f"producer.{f} must be a non-empty string")
         if producer.get("commit") is not None and not isinstance(producer["commit"], str):
             problems.append("producer.commit must be a string or null")
-    uri = entry.get("uri")
-    m = URI_RE.match(uri) if isinstance(uri, str) else None
-    if m is None:
-        problems.append("uri must be artifact:<key> (no storage location in a manifest)")
-    elif m.group(1).rsplit("/", 1)[-1] != sha:
-        problems.append("uri key does not end in the entry's sha256")
+    if supplied:
+        by = entry["supplied_by"]
+        if not isinstance(by, str) or posixpath.normpath(by) != by or by.startswith("/") \
+                or "\\" in by or "\0" in by or {"", ".", ".."} & set(by.split("/")) \
+                or by.startswith(MANIFEST_DIR):
+            problems.append("supplied_by must be a canonical repo-relative path "
+                            "outside manifests/artifacts/")
+    else:
+        uri = entry.get("uri")
+        m = URI_RE.match(uri) if isinstance(uri, str) else None
+        if m is None:
+            problems.append("uri must be artifact:<key> (no storage location in a manifest)")
+        elif m.group(1).rsplit("/", 1)[-1] != sha:
+            problems.append("uri key does not end in the entry's sha256")
     if "name" not in entry:
         problems.append("name is required here (the logical sim/ or layout/ path of the bytes)")
     elif not canonical_name(entry["name"]):
@@ -170,6 +185,7 @@ def check(repo: str, rev: str) -> int:
     errors: list[str] = []
     stored: dict[tuple[str, int], str] = {}  # (sha256, size) -> manifest path
     manifests = entries = 0
+    pointers: list[tuple[str, dict]] = []  # (manifest path, supplied_by entry)
     for path in sorted(p for p in blobs if p.startswith(MANIFEST_DIR)):
         mode = blobs[path][0]
         if path in DIR_FILES_ALLOWED:
@@ -190,7 +206,19 @@ def check(repo: str, rev: str) -> int:
         manifests += 1
         for entry in manifest["entries"]:
             entries += 1
+            if "supplied_by" in entry:
+                pointers.append((path, entry))
+                continue
             stored.setdefault((entry["sha256"], entry["size"]), path)
+    # A supplied_by pointer must name a tracked file carrying exactly those bytes.
+    for mpath, entry in pointers:
+        target = blobs.get(entry["supplied_by"])
+        if target is None:
+            errors.append(f"{mpath}: supplied_by {entry['supplied_by']} is not a file in {rev}")
+        elif target[2] != entry["size"] or hashlib.sha256(
+                git(repo, "cat-file", "blob", target[1])).hexdigest() != entry["sha256"]:
+            errors.append(f"{mpath}: supplied_by {entry['supplied_by']} does not match the "
+                          "entry's sha256/size")
     # A tracked file whose bytes equal a stored object is the blob fallback this
     # repo forbids. Only files of a matching size can match, so hash just those.
     sizes = {size for _, size in stored}
@@ -207,7 +235,9 @@ def check(repo: str, rev: str) -> int:
         for e in errors:
             print(f"  {e}", file=sys.stderr)
         return EXIT_INVALID
-    print(f"OK: {manifests} manifest(s), {entries} entr{'y' if entries == 1 else 'ies'} "
+    supplied_note = f" ({len(pointers)} supplied_by pointer(s) verified)" if pointers else ""
+    print(f"OK: {manifests} manifest(s), {entries} entr{'y' if entries == 1 else 'ies'}"
+          f"{supplied_note} "
           f"in {MANIFEST_DIR} of {rev}: schema valid, no stored bytes committed. "
           "Bytes NOT hash-verified here (no broker contact); run "
           "`klt artifact verify <manifest>` with $KLT_ARTIFACT_BROKER set.")

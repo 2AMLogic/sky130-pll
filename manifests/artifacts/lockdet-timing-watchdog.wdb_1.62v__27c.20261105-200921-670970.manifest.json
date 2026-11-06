@@ -11,8 +11,8 @@
         "loom.repo": "2AMLogic/sky130-pll",
         "commit": "0772a9d6ee5dd7a2d78332e55043cb86b7d6ced3"
       },
-      "uri": "artifact:evidence/2AMLogic__sky130-pll/0c/0c576499450251895d76b03c18cd0e63d2c9c201bcb2f0ca3cc950d4a821b45a",
-      "name": "sim/lockdet-timing/groups/19d174789afd2403/watchdog.wdb_1.62v__27c.20261105-200921-670970/body.spice"
+      "name": "sim/lockdet-timing/groups/19d174789afd2403/watchdog.wdb_1.62v__27c.20261105-200921-670970/body.spice",
+      "supplied_by": "sim/lockdet-timing/watchdog/records/lt-20261013-142513-681682/watchdog.wdb_1.62v/body.spice"
     },
     {
       "sha256": "7c57a83483c0ee702ef836331a0f747134d65acf1917f7e9cd9c6ff81dbd3562",
@@ -38,9 +38,9 @@
         "loom.repo": "2AMLogic/sky130-pll",
         "commit": "0772a9d6ee5dd7a2d78332e55043cb86b7d6ced3"
       },
-      "uri": "artifact:evidence/2AMLogic__sky130-pll/83/832d69cee686fac6bddff9582a128e64baba37f2f22d6ed61bdb222f2d4d30e6",
       "name": "sim/lockdet-timing/groups/19d174789afd2403/watchdog.wdb_1.62v__27c.20261105-200921-670970/request.json",
-      "media_type": "application/json"
+      "media_type": "application/json",
+      "supplied_by": "sim/lockdet-timing/watchdog/records/groups/19d174789afd2403/watchdog.wdb_1.62v_+27c.20261013-205143-218163/request.json"
     },
     {
       "sha256": "a1007027518795a6f9c8581b94da24bfd4b9b5a2b5d1db85f36539c07fab6047",

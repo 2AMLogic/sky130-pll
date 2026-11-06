@@ -247,10 +247,13 @@ class GroupStore:
     def preflight(self) -> None:
         self._preflight(self.repo_root)
 
-    def store_group(self, mid: str, stem: str, src: Path) -> str:
+    def store_group(self, mid: str, stem: str, src: Path, lineage=()) -> str:
         """Stage `src`'s evidence files, store them, install the group manifest;
         -> the manifest path relative to the repo. Raises `E.StoreError`, leaving
-        the staged bytes in place and nothing in git."""
+        the staged bytes in place and nothing in git. `lineage` (resume only,
+        DR-016): committed record directories this run resumed from; a staged file
+        whose bytes already live there is not stored again and the manifest entry
+        carries `supplied_by` naming that committed path."""
         rid = _NOT_RID.sub("_", stem)
         stage = self.stage_root / mid / rid
         stage.mkdir(parents=True, exist_ok=True)
@@ -261,13 +264,15 @@ class GroupStore:
         mpath = E.manifest_path(self.repo_root, BENCH, rid)
         if mpath.exists():
             raise E.StoreError(f"{mpath.name} already exists; refusing to overwrite evidence")
+        files, supplied = E.split_resumed(files, E.lineage_index(self.repo_root, lineage))
         manifest, _empty = (self.put or E.put_files)(files, self.repo_root)
+        E.add_supplied(manifest, supplied)
         E.install_manifest(manifest, mpath)
         return mpath.relative_to(self.repo_root).as_posix()
 
 
 def write_group_record(gdir: Path, item: dict, res: dict, rows: list, supersedes,
-                       store: GroupStore) -> Path:
+                       store: GroupStore, lineage=()) -> Path:
     """Persist one finished group immediately; exclusive create, never overwrite.
     The group's bytes go to the artifact store first; only the small JSON record
     (the resume state) and the manifest reference land in git."""
@@ -277,7 +282,7 @@ def write_group_record(gdir: Path, item: dict, res: dict, rows: list, supersedes
     path = gdir / f"{stem}.json"
     if path.exists():
         raise FileExistsError(path)
-    res["job"]["evidence_manifest"] = store.store_group(gdir.name, stem, res["gdir"])
+    res["job"]["evidence_manifest"] = store.store_group(gdir.name, stem, res["gdir"], lineage)
     rec = {"schema": GROUP_SCHEMA, "group": item["key"], "job": res["job"], "rows": rows,
            "supersedes": supersedes}
     with open(path, "x") as f:  # raises FileExistsError rather than editing a record
@@ -287,7 +292,8 @@ def write_group_record(gdir: Path, item: dict, res: dict, rows: list, supersedes
 
 def execute(cands, points, *, klt, runner, work, retries=30, wait_s=120.0,
             sleep=time.sleep, log=print, split_temps=False, groups_dir=None,
-            resume=False, max_groups=None, only=None, store=None) -> dict:
+            resume=False, max_groups=None, only=None, store=None,
+            resume_from=None) -> dict:
     """Run the plan. With `groups_dir`, every finished group is written there at once
     (append-only). `resume` skips groups that already have a successful record;
     `max_groups` bounds the jobs submitted in this invocation. `pending` lists the
@@ -316,8 +322,14 @@ def execute(cands, points, *, klt, runner, work, retries=30, wait_s=120.0,
                 for p in pts]
         if groups_dir:
             hist = prior.get(key) or []
+            lineage = []
+            if resume:  # DR-016: the declared lineage only, never repo-wide content
+                if hist:
+                    lineage.append(groups_dir / hist[-1]["_stem"])
+                if resume_from is not None:
+                    lineage.append(resume_from)
             write_group_record(groups_dir, item, res, rows,
-                               hist[-1]["_stem"] if hist else None, store)
+                               hist[-1]["_stem"] if hist else None, store, lineage)
         if res["job"].get("failure"):
             pending.append(key)
         jobs.append(res["job"])
@@ -431,7 +443,9 @@ def main(argv=None, *, runner=subprocess.run, sleep=time.sleep, now=None,
             run = execute(cands, points, klt=probe.klt, runner=runner, work=Path(tmp),
                           sleep=sleep, split_temps=args.split_temps,
                           groups_dir=records_dir / "groups" / mid, resume=args.resume,
-                          max_groups=args.max_groups, only=args.only, store=store)
+                          max_groups=args.max_groups, only=args.only, store=store,
+                          resume_from=(records_dir / args.supersedes
+                                       if args.supersedes else None))
             if (args.resume or args.max_groups is not None or args.only) and run["pending"] \
                     and not args.finalize_incomplete:
                 print(f"{len(run['pending'])} group(s) still lacking a good record "
