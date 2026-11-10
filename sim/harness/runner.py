@@ -573,6 +573,7 @@ def _reduce_measurements(spec, supply_v: float, work_dir: Path, prefix: str):
     Monte Carlo trial, whose `McTrial` carries its own `supply_v` at the same
     fixed point every trial runs at).
     """
+    spec = spec.resolved(prefix)
     names = measure_mod.waveform_names(spec, prefix)
     labels = [p.label for p in spec.sweep] or [None]
     measurements = []
@@ -586,7 +587,7 @@ def _reduce_measurements(spec, supply_v: float, work_dir: Path, prefix: str):
             )
         try:
             extra = None
-            if spec.ripple is not None:
+            if spec.ripple is not None or spec.quadrature is not None:
                 # Multi-node dump: column order is `spec.dump_nodes`, whose
                 # first entry is always the measured clock node.
                 nodes = spec.dump_nodes

@@ -348,6 +348,11 @@ def parse_spice_time(text: str | float | int) -> float:
     return parse_spice_literal(text, kind="time")
 
 
+def _fmt_sweep_v(v: float) -> str:
+    """3 decimals, or 4 when the value needs them (per-point tables, issue #422)."""
+    return f"{v:.3f}" if round(v, 3) == round(v, 6) else f"{v:.4f}"
+
+
 @dataclass(frozen=True)
 class SweepPoint:
     """One value of a swept independent source within a single PVT point."""
@@ -439,6 +444,38 @@ class RippleSpec:
     def summary(self) -> str:
         names = ", ".join(f"v({n})" for n in self.nodes)
         return f"peak-to-peak of {names} over the final {_fmt_s(self.window_s)} of the transient"
+
+
+@dataclass(frozen=True)
+class QuadSpec:
+    """The optional `measure.quadrature` block (issue #422): the phase offset
+    of `quad`'s rising edges from `ref`'s, in degrees of `ref`'s period,
+    measured edge-to-edge from the simulated waveforms (never derived from a
+    closed form), plus both nodes' duty cycles, graded against stated bounds.
+
+    Grading is **reported, never a harness gate**: a point that misses the
+    window or the duty bound is recorded as a miss in its note and table row,
+    the harness verdict stays the plumbing/oscillation one. `freq_tolerance`
+    (fraction of `target_freq_hz`) bounds how far `ref`'s frequency may sit
+    from the requested operating frequency for the point to be *gradable*.
+    """
+
+    ref: str
+    quad: str
+    target_deg: float = 90.0
+    window_deg: float = 72.0
+    duty_min: float = 0.45
+    duty_max: float = 0.55
+    target_freq_hz: float | None = None
+    freq_tolerance: float = 0.10
+
+    @property
+    def summary(self) -> str:
+        return (
+            f"v({self.quad}) rising-edge lag behind v({self.ref}) in degrees of "
+            f"v({self.ref})'s period, window {self.target_deg:g} +/- {self.window_deg:g} deg, "
+            f"duty bound {self.duty_min * 100:g}-{self.duty_max * 100:g}% on both"
+        )
 
 
 @dataclass(frozen=True)
@@ -537,6 +574,20 @@ class MeasureSpec:
     # a manifest can dump on a finer grid than it integrates on without
     # paying for a finer integration (issue #202).
     tran_max_step: str | None = None
+    # `measure.quadrature` (issue #422) and the `measure.sweep.per_point`
+    # table: corner_id -> that PVT point's own swept values (same length as
+    # `sweep`), so a campaign can aim each corner at its own VCTRL.
+    quadrature: QuadSpec | None = None
+    sweep_tables: tuple = field(default=())
+
+    def resolved(self, prefix: str):
+        """This spec with `sweep` replaced by the per-point table entry for
+        the PVT point named by `prefix` (`<corner_id>-`), if one exists."""
+        key = prefix[:-1] if prefix.endswith("-") else prefix
+        for corner_id, points in self.sweep_tables:
+            if corner_id == key:
+                return replace(self, sweep=points)
+        return self
 
     @property
     def options_card(self) -> str | None:
@@ -559,7 +610,8 @@ class MeasureSpec:
         """
         ordered = []
         ripple_nodes = self.ripple.nodes if self.ripple else ()
-        for n in (self.node,) + tuple(self.extra_nodes) + tuple(ripple_nodes):
+        quad_nodes = (self.quadrature.ref, self.quadrature.quad) if self.quadrature else ()
+        for n in (self.node,) + tuple(self.extra_nodes) + tuple(ripple_nodes) + quad_nodes:
             if n not in ordered:
                 ordered.append(n)
         return tuple(ordered)
@@ -643,20 +695,33 @@ class MeasureSpec:
             )
 
         sweep = ()
+        sweep_tables = ()
         if "sweep" in block:
             sw = block["sweep"]
             for required in ("source", "values"):
                 if required not in sw:
                     raise MeasureError(f"manifest `measure.sweep` block is missing {required!r}")
             quantity = sw.get("quantity", sw["source"])
-            sweep = tuple(
-                SweepPoint(
-                    source=sw["source"],
-                    value=float(v),
-                    label=f"{quantity}={float(v):.3f}V",
+            def _points(values):
+                return tuple(
+                    SweepPoint(
+                        source=sw["source"],
+                        value=float(v),
+                        label=f"{quantity}={_fmt_sweep_v(float(v))}V",
+                    )
+                    for v in values
                 )
-                for v in sw["values"]
-            )
+
+            sweep = _points(sw["values"])
+            per_point = sw.get("per_point") or {}
+            for cid, vals in per_point.items():
+                if len(vals) != len(sweep):
+                    raise MeasureError(
+                        f"manifest `measure.sweep.per_point[{cid!r}]` has {len(vals)} "
+                        f"values; it must match `values` ({len(sweep)}) so every "
+                        "point dumps the same number of waveforms"
+                    )
+                sweep_tables = sweep_tables + ((cid, _points(vals)),)
 
         ripple = None
         if "ripple" in block:
@@ -723,6 +788,29 @@ class MeasureSpec:
                 )
             levels = LevelsSpec(voh_min_frac=voh_min, vol_max_frac=vol_max)
 
+        quadrature = None
+        if "quadrature" in block:
+            qb = block["quadrature"]
+            missing = [k for k in ("ref", "quad") if k not in qb]
+            if missing:
+                raise MeasureError(
+                    f"manifest `measure.quadrature` block is missing {', '.join(missing)}"
+                )
+            quadrature = QuadSpec(
+                ref=qb["ref"],
+                quad=qb["quad"],
+                target_deg=float(qb.get("target_deg", 90.0)),
+                window_deg=float(qb.get("window_deg", 72.0)),
+                duty_min=float(qb.get("duty_min", 0.45)),
+                duty_max=float(qb.get("duty_max", 0.55)),
+                target_freq_hz=(
+                    float(qb["target_freq_hz"]) if "target_freq_hz" in qb else None
+                ),
+                freq_tolerance=float(qb.get("freq_tolerance", 0.10)),
+            )
+            if not 0.0 <= quadrature.duty_min < quadrature.duty_max <= 1.0:
+                raise MeasureError("`measure.quadrature` duty bounds must satisfy 0<=min<max<=1")
+
         sim_options = _parse_sim_options(block.get("options"))
 
         tran_max_step = block.get("tran_max_step")
@@ -763,6 +851,8 @@ class MeasureSpec:
             levels=levels,
             sim_options=sim_options,
             tran_max_step=tran_max_step,
+            quadrature=quadrature,
+            sweep_tables=sweep_tables,
         )
 
 
@@ -834,6 +924,7 @@ def waveform_names(spec: MeasureSpec, prefix: str = "") -> list:
 
 def build_control_block(spec: MeasureSpec, prefix: str = "") -> str:
     """Compose the `.ic` cards plus the `.control` section for one PVT point."""
+    spec = spec.resolved(prefix)
     lines = []
     if spec.options_card is not None:
         lines.append(spec.options_card)
@@ -1286,6 +1377,8 @@ class Measurement:
     # no `levels` block or the node never swung through the threshold.
     v_oh: float | None = None
     v_ol: float | None = None
+    # Issue #422: the `measure.quadrature` result, or None when not declared.
+    quad: "QuadResult | None" = None
 
     def summary(self) -> str:
         """One-line human-readable form, used in the record's result table."""
@@ -1446,6 +1539,25 @@ def measure_trace(
     decision record eventually cites it.
     """
     m = _measure_clock(times, values, spec, supply_v, label)
+    if spec.quadrature is not None:
+        extra = extra or {}
+        qv = extra.get(spec.quadrature.quad)
+        if qv is None:
+            raise MeasureError(f"quadrature node v({spec.quadrature.quad}) was not in the dump")
+        rv = values if spec.quadrature.ref == spec.node else extra.get(spec.quadrature.ref)
+        if rv is None:
+            raise MeasureError(f"quadrature node v({spec.quadrature.ref}) was not in the dump")
+        qr = measure_quadrature(times, rv, qv, spec, supply_v)
+        if qr.offset_mean_deg is not None:
+            qnote = (
+                f"CLK90 offset {qr.offset_mean_deg:.1f} deg "
+                f"[{qr.offset_min_deg:.1f}..{qr.offset_max_deg:.1f}], duty "
+                f"{(qr.duty_ref or 0) * 100:.1f}%/{(qr.duty_quad or 0) * 100:.1f}%, "
+                f"grade {qr.grade}"
+            )
+        else:
+            qnote = f"quadrature {qr.grade}: {'; '.join(qr.reasons)}"
+        m = replace(m, quad=qr, note=f"{m.note}. {qnote}")
     if spec.ripple is None:
         return m
 
@@ -1480,6 +1592,83 @@ def measure_trace(
         + "; ".join(r.describe() for r in results)
     )
     return replace(m, ripple=tuple(results), note=f"{m.note}. {ripple_note}")
+
+
+@dataclass(frozen=True)
+class QuadResult:
+    """One point's `measure.quadrature` reduction (see `QuadSpec`)."""
+
+    offset_mean_deg: float | None
+    offset_min_deg: float | None
+    offset_max_deg: float | None
+    n_cycles: int
+    duty_ref: float | None
+    duty_quad: float | None
+    freq_hz: float | None
+    freq_in_band: bool | None
+    grade: str  # "PASS" | "FAIL" | "UNGRADED"
+    reasons: tuple
+
+
+def measure_quadrature(times, ref_values, quad_values, spec: MeasureSpec, supply_v: float) -> QuadResult:
+    """Reduce two nodes to the quad-vs-ref rising-edge offset and duties.
+
+    For each complete `ref` cycle at/after `settle_from`, the offset is the
+    time to the next `quad` rising edge divided by that cycle's `ref` period,
+    in degrees. Measured edge to edge from the waveforms: no closed form.
+    """
+    q = spec.quadrature
+    threshold = spec.threshold_frac * supply_v
+    hyst = spec.hysteresis_frac * supply_v
+    r_rise, r_fall = edge_times(times, ref_values, threshold, hyst)
+    q_rise, q_fall = edge_times(times, quad_values, threshold, hyst)
+    settle = spec.settle_from_s
+    usable_r = [t for t in r_rise if t >= settle]
+    usable_q = [t for t in q_rise if t >= settle]
+    reasons = []
+    if len(usable_r) < spec.min_edges or len(usable_q) < spec.min_edges:
+        return QuadResult(
+            None, None, None, 0, None, None, None, None, "FAIL",
+            (f"no oscillation on v({q.ref}) ({len(usable_r)} edges) or "
+             f"v({q.quad}) ({len(usable_q)} edges) after settle",),
+        )
+    offsets = []
+    for k in range(len(usable_r) - 1):
+        r, nxt = usable_r[k], usable_r[k + 1]
+        qe = next((t for t in usable_q if t >= r), None)
+        if qe is None or qe >= nxt + (nxt - r):
+            continue
+        offsets.append((qe - r) / (nxt - r) * 360.0)
+    f = mean_frequency(usable_r)
+    d_ref = duty_cycle(r_rise, r_fall, t_from=settle)
+    d_q = duty_cycle(q_rise, q_fall, t_from=settle)
+    if not offsets:
+        return QuadResult(None, None, None, 0, d_ref, d_q, f, None, "FAIL",
+                          ("no CLK90 edge could be paired with a CLK cycle",))
+    mean = fmean(offsets)
+    in_band = None
+    if q.target_freq_hz is not None and f is not None:
+        in_band = abs(f - q.target_freq_hz) <= q.freq_tolerance * q.target_freq_hz
+        if not in_band:
+            reasons.append(
+                f"f_out {_fmt_hz(f)} outside +/-{q.freq_tolerance * 100:g}% of "
+                f"{_fmt_hz(q.target_freq_hz)}: point not at its operating frequency"
+            )
+    if abs(mean - q.target_deg) > q.window_deg:
+        reasons.append(
+            f"offset {mean:.1f} deg outside {q.target_deg:g} +/- {q.window_deg:g} deg"
+        )
+    for name, d in ((q.ref, d_ref), (q.quad, d_q)):
+        if d is None or not (q.duty_min <= d <= q.duty_max):
+            txt = "-" if d is None else f"{d * 100:.1f}%"
+            reasons.append(
+                f"v({name}) duty {txt} outside {q.duty_min * 100:g}-{q.duty_max * 100:g}%"
+            )
+    grade = "PASS" if not reasons else "FAIL"
+    return QuadResult(
+        mean, min(offsets), max(offsets), len(offsets), d_ref, d_q, f, in_band, grade,
+        tuple(reasons),
+    )
 
 
 def _measure_clock(

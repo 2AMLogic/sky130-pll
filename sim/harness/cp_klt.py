@@ -51,6 +51,8 @@ from .klt_submit import is_capacity_refusal, submit_with_capacity_retry  # noqa:
 
 #: Executor name accepted by `run_corners.py --executor`.
 BATCH_EXECUTOR = "batch"
+# `klt sim --wait-for-capacity` seconds passed on every batch submit.
+WAIT_FOR_CAPACITY_S = 600
 
 #: Directory (under the unit set's work dir) holding the request, decks and
 #: the collected `klt sim` output tree.
@@ -243,7 +245,10 @@ class CpBatchBackend(executor_mod.ExecutionBackend):
 
     def _submit(self, bdir: Path, wall_s: int) -> dict:
         cmd = [self.klt, "sim", str(bdir / REQUEST_NAME), "-o", str(bdir / "out"),
-               "--backend", "batch", "--format", "json"]
+               "--backend", "batch", "--format", "json",
+               # Fleet is vCPU-budgeted: wait inside klt for capacity instead of
+               # failing the step (host rule: every batch `klt sim` passes this).
+               "--wait-for-capacity", str(WAIT_FOR_CAPACITY_S)]
         try:
             proc, attempt = submit_with_capacity_retry(
                 cmd, runner=self.runner, timeout=wall_s + 1800, usable_exit=_USABLE_EXIT,

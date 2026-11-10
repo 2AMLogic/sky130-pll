@@ -1,0 +1,291 @@
+{
+  "schema": "sky130-pll.harness.tb/1",
+  "claim": "Graded transistor-level measurement of the DR-010 (Proposed) I/Q divide-by-2 driven by the open-loop 2x VCO at 50 MHz output (100 MHz VCO): CLK-to-CLK90 offset and both duty cycles measured from simulated waveforms over the ratified DR-003 PVT set, graded against the DRAFT consumer window 90 +/- 72 deg and the DRAFT 45-55% duty bound (issue #422, parent #332). Simulated, not measured silicon; thresholds unratified; ratifies nothing; DR-010 stays Proposed.",
+  "spec_rows": [],
+  "spec_rows_note": "Frequency scan feeding the DR-010 interface evidence (#332); claims no spec row.",
+  "schematic": "../../vco-2x-iq-scan/testbench/tb_vco_2x_iq.sch",
+  "corner_pattern": "(\\.lib\\s+\\S*sky130\\.lib\\.spice\\s+)(\\w+)",
+  "supply_pattern": "(V1 VDD GND )([0-9.]+)",
+  "process_corners": [
+    "tt",
+    "ff",
+    "ss",
+    "sf",
+    "fs"
+  ],
+  "temps_c": [
+    -40,
+    27,
+    125
+  ],
+  "supply_nominal": 1.8,
+  "supply_tolerance": 0.1,
+  "measure": {
+    "node": "clk",
+    "tran_step": "50p",
+    "tran_stop": "800n",
+    "settle_from": "400n",
+    "threshold_frac": 0.5,
+    "hysteresis_frac": 0.15,
+    "min_edges": 4,
+    "ic": [
+      "v(xxxvco.ring0)=0"
+    ],
+    "uic": true,
+    "require_oscillation": false,
+    "min_oscillating_points": 0,
+    "timeout_s": 3600,
+    "extra_nodes": [
+      "clk90",
+      "clk2x"
+    ],
+    "sweep": {
+      "source": "V2",
+      "quantity": "VCTRL",
+      "values": [
+        0.794,
+        0.8,
+        0.806
+      ],
+      "per_point": {
+        "ff_-40c_1.62v": [
+          0.7601,
+          0.7661,
+          0.7721
+        ],
+        "ff_-40c_1.80v": [
+          0.7675,
+          0.7735,
+          0.7795
+        ],
+        "ff_-40c_1.98v": [
+          0.7774,
+          0.7834,
+          0.7894
+        ],
+        "ff_125c_1.62v": [
+          0.7103,
+          0.7163,
+          0.7223
+        ],
+        "ff_125c_1.80v": [
+          0.7265,
+          0.7325,
+          0.7385
+        ],
+        "ff_125c_1.98v": [
+          0.7418,
+          0.7478,
+          0.7538
+        ],
+        "ff_27c_1.62v": [
+          0.7312,
+          0.7372,
+          0.7432
+        ],
+        "ff_27c_1.80v": [
+          0.7438,
+          0.7498,
+          0.7558
+        ],
+        "ff_27c_1.98v": [
+          0.7573,
+          0.7633,
+          0.7693
+        ],
+        "fs_-40c_1.62v": [
+          0.8164,
+          0.8224,
+          0.8284
+        ],
+        "fs_-40c_1.80v": [
+          0.8217,
+          0.8277,
+          0.8337
+        ],
+        "fs_-40c_1.98v": [
+          0.8309,
+          0.8369,
+          0.8429
+        ],
+        "fs_125c_1.62v": [
+          0.7644,
+          0.7704,
+          0.7764
+        ],
+        "fs_125c_1.80v": [
+          0.7793,
+          0.7853,
+          0.7913
+        ],
+        "fs_125c_1.98v": [
+          0.7949,
+          0.8009,
+          0.8069
+        ],
+        "fs_27c_1.62v": [
+          0.7865,
+          0.7925,
+          0.7985
+        ],
+        "fs_27c_1.80v": [
+          0.7978,
+          0.8038,
+          0.8098
+        ],
+        "fs_27c_1.98v": [
+          0.8102,
+          0.8162,
+          0.8222
+        ],
+        "sf_-40c_1.62v": [
+          0.7491,
+          0.7551,
+          0.7611
+        ],
+        "sf_-40c_1.80v": [
+          0.7525,
+          0.7585,
+          0.7645
+        ],
+        "sf_-40c_1.98v": [
+          0.7608,
+          0.7668,
+          0.7728
+        ],
+        "sf_125c_1.62v": [
+          0.6874,
+          0.6934,
+          0.6994
+        ],
+        "sf_125c_1.80v": [
+          0.7031,
+          0.7091,
+          0.7151
+        ],
+        "sf_125c_1.98v": [
+          0.719,
+          0.725,
+          0.731
+        ],
+        "sf_27c_1.62v": [
+          0.7157,
+          0.7217,
+          0.7277
+        ],
+        "sf_27c_1.80v": [
+          0.7251,
+          0.7311,
+          0.7371
+        ],
+        "sf_27c_1.98v": [
+          0.7368,
+          0.7428,
+          0.7488
+        ],
+        "ss_-40c_1.62v": [
+          0.8067,
+          0.8127,
+          0.8187
+        ],
+        "ss_-40c_1.80v": [
+          0.8076,
+          0.8136,
+          0.8196
+        ],
+        "ss_-40c_1.98v": [
+          0.8138,
+          0.8198,
+          0.8258
+        ],
+        "ss_125c_1.62v": [
+          0.7423,
+          0.7483,
+          0.7543
+        ],
+        "ss_125c_1.80v": [
+          0.7571,
+          0.7631,
+          0.7691
+        ],
+        "ss_125c_1.98v": [
+          0.7723,
+          0.7783,
+          0.7843
+        ],
+        "ss_27c_1.62v": [
+          0.7718,
+          0.7778,
+          0.7838
+        ],
+        "ss_27c_1.80v": [
+          0.7794,
+          0.7854,
+          0.7914
+        ],
+        "ss_27c_1.98v": [
+          0.7904,
+          0.7964,
+          0.8024
+        ],
+        "tt_-40c_1.62v": [
+          0.7822,
+          0.7882,
+          0.7942
+        ],
+        "tt_-40c_1.80v": [
+          0.7867,
+          0.7927,
+          0.7987
+        ],
+        "tt_-40c_1.98v": [
+          0.7953,
+          0.8013,
+          0.8073
+        ],
+        "tt_125c_1.62v": [
+          0.7253,
+          0.7313,
+          0.7373
+        ],
+        "tt_125c_1.80v": [
+          0.741,
+          0.747,
+          0.753
+        ],
+        "tt_125c_1.98v": [
+          0.757,
+          0.763,
+          0.769
+        ],
+        "tt_27c_1.62v": [
+          0.7504,
+          0.7564,
+          0.7624
+        ],
+        "tt_27c_1.80v": [
+          0.7609,
+          0.7669,
+          0.7729
+        ],
+        "tt_27c_1.98v": [
+          0.7729,
+          0.7789,
+          0.7849
+        ]
+      }
+    },
+    "quadrature": {
+      "ref": "clk",
+      "quad": "clk90",
+      "target_deg": 90,
+      "window_deg": 72,
+      "duty_min": 0.45,
+      "duty_max": 0.55,
+      "target_freq_hz": 50000000.0,
+      "freq_tolerance": 0.1
+    }
+  },
+  "methodology_note": "Stage 2 of the issue #422 campaign, 50 MHz output. Per-corner VCTRL brackets (3 values, 6 mV apart) come from sim/vco-2x-iq-scan/analysis/make_vctrl_tables.py applied to the stage-1 scan record; the estimate only picks where to look, and the graded row per PVT point is the measured bracket value whose CLK frequency is nearest 50 MHz and within +/-10% (a point with none is a recorded FAIL, not dropped). Window 90 +/- 72 deg is #332's recorded DRAFT consumer requirement before pad/skew/jitter terms; duty bound 45-55% is spec row 14 (DRAFT), applied to both CLK and CLK90. 10 fF stand-in load on CLK and CLK90 (assumption).",
+  "analysis": "transient per swept VCTRL value (`tran 50p 800n uic`) with RESETB released at 60 ns"
+}
