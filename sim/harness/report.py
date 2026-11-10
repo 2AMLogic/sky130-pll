@@ -645,12 +645,12 @@ def _render_sweep_tables(a, results, spec) -> None:
     a("  |---|---|---|---|---|---|---|")
     for r in results:
         p = r.point
-        for sweep_point, m in zip(spec.sweep, r.measurements):
+        for sweep_point, m in zip(spec.resolved(f"{p.corner_id}-").sweep, r.measurements):
             duty = f"{m.duty_cycle * 100:.1f}%" if m.duty_cycle is not None else "-"
             note = "-" if m.oscillating else "no oscillation"
             a(
                 f"  | {p.corner} | {p.temp_c:g} | {p.supply_v:.2f} | "
-                f"{sweep_point.value:.3f} | {measure_mod.format_hz(m.freq_hz)} | "
+                f"{measure_mod._fmt_sweep_v(sweep_point.value)} | {measure_mod.format_hz(m.freq_hz)} | "
                 f"{duty} | {note} |"
             )
         if len(r.measurements) < len(spec.sweep):
@@ -667,7 +667,7 @@ def _render_sweep_tables(a, results, spec) -> None:
         p = r.point
         live = [
             (sp, m)
-            for sp, m in zip(spec.sweep, r.measurements)
+            for sp, m in zip(spec.resolved(f"{p.corner_id}-").sweep, r.measurements)
             if m.oscillating and m.freq_hz is not None
         ]
         if len(live) < 2:
@@ -692,6 +692,70 @@ def _render_sweep_tables(a, results, spec) -> None:
         "for the shape. It is reported as characterization data; nothing here "
         "ratifies a spec row."
     )
+
+
+def _render_quadrature_tables(a, results, spec) -> None:
+    """CLK/CLK90 offset + duty tables for a `measure.quadrature` manifest (issue #422).
+
+    First every swept value (nothing dropped), then one graded row per PVT
+    point: the swept value whose `f_out` is nearest the manifest's
+    `target_freq_hz`. A point with no swept value inside the frequency
+    tolerance is reported UNGRADED-NO-TARGET-FREQUENCY and counts as a miss in
+    the tally -- it is never omitted.
+    """
+    q = spec.quadrature
+    a("")
+    a(f"- **CLK/CLK90 quadrature** (simulated, not measured silicon; {q.summary}; "
+      "thresholds are DRAFT/unratified; reported, not gated on):")
+    a("")
+    a("  | Corner | Temp (C) | Supply (V) | VCTRL (V) | f_out | Offset mean [min..max] (deg) | CLK duty | CLK90 duty | In freq band | Grade |")
+    a("  |---|---|---|---|---|---|---|---|---|---|")
+    graded = []
+    for r in results:
+        p = r.point
+        sweep = spec.resolved(f"{p.corner_id}-").sweep
+        best = None
+        for sp, m in zip(sweep, r.measurements):
+            qr = m.quad
+            if qr is None or qr.offset_mean_deg is None:
+                a(f"  | {p.corner} | {p.temp_c:g} | {p.supply_v:.2f} | {measure_mod._fmt_sweep_v(sp.value)} | - | - | - | - | - | no oscillation |")
+                continue
+            band = "-" if qr.freq_in_band is None else ("yes" if qr.freq_in_band else "no")
+            a(
+                f"  | {p.corner} | {p.temp_c:g} | {p.supply_v:.2f} | {measure_mod._fmt_sweep_v(sp.value)} | "
+                f"{measure_mod.format_hz(qr.freq_hz)} | {qr.offset_mean_deg:.1f} "
+                f"[{qr.offset_min_deg:.1f}..{qr.offset_max_deg:.1f}] | "
+                f"{(qr.duty_ref or 0) * 100:.1f}% | {(qr.duty_quad or 0) * 100:.1f}% | {band} | {qr.grade} |"
+            )
+            if qr.freq_hz is not None and q.target_freq_hz:
+                err = abs(qr.freq_hz - q.target_freq_hz)
+                if best is None or err < best[0]:
+                    best = (err, sp, qr)
+        graded.append((p, best))
+    a("")
+    a(f"- **Graded point per PVT point** (swept value nearest {measure_mod.format_hz(q.target_freq_hz)}; "
+      f"must be within +/-{q.freq_tolerance * 100:g}% to count):")
+    a("")
+    a("  | Corner | Temp (C) | Supply (V) | VCTRL (V) | f_out | Offset (deg) | CLK duty | CLK90 duty | Verdict | Why |")
+    a("  |---|---|---|---|---|---|---|---|---|---|")
+    n_pass = 0
+    for p, best in graded:
+        if best is None or not best[2].freq_in_band:
+            f_txt = measure_mod.format_hz(best[2].freq_hz) if best else "-"
+            a(f"  | {p.corner} | {p.temp_c:g} | {p.supply_v:.2f} | - | {f_txt} | - | - | - | **FAIL** | "
+              "no swept value reached the target frequency band (a recorded miss, not dropped) |")
+            continue
+        _, sp, qr = best
+        ok = qr.grade == "PASS"
+        n_pass += ok
+        a(
+            f"  | {p.corner} | {p.temp_c:g} | {p.supply_v:.2f} | {measure_mod._fmt_sweep_v(sp.value)} | "
+            f"{measure_mod.format_hz(qr.freq_hz)} | {qr.offset_mean_deg:.1f} | "
+            f"{(qr.duty_ref or 0) * 100:.1f}% | {(qr.duty_quad or 0) * 100:.1f}% | "
+            f"{'PASS' if ok else '**FAIL**'} | {'; '.join(qr.reasons) or '-'} |"
+        )
+    a("")
+    a(f"  Quadrature tally: {n_pass}/{len(graded)} PVT points pass this frequency's grading.")
 
 
 _SI_PREFIXES = ((1e-15, "f"), (1e-12, "p"), (1e-9, "n"), (1e-6, "u"), (1e-3, "m"), (1.0, ""))
@@ -1081,6 +1145,8 @@ def render(
     a(f"  - **Overall: {overall}** ({len(passed)}/{len(results)} points passed)")
     if spec is not None and spec.sweep:
         _render_sweep_tables(a, results, spec)
+        if spec.quadrature is not None:
+            _render_quadrature_tables(a, results, spec)
     if ac_spec is not None:
         _render_ac_tables(a, results, ac_spec)
     if cp_spec is not None:

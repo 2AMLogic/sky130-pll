@@ -90,6 +90,7 @@ _SERIALIZABLE = (
     PvtPoint,
     McTrial,
     measure_mod.Measurement,
+    measure_mod.QuadResult,
     ac_mod.AcMeasurement,
     ac_mod.LoopGainPoint,
     # Charge-pump result tree (`PointResult.measurements` holds one
