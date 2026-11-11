@@ -264,7 +264,7 @@ def purge_unit_artifacts(work_dir: Path, corner_id: str) -> None:
 
     Executor-independent by construction (issue #150): called from
     `run_ngspice_locally` below for the local backend, and from
-    `executor.RemoteBackend.stage` for the remote one -- each backend purges
+    the batch backend's `stage` -- each backend purges
     exactly once, before it does anything that could write this unit's
     artifacts, so every present and future backend inherits the same
     clean-slate guarantee.
@@ -287,7 +287,7 @@ def run_ngspice_locally(
     """Write `unit`'s netlist + a per-run `.spiceinit` and execute ngspice
     batch mode on **this** host. Verbatim the body this module has always
     had -- it is now reachable as a backend (`executor.LocalBackend`) so a
-    remote backend can substitute for it without any of the judging,
+    another backend can substitute for it without any of the judging,
     patching or reducing around it changing.
     """
     work_dir = unit.work_dir
@@ -364,7 +364,7 @@ def judge(
 
     **This is the single judge for every executor.** It reads only the
     collected log text and the unit's return code -- never how or where
-    ngspice ran -- so a unit executed on a remote Spot instance is judged by
+    ngspice ran -- so a unit executed on a batch-fleet instance is judged by
     exactly the criterion a local unit is: ngspice exited 0, printed the
     manifest's completion marker, and emitted no `Error:` line.
     """
@@ -467,7 +467,7 @@ def prepare_point(
 
     Pure: given the same netlist text, manifest and point it always produces
     the same unit. That is what lets an executor stage the whole unit set up
-    front (`executor.RemoteBackend.stage`) while `run_point` still derives
+    front (`CpBatchBackend.stage`) while `run_point` still derives
     the identical unit per point when it judges the result.
     """
     spec, ac_spec, cp_spec = _analysis_specs(manifest)

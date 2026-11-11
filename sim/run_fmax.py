@@ -2,7 +2,7 @@
 """Divider Fmax characterization campaign runner (issue #244).
 
     python3 sim/run_fmax.py divider-fmax --dry-run
-    python3 sim/run_fmax.py divider-fmax --executor remote
+    python3 sim/run_fmax.py divider-fmax --executor batch
 
 See sim/harness/fmax_cli.py and sim/divider-fmax/testbench/fmax.json.
 Stdlib only.

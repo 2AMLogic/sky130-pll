@@ -192,46 +192,16 @@ def _executor_note(provenance: dict | None) -> str | None:
 
     `None` for a plain `--executor local` run -- that is deliberate, and is
     what keeps such a record byte-for-byte identical to every record minted
-    before this seam existed. A run that *asked* for `remote` always says
-    so, whether it got it or fell back.
+    before this seam existed. A `batch` run always says so.
     """
     if not provenance:
         return None
-    requested = provenance.get("requested", "local")
     executor = provenance.get("executor", "local")
-    fallback = provenance.get("fallback_reason")
-    if fallback:
-        return (
-            f"executor: `{executor}` (requested `{requested}`). This host could "
-            f"not dispatch remotely, so every unit ran locally instead -- "
-            f"fallback_reason: {fallback}. A fallback changes only *where* "
-            "ngspice ran: the pass/fail criterion, the measurement reducer and "
-            "this record's own shape are the local ones, unchanged."
-        )
     if executor == "batch":
         from . import cp_klt  # lazy: stdlib-only, but only a batch run needs it
 
         return cp_klt.execution_note(provenance)
-    if executor != "remote":
-        return f"executor: `{executor}`."
-    cost = provenance.get("estimated_fleet_hourly_cost_usd")
-    per_host = provenance.get("estimated_hourly_cost_usd")
-    return (
-        f"executor: `remote` (klayout-tools Spot fleet), "
-        f"hosts: {provenance.get('hosts')}, "
-        f"region: `{provenance.get('region')}`, "
-        f"instance_type: `{provenance.get('instance_type')}`, "
-        f"spot: `{str(provenance.get('spot')).lower()}`, "
-        f"estimated_hourly_cost_usd (per host): "
-        f"{'unknown' if per_host is None else per_host}, "
-        f"estimated_fleet_hourly_cost_usd: "
-        f"{'unknown' if cost is None else cost}. "
-        "Each unit ran as its own `ngspice -b` process on a per-job EC2 "
-        "instance against the same patched netlist a local run would have "
-        "simulated (only this host's absolute PDK paths are re-rooted onto the "
-        "AMI's own `$PDK_ROOT`); the collected log is then judged by exactly "
-        "the criterion a local unit is judged by."
-    )
+    return f"executor: `{executor}`."
 
 
 def _execution_note(
@@ -910,16 +880,12 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help=(
             "where each unit's ngspice process runs: `local` (default -- this "
-            "host, today's behaviour, stdlib-only), `remote` (klayout-tools' "
-            "Spot fleet, one per-job EC2 instance per shard; `--jobs N` becomes "
-            "the shard count) or `batch` (`cp` manifests only: one `klt sim` "
-            "decks[] request per run on the Spot batch fleet, never a local "
-            "fallback; chosen automatically for a `cp` manifest when "
-            "KLT_SIM_BACKEND=batch). A manifest may opt in permanently with an "
-            "`\"executor\"` key, which this flag overrides. `remote` degrades to "
-            "`local` -- with one logged line and a `fallback_reason` in the "
-            "record -- on any host that is not provisioned for the fleet; see "
-            "sim/harness/README.md"
+            "host, today's behaviour, stdlib-only) or `batch` (`cp` and transient "
+            "`measure` manifests: one `klt sim` decks[] request per run on the "
+            "Spot batch fleet, never a local fallback; chosen automatically for a "
+            "`cp` manifest when KLT_SIM_BACKEND=batch). A manifest may opt in "
+            "permanently with an `\"executor\"` key, which this flag overrides. "
+            "`remote` was retired (issue #425); see sim/harness/README.md"
         ),
     )
     p.add_argument(
