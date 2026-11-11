@@ -2,6 +2,11 @@
 
 Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
+### 2026-11-10
+
+- **PR #423**: feat(sim): I/Q divide-by-2 cell and 90-point PVT quadrature campaign
+- **Issue #422** (closed): DR-010 evidence: PVT corners and a simulated I/Q divide-by-2 for the 2x VCO CLK/CLK90 path
+
 ### 2026-11-06
 
 - **PR #411**: design: complete wdb 45-point watchdog grid, watchdog PASS, combined handoff graded
