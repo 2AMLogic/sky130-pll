@@ -24,12 +24,13 @@ _None._
 Human-approved issues ready for implementation (`loom:issue`).
 
 - **#298**: Re-qualify cited layout reference records under open_pdks f6eeac7 (part of #295)
+- **#304**: layout: draw clk_buf and re-mint the top-level layout record against the buffered top (split from #303)
 
 ## In Progress
 
 Issues currently being built (`loom:building`).
 
-- **#304**: layout: draw clk_buf and re-mint the top-level layout record against the buffered top (split from #303)
+_None._
 
 ## PRs Awaiting Review
 
@@ -68,6 +69,7 @@ Issues carrying `loom:curated`.
 
 - **#231**: design: add the digital lock output spec row 16 asks for (top-level has no LOCK port) *(architect)*
 - **#247**: sim: add a standalone PFD/charge-pump characterization campaign (UP/DN asymmetry, Icp, compliance) *(architect)*
+- **#425**: Remove --executor remote: never produced a record, superseded by batch *(hermit)*
 
 ## Epics
 
@@ -80,11 +82,11 @@ _None._
 | Operator merge-risk holds | 0 |
 | Very important | 0 |
 | Important | 1 |
-| Ready (`loom:issue`) | 1 |
-| In Progress (`loom:building`) | 1 |
+| Ready (`loom:issue`) | 2 |
+| In Progress (`loom:building`) | 0 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
 | Curated | 16 |
-| Architect / Hermit proposals | 2 |
+| Architect / Hermit proposals | 3 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
