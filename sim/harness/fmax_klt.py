@@ -1,9 +1,8 @@
 """`klt sim --backend batch` route for the divider Fmax campaign (issue #244).
 
 The Fmax grid is thousands of transient runs and belongs on the Spot batch
-fleet. `sim/harness/executor.py`'s `remote` backend needs the SSH fleet
-(`klayout_tools.remote_fleet`), which a dispatch worker is not provisioned
-for; the supported route there is the `klt sim` S3 job contract. This module
+fleet; the route there is the `klt sim` S3 job contract (the SSH-fleet
+`remote` executor was retired in issue #425). This module
 adapts the campaign to that route without touching the judge: every probe is
 still classified by `fmax.classify_waveform` from the divider output trace.
 
