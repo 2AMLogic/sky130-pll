@@ -2,6 +2,15 @@
 
 Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
+### 2026-11-12
+
+- **PR #428**: Bump Repo Skills 0.25.10 -> 0.26.1
+
+### 2026-11-11
+
+- **PR #427**: refactor(sim): retire the --executor remote path, keep local and batch
+- **Issue #425** (closed): Remove --executor remote: never produced a record, superseded by batch
+
 ### 2026-11-10
 
 - **PR #423**: feat(sim): I/Q divide-by-2 cell and 90-point PVT quadrature campaign
