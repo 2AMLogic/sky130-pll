@@ -263,9 +263,10 @@ python3 sim/run_corners.py pll-lock --jobs 8 --resume 20260911-071500-730c24b
 
 - **`--stage-dir DIR`** (or `$SKY130_PLL_SIM_SCRATCH`; `--no-stage` to opt
   out) puts a campaign's *working* files — per-point netlists, logs, waveform
-  dumps and the checkpoint — outside the checkout while it runs, and copies
-  the committed artifacts into `corners/<record-id>/` when the record is
-  written. **This is automatic when the checkout is a linked git worktree**,
+  dumps and the checkpoint — under a root outside every checkout while it
+  runs, instead of the git-ignored scratch tree
+  `sim/build/<slug>/<record-id>/` a run otherwise works in.
+  **This is automatic when the checkout is a linked git worktree**,
   because a worktree is a directory another process can remove mid-campaign:
   issue #212 records a 4 h 26 min Monte Carlo campaign destroyed exactly that
   way, checkpoint included. A staged campaign survives its checkout — from any
@@ -274,9 +275,11 @@ python3 sim/run_corners.py pll-lock --jobs 8 --resume 20260911-071500-730c24b
   only the rest.
 
   Like the three flags above, this is execution-model only: the record, its
-  text, and the location and contents of every committed artifact are
-  identical either way. Details: `sim/harness/README.md` → "Staging a
-  campaign's work outside the checkout".
+  text, and the set and contents of the artifacts stored for it are identical
+  either way — the evidence bytes go to the artifact store when the record is
+  written (DR-012) in both cases, and neither copies anything into the
+  checkout. Details: `sim/harness/README.md` → "Staging a campaign's work
+  outside the checkout".
 
 The checkpoint is **run state, not evidence**: it is deleted the moment the
 record is written, and — when it is written in the tree at all — it is

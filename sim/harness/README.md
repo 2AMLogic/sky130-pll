@@ -172,22 +172,23 @@ So the harness now chooses the working directory (`sim/harness/staging.py`):
 
 | Checkout | Work goes to |
 |---|---|
-| a clone (`.git` is a directory) | `sim/<slug>/corners/<record-id>/` — unchanged |
+| a clone (`.git` is a directory) | `sim/build/<slug>/<record-id>/` — the git-ignored scratch tree |
 | a linked worktree (`.git` is a *file*) | `$XDG_CACHE_HOME/sky130-pll/sim-stage/<slug>/<record-id>/` |
 
 `--stage-dir DIR` (or `$SKY130_PLL_SIM_SCRATCH`) names the staging root
 explicitly — for a host whose cache directory is small, or to stage a
-main-clone run deliberately; `--no-stage` forces the in-tree behaviour
+main-clone run deliberately; `--no-stage` keeps the work in the scratch tree
 anywhere. A staged run prints where its work went on the first line.
 
-When the record is written, the committed artifact classes are copied from the
-staging directory into `sim/<slug>/corners/<record-id>/`, so the evidence trail
-is byte-for-byte what an unstaged run would have committed. Waveform dumps and
-the checkpoint are not copied: the first are excluded from the committed trail
-by `sim/README.md`'s retention policy, and the second is transient run state
-that is deleted the moment the record exists. What stays in the staging
-directory after a successful run is therefore pure scratch, and can be deleted
-once the record is committed.
+When the record is written, the committed artifact classes are put in the
+artifact store and named in the run's manifest (DR-012); **nothing is copied
+into the checkout**, from a staging directory or from the scratch tree, so the
+evidence trail is the same manifest either way. Waveform dumps and the
+checkpoint are not stored: the first are excluded from the committed trail by
+`sim/README.md`'s retention policy, and the second is transient run state that
+is deleted the moment the record exists. What stays in the work directory after
+a successful run is therefore pure scratch, and can be deleted once the record
+is committed.
 
 Recovering a campaign whose worktree is gone needs no flags and no guessing —
 the staging path is derived from the slug and record id only, so from any
@@ -199,14 +200,15 @@ python3 sim/run_corners.py pll-lock-mc --mc --jobs 5 --resume 20260924-222341-a9
 
 reloads every completed trial and simulates only the rest. A resume follows
 the checkpoint: if the staging root holds none for that record id but
-`sim/<slug>/corners/<record-id>/` does (a campaign started in a clone, or
-before this seam existed), it resumes in the tree instead.
+`sim/<slug>/corners/<record-id>/` does (a campaign started before DR-012, when
+a clone run still worked in the tree, or before this seam existed), it resumes
+in the tree instead.
 
 Staging changes nothing about what a campaign measures, and nothing about the
-evidence: the record's schema, its text and the location of every committed
-artifact are identical either way, which is why a staged run records no
-provenance about having been staged. It is where ngspice's scratch lived, not
-a fact about the DUT.
+evidence: the record's schema, its text and the set of artifacts stored for it
+are identical either way, which is why a staged run records no provenance
+about having been staged. It is where ngspice's scratch lived, not a fact about
+the DUT.
 
 ### Where a unit runs: `--executor {local,batch}`
 
