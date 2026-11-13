@@ -94,11 +94,14 @@ def cmd_list(args: argparse.Namespace) -> int:
 def _corners_dir(write: bool, exp_dir: Path, record_id: str, staging=None):
     """Where per-corner .spice/.log artifacts go for this run.
 
-    When writing evidence, this is the real, committed
-    sim/<slug>/corners/<record-id>/ path -- unless `staging` says this
-    checkout is one another process can delete under a running campaign, in
-    which case the work goes to the staging directory and is promoted back
-    here when the record is written (issue #212, sim/harness/staging.py).
+    When writing evidence, this is the work directory `staging` names: the
+    git-ignored scratch tree sim/build/<slug>/<record-id>/, or -- when
+    `staging` says this checkout is one another process can delete under a
+    running campaign -- a staging directory outside every checkout (issue
+    #212, sim/harness/staging.py). Either way the artifacts are put in the
+    artifact store when the record is written (DR-012), not copied into the
+    checkout. With no `staging` at all it is the in-tree
+    sim/<slug>/corners/<record-id>/ path.
     When --no-write (the default for sim/selftest.sh and a plain CI check:ci
     run), it is a real temp directory that is cleaned up on exit -- otherwise
     every non-recording run (which still has to netlist and simulate for
@@ -906,9 +909,11 @@ def build_parser() -> argparse.ArgumentParser:
         help=(
             "stage this campaign's working files (per-unit netlists, logs, "
             "waveform dumps and the --resume checkpoint) under DIR/<slug>/"
-            "<record-id>/ instead of inside the checkout, and copy the evidence "
-            "artifacts into sim/<slug>/corners/<record-id>/ when the record is "
-            "written. Also settable as $SKY130_PLL_SIM_SCRATCH. Staging is "
+            "<record-id>/ instead of the git-ignored scratch tree "
+            "sim/build/<slug>/<record-id>/ a run otherwise works in. Either way "
+            "the evidence artifacts are put in the artifact store when the record "
+            "is written (DR-012) and nothing is copied into the checkout. Also "
+            "settable as $SKY130_PLL_SIM_SCRATCH. Staging outside the checkout is "
             "automatic when the checkout is a linked git worktree -- which "
             "another process can remove mid-campaign, taking the checkpoint with "
             "it (issue #212) -- and the default root is "
@@ -921,10 +926,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_false",
         default=True,
         help=(
-            "write this campaign's working files into sim/<slug>/corners/"
-            "<record-id>/ even in a worktree, i.e. the behaviour before issue "
-            "#212. A campaign run this way is lost if its checkout is removed "
-            "while it runs"
+            "keep this campaign's working files in the git-ignored scratch tree "
+            "sim/build/<slug>/<record-id>/ even in a worktree, instead of staging "
+            "them outside the checkout, i.e. the behaviour before issue #212. A "
+            "campaign run this way is lost if its checkout is removed while it "
+            "runs"
         ),
     )
     p.add_argument(

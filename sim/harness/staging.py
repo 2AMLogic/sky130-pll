@@ -26,26 +26,30 @@ campaign.
 What this module does
 ---------------------
 
-`resolve()` decides one thing: the directory a run's units write into. Two
-cases, and the first is deliberately the status quo:
+`resolve()` decides one thing: the directory a run's units write into. No
+run writes its work into the committed tree any more: since DR-012 the
+evidence bytes are put in the artifact store and git keeps only a manifest
+and the record, so both of the directories below sit outside it.
 
-- **A checkout nothing reaps** (the main clone) stages nothing. The work
-  directory is `sim/<slug>/corners/<record-id>/` exactly as before, the
-  artifacts are written where they are committed from, and no code path
-  below this line runs. Every record in `sim/` was minted that way and a
-  re-run of one still is.
+- **A checkout nothing reaps** (the main clone) stages nothing outside the
+  checkout. The work directory is the git-ignored scratch tree
+  `sim/build/<slug>/<record-id>/` that `run_corners.py` hands in as
+  `scratch_root`, and no code path below this line runs.
 - **A linked git worktree** (`.git` is a *file* pointing into the main
   clone's `.git/worktrees/<name>`, which is precisely the shape
   `git worktree remove` can delete) stages the work under a root outside
   every checkout -- `$XDG_CACHE_HOME/sky130-pll/sim-stage/<slug>/<record-id>/`
-  by default. When the record is finally written, `promote()` copies the
-  committed artifact classes into `sim/<slug>/corners/<record-id>/` in the
-  checkout, so the evidence trail is byte-for-byte what an unstaged run
-  would have committed.
+  by default -- so the campaign, and above all its checkpoint, outlives the
+  checkout that started it.
 
-`--stage-dir DIR` and `$SKY130_PLL_SIM_SCRATCH` name the root explicitly (for
-a host whose home directory is small, or to stage a main-checkout run
-deliberately); `--no-stage` forces the in-tree behaviour anywhere.
+Either way the run's evidence artifacts are put in the artifact store when
+the record is written (`sim/harness/evidence_store.py`, DR-012); nothing is
+copied back into the checkout, and the work directory itself is scratch.
+
+`--stage-dir DIR` and `$SKY130_PLL_SIM_SCRATCH` name the staging root
+explicitly (for a host whose home directory is small, or to stage a
+main-checkout run deliberately); `--no-stage` keeps the work in the scratch
+tree anywhere.
 
 Why the default root is keyed on nothing but the slug and the record id: a
 resume has to find the checkpoint *from a different checkout than the one
@@ -58,25 +62,24 @@ worktree finds the campaign with no extra flags, which is the whole point.
 What this module deliberately does not do
 -----------------------------------------
 
-It does not touch the evidence record, its schema, or where it lands: the
-record, the netlist snapshot and the promoted `corners/<record-id>/` tree are
-the same paths with the same contents either way, and a staged run's record
-is byte-for-byte an unstaged run's. Staging is where ngspice's scratch went,
-not a fact about what was measured, so it is not recorded as provenance --
-the same reasoning that keeps `--jobs 1 --executor local` records unchanged
-by the executor seam.
+It does not touch the evidence record, its schema, or what it cites: the
+record, the netlist snapshot and the set of stored artifacts are the same
+with the same contents either way, and a staged run's record is byte-for-byte
+an unstaged run's. Staging is where ngspice's scratch went, not a fact about
+what was measured, so it is not recorded as provenance -- the same reasoning
+that keeps `--jobs 1 --executor local` records unchanged by the executor
+seam.
 
-It also does not promote waveform dumps (`*.raw`) or the checkpoint.
+It also does not store waveform dumps (`*.raw`) or the checkpoint.
 `sim/README.md`'s retention policy keeps dumps out of the committed trail,
 and the checkpoint is transient run state that is deleted the moment the
-record exists. Both stay in the staging directory, which is scratch: once the
-record is committed, the staging directory can be deleted outright.
+record exists. Both stay in the work directory, which is scratch: once the
+record is committed, that directory can be deleted outright.
 """
 
 from __future__ import annotations
 
 import os
-import shutil
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -86,10 +89,10 @@ from . import checkpoint as checkpoint_mod
 #: default cache directory. `--stage-dir` wins over this.
 ENV_ROOT = "SKY130_PLL_SIM_SCRATCH"
 
-#: Artifact classes that are *never* promoted into the committed evidence
-#: tree: waveform dumps (regenerable, and `sim/README.md`'s retention policy
-#: excludes them), the transient resume checkpoint, and the atomic-write temp
-#: files `checkpoint.py`/`runner.py` create and rename.
+#: Artifact classes that are *never* part of the committed evidence: waveform
+#: dumps (regenerable, and `sim/README.md`'s retention policy excludes them),
+#: the transient resume checkpoint, and the atomic-write temp files
+#: `checkpoint.py`/`runner.py` create and rename.
 _NO_PROMOTE_SUFFIXES = (".raw",)
 _NO_PROMOTE_NAMES = (checkpoint_mod.CHECKPOINT_NAME,)
 
@@ -100,17 +103,17 @@ class StagingError(RuntimeError):
 
 @dataclass(frozen=True)
 class Staging:
-    """One campaign's staged work directory and its eventual home.
+    """One campaign's working directory, and why it is there.
 
     `work_dir` is what every unit writes into while the campaign runs (and
-    where its `checkpoint.json` lives); `final_dir` is the committed
-    `sim/<slug>/corners/<record-id>/` the artifacts are promoted into once the
-    record is written. `reason` is the one-line explanation the run prints, so
-    an operator watching a campaign can see where its work went and why.
+    where its `checkpoint.json` lives). There is no second directory to
+    record: the evidence artifacts are put in the artifact store when the
+    record is written (DR-012), not copied into the checkout. `reason` is the
+    one-line explanation the run prints, so an operator watching a campaign
+    can see where its work went and why.
     """
 
     work_dir: Path
-    final_dir: Path
     reason: str
 
     @property
@@ -171,8 +174,10 @@ def resolve(
     environ: dict | None = None,
     scratch_root: Path | None = None,
 ) -> Staging | None:
-    """Where this run's units should write. `None` means "in the tree, as
-    always" -- `sim/<slug>/corners/<record-id>/`.
+    """Where this run's units should write. `None` means the caller's in-tree
+    default, `sim/<slug>/corners/<record-id>/`; with `scratch_root` given (as
+    `run_corners.py` always gives it) that happens only on the resume path
+    below, for a campaign checkpointed in the tree before DR-012.
 
     `resuming` makes one difference, and it is the difference between a
     working `--resume` and a confusing one: a resume **follows the
@@ -183,12 +188,14 @@ def resolve(
     honoured as given, so a flag is never silently ignored.
     """
     environ = os.environ if environ is None else environ
-    final_dir = Path(exp_dir) / "corners" / record_id
+    # Only the in-tree checkpoint probe below reads this: nothing a run
+    # produces lands here any more (DR-012).
+    in_tree_dir = Path(exp_dir) / "corners" / record_id
     # With `scratch_root` (DR-012: evidence bytes go to the artifact store, not
     # git) a run that would otherwise work in the tree works under that
     # git-ignored scratch root instead (sim/build/<slug>/<record-id>/).
     scratch = (
-        _staging(Path(scratch_root), slug, record_id, final_dir,
+        _staging(Path(scratch_root), slug, record_id,
                  "evidence bytes are stored outside git (DR-012); work stays in the "
                  "git-ignored scratch tree")
         if scratch_root is not None else None
@@ -200,7 +207,7 @@ def resolve(
 
     if explicit and explicit.strip():
         root, reason = Path(explicit.strip()).expanduser(), "--stage-dir was given"
-        staging = _staging(root, slug, record_id, final_dir, reason)
+        staging = _staging(root, slug, record_id, reason)
         _check_usable(staging.work_dir)
         return staging
 
@@ -210,7 +217,6 @@ def resolve(
             Path(env_root.strip()).expanduser(),
             slug,
             record_id,
-            final_dir,
             f"${ENV_ROOT} is set",
         )
     elif linked_worktree_root(exp_dir) is not None:
@@ -218,7 +224,6 @@ def resolve(
             default_root(environ),
             slug,
             record_id,
-            final_dir,
             "this checkout is a linked git worktree, which another process can "
             "remove under a running campaign (issue #212)",
         )
@@ -226,7 +231,7 @@ def resolve(
         staging = scratch
 
     if resuming:
-        in_tree_checkpoint = (final_dir / checkpoint_mod.CHECKPOINT_NAME).is_file()
+        in_tree_checkpoint = (in_tree_dir / checkpoint_mod.CHECKPOINT_NAME).is_file()
         if staging is not None and not staging.checkpoint_path.is_file() and in_tree_checkpoint:
             # This record id was checkpointed in the tree. Resume it there
             # rather than reporting "no checkpoint" about a directory the
@@ -237,7 +242,6 @@ def resolve(
                 default_root(environ),
                 slug,
                 record_id,
-                final_dir,
                 "this record id's campaign is staged outside the checkout "
                 f"(issue #212); resuming it from {default_root(environ)}",
             )
@@ -249,8 +253,8 @@ def resolve(
     return staging
 
 
-def _staging(root: Path, slug: str, record_id: str, final_dir: Path, reason: str) -> Staging:
-    return Staging(work_dir=root / slug / record_id, final_dir=final_dir, reason=reason)
+def _staging(root: Path, slug: str, record_id: str, reason: str) -> Staging:
+    return Staging(work_dir=root / slug / record_id, reason=reason)
 
 
 def _check_usable(work_dir: Path) -> None:
@@ -267,15 +271,17 @@ def _check_usable(work_dir: Path) -> None:
 
 
 def promotable(work_dir: Path) -> list[Path]:
-    """The staged files that belong in the committed evidence tree, as paths
-    relative to `work_dir`.
+    """The work-directory files that belong in the committed evidence, as
+    paths relative to `work_dir`.
 
-    Inclusive by default and exclusive only about the two classes that are
-    deliberately not evidence (waveform dumps and the resume checkpoint), so
-    an artifact class the harness grows later is promoted without this
-    function having to learn about it -- the failure mode of a whitelist here
-    would be a record whose `corners/<record-id>/` is quietly missing a file
-    an unstaged run would have committed.
+    This is the filter `cli.py` hands to `evidence_store.stage_files()`, so
+    what it returns is what the run's manifest names in the artifact store
+    (DR-012). Inclusive by default and exclusive only about the two classes
+    that are deliberately not evidence (waveform dumps and the resume
+    checkpoint), so an artifact class the harness grows later is stored
+    without this function having to learn about it -- the failure mode of a
+    whitelist here would be a record whose cited `corners/<record-id>/` object
+    set is quietly missing a file an earlier run committed.
     """
     work_dir = Path(work_dir)
     if not work_dir.is_dir():
@@ -291,26 +297,3 @@ def promotable(work_dir: Path) -> list[Path]:
             continue  # an in-flight atomic write, not an artifact
         out.append(path.relative_to(work_dir))
     return out
-
-
-def promote(staging: Staging) -> list[Path]:
-    """Copy the staged evidence artifacts into `sim/<slug>/corners/<id>/`.
-
-    Called once, immediately before the record is rendered, so the record is
-    written against a tree that already holds every artifact it cites -- and
-    so a failure here (the checkout was removed after all) happens *before*
-    the checkpoint is discarded, leaving the campaign resumable rather than
-    half-landed.
-
-    Overwrites: promoting twice (a mint that failed after the copy, resumed
-    and re-minted) copies the same bytes to files that no record cites yet, so
-    `sim/README.md`'s append-only rule -- which governs committed evidence --
-    is untouched.
-    """
-    copied = []
-    for rel in promotable(staging.work_dir):
-        dest = staging.final_dir / rel
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(staging.work_dir / rel, dest)
-        copied.append(dest)
-    return copied
