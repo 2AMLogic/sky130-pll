@@ -2,6 +2,11 @@
 
 Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
+### 2026-11-13
+
+- **PR #432**: refactor(sim): drop dead staging.promote() and correct the in-tree promotion docs
+- **Issue #430** (closed): Remove dead staging.promote() and the docs that still describe in-tree promotion
+
 ### 2026-11-12
 
 - **PR #428**: Bump Repo Skills 0.25.10 -> 0.26.1
