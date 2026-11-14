@@ -176,7 +176,7 @@ def fake_put(files, repo_root):
     """Stand-in for `klt artifact put`: hashes the files, stores nothing."""
     entries = []
     for path, name in files:
-        sha, size = evidence_store_mod.sha256_file(path)
+        sha, size = evidence_store_mod.sha256_file_with_size(path)
         entries.append({
             "sha256": sha, "size": size, "kind": "evidence", "name": name,
             "producer": {"tool": "klt", "version": "t", "loom.repo": "o/r", "commit": None},

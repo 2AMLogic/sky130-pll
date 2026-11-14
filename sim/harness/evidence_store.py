@@ -73,7 +73,14 @@ def manifest_path(repo_root: Path, bench: str, rid: str) -> Path:
     return repo_root / MANIFEST_DIR / f"{bench}-{rid}.manifest.json"
 
 
-def sha256_file(path: Path) -> tuple[str, int]:
+def sha256_file_with_size(path: Path) -> tuple[str, int]:
+    """``(hex digest, byte count)``, streamed so a large artifact is not read
+    whole into memory. The name states the second return value: the digest-only
+    file hasher is `report.sha256_file`, and this module is stdlib-only by
+    design, so it keeps its own implementation rather than importing that one
+    (issue #441).
+    """
+
     h = hashlib.sha256()
     n = 0
     with open(path, "rb") as fh:
@@ -210,7 +217,7 @@ def put_files(files: list[tuple[Path, str]], repo_root: Path, *,
     with tempfile.TemporaryDirectory(prefix="evidence-manifest-") as tmp:
         tmp_manifest = os.path.join(tmp, "manifest.json")
         for path, name in files:
-            sha, size = sha256_file(path)
+            sha, size = sha256_file_with_size(path)
             if size == 0:
                 empty.append(name)
                 continue
@@ -279,7 +286,7 @@ PINNED_BOILERPLATE = frozenset({
 def _is_pinned_boilerplate(path: Path) -> bool:
     if not any(path.name == n for n, _ in PINNED_BOILERPLATE):
         return False
-    return (path.name, sha256_file(path)[0]) in PINNED_BOILERPLATE
+    return (path.name, sha256_file_with_size(path)[0]) in PINNED_BOILERPLATE
 
 
 def stage_files(stage_dir: Path, name_prefix: str, *, exclude=(),
@@ -318,7 +325,7 @@ def lineage_index(repo_root: Path, lineage) -> dict[tuple[str, int], str]:
         for path in sorted(d.rglob("*")):
             if path.is_symlink() or not path.is_file():
                 continue
-            sha, size = sha256_file(path)
+            sha, size = sha256_file_with_size(path)
             if size:
                 out.setdefault((sha, size), path.resolve().relative_to(root).as_posix())
     return out
@@ -331,7 +338,7 @@ def split_resumed(files: list[tuple[Path, str]], index: dict) -> tuple[list, lis
     committed_path)`` for it (DR-016). Only a resume passes a non-empty index."""
     kept, supplied = [], []
     for path, name in files:
-        sha, size = sha256_file(path)
+        sha, size = sha256_file_with_size(path)
         hit = index.get((sha, size)) if size else None
         if hit:
             supplied.append((name, sha, size, hit))

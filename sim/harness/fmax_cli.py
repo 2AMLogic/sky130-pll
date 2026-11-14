@@ -174,7 +174,7 @@ def run_batch(requests, *, manifest, spec, netlists, work_dir, backend, jobs, st
             cell.observed[idx] = verdict.status
             cell.probes.append(_probe_dict(
                 unit.corner_id, stage_no, cell, freq, plan, verdict,
-                fmax_mod.sha256_text(unit.netlist_text), outcome.log_path.name,
+                report_mod.sha256_bytes(unit.netlist_text.encode()), outcome.log_path.name,
                 _sha_file(outcome.log_path),
             ))
             log(f"  {unit.corner_id}: {verdict.status}: {verdict.reason}")
