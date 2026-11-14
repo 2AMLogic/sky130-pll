@@ -46,7 +46,7 @@ def fake_put(files, repo_root):
     """Stands in for `klt artifact put`: a valid manifest, nothing stored."""
     entries = []
     for path, name in files:
-        sha, size = E.sha256_file(path)
+        sha, size = E.sha256_file_with_size(path)
         if size:
             entries.append({"name": name, "sha256": sha, "size": size, "kind": "evidence",
                             "uri": f"artifact:evidence/{sha}", "producer": {"tool": "fake"}})

@@ -30,10 +30,27 @@ if str(_REPO_ROOT) not in sys.path:
 from scripts.git_status import is_dirty, run_git  # noqa: E402
 
 
+def sha256_bytes(b: bytes) -> str:
+    """Canonical bytes digest for the harness (issue #441).
+
+    Text callers encode at the call site (`sha256_bytes(text.encode())`).
+    Together with `sha256_file` below this is the harness' whole digest
+    surface; the one deliberate exception is
+    `evidence_store.sha256_file_with_size`, which is stdlib-only by design.
+    """
+
+    return hashlib.sha256(b).hexdigest()
+
+
 def sha256_file(path: Path) -> str:
-    h = hashlib.sha256()
-    h.update(path.read_bytes())
-    return h.hexdigest()
+    """Canonical file digest for the harness: the hex digest, nothing else.
+
+    `evidence_store.sha256_file_with_size` is the streaming variant that also
+    reports the byte count a manifest entry needs; it returns a 2-tuple and is
+    deliberately named apart from this one.
+    """
+
+    return sha256_bytes(path.read_bytes())
 
 
 def git_info(repo_root: Path, ignore_prefixes: tuple = ()) -> dict:

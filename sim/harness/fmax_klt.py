@@ -44,7 +44,6 @@ errored or timed out is an INCONCLUSIVE probe, never an electrical FAIL.
 
 from __future__ import annotations
 
-import hashlib
 import json
 import os
 import re
@@ -56,6 +55,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from . import fmax as fmax_mod
+from . import report as report_mod
 from . import runner as runner_mod
 from .klt_submit import is_capacity_refusal, submit_with_capacity_retry  # noqa: F401
 
@@ -286,10 +286,6 @@ def judge_corner_probe(corner, waveform_path, k: int, plan, spec) -> fmax_mod.Pr
 # --------------------------------------------------------------------------- #
 
 
-def _sha256_bytes(b: bytes) -> str:
-    return hashlib.sha256(b).hexdigest()
-
-
 @dataclass
 class ProbeResult:
     cell: object
@@ -438,7 +434,7 @@ class KltBatchBackend:
                 "runner_klt_version": remote.get("runner_klt_version"),
                 "client_klt_version": remote.get("client_klt_version"),
                 "engine_version": (report.get("environment") or {}).get("engine_version"),
-                "netlist_sha256": _sha256_bytes(body.encode()),
+                "netlist_sha256": report_mod.sha256_bytes(body.encode()),
                 "dir": gkey,
             })
         return {"report": report, "plans": plans, "body": body, "gdir": gdir,
@@ -460,7 +456,7 @@ class KltBatchBackend:
             group = index[(cell.modulus.n, cell.point.supply_v, freq)]
             run = run_of[id(group)]
             report, plans, gdir = run["report"], run["plans"], run["gdir"]
-            body_sha = _sha256_bytes(run["body"].encode())
+            body_sha = report_mod.sha256_bytes(run["body"].encode())
             corner = find_corner(report, cell.point.corner, cell.point.temp_c)
             wave = None
             log_name, log_sha = "", None
@@ -471,7 +467,7 @@ class KltBatchBackend:
                 if lg and lg.is_file():
                     log_name = f"{gdir.name}_{corner_dir_key(cell.point.corner, cell.point.temp_c)}.log"
                     shutil.copy2(lg, self.work_dir / log_name)
-                    log_sha = hashlib.sha256(lg.read_bytes()).hexdigest()
+                    log_sha = report_mod.sha256_file(lg)
             plan = plans[freq]
             verdict = judge_corner_probe(corner, wave, group.freqs[freq], plan, self.spec)
             results.append(ProbeResult(
