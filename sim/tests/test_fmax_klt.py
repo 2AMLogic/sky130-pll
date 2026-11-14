@@ -43,6 +43,17 @@ V3 RESETB GND pwl(0 0 5n 0 6n 1.8)
 """
 
 
+def _attempts_per_group(fake) -> dict:
+    """`klt sim` submissions per group directory, from the fake's recorded
+    argv. The campaign chunks one cell into several groups, so a per-group
+    count is what a retry policy is actually asserting about."""
+    counts: dict = {}
+    for cmd in fake.calls:
+        gdir = Path(cmd[2]).parent.name
+        counts[gdir] = counts.get(gdir, 0) + 1
+    return counts
+
+
 class FakeKlt:
     """A `subprocess.run` stand-in modelling `klt sim --backend batch`."""
 
@@ -69,6 +80,23 @@ class FakeKlt:
         if self.mode == "capacity_forever":
             return SimpleNamespace(returncode=1, stderr="", stdout=json.dumps({"error": {
                 "message": "batch_no_capacity", "code": "batch_no_capacity"}}))
+        if self.mode in ("interrupted_then_ok", "interrupted_forever"):
+            # count per GROUP, not globally: groups are submitted concurrently,
+            # so "the first attempt" is only well defined per group
+            seen = len([c for c in self.calls if Path(c[2]).parent == req_path.parent])
+            if self.mode == "interrupted_forever" or seen <= 1:
+                # a Spot reclaim: the job is lost, so EVERY corner carries the
+                # job-level diagnostic and none carries a simulator result
+                msg = ("job klt-sim-deadbeef stayed 'interrupted' (Spot reclaimed) "
+                       "for 1827s, past batch.interrupted_grace_s=1800s")
+                corners = [{"corner_id": f"{p}/novdd/{t:g}C", "process": p,
+                            "temperature_c": t, "status": "error",
+                            "diagnostics": [{"code": "batch_job_interrupted",
+                                             "message": msg}], "artifacts": {}}
+                           for p in req["corners"]["process"]
+                           for t in req["corners"]["temperature_c"]]
+                return SimpleNamespace(returncode=4, stderr="",
+                                       stdout=json.dumps({"corners": corners}))
         if self.mode == "no_json":
             return SimpleNamespace(returncode=1, stdout="", stderr="boom: no credentials")
         n = int(re.search(r"n(\d+)_", req_path.parent.name).group(1))
@@ -191,6 +219,40 @@ class BodyConstruction(unittest.TestCase):
         self.assertEqual(len(req["exclude"]), 2)
         self.assertEqual(req["options"]["waveforms"], True)
 
+    def test_request_leaves_the_saved_set_to_the_body_save_card(self):
+        """`build_body` emits `.save v(fbclk_k)` for exactly the traces the
+        reducer reads. klt's default `save_mode: "all"` emits a generated
+        `save all` that supersedes it and dumps every internal node: measured
+        at 7.9 GB for one corner of one 4-DUT group on the fleet (job
+        klt-sim-70bcac3db8d5, 2026-11-14), which is multiple TB over the
+        declared 225-cell grid. The request must keep handing the saved set
+        back to the netlist."""
+        g = self.group([1000e6, 1100e6])
+        req = K.build_request(SPEC, g, 1e-7, timeout_s=100, max_workers=2)
+        self.assertEqual(req["options"]["save_mode"], "netlist")
+        self.assertEqual(req["options"]["waveforms"], True)
+        # the body must then carry the .save the request is deferring to, and
+        # it must name every DUT copy the measurements reference
+        body, _plans = K.build_body(NETLIST, MANIFEST, SPEC, g)
+        save = [l for l in body.splitlines() if l.lower().startswith(".save")]
+        self.assertEqual(len(save), 1, body)
+        for k in range(len(g.freqs)):
+            self.assertIn(f"v(fbclk_{k})", save[0])
+            self.assertIn(f"v(fbclk_{k})", req["measurements"][k]["spice"])
+        # and nothing may widen it back to every node
+        self.assertNotIn("save all", body.lower())
+
+    def test_request_asks_klt_sim_to_wait_for_fleet_capacity(self):
+        """The fleet is vCPU-budgeted: a submit that does not wait is refused
+        with `batch_no_capacity` and never runs (observed on this campaign,
+        2026-10-09). `batch.capacity_wait_s` makes `klt sim` re-launch the same
+        job with backoff instead of failing the step."""
+        req = K.build_request(SPEC, self.group([1000e6]), 1e-7, timeout_s=100, max_workers=2)
+        self.assertEqual(req["batch"]["capacity_wait_s"], K.CAPACITY_WAIT_S)
+        self.assertGreaterEqual(req["batch"]["capacity_wait_s"], 600.0)
+        # the runner-skew policy must survive alongside it
+        self.assertEqual(req["batch"]["runner_version_check"], "warn")
+
     def test_clip_trace_interpolates_at_the_window_end(self):
         t, v = K.clip_trace([0.0, 1.0, 2.0, 3.0], [0.0, 1.0, 2.0, 3.0], 2.5)
         self.assertEqual(t[-1], 2.5)
@@ -262,6 +324,70 @@ class CampaignViaFakeKlt(unittest.TestCase):
                            jobs=1, log=lambda *_: None)
         self.assertTrue(any(F.PASS in c.observed.values() for c in cells))
         self.assertGreater(len(fake.calls), 2)
+
+    def test_spot_reclaim_is_relaunched_then_succeeds(self):
+        """A reclaimed job lost the work; it did not measure anything. Observed
+        at job klt-sim-f811a606a6bb (2026-11-14), where one reclaim out of
+        three groups aborted the whole run. Re-launching the identical request
+        is the documented recovery and is what lets a 45-job campaign finish."""
+        cells = make_cells(ns=(25,), corners=("tt",))
+        fake = FakeKlt(mode="interrupted_then_ok")
+        with tempfile.TemporaryDirectory() as tmp:
+            backend = backend_for(tmp, fake)
+            backend.sleep = lambda s: None
+            backend.preflight = lambda: None
+            C.run_campaign(cells, F.grid(SPEC.search), manifest=MANIFEST, spec=SPEC,
+                           netlists={25: NETLIST}, work_dir=Path(tmp), backend=backend,
+                           jobs=1, log=lambda *_: None)
+        self.assertTrue(any(F.PASS in c.observed.values() for c in cells))
+        # the group whose job was reclaimed was submitted twice; it then passed
+        self.assertEqual(max(_attempts_per_group(fake).values()), 2)
+        # the reclaim must not survive as an electrical verdict anywhere
+        for c in cells:
+            for probe in c.probes:
+                self.assertNotIn("batch_job_interrupted", probe.get("reason", ""))
+
+    def test_persistent_spot_reclaim_aborts_rather_than_recording_a_failure(self):
+        """A reclaim that never clears is an execution error, not a measured
+        frequency boundary: the campaign must abort, never publish a bracket."""
+        cells = make_cells(ns=(25,), corners=("tt",))
+        fake = FakeKlt(mode="interrupted_forever")
+        with tempfile.TemporaryDirectory() as tmp:
+            backend = backend_for(tmp, fake)
+            backend.sleep = lambda s: None
+            backend.preflight = lambda: None
+            backend.interrupt_retries = 2
+            with self.assertRaises(K.KltBatchError) as cm:
+                C.run_campaign(cells, F.grid(SPEC.search), manifest=MANIFEST, spec=SPEC,
+                               netlists={25: NETLIST}, work_dir=Path(tmp), backend=backend,
+                               jobs=1, log=lambda *_: None)
+        self.assertIn("batch_job_interrupted", str(cm.exception))
+        # every group it attempted: first submit + exactly 2 re-launches
+        for group_dir, n in _attempts_per_group(fake).items():
+            self.assertEqual(n, 3, group_dir)
+        self.assertFalse(any(c.observed for c in cells))
+
+    def test_a_non_interruption_job_failure_is_never_relaunched(self):
+        """Only a lost job is re-launched. A runner-skew refusal is a real
+        answer about the request and must abort on the first reply."""
+        cells = make_cells(ns=(25,), corners=("tt",))
+        fake = FakeKlt(mode="version_refusal")
+        with tempfile.TemporaryDirectory() as tmp:
+            backend = backend_for(tmp, fake)
+            backend.sleep = lambda s: None
+            backend.preflight = lambda: None
+            with self.assertRaises(K.KltBatchError):
+                C.run_campaign(cells, F.grid(SPEC.search), manifest=MANIFEST, spec=SPEC,
+                               netlists={25: NETLIST}, work_dir=Path(tmp), backend=backend,
+                               jobs=1, log=lambda *_: None)
+        # one reply per group, never a re-launch
+        for group_dir, n in _attempts_per_group(fake).items():
+            self.assertEqual(n, 1, group_dir)
+
+    def test_is_job_interruption_discriminates_the_codes(self):
+        self.assertTrue(K.is_job_interruption("batch_job_interrupted: Spot reclaimed"))
+        self.assertFalse(K.is_job_interruption("batch_no_capacity"))
+        self.assertFalse(K.is_job_interruption("batch_job_failed: runner skew"))
 
     def test_persistent_capacity_refusal_aborts_without_local_fallback(self):
         cells = make_cells(ns=(25,), corners=("tt",))

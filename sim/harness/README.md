@@ -462,12 +462,47 @@ corner patching, executor seam, judge and edge reducer.
 # plan only, no PDK needed
 python3 sim/run_fmax.py divider-fmax --dry-run
 # the full-grid campaign (5 moduli x 45 PVT points, ~2250 coarse probes plus
-# refinement) -- Spot batch fleet only
-python3 sim/run_fmax.py divider-fmax --executor batch
+# refinement) -- Spot batch fleet only. Always pass --klt-cache: the campaign
+# is longer than one session and the cache is what makes it resumable.
+python3 sim/run_fmax.py divider-fmax --executor batch --klt-jobs 2 \
+    --klt-cache ~/fmax-cache-244
 # one cell / one probe, locally (a probe writes no record)
 python3 sim/run_fmax.py divider-fmax --no-write --executor local --moduli 25 \
     --corners tt --temps 27 --supply-tol 0 --probe-mhz 1100
 ```
+
+### Running the full grid on the batch fleet
+
+The full grid does not fit in one invocation, and three fleet realities decide
+whether it finishes at all. All three are handled in `harness/fmax_klt.py`;
+they are recorded here because each one silently produced *no* evidence before
+it was understood (measured 2026-11-14 on klt 0.9.2.dev1022).
+
+- **Resume through `--klt-cache`.** Stage 1 is 45 jobs (15 `(N, supply)` keys x
+  3 chunks of at most 4 DUT copies), each carrying up to 15 corners; stage 2
+  adds a comparable number. At `--klt-jobs 2` and roughly 10-20 min of fleet
+  wall per job, a cold full grid is several hours. Re-running the **same**
+  command with the **same** `--klt-cache` directory reuses every collected
+  report (`reusing collected report ...`) and re-submits only the groups that
+  are missing or whose job failed, so the campaign accumulates across runs.
+  A record is written only by the invocation in which every cell completes.
+- **The saved node set must stay narrow.** `build_body` emits
+  `.save v(fbclk_0) ... v(fbclk_k)`, which is exactly what the reducer reads
+  and what the `.meas` cards name. klt's default `options.save_mode: "all"`
+  emits a generated `save all` that *supersedes* that card, so every internal
+  node of every DUT copy lands in the ASCII rawfile: measured at **7.9 GB for
+  one corner of one 4-DUT group**, i.e. multiple TB over the declared grid.
+  The request therefore sets `save_mode: "netlist"`, which hands the saved set
+  back to the body's own `.save` -- the same corner then costs **4.7 MB**.
+- **Capacity refusal and Spot reclaim are execution errors, never verdicts.**
+  The fleet is vCPU-budgeted, so a submit that does not wait is refused with
+  `batch_no_capacity` and never runs; the request sets
+  `batch.capacity_wait_s: 600` so `klt sim` re-launches with backoff. A job
+  whose Spot instance is reclaimed (`batch_job_interrupted`) loses the work
+  without producing any corner result, so it is re-launched up to
+  `INTERRUPT_RETRIES` times. Neither is ever reduced to a FAIL: a reclaim that
+  will not clear aborts the campaign instead of publishing a boundary. Any
+  other job-level failure (e.g. runner skew) aborts on the first reply.
 
 The driver refuses to simulate a grid on the host it was started on: if
 `--executor local` is asked for more than `--max-local-probes` (default 1)
