@@ -14,6 +14,17 @@ The layout stream itself is `reports/<record-id>/pll_top.gds` in a pre-#371
 record; in a newer one it is the manifest entry of that name
 (`klt artifact get manifests/artifacts/layout-pll-<record-id>.manifest.json#layout/pll/reports/<record-id>/pll_top.gds -o pll_top.gds`).
 
+**Newest record**: `20261106-075813-16557e3` — the buffered top (issue #232's
+`clk_buf` as the fifth block, issue #304), verdict **PASS**. It is *not* what
+`reports/LATEST` names, on purpose: its raw evidence lives in the fleet
+artifact store (DR-012), and the signoff superseded-record guard requires
+`LATEST` to name the record `signoff/run-signoff.sh` item 3 cites — a clean CI
+checkout cannot verify a manifest-only record yet
+([klayout-tools#5591](https://github.com/2AMLogic/klayout-tools/issues/5591)).
+Re-pointing `LATEST` is tracked by issue #459; until then read the newest
+record directly at
+[`reports/20261106-075813-16557e3/record.md`](reports/20261106-075813-16557e3/record.md).
+
 The flow fails closed: without `$KLT_ARTIFACT_BROKER`, a `klt` with
 `artifact put`, and a reachable broker it exits nonzero before drawing and
 commits nothing. It never falls back to committing the bytes. It stages in the
