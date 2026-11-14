@@ -256,7 +256,6 @@ class FakeBackend:
     """
 
     name = "local"
-    requested = "local"
 
     def __init__(self, fmax_for, errors=None):
         self.fmax_for, self.errors, self.executed = fmax_for, errors or {}, []
