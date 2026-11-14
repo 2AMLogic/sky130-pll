@@ -34,7 +34,7 @@ def _render(fn, *args) -> str:
 def _blocks(n: int) -> list[dict]:
     return [
         {"name": f"b{i}", "cell_name": f"c{i}", "device_count": 1, "group_count": 1,
-         "size_um": [1, 1], "declared_nets": 2}
+         "size_um": [1, 1], "declared_nets": 2, "groups": []}
         for i in range(n)
     ]
 
@@ -45,7 +45,9 @@ class BlockCountProse(unittest.TestCase):
             plan = {"top_cell_name": "pll_top", "blocks": _blocks(n)}
             build = {"blocks": _blocks(n), "top": {"cell_name": "t", "size_um": [1, 1]}}
             is_text = _render(render._render_layout_is, plan, build, Path("/nonexistent"))
-            not_text = _render(render._render_layout_is_not, build, {"status": "clean"})
+            not_text = _render(
+                render._render_layout_is_not, plan, build, {"status": "clean"}
+            )
             for text in (is_text, not_text):
                 self.assertIn(f"the {WORDS[n]} blocks", text)
                 for other in (4, 5, 6):
