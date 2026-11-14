@@ -34,7 +34,7 @@ distinction matters for what the repo is *for*:
   one block, one PDK — building out the inventory of open-PDK analog/mixed-signal
   blocks the agent fleet can design end to end.
 
-## Status (as of 2026-10-08)
+## Status (as of 2026-11-14)
 
 This repository is a work in progress, and this section is deliberately a
 pointer rather than a scoreboard: it says what kinds of evidence exist and
@@ -54,7 +54,7 @@ campaign. For current state, read the linked files, not this prose.
   corner sweeps, Monte Carlo campaigns, and the append-only records they
   produced, alongside the harness's own self-checks.
 - **Layout** — `layout/` holds the `klt` DRC/LVS flow, a trivial proving cell,
-  and a PLL layout record with its checking reports.
+  and the PLL layout records with their checking reports.
 - **Rollup** — [`measurements/report.md`](measurements/report.md) is the
   machine-rendered per-spec-row rollup of the `sim/` and `layout/` evidence.
   It **records misses** (FAIL rows) as well as passes; the existence of
@@ -77,14 +77,15 @@ a met row for the characterization report means only that
 `measurements/report.md` is the artifact that item names; it does not mean any
 spec row is met.
 
-## Private for now
+## Public, and still inside the invention firewall
 
-This repository is **private**. It is a design canary that binds under the 2AM
-Logic invention firewall; whether and when it goes public is an **operator**
-decision, not an agent one — the visibility flip is an operator action. Even so,
-write every commit message, issue, and document here as if a stranger will read
-it, because one day one may. Nothing about business positioning, commercial
-terms, or the contents of other 2AM Logic repositories belongs in this one.
+This repository is **public**. It is a design canary that binds under the 2AM
+Logic invention firewall, and being public does not loosen that binding — it
+tightens the writing rule it implies: write every commit message, issue, and
+document here as if a stranger will read it, because now one can. Nothing about
+business positioning, commercial terms, or the contents of other 2AM Logic
+repositories belongs in this one. Changing the repository's visibility remains
+an **operator** decision, not an agent one.
 
 ## Repository layout
 
@@ -92,11 +93,20 @@ terms, or the contents of other 2AM Logic repositories belongs in this one.
 spec/          target spec (partially ratified) + numbered decision records (DR-NNN)
 design/        xschem schematics/symbols + SPICE netlist snapshots (PLL blocks + top-level integration)
 sim/           PVT corner harness, PLL block and closed-loop testbenches, append-only evidence records
-layout/        klt-driven DRC/LVS flow, a trivial proving cell, and a PLL layout record with checking reports
-measurements/  per-spec-row report aggregator and its rendered report (rolls up sim/+layout/ evidence); silicon characterization slot, empty until there is silicon
+layout/        klt-driven DRC/LVS flow, a trivial proving cell, and the PLL layout records with their checking reports
+measurements/  per-spec-row report aggregator and its rendered report (rolls up sim/+layout/ evidence); no silicon measurements yet
 docs/          environment setup, plus docs/t1-gap.md — a pointer to signoff/ (the graded T1 verdict) and the detailed read of T1 item 11
 signoff/       block manifest + machine-rendered T1 tier verdict (`klt signoff --manifest`), re-checked in CI
+manifests/     per-run manifests (sha256, size, producer) for the evidence bytes held outside git, per spec/decision-records/DR-012
+ratification/  the two non-author spec-ratification review keys — EE (technical soundness) and market (competitiveness) — with their rubrics
+scripts/       repo-level helper scripts and their tests, including the headless audit entry point
+verification/  inert fixtures that regression-test the harness itself, with append-only dated result records
+work_log/      month-sliced archives of WORK_LOG.md
 ```
+
+`.agents/`, `.claude/`, `.github/` and `.loom/` are the remaining tracked
+top-level directories: agent, CI and orchestration configuration, not design
+content.
 
 Start with `spec/target-spec.md` for *what is being targeted, which rows are
 ratified, and which are still DRAFT*, and `sim/README.md` / `layout/README.md`
