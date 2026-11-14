@@ -58,7 +58,8 @@ is in `design/divider-iq` (PR #423). There is no LOCK circuit.
 
 ## Now
 
-Items 1 and 2 carry a stale `loom:blocked` label; items 3 and 4 have no issue yet.
+Item 1 carries a stale `loom:blocked` label; item 2 is labelled `loom:building`;
+items 3 and 4 are filed as #438 and #439.
 
 1. **Re-run the one-point PFD/charge-pump batch smoke (#290).** Done when a
    `sim/pfd-cp/records/` record exists for tt / 27 C / 1.80 V and its dumps
@@ -70,12 +71,12 @@ Items 1 and 2 carry a stale `loom:blocked` label; items 3 and 4 have no issue ye
 2. **Run the divider Fmax campaign (#244).** Done when `sim/divider-fmax/records/`
    holds the 225-cell record and item 8's digital row can cite it. PR #418
    fixed the harness refusal that stopped the last attempt.
-3. **Argue a response to the LOCK phase-window miss (no issue yet).** Done when
+3. **Argue a response to the LOCK phase-window miss (#438).** Done when
    a `proposed` decision record states, from the committed 45-point phase
    records, either chain lengths that would land `W_acq` and `W_rel` in the
    DR-007 Table 2 bands or a superseding set of bands, with the invariants
    re-checked. This is what #260 is waiting for.
-4. **Correct the visibility statements (no issue yet).** Done when `README.md`
+4. **Correct the visibility statements (#439).** Done when `README.md`
    and `CLAUDE.md` no longer say the repository is private, and the README
    layout list names every top-level directory.
 
