@@ -8,6 +8,10 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 ### 2026-11-14
 
+- **PR #445**: refactor: collapse the six duplicated sim/ sha256 helpers onto one canonical pair
+- **PR #442**: sim: keep divider Fmax batch jobs small, waiting and reclaim-tolerant
+- **Issue #450** (closed): layout: layout/pll/reports/LATEST names a record its successor declares superseded
+- **Issue #441** (closed): sim/harness: consolidate the four duplicated sha256 helpers (two share a name with different return types)
 - **Issue #80** (closed): Champion: Merge-Risk Hold Digest
 
 ### 2026-11-13

@@ -18,32 +18,43 @@ _None._
 `loom:important`; taken before unlabelled work.
 
 - **#244**: sim: record divider Fmax boundaries across PVT for digital T1 characterization
+- **#443**: render-pll-record: the same li1.space.1 count is stated twice per record, once derived and once typed in
 
 ## Ready
 
 Human-approved issues ready for implementation (`loom:issue`).
 
 - **#244**: sim: record divider Fmax boundaries across PVT for digital T1 characterization
-- **#298**: Re-qualify cited layout reference records under open_pdks f6eeac7 (part of #295)
 - **#304**: layout: draw clk_buf and re-mint the top-level layout record against the buffered top (split from #303)
+- **#440**: Remove ExecutionBackend.requested: a fallback marker left behind by #425
+- **#447**: Remove two dead-on-arrival harness helpers kept alive only by their own tests (to_supplied, split_static_dynamic)
+- **#448**: Dedupe the two parallel DirtyFlagTests: scripts/git_status.py is tested twice through re-export shims, and layout's real git_provenance is untested
+- **#453**: Remove three dead Python symbols and the inert noqa suppressions hiding them
+- **#454**: Dedupe the seven PDK stub classes in sim/tests: four shapes for one 8-field frozen dataclass, three contradicting its as_env
+- **#456**: package.json: check:all silently skips three checks check:ci runs, and test:compile misses scripts/ (the two lists #446 scoped out)
 
 ## In Progress
 
 Issues currently being built (`loom:building`).
 
-_None._
+- **#439**: docs: README and CLAUDE.md still say this repository is private
+- **#443**: render-pll-record: the same li1.space.1 count is stated twice per record, once derived and once typed in
+- **#446**: Replace package.json lint's hand-listed `bash -n` chain with a discovery loop (the list has already drifted)
 
 ## PRs Awaiting Review
 
 PRs waiting on Judge (`loom:review-requested`).
 
-_None._
+- **#437**: docs: roadmap as of 2026-11-13
+- **#449**: docs: state the repository is public and list every tracked top-level directory
+- **#452**: build: discover shell scripts for bash -n lint instead of enumerating them
 
 ## Approved (Awaiting Merge)
 
 PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
-_None._
+- **#416**: layout: count extracted resistors from klt JSON; mint passing buffered-top record
+- **#444**: fix: derive the record's li1.space.1 count from the plan, not a literal
 
 ## Proposed
 
@@ -65,6 +76,7 @@ Issues carrying `loom:curated`.
 - **#297**: Re-qualify cited sim reference records under open_pdks f6eeac7 (part of #295) *(curated)*
 - **#298**: Re-qualify cited layout reference records under open_pdks f6eeac7 (part of #295) *(curated)*
 - **#304**: layout: draw clk_buf and re-mint the top-level layout record against the buffered top (split from #303) *(curated)*
+- **#439**: docs: README and CLAUDE.md still say this repository is private *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -82,12 +94,12 @@ _None._
 |------|-------|
 | Operator merge-risk holds | 0 |
 | Very important | 1 |
-| Important | 1 |
-| Ready (`loom:issue`) | 3 |
-| In Progress (`loom:building`) | 0 |
-| PRs awaiting review | 0 |
-| Approved PRs awaiting merge | 0 |
-| Curated | 16 |
+| Important | 2 |
+| Ready (`loom:issue`) | 8 |
+| In Progress (`loom:building`) | 3 |
+| PRs awaiting review | 3 |
+| Approved PRs awaiting merge | 2 |
+| Curated | 17 |
 | Architect / Hermit proposals | 3 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
