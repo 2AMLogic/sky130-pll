@@ -57,5 +57,26 @@ class BlockCountProse(unittest.TestCase):
         self.assertNotIn("the four blocks", src)
 
 
+class ExtractedResistors(unittest.TestCase):
+    """Issue #304: klt 0.8.0 writes resistors as `X` cards, not `R` cards."""
+
+    DECK = (
+        "X$4 \\$1 \\$2 vsubs res_xhigh_po r=5060 L=2.53U W=1U\n"
+        "X$5 \\$3 \\$4 vsubs res_xhigh_po r=10000 L=5U W=1U\n"
+    )
+    EXTRACT = {"devices": [
+        {"class": "res_xhigh_po", "params": {"r_ohm": 5060.0}},
+        {"class": "res_xhigh_po", "params": {"r_ohm": 10000.0}},
+        {"class": "sky130_fd_pr__model__cap_mim", "params": {"c_f": 1e-12}},
+    ]}
+
+    def test_resistors_counted_from_json_not_deck_cards(self) -> None:
+        got = render.extracted_sets(self.DECK, self.EXTRACT)["res"]
+        self.assertEqual(got, {("res_xhigh_po", 5060.0): 1, ("res_xhigh_po", 10000.0): 1})
+
+    def test_no_resistors_means_empty(self) -> None:
+        self.assertFalse(render.extracted_sets("", {"devices": []})["res"])
+
+
 if __name__ == "__main__":
     unittest.main()
