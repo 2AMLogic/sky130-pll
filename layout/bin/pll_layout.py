@@ -97,8 +97,13 @@ MIM_PERIM_CAP_F_UM = 1.9e-16
 #: enforces (`li1.space.1`), in um. `klt gen`'s MOS unit devices abut their
 #: source/drain li1 pads directly against the poly gate, so a device whose
 #: gate length is below this spacing draws two pads closer than the rule
-#: allows -- one violation per such device, and the *only* violation class
-#: this flow's output produces. Used by the record to assert exactly that.
+#: allows -- one violation per such device. Through issue #46's `klt` pin
+#: that was the only violation class this flow's output produced; issue #17
+#: bumped the pin past the upstream fix (klayout-tools#1201) and the deck now
+#: comes back genuinely clean, so the record's DRC check asserts zero
+#: violations from *any* rule rather than this one class. This threshold is
+#: what identifies the devices that fired the rule back then, so the record
+#: can state that history with a count derived from the plan (issue #443).
 LI1_MIN_SPACE_UM = 0.17
 
 #: Bottom-plate (met3) overhang beyond the capm top plate, per side (um).

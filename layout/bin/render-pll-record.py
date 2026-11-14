@@ -389,6 +389,25 @@ def _check_top_hierarchy(cells_top: dict[str, Any], plan: dict[str, Any]) -> tup
     )
 
 
+def _min_length_device_count(plan: dict[str, Any]) -> int:
+    """How many devices in `plan` fired `li1.space.1` under issue #46's pin.
+
+    One per MOS device whose gate length is below the deck's minimum li1
+    spacing (see `LI1_MIN_SPACE_UM`). The violation is gone since issue #17's
+    pin bump, so this is purely the historical count the record cites -- and
+    it is derived from the plan, never typed in, so every statement of it in
+    a given record agrees (issue #443; the same lesson as issue #304's block
+    count). Both the DRC check and the "What this layout is not" DRC-clean
+    bullet state it, so both read it from here.
+    """
+    return sum(
+        group["count"]
+        for block in plan["blocks"]
+        for group in block["groups"]
+        if group["kind"] == "mos_array" and group["params"]["l_um"] < LI1_MIN_SPACE_UM
+    )
+
+
 def _check_drc(plan: dict[str, Any], drc: dict[str, Any]) -> tuple[str, bool, str]:
     # Through issue #46's pin this could only ever report the single
     # documented klayout-tools#1187 workaround signature (one `li1.space.1`
@@ -396,12 +415,7 @@ def _check_drc(plan: dict[str, Any], drc: dict[str, Any]) -> tuple[str, bool, st
     # (klayout-tools#1201 / commit `bd5c7f4`) and confirmed the deck now
     # comes back genuinely clean, so this asserts that bar directly rather
     # than special-casing a violation count that no longer occurs.
-    min_length_devices = sum(
-        group["count"]
-        for block in plan["blocks"]
-        for group in block["groups"]
-        if group["kind"] == "mos_array" and group["params"]["l_um"] < LI1_MIN_SPACE_UM
-    )
+    min_length_devices = _min_length_device_count(plan)
     rule_counts = drc.get("rule_counts", {})
     drc_ok = drc.get("status") == "clean" and not rule_counts
     return (
@@ -549,7 +563,9 @@ def _render_layout_is(a: Any, plan: dict[str, Any], build: dict[str, Any], out_d
     a("")
 
 
-def _render_layout_is_not(a: Any, build: dict[str, Any], drc: dict[str, Any]) -> None:
+def _render_layout_is_not(
+    a: Any, plan: dict[str, Any], build: dict[str, Any], drc: dict[str, Any]
+) -> None:
     a("## What this layout is not")
     a("")
     a(
@@ -565,11 +581,12 @@ def _render_layout_is_not(a: Any, build: dict[str, Any], drc: dict[str, Any]) ->
     if drc.get("status") == "clean" and not violation_count:
         a(
             "- **DRC-clean.** 0 violations (see the DRC check above) -- "
-            "issue #17. Through issue #46's `klt` pin this reported 52 "
-            "`li1.space.1` violations, one per minimum-gate-length device, "
-            "traced to a documented `klt gen` limitation "
-            "(klayout-tools#1187); issue #17 bumped the pin past the "
-            "upstream fix (klayout-tools#1201) and the violation is gone."
+            "issue #17. Through issue #46's `klt` pin this reported "
+            f"{_min_length_device_count(plan)} `li1.space.1` violations, one "
+            "per minimum-gate-length device, traced to a documented "
+            "`klt gen` limitation (klayout-tools#1187); issue #17 bumped the "
+            "pin past the upstream fix (klayout-tools#1201) and the "
+            "violation is gone."
         )
     else:
         a(
@@ -859,7 +876,7 @@ def main() -> int:
     _render_header(a, args, netlist_display)
     _render_verdict(a, checks, all_pass)
     _render_layout_is(a, plan, build, out_dir)
-    _render_layout_is_not(a, build, drc)
+    _render_layout_is_not(a, plan, build, drc)
     if spot:
         _render_routing_spotcheck(a, spot, build, drc, extract_top)
     _render_device_set(a, device_rows, out_dir, plan)
