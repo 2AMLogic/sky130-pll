@@ -94,7 +94,7 @@ design/        xschem schematics/symbols + SPICE netlist snapshots (PLL blocks +
 sim/           PVT corner harness, PLL block and closed-loop testbenches, append-only evidence records
 layout/        klt-driven DRC/LVS flow, a trivial proving cell, and a PLL layout record with checking reports
 measurements/  per-spec-row report aggregator and its rendered report (rolls up sim/+layout/ evidence); silicon characterization slot, empty until there is silicon
-docs/          environment setup, plus docs/t1-gap.md — a pointer to signoff/ (the graded T1 verdict) and the detailed read of T1 item 11
+docs/          environment setup, docs/ROADMAP.md (what comes next and what blocks it), plus docs/t1-gap.md — a pointer to signoff/ (the graded T1 verdict) and the detailed read of T1 item 11
 signoff/       block manifest + machine-rendered T1 tier verdict (`klt signoff --manifest`), re-checked in CI
 ```
 
