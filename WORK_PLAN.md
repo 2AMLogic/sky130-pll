@@ -11,18 +11,19 @@ _None._
 
 `loom:very-important` (one counts per workspace); every stage takes these first.
 
-_None._
+- **#304**: layout: draw clk_buf and re-mint the top-level layout record against the buffered top (split from #303)
 
 ## Important
 
 `loom:important`; taken before unlabelled work.
 
-- **#304**: layout: draw clk_buf and re-mint the top-level layout record against the buffered top (split from #303)
+- **#244**: sim: record divider Fmax boundaries across PVT for digital T1 characterization
 
 ## Ready
 
 Human-approved issues ready for implementation (`loom:issue`).
 
+- **#244**: sim: record divider Fmax boundaries across PVT for digital T1 characterization
 - **#298**: Re-qualify cited layout reference records under open_pdks f6eeac7 (part of #295)
 - **#304**: layout: draw clk_buf and re-mint the top-level layout record against the buffered top (split from #303)
 
@@ -30,13 +31,13 @@ Human-approved issues ready for implementation (`loom:issue`).
 
 Issues currently being built (`loom:building`).
 
-- **#430**: Remove dead staging.promote() and the docs that still describe in-tree promotion
+_None._
 
 ## PRs Awaiting Review
 
 PRs waiting on Judge (`loom:review-requested`).
 
-- **#432**: refactor(sim): drop dead staging.promote() and correct the in-tree promotion docs
+_None._
 
 ## Approved (Awaiting Merge)
 
@@ -69,6 +70,7 @@ Issues carrying `loom:curated`.
 
 - **#231**: design: add the digital lock output spec row 16 asks for (top-level has no LOCK port) *(architect)*
 - **#247**: sim: add a standalone PFD/charge-pump characterization campaign (UP/DN asymmetry, Icp, compliance) *(architect)*
+- **#434**: Collapse the layout klt pin narrative: 156 comment lines for 2 pins, with stale copies in layout/README.md and setup-venv.sh *(hermit)*
 
 ## Epics
 
@@ -79,13 +81,13 @@ _None._
 | Bucket | Count |
 |------|-------|
 | Operator merge-risk holds | 0 |
-| Very important | 0 |
+| Very important | 1 |
 | Important | 1 |
-| Ready (`loom:issue`) | 2 |
-| In Progress (`loom:building`) | 1 |
-| PRs awaiting review | 1 |
+| Ready (`loom:issue`) | 3 |
+| In Progress (`loom:building`) | 0 |
+| PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
 | Curated | 16 |
-| Architect / Hermit proposals | 2 |
+| Architect / Hermit proposals | 3 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
