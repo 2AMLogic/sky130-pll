@@ -2,6 +2,42 @@
 
 Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
+## Archives
+
+- [2026-09](work_log/WORK_LOG_2026-09.md)
+
+### 2026-11-14
+
+- **Issue #80** (closed): Champion: Merge-Risk Hold Digest
+
+### 2026-11-13
+
+- **PR #432**: refactor(sim): drop dead staging.promote() and correct the in-tree promotion docs
+- **Issue #430** (closed): Remove dead staging.promote() and the docs that still describe in-tree promotion
+
+### 2026-11-12
+
+- **PR #428**: Bump Repo Skills 0.25.10 -> 0.26.1
+
+### 2026-11-11
+
+- **PR #427**: refactor(sim): retire the --executor remote path, keep local and batch
+- **Issue #425** (closed): Remove --executor remote: never produced a record, superseded by batch
+
+### 2026-11-10
+
+- **PR #423**: feat(sim): I/Q divide-by-2 cell and 90-point PVT quadrature campaign
+- **Issue #422** (closed): DR-010 evidence: PVT corners and a simulated I/Q divide-by-2 for the 2x VCO CLK/CLK90 path
+
+### 2026-11-06
+
+- **PR #411**: design: complete wdb 45-point watchdog grid, watchdog PASS, combined handoff graded
+- **Issue #276** (closed): design: measure independent watchdog and publish LOCK timing handoff
+- **PR #415**: fix: skip pinned boilerplate bytes when staging run evidence
+- **PR #412**: layout: derive PLL record block count from plan and mint buffered-top record
+- **Issue #417** (closed): run_fmax.py --executor batch: stop executor.resolve_name refusing the fmax manifest
+- **Issue #414** (closed): layout: PLL evidence store must skip files whose bytes are already committed (PR #412 manifest fails check_artifact_manifests)
+
 ### 2026-11-04
 
 - **PR #407**: sim: buffered-top nominal-point records for 1 MHz and 25 MHz references
@@ -367,29 +403,4 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 - **PR #149**: sim/harness: add an `--executor {local,remote}` seam so ngspice units can run on klt's Spot fleet (#146)
 - **Issue #146** (closed): sim/harness: `--executor remote` — route ngspice units through klt's Spot backend (fleet adoption pilot)
-
-### 2026-09-14
-
-- **Issue #140** (closed): Dedupe _render_provenance between render-record.py and render-pll-record.py
-
-### 2026-09-12
-
-- **PR #145**: sim(pll-lock): raise per-point timeout_s 10800 -> 43200; amend DR-004 (#103)
-
-### 2026-09-11
-
-- **PR #132**: Ship sim/divider standalone PVT testbench, mint N=25 evidence record
-- **PR #135**: refactor(sim/harness): dedupe SPICE-literal parsing between measure.py and acmeasure.py
-- **PR #136**: sim/harness: per-point parallelism (--jobs) and checkpointed resume (--resume)
-- **PR #138**: sim/divider-n64: run the tt process-corner row (9/45), partial progress toward issue #130's full grid
-- **PR #139**: sim/divider: mint first evidence records for -n4/-n5/-n63/-n64 siblings
-- **PR #141**: sim/divider-n64: run the ff process-corner row (row 2/5), 21/45 points toward issue #130's full grid
-- **PR #142**: sim/divider-n64: complete the ss process-corner row (issue #130, partial)
-- **PR #143**: sim/divider-n64: complete the full DR-003 45-point PVT grid (sf + fs rows, 45/45 PASS)
-- **Issue #137** (closed): Retry the sim/divider-n64 full-grid PVT campaign (issue #130) once host contention clears
-- **Issue #134** (closed): Deduplicate SPICE-literal parsing: parse_spice_time/parse_spice_freq share an identical regex and suffix table
-- **Issue #133** (closed): sim/harness: per-point parallelism or checkpointed resume needed to make sim/pll-lock's 45-point campaign tractable
-- **Issue #131** (closed): Run the sim/divider-n4/-n5/-n63/-n64 PVT campaigns and mint their first sim/ evidence records (deferred by #129)
-- **Issue #130** (closed): Complete the full DR-003 45-point PVT grid for sim/divider-n64 and sim/divider-n63 (deferred by #129)
-- **Issue #129** (closed): Ship a standalone `sim/divider` PVT testbench and mint the first `sim/` evidence record for divider_intN (turn #114's informal top-frequency and modulus diagnostics into committed 45-point evidence; spec row 4)
 

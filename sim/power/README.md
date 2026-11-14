@@ -13,9 +13,8 @@ lock, #98).
 
 ## Why this is not a `tb.json` campaign
 
-`sim/run_corners.py` has no executor for the batch fleet (`--executor remote`
-falls back to a local run when the fleet is not configured, which is not
-acceptable for a 4 x 45-point grid on a shared host), and its reducer
+`sim/run_corners.py` has no executor for the batch fleet (its fleet route is
+`--executor batch`, which covers `cp` and transient `measure` manifests only), and its reducer
 (`sim/harness/measure.py`) reduces node *voltages*. This campaign is a
 `klt sim` request per block instead (the fleet-native path; `klt sim` splits
 the 45 corners across the batch backend), plus a small reducer for the branch

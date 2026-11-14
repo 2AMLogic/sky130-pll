@@ -41,15 +41,12 @@ enough that it belongs on a fleet, not on a shared dispatch host.
 
 ### Execution backend: the batch route and its status (issue #290)
 
-`--executor remote` needs the klayout-tools SSH fleet and **silently degrades
-to `local`** on a host that is not provisioned for it (`sim/harness/README.md`,
-"Fallback contract"), and `klt sim` corner requests cannot express this
-campaign's per-coordinate PULSE stimulus. The harness therefore has a
-dedicated route, `--executor batch` (`sim/harness/cp_klt.py`): one `klt sim`
+`klt sim` corner requests cannot express this campaign's per-coordinate PULSE
+stimulus. (The SSH-fleet `--executor remote` was retired in #425.) The harness
+therefore has a dedicated route, `--executor batch` (`sim/harness/cp_klt.py`): one `klt sim`
 `decks[]` entry per PVT point, run on the Spot batch fleet, with the returned
 dumps reduced by the unchanged `cpmeasure` reducer. On a host that exports
-`KLT_SIM_BACKEND=batch` it is chosen automatically for this manifest, and
-`--executor remote` is refused. A refused or failed submit is reported and
+`KLT_SIM_BACKEND=batch` it is chosen automatically for this manifest. A refused or failed submit is reported and
 the run exits nonzero; it never falls back to a local run of the grid. See
 `sim/harness/README.md`, "Batch-fleet route for `cp`".
 

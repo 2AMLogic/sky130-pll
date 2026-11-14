@@ -1,0 +1,74 @@
+{
+  "schema": "sky130-pll.harness.tb/1",
+  "claim": "VCTRL-vs-frequency scan of the open-loop 2x VCO driving the DR-010 I/Q divide-by-2 over the ratified DR-003 PVT set (issue #422, parent #332): locates, per corner, the VCTRL that gives 25 and 50 MHz at the divider output (50 and 100 MHz VCO) for the two graded campaigns sim/vco-2x-iq-25mhz and sim/vco-2x-iq-50mhz. Frequency characterization only; ratifies nothing.",
+  "spec_rows": [],
+  "spec_rows_note": "Frequency scan feeding the DR-010 interface evidence (#332); claims no spec row.",
+  "schematic": "tb_vco_2x_iq.sch",
+  "corner_pattern": "(\\.lib\\s+\\S*sky130\\.lib\\.spice\\s+)(\\w+)",
+  "supply_pattern": "(V1 VDD GND )([0-9.]+)",
+  "process_corners": [
+    "tt",
+    "ff",
+    "ss",
+    "sf",
+    "fs"
+  ],
+  "temps_c": [
+    -40,
+    27,
+    125
+  ],
+  "supply_nominal": 1.8,
+  "supply_tolerance": 0.1,
+  "measure": {
+    "node": "clk",
+    "tran_step": "50p",
+    "tran_stop": "800n",
+    "settle_from": "400n",
+    "threshold_frac": 0.5,
+    "hysteresis_frac": 0.15,
+    "min_edges": 4,
+    "ic": [
+      "v(xxxvco.ring0)=0"
+    ],
+    "uic": true,
+    "require_oscillation": false,
+    "min_oscillating_points": 0,
+    "timeout_s": 3600,
+    "extra_nodes": [
+      "clk90",
+      "clk2x"
+    ],
+    "sweep": {
+      "source": "V2",
+      "quantity": "VCTRL",
+      "values": [
+        0.56,
+        0.6,
+        0.64,
+        0.68,
+        0.72,
+        0.76,
+        0.8,
+        0.84,
+        0.88,
+        0.92,
+        0.96,
+        1.0,
+        1.04,
+        1.08,
+        1.12
+      ]
+    },
+    "quadrature": {
+      "ref": "clk",
+      "quad": "clk90",
+      "target_deg": 90,
+      "window_deg": 72,
+      "duty_min": 0.45,
+      "duty_max": 0.55
+    }
+  },
+  "methodology_note": "Stage 1 of the issue #422 campaign: a coarse 15-value VCTRL scan (0.56-1.12 V, 40 mV steps) per PVT point; the per-corner VCTRL for each graded frequency is interpolated from it (analysis/vctrl-tables.md, tools in sim/vco-2x-iq-scan/analysis/) and re-verified by the graded campaigns, which grade only a point they actually measured inside the frequency band. The quadrature block is reported here for context but is not the graded evidence. 10 fF stand-in load on CLK and CLK90 (assumption).",
+  "analysis": "transient per swept VCTRL value (`tran 50p 800n uic`) with RESETB released at 60 ns"
+}

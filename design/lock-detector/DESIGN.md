@@ -7,27 +7,29 @@ clock-loss transitions belong to #260/#261; nothing here establishes them.
 
 ## Verdict
 
-**The handoff is NOT ready, and #260 remains blocked.** Two independent
-reasons, neither a spec relaxation:
+**The handoff is NOT ready, and #260 remains blocked, on a measured miss.**
+This is a miss, not missing evidence, and not a spec relaxation:
 
 1. Phase windows (#275, complete 45/45 physical records): no candidate meets the
    DR-007 Table 2 `W_acq` / `W_rel` bands (see `sim/lockdet-timing/phase/README.md`).
-2. Watchdog (this issue): **no complete 45-point watchdog grid exists.** Only
-   one nominal point (tt, 27 C, 1.8 V) of the selected candidate `wdb` was
-   measured, plus negative controls. Every attempt at the full grid ended with
-   points missing or failed for tool/fleet reasons (below). This is missing
-   evidence (`INCONCLUSIVE`), not a measured band miss, and it is not full-grid
-   completion. **Issue #276 stays open**: a concrete runner/fleet capability gap
-   remains. A superseding decision record is only relevant if a *complete* grid
-   later shows a miss.
+2. Watchdog (this issue): the **complete 45-point `wdb` grid now exists** (all of
+   tt/ff/ss/fs/sf x -40/27/125 C x 1.62/1.8/1.98 V, 45/45 rows `OK`, combined
+   record `lt-20261105-202135-163927`, evidence class `physical`, batch backend
+   only). The divided tick spans **161.4 ns** (ff, -40 C, 1.98 V) to **371.2 ns**
+   (ss, -40 C, 1.62 V), inside the 125-500 ns band at every point. Raw ring period
+   2.52-5.80 ns; startup latency 2.55-5.82 ns. The watchdog **PASSES**.
+
+Because the phase products miss their bands, `handoff_ready` is false and #260
+stays blocked pending a separately argued superseding decision record (not
+written here). DR-007 stays proposed, row 16 DRAFT.
 
 Mechanical grade (reducer `handoff`, `design/lock-detector/timing/grade_combined.py`;
 nearest rising phase candidate `s25-rising`, record `lt-20261012-220148-142698`,
-with the `wdb` nominal record `lt-20261013-102052-850129`): scope FULL,
+with the watchdog record `lt-20261105-202135-163927`): scope FULL,
 `handoff_ready: false`; `phase-acq` MISS (`w_acq`), `phase-rel` MISS (`w_rel`;
-hysteresis and 12 ns ceiling PASS), `watchdog` INCONCLUSIVE (`tick`, incomplete).
+hysteresis and 12 ns ceiling PASS), `watchdog` PASS (`tick`, complete).
 
-## Watchdog primitive (selected candidate `wdb`) - MEASURED nominal only
+## Watchdog primitive (selected candidate `wdb`) - MEASURED, full 45-point grid
 
 Independent of REF, FBCLK and CLK: its only inputs are `EN`, `RSTB` and the
 supply. Sources: `design/lock-detector/timing/watchdog.sch` (schematic),
@@ -58,10 +60,8 @@ Measured at tt / 27 C / 1.8 V (batch record `lt-20261013-102052-850129`, job
 | startup latency | 3.492 ns | EN release to first RAW rising crossing |
 
 The divided tick equals 64 x raw period, as expected for a /64 ripple chain. The
-band applies to the tick only. No temperature, supply or process spread of
-`wdb` has been measured, so nothing here shows the band holds across PVT (a
-ring built from `buf_1` will move strongly with supply and temperature; this is
-an expectation, not a result).
+band applies to the tick only. Across the full PVT grid the tick spans
+161.4-371.2 ns (about 2.3x), all inside the band; see the resumed-run table below.
 
 ### Rejected predecessor `wd` (5 x `dlygate4sd3_1` ring)
 
@@ -80,7 +80,30 @@ tick 262.75 ns, startup 4.138 ns), then rejected for the grid:
 Its decks, manifests and generator output are preserved under `rejected-dlygate/`
 (records `lt-...061032`, `...061245`, `...061534` reference its `candidates/*.json`).
 
-## Why there is no complete grid (all attempts recorded)
+## Resumed-grid completion (2026-11-05)
+
+Resumed with `--resume` on the current batch runner (klt 0.9.x client, artifact
+store). Groups with a good record were kept; the runner only appended. Group
+records are under `sim/lockdet-timing/watchdog/records/groups/19d174789afd2403/`
+(each names what it supersedes; failed attempts from 2026-10-13/14 are preserved).
+
+| group (supply, temperature) | good record |
+|---|---|
+| 1.62 V, -40 C | `...20261013-204006-424780` (earlier increment) |
+| 1.62 V, +27 C | `...20261105-200921-670970` |
+| 1.62 V, +125 C | `...20261105-195511-926428` |
+| 1.80 V, -40 C | `...20261105-194917-834343` |
+| 1.80 V, +27 C | `...20261105-202132-879785` |
+| 1.80 V, +125 C | `...20261105-200250-672240` |
+| 1.98 V, -40 C / +27 C / +125 C | `...20261105-191442-116115` / `-193138-133463` / `-194022-552275` |
+
+Observations (not root-caused here): the +27 C `nonconvergence` and the 3600 s
+whole-job timeouts seen on 2026-10-13/14 did **not** recur on this runner; each
+resumed invocation finished in roughly 5-12 minutes. Whether the earlier failures
+came from the older runner image, the pin or fleet non-determinism is not
+established, so no tool-gap issue is filed for a failure that did not reproduce.
+
+## Earlier attempts (history, superseded by the complete grid)
 
 1. **Full grid, one fleet job per supply (15 corners each)** - record
    `lt-20261013-142513-681682`, evidence class `incomplete-not-physical`, all 45
@@ -135,10 +158,8 @@ Its decks, manifests and generator output are preserved under `rejected-dlygate/
    durations remain unstable (10 min to > 1 h for equivalent jobs). No local
    fallback was used.
 
-Net: the runner capability gap (record per finished job, rerun only missing
-groups) is closed. What remains is fleet reliability (job ceiling, capacity
-waits) plus the unexplained +27 C nonconvergence, both outside this issue's
-"no new execution framework" scope. Reproduction of the attempt is below.
+Net (at that time): the runner capability gap was closed; the grid was then
+completed by the resumed runs above.
 
 ## Negative controls (actual classification, before any grid)
 
@@ -176,12 +197,12 @@ python3 design/lock-detector/timing/gen_watchdog.py        # regenerate wdb file
 W=sim/lockdet-timing/watchdog
 python3 sim/run_locktiming.py --candidate $W/candidates/wdb.json=$W/candidates/wdb.spice --points nominal --required-products phase-acq,phase-rel,watchdog --records-dir $W/records
 python3 sim/run_locktiming.py --candidate $W/candidates/wdb.json=$W/candidates/wdb.spice --points all --split-temps --resume --max-groups 3 --supersedes lt-20261013-142513-681682 --required-products phase-acq,phase-rel,watchdog --records-dir $W/records   # repeat until the combined record is written; add --only REGEX to pick groups
-python3 design/lock-detector/timing/grade_combined.py sim/lockdet-timing/phase/records/lt-20261012-220148-142698.json $W/records/lt-20261013-102052-850129.json
+python3 design/lock-detector/timing/grade_combined.py sim/lockdet-timing/phase/records/lt-20261012-220148-142698.json $W/records/lt-20261105-202135-163927.json
 ```
 
 Phase evidence: `sim/lockdet-timing/phase/README.md`.
 
 ## Open items
 
-* Complete 45-point `wdb` grid: 1 of 9 groups recorded good (see above). Re-run with `--resume` in bounded invocations; investigate the +27 C nonconvergence first (it recurs at two supplies).
+* Watchdog grid complete (45/45). Remaining open item is the measured phase-window miss.
 * Re-satisfy the phase bands (separate design work) before #260 can start.

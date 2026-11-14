@@ -1,0 +1,14 @@
+** klt-netlist-inputs: {"pdk_variant": null, "rcfile": "xschemrc", "xschem_version": "3.4.7"}
+** sch_path: /home/ubuntu/GitHub/sky130-pll/.loom/worktrees/issue-422/design/divider-iq/divider_iq.sch
+**.subckt divider_iq VDD GND CLK2X RESETB CLK CLK90
+*.iopin VDD
+*.iopin GND
+*.ipin CLK2X
+*.ipin RESETB
+*.opin CLK
+*.opin CLK90
+XFI CLK2X NQQ RESETB GND GND VDD VDD CLK sky130_fd_sc_hd__dfrtp_2
+XFQ CLK2X CLK RESETB GND GND VDD VDD CLK90 sky130_fd_sc_hd__dfrtn_1
+XFB CLK90 GND GND VDD VDD NQQ sky130_fd_sc_hd__inv_2
+**.ends
+.end

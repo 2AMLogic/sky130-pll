@@ -389,12 +389,10 @@ class CampaignWithFakeBackend(unittest.TestCase):
 
 
 class LocalGuards(unittest.TestCase):
-    def test_remote_fallback_to_local_refused_for_a_grid(self):
-        inner = SimpleNamespace(name="local", fallback_reason="no fleet", stage=lambda u: None)
-        g = C._GuardedRemote(inner, max_local=1)
-        with self.assertRaises(C._LocalFallbackRefused):
-            g.stage([1, 2])
-        self.assertIs(g.stage([1]), g)  # a single probe may run locally
+    def test_retired_remote_executor_is_refused(self):
+        with self.assertRaises(SystemExit) as cm:
+            C.main(["divider-fmax", "--executor", "remote"])
+        self.assertNotEqual(cm.exception.code, 0)
 
     def test_dry_run_plans_without_a_pdk(self):
         rc = C.main(["divider-fmax", "--dry-run", "--moduli", "25", "--corners", "tt"])

@@ -1,0 +1,916 @@
+{
+ "candidates": [
+  {
+   "candidate_id": "wdb",
+   "manifest_path": "sim/lockdet-timing/watchdog/candidates/wdb.json",
+   "manifest_sha256": "9cd57675ce0dceabc891d422426761ab5b1bb64a9f38a020177a533011b0d980",
+   "netlist_path": "sim/lockdet-timing/watchdog/candidates/wdb.spice",
+   "netlist_sha256": "eebdb15947a07d66d08a129d9cb030ac2942fa861adef06e805f9e17bc54b62b",
+   "product_id": "watchdog",
+   "result": {
+    "candidate_id": "wdb",
+    "complete": true,
+    "diagnostic_raw_period_s": [
+     2.5216569642011997e-09,
+     5.8008177378523845e-09
+    ],
+    "duplicates": [],
+    "failed": [],
+    "missing": [],
+    "product_id": "watchdog",
+    "schema": "sky130-pll.lockdet-timing.result/1",
+    "startup_latency_s": [
+     2.5464303067519725e-09,
+     5.821843692139613e-09
+    ],
+    "unexpected": [],
+    "verdict": "MISS",
+    "verdicts": {
+     "hysteresis_max_acq_lt_min_rel": "MISS",
+     "rel_ceiling_lt_12ns": "MISS",
+     "tick": "PASS",
+     "w_acq": "MISS",
+     "w_rel": "MISS"
+    }
+   },
+   "rows": [
+    {
+     "coord": {
+      "process": "tt",
+      "temp_c": -40.0,
+      "vdd_v": 1.62
+     },
+     "error": null,
+     "raw_period_s": 4.451665364745571e-09,
+     "reason": null,
+     "startup_latency_s": 4.462048466693028e-09,
+     "status": "OK",
+     "tick_s": 2.84902728484887e-07,
+     "w_acq_s": 2.1085486094209399e-07,
+     "w_rel_s": 2.1085486094209399e-07
+    },
+    {
+     "coord": {
+      "process": "ff",
+      "temp_c": -40.0,
+      "vdd_v": 1.62
+     },
+     "error": null,
+     "raw_period_s": 3.5662023724381897e-09,
+     "reason": null,
+     "startup_latency_s": 3.607387983398222e-09,
+     "status": "OK",
+     "tick_s": 2.2824143730520104e-07,
+     "w_acq_s": 1.5100864354438689e-07,
+     "w_rel_s": 1.5100864354438689e-07
+    },
+    {
+     "coord": {
+      "process": "ss",
+      "temp_c": -40.0,
+      "vdd_v": 1.62
+     },
+     "error": null,
+     "raw_period_s": 5.8008177378523845e-09,
+     "reason": null,
+     "startup_latency_s": 5.821843692139613e-09,
+     "status": "OK",
+     "tick_s": 3.712453202997887e-07,
+     "w_acq_s": 2.981661704178538e-07,
+     "w_rel_s": 2.981661704178538e-07
+    },
+    {
+     "coord": {
+      "process": "fs",
+      "temp_c": -40.0,
+      "vdd_v": 1.62
+     },
+     "error": null,
+     "raw_period_s": 4.151313359627144e-09,
+     "reason": null,
+     "startup_latency_s": 4.162107184700089e-09,
+     "status": "OK",
+     "tick_s": 2.6568101281577357e-07,
+     "w_acq_s": 1.8845318087389058e-07,
+     "w_rel_s": 1.8845318087389058e-07
+    },
+    {
+     "coord": {
+      "process": "sf",
+      "temp_c": -40.0,
+      "vdd_v": 1.62
+     },
+     "error": null,
+     "raw_period_s": 4.986376064878944e-09,
+     "reason": null,
+     "startup_latency_s": 5.021541071304252e-09,
+     "status": "OK",
+     "tick_s": 3.191407888223306e-07,
+     "w_acq_s": 2.410563492483758e-07,
+     "w_rel_s": 2.410563492483758e-07
+    },
+    {
+     "coord": {
+      "process": "tt",
+      "temp_c": 27.0,
+      "vdd_v": 1.62
+     },
+     "error": null,
+     "raw_period_s": 4.254041857568592e-09,
+     "reason": null,
+     "startup_latency_s": 4.25154062154062e-09,
+     "status": "OK",
+     "tick_s": 2.7227789021609316e-07,
+     "w_acq_s": 1.972695677841193e-07,
+     "w_rel_s": 1.972695677841193e-07
+    },
+    {
+     "coord": {
+      "process": "ff",
+      "temp_c": 27.0,
+      "vdd_v": 1.62
+     },
+     "error": null,
+     "raw_period_s": 3.506354373437116e-09,
+     "reason": null,
+     "startup_latency_s": 3.545204882811035e-09,
+     "status": "OK",
+     "tick_s": 2.244331035657566e-07,
+     "w_acq_s": 1.4847980147514147e-07,
+     "w_rel_s": 1.4847980147514147e-07
+    },
+    {
+     "coord": {
+      "process": "ss",
+      "temp_c": 27.0,
+      "vdd_v": 1.62
+     },
+     "error": null,
+     "raw_period_s": 5.4314375600801806e-09,
+     "reason": null,
+     "startup_latency_s": 5.439161690802364e-09,
+     "status": "OK",
+     "tick_s": 3.4761176443767486e-07,
+     "w_acq_s": 2.737175993364448e-07,
+     "w_rel_s": 2.737175993364448e-07
+    },
+    {
+     "coord": {
+      "process": "fs",
+      "temp_c": 27.0,
+      "vdd_v": 1.62
+     },
+     "error": null,
+     "raw_period_s": 4.166545129244723e-09,
+     "reason": null,
+     "startup_latency_s": 4.1785254837310645e-09,
+     "status": "OK",
+     "tick_s": 2.666609466459169e-07,
+     "w_acq_s": 1.8913655146039123e-07,
+     "w_rel_s": 1.8913655146039123e-07
+    },
+    {
+     "coord": {
+      "process": "sf",
+      "temp_c": 27.0,
+      "vdd_v": 1.62
+     },
+     "error": null,
+     "raw_period_s": 4.528434474617055e-09,
+     "reason": null,
+     "startup_latency_s": 4.573134141077235e-09,
+     "status": "OK",
+     "tick_s": 2.898379161319668e-07,
+     "w_acq_s": 2.1442604065180776e-07,
+     "w_rel_s": 2.1442604065180776e-07
+    },
+    {
+     "coord": {
+      "process": "tt",
+      "temp_c": 125.0,
+      "vdd_v": 1.62
+     },
+     "error": null,
+     "raw_period_s": 4.1414984534026585e-09,
+     "reason": null,
+     "startup_latency_s": 4.1628997431871975e-09,
+     "status": "OK",
+     "tick_s": 2.650558955797942e-07,
+     "w_acq_s": 1.8794806428976018e-07,
+     "w_rel_s": 1.8794806428976018e-07
+    },
+    {
+     "coord": {
+      "process": "ff",
+      "temp_c": 125.0,
+      "vdd_v": 1.62
+     },
+     "error": null,
+     "raw_period_s": 3.5808037833255748e-09,
+     "reason": null,
+     "startup_latency_s": 3.6164089668563374e-09,
+     "status": "OK",
+     "tick_s": 2.2916954630589253e-07,
+     "w_acq_s": 1.5167201697845772e-07,
+     "w_rel_s": 1.5167201697845772e-07
+    },
+    {
+     "coord": {
+      "process": "ss",
+      "temp_c": 125.0,
+      "vdd_v": 1.62
+     },
+     "error": null,
+     "raw_period_s": 5.135413089328361e-09,
+     "reason": null,
+     "startup_latency_s": 5.155950976790282e-09,
+     "status": "OK",
+     "tick_s": 3.286664100478322e-07,
+     "w_acq_s": 2.5375342376901865e-07,
+     "w_rel_s": 2.5375342376901865e-07
+    },
+    {
+     "coord": {
+      "process": "fs",
+      "temp_c": 125.0,
+      "vdd_v": 1.62
+     },
+     "error": null,
+     "raw_period_s": 4.2057733518076794e-09,
+     "reason": null,
+     "startup_latency_s": 4.230507952681724e-09,
+     "status": "OK",
+     "tick_s": 2.6916949292960027e-07,
+     "w_acq_s": 1.9093624885340527e-07,
+     "w_rel_s": 1.9093624885340527e-07
+    },
+    {
+     "coord": {
+      "process": "sf",
+      "temp_c": 125.0,
+      "vdd_v": 1.62
+     },
+     "error": null,
+     "raw_period_s": 4.182869259376136e-09,
+     "reason": null,
+     "startup_latency_s": 4.226454095850516e-09,
+     "status": "OK",
+     "tick_s": 2.6770428698688754e-07,
+     "w_acq_s": 1.8975455402698368e-07,
+     "w_rel_s": 1.8975455402698368e-07
+    },
+    {
+     "coord": {
+      "process": "tt",
+      "temp_c": -40.0,
+      "vdd_v": 1.8
+     },
+     "error": null,
+     "raw_period_s": 3.5214956132147506e-09,
+     "reason": null,
+     "startup_latency_s": 3.537197381597442e-09,
+     "status": "OK",
+     "tick_s": 2.2540614264093963e-07,
+     "w_acq_s": 1.490707990617076e-07,
+     "w_rel_s": 1.490707990617076e-07
+    },
+    {
+     "coord": {
+      "process": "ff",
+      "temp_c": -40.0,
+      "vdd_v": 1.8
+     },
+     "error": null,
+     "raw_period_s": 2.908110928475288e-09,
+     "reason": null,
+     "startup_latency_s": 2.939265115681274e-09,
+     "status": "OK",
+     "tick_s": 1.8611838632690945e-07,
+     "w_acq_s": 1.0864573074177235e-07,
+     "w_rel_s": 1.0864573074177235e-07
+    },
+    {
+     "coord": {
+      "process": "ss",
+      "temp_c": -40.0,
+      "vdd_v": 1.8
+     },
+     "error": null,
+     "raw_period_s": 4.408187235239656e-09,
+     "reason": null,
+     "startup_latency_s": 4.413110327198835e-09,
+     "status": "OK",
+     "tick_s": 2.8211918213529836e-07,
+     "w_acq_s": 2.044328377070381e-07,
+     "w_rel_s": 2.044328377070381e-07
+    },
+    {
+     "coord": {
+      "process": "fs",
+      "temp_c": -40.0,
+      "vdd_v": 1.8
+     },
+     "error": null,
+     "raw_period_s": 3.343960466426894e-09,
+     "reason": null,
+     "startup_latency_s": 3.369872795822055e-09,
+     "status": "OK",
+     "tick_s": 2.1401288918602383e-07,
+     "w_acq_s": 1.3839026992562133e-07,
+     "w_rel_s": 1.3839026992562133e-07
+    },
+    {
+     "coord": {
+      "process": "sf",
+      "temp_c": -40.0,
+      "vdd_v": 1.8
+     },
+     "error": null,
+     "raw_period_s": 3.841165597457676e-09,
+     "reason": null,
+     "startup_latency_s": 3.8920891487726795e-09,
+     "status": "OK",
+     "tick_s": 2.458457175919594e-07,
+     "w_acq_s": 1.703125005379279e-07,
+     "w_rel_s": 1.703125005379279e-07
+    },
+    {
+     "coord": {
+      "process": "tt",
+      "temp_c": 27.0,
+      "vdd_v": 1.8
+     },
+     "error": null,
+     "raw_period_s": 3.4701695423520023e-09,
+     "reason": null,
+     "startup_latency_s": 3.4921002098613144e-09,
+     "status": "OK",
+     "tick_s": 2.2209286588826526e-07,
+     "w_acq_s": 1.4356454370252009e-07,
+     "w_rel_s": 1.4356454370252009e-07
+    },
+    {
+     "coord": {
+      "process": "ff",
+      "temp_c": 27.0,
+      "vdd_v": 1.8
+     },
+     "error": null,
+     "raw_period_s": 2.9517989712293143e-09,
+     "reason": null,
+     "startup_latency_s": 2.9852040755277694e-09,
+     "status": "OK",
+     "tick_s": 1.8891345564356926e-07,
+     "w_acq_s": 1.1026575455542102e-07,
+     "w_rel_s": 1.1026575455542102e-07
+    },
+    {
+     "coord": {
+      "process": "ss",
+      "temp_c": 27.0,
+      "vdd_v": 1.8
+     },
+     "error": null,
+     "raw_period_s": 4.266656120307634e-09,
+     "reason": null,
+     "startup_latency_s": 4.278904742997519e-09,
+     "status": "OK",
+     "tick_s": 2.7306583476896083e-07,
+     "w_acq_s": 1.979496988258888e-07,
+     "w_rel_s": 1.979496988258888e-07
+    },
+    {
+     "coord": {
+      "process": "fs",
+      "temp_c": 27.0,
+      "vdd_v": 1.8
+     },
+     "error": null,
+     "raw_period_s": 3.3947309052544727e-09,
+     "reason": null,
+     "startup_latency_s": 3.411475648483573e-09,
+     "status": "OK",
+     "tick_s": 2.172631499469752e-07,
+     "w_acq_s": 1.4051816173115105e-07,
+     "w_rel_s": 1.4051816173115105e-07
+    },
+    {
+     "coord": {
+      "process": "sf",
+      "temp_c": 27.0,
+      "vdd_v": 1.8
+     },
+     "error": null,
+     "raw_period_s": 3.633813909489653e-09,
+     "reason": null,
+     "startup_latency_s": 3.664807689886516e-09,
+     "status": "OK",
+     "tick_s": 2.3256543040812577e-07,
+     "w_acq_s": 1.53931011045939e-07,
+     "w_rel_s": 1.53931011045939e-07
+    },
+    {
+     "coord": {
+      "process": "tt",
+      "temp_c": 125.0,
+      "vdd_v": 1.8
+     },
+     "error": null,
+     "raw_period_s": 3.5067153461383704e-09,
+     "reason": null,
+     "startup_latency_s": 3.534194790409929e-09,
+     "status": "OK",
+     "tick_s": 2.244282211863081e-07,
+     "w_acq_s": 1.486142483874377e-07,
+     "w_rel_s": 1.486142483874377e-07
+    },
+    {
+     "coord": {
+      "process": "ff",
+      "temp_c": 125.0,
+      "vdd_v": 1.8
+     },
+     "error": null,
+     "raw_period_s": 3.0979842670124473e-09,
+     "reason": null,
+     "startup_latency_s": 3.1330673936549794e-09,
+     "status": "OK",
+     "tick_s": 1.9827132607788678e-07,
+     "w_acq_s": 1.2192456796666096e-07,
+     "w_rel_s": 1.2192456796666096e-07
+    },
+    {
+     "coord": {
+      "process": "ss",
+      "temp_c": 125.0,
+      "vdd_v": 1.8
+     },
+     "error": null,
+     "raw_period_s": 4.241808679768558e-09,
+     "reason": null,
+     "startup_latency_s": 4.2603343184734466e-09,
+     "status": "OK",
+     "tick_s": 2.714757426984423e-07,
+     "w_acq_s": 1.9685651917534562e-07,
+     "w_rel_s": 1.9685651917534562e-07
+    },
+    {
+     "coord": {
+      "process": "fs",
+      "temp_c": 125.0,
+      "vdd_v": 1.8
+     },
+     "error": null,
+     "raw_period_s": 3.5427137187436666e-09,
+     "reason": null,
+     "startup_latency_s": 3.5623027852159494e-09,
+     "status": "OK",
+     "tick_s": 2.2673372654253925e-07,
+     "w_acq_s": 1.5018318691923316e-07,
+     "w_rel_s": 1.5018318691923316e-07
+    },
+    {
+     "coord": {
+      "process": "sf",
+      "temp_c": 125.0,
+      "vdd_v": 1.8
+     },
+     "error": null,
+     "raw_period_s": 3.532134854655531e-09,
+     "reason": null,
+     "startup_latency_s": 3.5666883972215513e-09,
+     "status": "OK",
+     "tick_s": 2.260568186500991e-07,
+     "w_acq_s": 1.4962589884362824e-07,
+     "w_rel_s": 1.4962589884362824e-07
+    },
+    {
+     "coord": {
+      "process": "tt",
+      "temp_c": -40.0,
+      "vdd_v": 1.98
+     },
+     "error": null,
+     "raw_period_s": 2.9932772296537737e-09,
+     "reason": null,
+     "startup_latency_s": 3.0188898997111734e-09,
+     "status": "OK",
+     "tick_s": 1.9156974784844572e-07,
+     "w_acq_s": 1.1482620087934879e-07,
+     "w_rel_s": 1.1482620087934879e-07
+    },
+    {
+     "coord": {
+      "process": "ff",
+      "temp_c": -40.0,
+      "vdd_v": 1.98
+     },
+     "error": null,
+     "raw_period_s": 2.5216569642011997e-09,
+     "reason": null,
+     "startup_latency_s": 2.5464303067519725e-09,
+     "status": "OK",
+     "tick_s": 1.61385033841183e-07,
+     "w_acq_s": 8.412124694739222e-08,
+     "w_rel_s": 8.412124694739222e-08
+    },
+    {
+     "coord": {
+      "process": "ss",
+      "temp_c": -40.0,
+      "vdd_v": 1.98
+     },
+     "error": null,
+     "raw_period_s": 3.619002885204142e-09,
+     "reason": null,
+     "startup_latency_s": 3.6303558406620526e-09,
+     "status": "OK",
+     "tick_s": 2.3161660694626103e-07,
+     "w_acq_s": 1.5334267759835198e-07,
+     "w_rel_s": 1.5334267759835198e-07
+    },
+    {
+     "coord": {
+      "process": "fs",
+      "temp_c": -40.0,
+      "vdd_v": 1.98
+     },
+     "error": null,
+     "raw_period_s": 2.8518490462488e-09,
+     "reason": null,
+     "startup_latency_s": 2.8723212581655017e-09,
+     "status": "OK",
+     "tick_s": 1.8251830647185658e-07,
+     "w_acq_s": 1.037384615868983e-07,
+     "w_rel_s": 1.037384615868983e-07
+    },
+    {
+     "coord": {
+      "process": "sf",
+      "temp_c": -40.0,
+      "vdd_v": 1.98
+     },
+     "error": null,
+     "raw_period_s": 3.206611041046351e-09,
+     "reason": null,
+     "startup_latency_s": 3.2324806901532898e-09,
+     "status": "OK",
+     "tick_s": 2.0522152042966383e-07,
+     "w_acq_s": 1.2939010284927766e-07,
+     "w_rel_s": 1.2939010284927766e-07
+    },
+    {
+     "coord": {
+      "process": "tt",
+      "temp_c": 27.0,
+      "vdd_v": 1.98
+     },
+     "error": null,
+     "raw_period_s": 2.9936434583624956e-09,
+     "reason": null,
+     "startup_latency_s": 3.0162780552367767e-09,
+     "status": "OK",
+     "tick_s": 1.9159190967080502e-07,
+     "w_acq_s": 1.148729872331808e-07,
+     "w_rel_s": 1.148729872331808e-07
+    },
+    {
+     "coord": {
+      "process": "ff",
+      "temp_c": 27.0,
+      "vdd_v": 1.98
+     },
+     "error": null,
+     "raw_period_s": 2.58726104185582e-09,
+     "reason": null,
+     "startup_latency_s": 2.61203160177249e-09,
+     "status": "OK",
+     "tick_s": 1.655852891980947e-07,
+     "w_acq_s": 8.889552091960629e-08,
+     "w_rel_s": 8.889552091960629e-08
+    },
+    {
+     "coord": {
+      "process": "ss",
+      "temp_c": 27.0,
+      "vdd_v": 1.98
+     },
+     "error": null,
+     "raw_period_s": 3.6541293021250926e-09,
+     "reason": null,
+     "startup_latency_s": 3.6711704712508647e-09,
+     "status": "OK",
+     "tick_s": 2.338642339609649e-07,
+     "w_acq_s": 1.585376129812623e-07,
+     "w_rel_s": 1.585376129812623e-07
+    },
+    {
+     "coord": {
+      "process": "fs",
+      "temp_c": 27.0,
+      "vdd_v": 1.98
+     },
+     "error": null,
+     "raw_period_s": 2.927782976291424e-09,
+     "reason": null,
+     "startup_latency_s": 2.9509753862887764e-09,
+     "status": "OK",
+     "tick_s": 1.873765092871255e-07,
+     "w_acq_s": 1.0946054287245272e-07,
+     "w_rel_s": 1.0946054287245272e-07
+    },
+    {
+     "coord": {
+      "process": "sf",
+      "temp_c": 27.0,
+      "vdd_v": 1.98
+     },
+     "error": null,
+     "raw_period_s": 3.1125808494319956e-09,
+     "reason": null,
+     "startup_latency_s": 3.139438503034335e-09,
+     "status": "OK",
+     "tick_s": 1.9920404486918047e-07,
+     "w_acq_s": 1.2250489661045335e-07,
+     "w_rel_s": 1.2250489661045335e-07
+    },
+    {
+     "coord": {
+      "process": "tt",
+      "temp_c": 125.0,
+      "vdd_v": 1.98
+     },
+     "error": null,
+     "raw_period_s": 3.0932012423733224e-09,
+     "reason": null,
+     "startup_latency_s": 3.1117611850315e-09,
+     "status": "OK",
+     "tick_s": 1.9796506739420174e-07,
+     "w_acq_s": 1.2179831753772055e-07,
+     "w_rel_s": 1.2179831753772055e-07
+    },
+    {
+     "coord": {
+      "process": "ff",
+      "temp_c": 125.0,
+      "vdd_v": 1.98
+     },
+     "error": null,
+     "raw_period_s": 2.7806953398485515e-09,
+     "reason": null,
+     "startup_latency_s": 2.807780345372331e-09,
+     "status": "OK",
+     "tick_s": 1.7796451724233347e-07,
+     "w_acq_s": 1.010921132903253e-07,
+     "w_rel_s": 1.010921132903253e-07
+    },
+    {
+     "coord": {
+      "process": "ss",
+      "temp_c": 125.0,
+      "vdd_v": 1.98
+     },
+     "error": null,
+     "raw_period_s": 3.6890003335028642e-09,
+     "reason": null,
+     "startup_latency_s": 3.7068474525036308e-09,
+     "status": "OK",
+     "tick_s": 2.3609772319680943e-07,
+     "w_acq_s": 1.6011147436955309e-07,
+     "w_rel_s": 1.6011147436955309e-07
+    },
+    {
+     "coord": {
+      "process": "fs",
+      "temp_c": 125.0,
+      "vdd_v": 1.98
+     },
+     "error": null,
+     "raw_period_s": 3.111210828651243e-09,
+     "reason": null,
+     "startup_latency_s": 3.133574789664018e-09,
+     "status": "OK",
+     "tick_s": 1.9911748931730473e-07,
+     "w_acq_s": 1.225461579991851e-07,
+     "w_rel_s": 1.225461579991851e-07
+    },
+    {
+     "coord": {
+      "process": "sf",
+      "temp_c": 125.0,
+      "vdd_v": 1.98
+     },
+     "error": null,
+     "raw_period_s": 3.107778750741554e-09,
+     "reason": null,
+     "startup_latency_s": 3.1374971948800563e-09,
+     "status": "OK",
+     "tick_s": 1.9889787565260335e-07,
+     "w_acq_s": 1.2232831502544557e-07,
+     "w_rel_s": 1.2232831502544557e-07
+    }
+   ]
+  }
+ ],
+ "evidence_class": "physical",
+ "grouping": "one klt request per (product, candidate) x supply; process x temperature as klt corners",
+ "handoff": {
+  "handoff_ready": false,
+  "products_absent": [
+   "phase-acq",
+   "phase-rel"
+  ],
+  "products_present": [
+   "watchdog"
+  ],
+  "scope": "SUBSET"
+ },
+ "jobs": [
+  {
+   "client_klt_version": "0.7.1.dev323+g6120283c606e",
+   "dir": "watchdog.wdb_1.62v_-40c",
+   "engine_version": "46",
+   "exit_code": 4,
+   "failure": null,
+   "group": "watchdog.wdb_1.62v_-40c",
+   "instance_type": "c7i.8xlarge",
+   "job_id": "klt-sim-205a585de480",
+   "netlist_sha256": "0c576499450251895d76b03c18cd0e63d2c9c201bcb2f0ca3cc950d4a821b45a",
+   "pdk": {
+    "lib": "libs.tech/combined/sky130.lib.spice",
+    "pdk": "sky130A"
+   },
+   "request_sha256": "5310dba852fcce1c2c1b1b72edcd6e7226d71cfe4f54081927bde6047806f58b",
+   "runner_klt_version": "0.7.0",
+   "supply_v": 1.62,
+   "version_skew": true
+  },
+  {
+   "client_klt_version": "0.9.1.dev102+gef1ec19c95f6",
+   "dir": "watchdog.wdb_1.62v_+27c",
+   "engine_version": "46",
+   "evidence_manifest": "manifests/artifacts/lockdet-timing-watchdog.wdb_1.62v__27c.20261105-200921-670970.manifest.json",
+   "exit_code": 4,
+   "failure": null,
+   "group": "watchdog.wdb_1.62v_+27c",
+   "instance_type": "m7i.4xlarge",
+   "job_id": "klt-sim-989fecd7528a",
+   "netlist_sha256": "0c576499450251895d76b03c18cd0e63d2c9c201bcb2f0ca3cc950d4a821b45a",
+   "pdk": {
+    "lib": "libs.tech/combined/sky130.lib.spice",
+    "pdk": "sky130A"
+   },
+   "request_sha256": "832d69cee686fac6bddff9582a128e64baba37f2f22d6ed61bdb222f2d4d30e6",
+   "runner_klt_version": "0.9.0",
+   "supply_v": 1.62,
+   "version_skew": true
+  },
+  {
+   "client_klt_version": "0.9.1.dev102+gef1ec19c95f6",
+   "dir": "watchdog.wdb_1.62v_+125c",
+   "engine_version": "46",
+   "evidence_manifest": "manifests/artifacts/lockdet-timing-watchdog.wdb_1.62v__125c.20261105-195511-926428.manifest.json",
+   "exit_code": 4,
+   "failure": null,
+   "group": "watchdog.wdb_1.62v_+125c",
+   "instance_type": "c7i.8xlarge",
+   "job_id": "klt-sim-278727659960",
+   "netlist_sha256": "0c576499450251895d76b03c18cd0e63d2c9c201bcb2f0ca3cc950d4a821b45a",
+   "pdk": {
+    "lib": "libs.tech/combined/sky130.lib.spice",
+    "pdk": "sky130A"
+   },
+   "request_sha256": "56ee77937a9bd85b51d159498cf1050dcecd2399aa477b9e2b63346686bb60c6",
+   "runner_klt_version": "0.9.0",
+   "supply_v": 1.62,
+   "version_skew": true
+  },
+  {
+   "client_klt_version": "0.9.1.dev102+gef1ec19c95f6",
+   "dir": "watchdog.wdb_1.80v_-40c",
+   "engine_version": "46",
+   "evidence_manifest": "manifests/artifacts/lockdet-timing-watchdog.wdb_1.80v_-40c.20261105-194917-834343.manifest.json",
+   "exit_code": 4,
+   "failure": null,
+   "group": "watchdog.wdb_1.80v_-40c",
+   "instance_type": "m6i.4xlarge",
+   "job_id": "klt-sim-e38cbd482227",
+   "netlist_sha256": "ef0772d5f74c18e93644498f571ecada71039d4cea512ec0b25ee22f50704fa5",
+   "pdk": {
+    "lib": "libs.tech/combined/sky130.lib.spice",
+    "pdk": "sky130A"
+   },
+   "request_sha256": "5310dba852fcce1c2c1b1b72edcd6e7226d71cfe4f54081927bde6047806f58b",
+   "runner_klt_version": "0.9.0",
+   "supply_v": 1.8,
+   "version_skew": true
+  },
+  {
+   "client_klt_version": "0.9.1.dev102+gef1ec19c95f6",
+   "dir": "watchdog.wdb_1.80v_+27c",
+   "engine_version": "46",
+   "evidence_manifest": "manifests/artifacts/lockdet-timing-watchdog.wdb_1.80v__27c.20261105-202132-879785.manifest.json",
+   "exit_code": 4,
+   "failure": null,
+   "group": "watchdog.wdb_1.80v_+27c",
+   "instance_type": "m6i.4xlarge",
+   "job_id": "klt-sim-1ae19c0c0ce5",
+   "netlist_sha256": "ef0772d5f74c18e93644498f571ecada71039d4cea512ec0b25ee22f50704fa5",
+   "pdk": {
+    "lib": "libs.tech/combined/sky130.lib.spice",
+    "pdk": "sky130A"
+   },
+   "request_sha256": "832d69cee686fac6bddff9582a128e64baba37f2f22d6ed61bdb222f2d4d30e6",
+   "runner_klt_version": "0.9.0",
+   "supply_v": 1.8,
+   "version_skew": true
+  },
+  {
+   "client_klt_version": "0.9.1.dev102+gef1ec19c95f6",
+   "dir": "watchdog.wdb_1.80v_+125c",
+   "engine_version": "46",
+   "evidence_manifest": "manifests/artifacts/lockdet-timing-watchdog.wdb_1.80v__125c.20261105-200250-672240.manifest.json",
+   "exit_code": 4,
+   "failure": null,
+   "group": "watchdog.wdb_1.80v_+125c",
+   "instance_type": "c7i.8xlarge",
+   "job_id": "klt-sim-191022c821c7",
+   "netlist_sha256": "ef0772d5f74c18e93644498f571ecada71039d4cea512ec0b25ee22f50704fa5",
+   "pdk": {
+    "lib": "libs.tech/combined/sky130.lib.spice",
+    "pdk": "sky130A"
+   },
+   "request_sha256": "56ee77937a9bd85b51d159498cf1050dcecd2399aa477b9e2b63346686bb60c6",
+   "runner_klt_version": "0.9.0",
+   "supply_v": 1.8,
+   "version_skew": true
+  },
+  {
+   "client_klt_version": "0.9.1.dev102+gef1ec19c95f6",
+   "dir": "watchdog.wdb_1.98v_-40c",
+   "engine_version": "46",
+   "evidence_manifest": "manifests/artifacts/lockdet-timing-watchdog.wdb_1.98v_-40c.20261105-191442-116115.manifest.json",
+   "exit_code": 4,
+   "failure": null,
+   "group": "watchdog.wdb_1.98v_-40c",
+   "instance_type": "m7i.4xlarge",
+   "job_id": "klt-sim-0e28c65d120c",
+   "netlist_sha256": "c2f14098952228937df7ab187e31e66894d090704dcdcc05675ad0518bcb7ae6",
+   "pdk": {
+    "lib": "libs.tech/combined/sky130.lib.spice",
+    "pdk": "sky130A"
+   },
+   "request_sha256": "5310dba852fcce1c2c1b1b72edcd6e7226d71cfe4f54081927bde6047806f58b",
+   "runner_klt_version": "0.9.0",
+   "supply_v": 1.98,
+   "version_skew": true
+  },
+  {
+   "client_klt_version": "0.9.1.dev102+gef1ec19c95f6",
+   "dir": "watchdog.wdb_1.98v_+27c",
+   "engine_version": "46",
+   "evidence_manifest": "manifests/artifacts/lockdet-timing-watchdog.wdb_1.98v__27c.20261105-193138-133463.manifest.json",
+   "exit_code": 4,
+   "failure": null,
+   "group": "watchdog.wdb_1.98v_+27c",
+   "instance_type": "m6i.4xlarge",
+   "job_id": "klt-sim-ae5cc0915e35",
+   "netlist_sha256": "c2f14098952228937df7ab187e31e66894d090704dcdcc05675ad0518bcb7ae6",
+   "pdk": {
+    "lib": "libs.tech/combined/sky130.lib.spice",
+    "pdk": "sky130A"
+   },
+   "request_sha256": "832d69cee686fac6bddff9582a128e64baba37f2f22d6ed61bdb222f2d4d30e6",
+   "runner_klt_version": "0.9.0",
+   "supply_v": 1.98,
+   "version_skew": true
+  },
+  {
+   "client_klt_version": "0.9.1.dev102+gef1ec19c95f6",
+   "dir": "watchdog.wdb_1.98v_+125c",
+   "engine_version": "46",
+   "evidence_manifest": "manifests/artifacts/lockdet-timing-watchdog.wdb_1.98v__125c.20261105-194022-552275.manifest.json",
+   "exit_code": 4,
+   "failure": null,
+   "group": "watchdog.wdb_1.98v_+125c",
+   "instance_type": "m6i.4xlarge",
+   "job_id": "klt-sim-429b5e1e483a",
+   "netlist_sha256": "c2f14098952228937df7ab187e31e66894d090704dcdcc05675ad0518bcb7ae6",
+   "pdk": {
+    "lib": "libs.tech/combined/sky130.lib.spice",
+    "pdk": "sky130A"
+   },
+   "request_sha256": "56ee77937a9bd85b51d159498cf1050dcecd2399aa477b9e2b63346686bb60c6",
+   "runner_klt_version": "0.9.0",
+   "supply_v": 1.98,
+   "version_skew": true
+  }
+ ],
+ "matrix_id": "19d174789afd2403",
+ "pdk_pin": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7",
+ "points_requested": 45,
+ "points_scope": "all",
+ "record_id": "lt-20261105-202135-163927",
+ "schema": "sky130-pll.lockdet-timing.record/1",
+ "supersedes": "lt-20261013-142513-681682"
+}

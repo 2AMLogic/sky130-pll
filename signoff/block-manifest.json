@@ -20,7 +20,7 @@
     },
     "8.analog": {
       "file": "signoff/evidence/characterization-report.json",
-      "content_hash": "sha256:83c1c3197b6256929920f5ed9f9d8f9385f8ff79ad9803e7fabc170dc3221cf3"
+      "content_hash": "sha256:ba554a4ab9a76a013f9d1384a7d730f421973ed0430c75627cf389a30a51e293"
     },
     "9.analog": {
       "file": "signoff/evidence/attest-item9-analog.json",
@@ -32,7 +32,7 @@
     },
     "10": {
       "file": "signoff/evidence/attest-item10.json",
-      "content_hash": "sha256:fa929607e17e586048860364a8d278144c24f111dc826c7747dc87be8daa5c5d"
+      "content_hash": "sha256:8bf7e4db4755a01ccefdb442621f95ff3995c1706d159e0991ac44de1cb31b61"
     }
   }
 }

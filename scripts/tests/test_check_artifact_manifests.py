@@ -144,6 +144,47 @@ class CheckTests(unittest.TestCase):
             self.assertEqual(chk.main(["--repo", repo, "--tree=--x"]), 2)
 
 
+class SuppliedByTests(CheckTests):
+    """DR-016: a resumed run's entry points at the committed file that has its bytes."""
+
+    PATH = "sim/b/records/old/body.spice"
+
+    def supplied(self, data=DATA, by=PATH, **over):
+        e = {k: v for k, v in entry(data).items() if k != "uri"}
+        e["supplied_by"] = by
+        e.update(over)
+        return e
+
+    def test_pointer_to_matching_committed_file_passes(self):
+        files = {self.PATH: DATA, **self.mfile(manifest(self.supplied()))}
+        self.assertEqual(self.run_check(files)[0], 0)
+
+    def test_pointer_to_missing_file_fails(self):
+        rc, err = self.run_check(self.mfile(manifest(self.supplied())))
+        self.assertEqual(rc, 1)
+        self.assertIn("is not a file", err)
+
+    def test_pointer_with_other_bytes_fails(self):
+        files = {self.PATH: b"other bytes!\n", **self.mfile(manifest(self.supplied()))}
+        rc, err = self.run_check(files)
+        self.assertEqual(rc, 1)
+        self.assertIn("does not match", err)
+
+    def test_pointer_with_same_size_other_bytes_fails(self):
+        files = {self.PATH: b"x" * len(DATA), **self.mfile(manifest(self.supplied()))}
+        self.assertEqual(self.run_check(files)[0], 1)
+
+    def test_ordinary_entry_still_collides_with_committed_bytes(self):
+        files = {self.PATH: DATA, **self.mfile(manifest(entry()))}
+        self.assertEqual(self.run_check(files)[0], 1)
+
+    def test_supplied_entry_must_not_carry_uri_or_bad_path(self):
+        for bad in ({"uri": entry()["uri"]}, {"supplied_by": "../x"},
+                    {"supplied_by": "/abs"}, {"supplied_by": "manifests/artifacts/a.manifest.json"}):
+            files = {self.PATH: DATA, **self.mfile(manifest(self.supplied(**bad)))}
+            self.assertEqual(self.run_check(files)[0], 1, bad)
+
+
 class RepoTests(unittest.TestCase):
     def test_this_repository_passes(self):
         with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):

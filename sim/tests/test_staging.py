@@ -22,13 +22,14 @@ wrong while still passing every existing test:
 
   - a campaign in a reapable checkout puts its checkpoint outside that
     checkout, automatically, with no flag;
-  - a campaign in a normal clone still writes exactly where it always did,
-    and its record and committed artifacts are unchanged;
+  - a campaign in a normal clone works in the git-ignored scratch tree and
+    stages nothing outside the checkout, and its record and stored artifacts
+    are unchanged;
   - after the originating worktree is deleted outright, a *different*
     checkout can resume the campaign and re-simulates only the unfinished
     units;
-  - promotion copies the committed artifact classes and never the waveform
-    dumps or the transient checkpoint;
+  - the committed-evidence filter selects the committed artifact classes and
+    never the waveform dumps or the transient checkpoint;
   - the resume fingerprint is not sensitive to which checkout netlisted the
     DUT -- but is still sensitive to the DUT.
 """
@@ -169,7 +170,6 @@ class ResolveTests(unittest.TestCase):
                 got.work_dir,
                 tmp / "cache" / "sky130-pll" / "sim-stage" / "fake-exp" / RECORD_ID,
             )
-            self.assertEqual(got.final_dir, exp_dir / "corners" / RECORD_ID)
             # Nothing inside the checkout, which is the entire claim.
             self.assertNotIn(str(exp_dir), str(got.work_dir))
             self.assertTrue(got.work_dir.is_dir())
@@ -268,10 +268,16 @@ class ResolveTests(unittest.TestCase):
             self.assertEqual(got.work_dir, staged)
 
 
-class PromotionTests(unittest.TestCase):
-    """What crosses from the staging directory into the committed tree."""
+class PromotableTests(unittest.TestCase):
+    """Which work-directory files cross into the committed evidence.
 
-    def _staged(self, tmp: Path) -> staging_mod.Staging:
+    `promotable()` is the filter `cli.py` hands to
+    `evidence_store.stage_files()`, so what it selects is what the run's
+    manifest names in the artifact store (DR-012). Nothing is copied into the
+    checkout, so this is the whole of the staged-vs-committed decision.
+    """
+
+    def _work_dir(self, tmp: Path) -> Path:
         work = tmp / "stage"
         work.mkdir()
         (work / "tb_fake.spice").write_text("* netlisted DUT\n")
@@ -281,35 +287,28 @@ class PromotionTests(unittest.TestCase):
         (work / "tt_27c_1.80v-v-clk.raw").write_text("0 1\n")
         (work / checkpoint_mod.CHECKPOINT_NAME).write_text("{}")
         (work / ".checkpoint-abc.tmp").write_text("{}")
-        return staging_mod.Staging(
-            work_dir=work, final_dir=tmp / "corners" / RECORD_ID, reason="test"
-        )
+        return work
 
-    def test_promotes_the_committed_classes_only(self):
+    def test_selects_the_committed_classes_only(self):
         with tempfile.TemporaryDirectory() as tmp:
-            staging = self._staged(Path(tmp))
-            staging_mod.promote(staging)
-            landed = sorted(p.name for p in staging.final_dir.iterdir())
+            work = self._work_dir(Path(tmp))
             self.assertEqual(
-                landed,
+                sorted(str(rel) for rel in staging_mod.promotable(work)),
                 [".spiceinit", "tb_fake.spice", "tt_27c_1.80v.log", "tt_27c_1.80v.spice"],
             )
-            # The waveform dump stays behind (sim/README.md's retention
-            # policy), and so does the transient checkpoint -- promoting it
-            # would put run state into the append-only evidence trail.
-            self.assertTrue((staging.work_dir / "tt_27c_1.80v-v-clk.raw").is_file())
-            self.assertFalse((staging.final_dir / checkpoint_mod.CHECKPOINT_NAME).exists())
+            # The waveform dump is left out (sim/README.md's retention
+            # policy), and so is the transient checkpoint -- storing it would
+            # put run state into the append-only evidence trail. Both stay in
+            # the work directory, which is scratch, and the in-flight atomic
+            # write is not an artifact at all.
+            self.assertTrue((work / "tt_27c_1.80v-v-clk.raw").is_file())
+            self.assertTrue((work / checkpoint_mod.CHECKPOINT_NAME).is_file())
 
-    def test_promotion_is_idempotent(self):
+    def test_a_work_dir_that_does_not_exist_selects_nothing(self):
+        """A run that failed before its first unit wrote anything selects an
+        empty set rather than raising."""
         with tempfile.TemporaryDirectory() as tmp:
-            staging = self._staged(Path(tmp))
-            first = staging_mod.promote(staging)
-            second = staging_mod.promote(staging)
-            self.assertEqual(sorted(first), sorted(second))
-            self.assertEqual(
-                (staging.final_dir / "tt_27c_1.80v.log").read_text(),
-                "Total analysis time\n",
-            )
+            self.assertEqual(staging_mod.promotable(Path(tmp) / "never-created"), [])
 
 
 class FingerprintPortabilityTests(unittest.TestCase):
@@ -685,12 +684,10 @@ class ReapedWorktreeTests(unittest.TestCase):
                 _without_run_time(plain.record_path.read_text()),
                 _without_run_time(staged.record_path.read_text()),
             )
-            # The promoted tree holds exactly what an unstaged run committed:
-            # the waveform dumps are the only difference, and they are not
+            # The staged run stores exactly what an unstaged run stores: the
+            # waveform dumps are the only difference, and they are not
             # committed evidence either way (sim/README.md's retention policy).
-            promoted = sorted(staged.stored)
-            unstaged = sorted(plain.stored)
-            self.assertEqual(promoted, unstaged)
+            self.assertEqual(sorted(staged.stored), sorted(plain.stored))
 
 
 if __name__ == "__main__":

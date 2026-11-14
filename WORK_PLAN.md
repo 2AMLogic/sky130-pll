@@ -11,32 +11,33 @@ _None._
 
 `loom:very-important` (one counts per workspace); every stage takes these first.
 
-_None._
+- **#304**: layout: draw clk_buf and re-mint the top-level layout record against the buffered top (split from #303)
 
 ## Important
 
 `loom:important`; taken before unlabelled work.
 
-- **#304**: layout: draw clk_buf and re-mint the top-level layout record against the buffered top (split from #303)
+- **#244**: sim: record divider Fmax boundaries across PVT for digital T1 characterization
 
 ## Ready
 
 Human-approved issues ready for implementation (`loom:issue`).
 
+- **#244**: sim: record divider Fmax boundaries across PVT for digital T1 characterization
 - **#298**: Re-qualify cited layout reference records under open_pdks f6eeac7 (part of #295)
+- **#304**: layout: draw clk_buf and re-mint the top-level layout record against the buffered top (split from #303)
 
 ## In Progress
 
 Issues currently being built (`loom:building`).
 
-- **#276**: design: measure independent watchdog and publish LOCK timing handoff
-- **#304**: layout: draw clk_buf and re-mint the top-level layout record against the buffered top (split from #303)
+_None._
 
 ## PRs Awaiting Review
 
 PRs waiting on Judge (`loom:review-requested`).
 
-- **#412**: layout: derive PLL record block count from plan and mint buffered-top record
+_None._
 
 ## Approved (Awaiting Merge)
 
@@ -60,7 +61,6 @@ Issues carrying `loom:curated`.
 - **#239**: Guard: recognize bounded explicit /tmp mktemp templates while preserving containment *(curated)*
 - **#244**: sim: record divider Fmax boundaries across PVT for digital T1 characterization *(curated)*
 - **#259**: design: characterize LOCK timing primitives and watchdog over PVT *(curated)*
-- **#276**: design: measure independent watchdog and publish LOCK timing handoff *(curated)*
 - **#290**: sim: klt decks[] batch route for the PFD/charge-pump (cp) campaign, with one-point smoke *(curated)*
 - **#297**: Re-qualify cited sim reference records under open_pdks f6eeac7 (part of #295) *(curated)*
 - **#298**: Re-qualify cited layout reference records under open_pdks f6eeac7 (part of #295) *(curated)*
@@ -70,6 +70,7 @@ Issues carrying `loom:curated`.
 
 - **#231**: design: add the digital lock output spec row 16 asks for (top-level has no LOCK port) *(architect)*
 - **#247**: sim: add a standalone PFD/charge-pump characterization campaign (UP/DN asymmetry, Icp, compliance) *(architect)*
+- **#434**: Collapse the layout klt pin narrative: 156 comment lines for 2 pins, with stale copies in layout/README.md and setup-venv.sh *(hermit)*
 
 ## Epics
 
@@ -80,13 +81,13 @@ _None._
 | Bucket | Count |
 |------|-------|
 | Operator merge-risk holds | 0 |
-| Very important | 0 |
+| Very important | 1 |
 | Important | 1 |
-| Ready (`loom:issue`) | 1 |
-| In Progress (`loom:building`) | 2 |
-| PRs awaiting review | 1 |
+| Ready (`loom:issue`) | 3 |
+| In Progress (`loom:building`) | 0 |
+| PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
-| Curated | 17 |
-| Architect / Hermit proposals | 2 |
+| Curated | 16 |
+| Architect / Hermit proposals | 3 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->

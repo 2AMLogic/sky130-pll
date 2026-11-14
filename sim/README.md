@@ -136,6 +136,8 @@ sim/
   | `vco-supply-pushing` | sibling of `vco`, same DUT and open-loop harness, opposite independent variable: `VCTRL` is held FIXED at four operating points (0.8, 0.9, 1.2, 1.5 V) while `VDD` is the swept quantity, supplied by the corner runner's own 1.62/1.80/1.98 V axis — frequency-vs-`VDD` supply-pushing characterization (fractional `%/V`), the first of the two prerequisites `DR-006` names for a future ratification of spec row 13 Budget 1 (the AC supply-ripple limit), replacing the 1.67x realized-over-floor ratio borrowed from gf180-pll. The cross-point `%/V` derivation (`sim/vco-supply-pushing/analysis/pushing.py`) is appended to the record, not rendered by `sim/harness/report.py` itself. **Run and recorded**: `sim/vco-supply-pushing/records/20260923-141525-e514bb0.md` (45/45 PASS). **Audited by issue #210 and cleared — no re-run, no accuracy change.** What this campaign claims per triple is an ABOVE/BELOW-floor classification, so the audit ran the triple whose classification the smallest shift can flip: **ff/125 °C/VCTRL=0.900 V**, `|S_span|` = 56.1 %/V against the 55.6 %/V floor — 0.5 %/V, 0.9 % of its own magnitude, the tightest of all 60 triples. Paired legs `20260927-093811-25bc597.md` (defaults) / `20260927-093854-25bc597.md` (`reltol=1e-4`, 5 ps grid, TMAX 50 ps) moved `S_span` from **−56.1 to −56.3 %/V**: no flip, and the margin *widens*. A second pair at sf/125 °C/VCTRL=1.200 V (`20260927-072223-25bc597.md` / `20260927-080253-25bc597.md`) moved it +49.9 → +51.9 %/V (+4.0 % of itself, 35 % of that triple's margin) and also did not flip. Both leg-A runs reproduced the standing record's rows exactly on a second platform. The first pair's own claim text wrongly calls sf/125/1.200 the tightest triple — it is sixth; `sim/tolerance-audit/README.md` carries that correction, since the append-only rule forbids editing the record | #165, #210 |
   | `clk-output` | **V_OH, V_OL, duty and 10–90 % edge time at the buffered `CLK` pin** (`design/clk-buf`, issue #232) into the provisional 1 pF `CLK`-to-`GND` characterization load of `DR-008`, over the full 45-point PVT grid. Open loop, `VCTRL` fixed at 0.865 V (the near-250 MHz point `vco-clk-transition` uses), measured at the pin rather than the ring-side net, reduced by `sim/harness/measure.py`'s new `measure.levels` block (settled V_OH/V_OL as medians, true extremes printed beside them) next to the existing `duty_cycle`/`transition` reductions. Reported against the DRAFT rows 14/15 bounds and never gated on them; the load is lumped, so no figure is pad/package/ESD capability. **Manifest and testbench committed; the 45-point campaign has not been run** — the harness's batch executor only accepts `cp` manifests, and this dispatch host does not run grids locally (see the PR for #232). Any single-point record minted for it is labeled as a subset | #232 |
   | `vco-2x-duty` | **Operator-ruled single-corner (tt / 27 °C / 1.80 V) measurement of open-loop VCO oscillation and output duty at the VCTRL values reaching 50 / 100 / 200 / 400 MHz** (`docs/phase-output-proposal.md` §10.3, DR-010 interface question). Run on the batch fleet (`--executor batch`), two records, one job each: `20261102-172016-7b7f96b` (11-value grid, 0.3–1.0 V; no oscillation at VCTRL ≤ 0.60 V, none of its points within ±10 % of 50/100/200 MHz) and the one allowed refinement `20261102-172209-7b7f96b` (10 values; it refines the first record, it does not supersede it). Result: 51.97 MHz @ 0.720 V (D 50.6 %), 103.9 MHz @ 0.770 V (50.6 %), 200.6 MHz @ 0.835 V (50.6 %), 395.3 MHz @ 0.940 V (50.3 %) — all within ±10 % of target and oscillating, every duty inside the consumer window (5–95 / 10–90 / 20–80 %), so **no ruled stop condition fired**. Derived (closed form, not measured; no ÷2 stage simulated) CLK–CLK90 offset `180·D` ≈ 91.1° at each of 50 / 100 / 200 MHz (≈ 9.7 / 4.9 / 2.5 ns) and ≈ 90.5° at the 400 MHz check. Cost: two ~26 s Spot jobs on `c7i.8xlarge`, far under the $20 cap (the fleet reports no billed dollars; at the on-demand rate ≲ $0.02 total — an upper bound, not an invoice). Open loop, one corner; DR-010 stays Proposed and nothing is ratified | #387 |
+  | `vco-2x-iq-scan` | **Stage 1 of issue #422 (parent #332): VCTRL-vs-frequency scan of the open-loop 2x VCO driving the transistor-level I/Q ÷2 (`design/divider-iq`) over the 45-point DR-003 PVT set**; locates each corner's VCTRL for 25 / 50 MHz output. `analysis/make_vctrl_tables.py` turns its record into the per-corner VCTRL brackets in the two graded manifests. Frequency characterization only; ratifies nothing. |
+  | `vco-2x-iq-25mhz`, `vco-2x-iq-50mhz` | **Stage 2 of issue #422: graded CLK-to-CLK90 offset and CLK/CLK90 duty, measured from simulated waveforms of the DR-010 (Proposed) I/Q ÷2 over the 45-point DR-003 PVT set at 25 / 50 MHz output (50 / 100 MHz VCO)**, graded against #332's DRAFT consumer window (90° ± 81° / ± 72°) and the DRAFT 45–55 % duty bound. Simulated, not measured silicon; ratifies nothing, DR-010 stays Proposed. |
   | `vco-buffered` | buffered half of the paired VCO tuning sweep for issue #232: `sim/vco`'s own manifest (same DUT, six `VCTRL` values, 45-point grid, transient and defaults) with `design/clk-buf` and the 1 pF `DR-008` load attached to the VCO's `CLK` node; the measured node is the ring-side net the divider taps, so the per-point difference from the unbuffered record `sim/vco/records/20260904-163130-f3ae976.md` is the tuning shift the buffer's input capacitance causes. **Manifest and testbench committed; the 45-point campaign has not been run** (same executor limitation as `clk-output`) | #232 |
 
   | `loop-ac` | linearized open-loop AC characterization of the loop dynamics — unity-gain crossover frequency (row 6, loop bandwidth) and phase margin (row 7), from a real ngspice `ac` sweep of `design/loop-filter/loop_filter.sch`'s own sky130 R/C network, with the charge pump / VCO / divider applied as a swept scalar loop gain `A = Icp*Kvco/N`. Replaces `design/loop-filter/DESIGN.md`'s explicitly hand-calculated, single-design-point, no-stated-corner `f_c` and phase-margin figures with committed `sim/` evidence. It is the AC/linearized-model testbench `sim/harness/measure.py`'s own docstring defers these two rows to | #52 |
@@ -244,26 +246,27 @@ python3 sim/run_corners.py pll-lock --jobs 8 --resume 20260911-071500-730c24b
   append-only rule below exists to prevent, so the harness will not do it
   even when asked.
 
-- **`--executor {local,remote}`** (default `local`, i.e. today's behaviour)
+- **`--executor {local,batch}`** (default `local`, i.e. today's behaviour)
   selects *where* each point's `ngspice -b` process runs: on this host, or
-  on klayout-tools' Spot fleet (`--jobs N` becomes the shard count). Like
+  on the Spot batch fleet through `klt sim` (`cp` and transient `measure`
+  manifests). `remote` (the SSH-fleet executor of #146) was retired in #425.
+  Like
   the two flags above it is execution-model only — the netlist, the
   per-point criterion, the measurement reducer and the record schema are the
   same code either way, and a `local` record is byte-for-byte the record it
   would have been before the seam existed.
 
-  A remote request that this host cannot honour (no cloud credentials, a
-  quota or cost-gate refusal, a lost shard) **falls back to local** with one
-  logged line and a `fallback_reason` recorded in the evidence, rather than
-  failing the campaign. Full contract, configuration and the reasoning:
-  `sim/harness/README.md` → "Where a unit runs"; the committed side-by-side
-  local/remote comparison lives in `sim/executor-equivalence/`.
+  A `batch` request never falls back to local: a refused or failed submit
+  fails the run and writes no record. Full contract:
+  `sim/harness/README.md` → "Where a unit runs"; the retired local/remote
+  comparison fixture is noted in `sim/executor-equivalence/`.
 
 - **`--stage-dir DIR`** (or `$SKY130_PLL_SIM_SCRATCH`; `--no-stage` to opt
   out) puts a campaign's *working* files — per-point netlists, logs, waveform
-  dumps and the checkpoint — outside the checkout while it runs, and copies
-  the committed artifacts into `corners/<record-id>/` when the record is
-  written. **This is automatic when the checkout is a linked git worktree**,
+  dumps and the checkpoint — under a root outside every checkout while it
+  runs, instead of the git-ignored scratch tree
+  `sim/build/<slug>/<record-id>/` a run otherwise works in.
+  **This is automatic when the checkout is a linked git worktree**,
   because a worktree is a directory another process can remove mid-campaign:
   issue #212 records a 4 h 26 min Monte Carlo campaign destroyed exactly that
   way, checkpoint included. A staged campaign survives its checkout — from any
@@ -272,9 +275,11 @@ python3 sim/run_corners.py pll-lock --jobs 8 --resume 20260911-071500-730c24b
   only the rest.
 
   Like the three flags above, this is execution-model only: the record, its
-  text, and the location and contents of every committed artifact are
-  identical either way. Details: `sim/harness/README.md` → "Staging a
-  campaign's work outside the checkout".
+  text, and the set and contents of the artifacts stored for it are identical
+  either way — the evidence bytes go to the artifact store when the record is
+  written (DR-012) in both cases, and neither copies anything into the
+  checkout. Details: `sim/harness/README.md` → "Staging a campaign's work
+  outside the checkout".
 
 The checkpoint is **run state, not evidence**: it is deleted the moment the
 record is written, and — when it is written in the tree at all — it is

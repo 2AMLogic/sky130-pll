@@ -1,14 +1,12 @@
 """Driver for the divider Fmax characterization campaign (issue #244).
 
     python3 sim/run_fmax.py divider-fmax --dry-run
-    python3 sim/run_fmax.py divider-fmax --executor remote --subset-reason ... # subset
+    python3 sim/run_fmax.py divider-fmax --executor batch --subset-reason ...  # subset
     python3 sim/run_fmax.py divider-fmax --executor batch                      # full grid
-    python3 sim/run_fmax.py divider-fmax --executor remote                     # full grid (SSH fleet)
 
 The full DR-003 grid x the declared modulus set is thousands of ngspice runs
 and belongs on the Spot batch fleet. This driver therefore never silently runs
-a grid on the host it was started on: if the requested remote executor falls
-back to local, or `--executor local` is asked for more than
+a grid on the host it was started on: if `--executor local` is asked for more than
 `--max-local-probes` units, it stops before simulating. `--probe-mhz F` runs
 exactly one probe locally (a debug/validation aid; it writes no record).
 """
@@ -270,13 +268,23 @@ def cmd(args) -> int:
         return 0
 
     n_requested = 1 if args.probe_mhz is not None else n_stage1
-    name = executor_mod.resolve_name(args.executor, manifest)
+    requested = (args.executor or manifest.get("executor") or "").strip()
+    if requested == fmax_klt.BATCH_EXECUTOR:
+        # The Fmax driver owns its own batch route (fmax_klt); resolve_name only
+        # knows the cp/measure batch adapters and would refuse this manifest.
+        name = requested
+    else:
+        try:
+            name = executor_mod.resolve_name(args.executor, manifest)
+        except executor_mod.ExecutorRefused as e:
+            print(f"run_fmax.py: {e}", file=sys.stderr)
+            return 1
     if name not in executor_mod.EXECUTORS and name != fmax_klt.BATCH_EXECUTOR:
         print(f"run_fmax.py: unknown executor {name!r}", file=sys.stderr)
         return 1
     if name == "local" and n_requested > args.max_local_probes:
         print(f"run_fmax.py: refusing to run {n_requested} probes on this host "
-              f"(--max-local-probes {args.max_local_probes}); use --executor remote "
+              f"(--max-local-probes {args.max_local_probes}); use --executor batch "
               "(Spot batch fleet) or narrow to one cell with --probe-mhz", file=sys.stderr)
         return 1
 
@@ -326,10 +334,6 @@ def cmd(args) -> int:
         else:
             backend = executor_mod.build(name, pdk=pdk, spiceinit=spiceinit, jobs=jobs,
                                          manifest=manifest, log=print)
-        if name == "remote":
-            # A fleet-backed stage may silently fall back to local execution;
-            # for a grid that is exactly what this host must not do.
-            backend = _GuardedRemote(backend, args.max_local_probes)
 
         try:
             if args.probe_mhz is not None:
@@ -342,7 +346,7 @@ def cmd(args) -> int:
             backend = run_campaign(cells, grid_hz, manifest=manifest, spec=spec,
                                    netlists=netlists, work_dir=work_dir, backend=backend,
                                    jobs=jobs, log=print)
-        except (_LocalFallbackRefused, fmax_klt.KltBatchError) as e:
+        except fmax_klt.KltBatchError as e:
             print(f"run_fmax.py: {e}", file=sys.stderr)
             return 1
 
@@ -406,34 +410,6 @@ def cmd(args) -> int:
         return 0 if verdict == "PASS" else 2
 
 
-class _LocalFallbackRefused(RuntimeError):
-    pass
-
-
-class _GuardedRemote:
-    """Wrap a RemoteBackend so a fallback to local execution of more than
-    `max_local` units aborts instead of running a grid on this host."""
-
-    def __init__(self, inner, max_local: int):
-        self._inner, self._max_local = inner, max_local
-
-    def stage(self, units):
-        self._inner.stage(units)
-        if self._inner.name != "remote" and len(units) > self._max_local:
-            raise _LocalFallbackRefused(
-                f"remote executor unavailable ({self._inner.fallback_reason}); refusing to "
-                f"run {len(units)} probes locally (--max-local-probes {self._max_local}). "
-                "Fix the fleet configuration, or narrow the request."
-            )
-        return self
-
-    def execute(self, unit):
-        return self._inner.execute(unit)
-
-    def provenance(self):
-        return self._inner.provenance()
-
-
 def _note(prov) -> str | None:
     from . import cli as cli_mod
 
@@ -453,7 +429,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--supersedes", help="record-id this run's record supersedes")
     p.add_argument("--executor", choices=executor_mod.EXECUTORS + (fmax_klt.BATCH_EXECUTOR,),
                    help="default: the manifest's, else local. `batch` submits through "
-                        "`klt sim --backend batch` (S3 job contract); `remote` needs the SSH fleet")
+                        "`klt sim --backend batch` (S3 job contract)")
     p.add_argument("--klt-jobs", type=int, default=2,
                    help="concurrent `klt sim` submissions for the batch executor (default 2)")
     p.add_argument("--klt-cache", help="directory for per-job requests/reports of the batch "

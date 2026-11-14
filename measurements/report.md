@@ -1,6 +1,6 @@
 # PLL characterization report
 
-Generated: 2026-11-06T08:04:07Z by `measurements/aggregate.py` -- this file is a **derived rollup**, not append-only evidence itself; re-run the aggregator to refresh it (see `measurements/README.md`).
+Generated: 2026-11-10T18:56:50Z by `measurements/aggregate.py` -- this file is a **derived rollup**, not append-only evidence itself; re-run the aggregator to refresh it (see `measurements/README.md`).
 
 Rolls up every `sim/*/records/*.md` and `layout/*/reports/*/record.md` evidence record into one table, keyed by `spec/target-spec.md` row number. **A populated row is not a passing row.** Rows 0, 1, 9, 19 and 20 of `spec/target-spec.md` are ratified (`DR-001`/`DR-002`/`DR-003`/`DR-006`); every other numeric row an evidence record appears against is still DRAFT. For a DRAFT row, a record listed against it is *evidence bearing on that row* -- the measured input a future decision record would argue the row from -- never a verdict on it, and never a substitute for the ratification act itself. For a **ratified** row the record's verdict does grade against a binding bound, and a FAIL there is a recorded miss against the spec (never a reason to relax it -- see `CLAUDE.md`). Read each record before quoting it either way: its own `Verdict` column here is the record's overall pass/fail, which for several campaigns means "the harness ran and recorded what happened", including recorded non-lock.
 
@@ -108,8 +108,11 @@ Harness-plumbing evidence, negative controls, and anything whose citation does n
 | sim | pfd-cp-resolution | 20261011-011743-f9ceac9 | Nominal-point numerical-resolution diagnostic for the pfd-cp campaign (issue #250): re-runs the zero and +/-0.1 ns phase offsets at midrail VCTRL with 2.5 ps d… | FAIL | 0/1 points passed | declares it measures no spec row (cited by the record itself) | `sim/pfd-cp-resolution/records/20261011-011743-f9ceac9.md` |
 | sim | phase-quadrature-model | 20261020-001830-e786d18 | A PDK-free deterministic event model of the proposed two-flip-flop I/Q /2 (DR-010, Proposed) reproduces the closed-form quadrature relationship under the decla… | PASS | 117 of 117 criterion-bearing cases passed; 3 informational FINDING cases carry no pass/fail criterion; 120 cases total | declares it measures no spec row (declared by `sim/phase-quadrature-model/testbench/tb.json`; the record itself predates the citation convention and is append-only) | `sim/phase-quadrature-model/records/20261020-001830-e786d18.md` |
 | sim | pll | 20260819-123508-fe0e6df | first PLL-specific harness campaign -- proves xschem netlisting + sim/harness PVT-point substitution (process corner, supply, temperature) + ngspice execution… | FAIL | 17/27 points passed | declares it measures no spec row (declared by `sim/pll/testbench/tb.json`; the record itself predates the citation convention and is append-only) | `sim/pll/records/20260819-123508-fe0e6df.md` |
+| sim | vco-2x-iq-25mhz | 20261110-182507-04538e4 | Graded transistor-level measurement of the DR-010 (Proposed) I/Q divide-by-2 driven by the open-loop 2x VCO at 25 MHz output (50 MHz VCO): CLK-to-CLK90 offset… | PASS | 45/45 points passed | declares it measures no spec row (cited by the record itself) | `sim/vco-2x-iq-25mhz/records/20261110-182507-04538e4.md` |
+| sim | vco-2x-iq-50mhz | 20261110-183741-04538e4 | Graded transistor-level measurement of the DR-010 (Proposed) I/Q divide-by-2 driven by the open-loop 2x VCO at 50 MHz output (100 MHz VCO): CLK-to-CLK90 offset… | PASS | 45/45 points passed | declares it measures no spec row (cited by the record itself) | `sim/vco-2x-iq-50mhz/records/20261110-183741-04538e4.md` |
+| sim | vco-2x-iq-scan | 20261110-175901-04538e4 | VCTRL-vs-frequency scan of the open-loop 2x VCO driving the DR-010 I/Q divide-by-2 over the ratified DR-003 PVT set (issue #422, parent #332): locates, per cor… | PASS | 45/45 points passed | declares it measures no spec row (cited by the record itself) | `sim/vco-2x-iq-scan/records/20261110-175901-04538e4.md` |
 | sim | vco-clk-transition | 20260925-110645-810cd82 | design/vco's own CLK transition (10-90% rise/fall) time, measured open-loop from design/vco/vco_ring5.sch at a single fixed VCTRL near the row-9 operating poin… | PASS | 1/1 points passed | declares it measures no spec row (cited by the record itself) | `sim/vco-clk-transition/records/20260925-110645-810cd82.md` |
-| layout | pll | 20261106-075813-16557e3 | Device-level layout of the closed-loop PLL schematic (`design/top/netlist/top.spice`), drawn by `layout/bin/run-pll-layout-flow.sh` (issue #16). Read this file… | PASS | 9/9 checks passed | declares it measures no spec row (cited by the record itself) | `layout/pll/reports/20261106-075813-16557e3/record.md` |
+| layout | pll | 20260924-041509-c53e7c4 | Device-level layout of the closed-loop PLL schematic (`design/top/netlist/top.spice`), drawn by `layout/bin/run-pll-layout-flow.sh` (issue #16). Read this file… | PASS | 8/8 checks passed | declares it measures no spec row (cited by the record itself) | `layout/pll/reports/20260924-041509-c53e7c4/record.md` |
 | layout | trivial-cell | 20260924-041449-c53e7c4 | Trivial-cell proof of the `klt`-driven DRC/LVS flow (issue #2) -- **not** PLL-block layout, which is a later issue's scope (there is no PLL schematic yet). - *… | PASS | 6/6 checks passed | declares it measures no spec row (cited by the record itself) | `layout/trivial-cell/reports/20260924-041449-c53e7c4/record.md` |
 
 ## Divider Fmax boundaries (digital characterization, Fmax component only)
@@ -120,9 +123,9 @@ No Fmax record has been committed yet.
 
 ## Scan summary
 
-- Evidence records scanned: 94
-- Current (non-superseded): 72
-- Superseded (excluded from the tables above; still retained, append-only, under `sim/`/`layout/`): 22
-- Spec-row citation stated by the record itself: 63
+- Evidence records scanned: 96
+- Current (non-superseded): 75
+- Superseded (excluded from the tables above; still retained, append-only, under `sim/`/`layout/`): 21
+- Spec-row citation stated by the record itself: 66
 - Spec-row citation resolved from the experiment's own declaration (`sim/<slug>/testbench/tb.json` / `layout/<block>/spec-rows.json`) because the record predates the convention and is append-only: 9
 - **Current records with no spec-row declaration at all: 0**

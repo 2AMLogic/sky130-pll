@@ -1,9 +1,8 @@
 """`klt sim --backend batch` route for the divider Fmax campaign (issue #244).
 
 The Fmax grid is thousands of transient runs and belongs on the Spot batch
-fleet. `sim/harness/executor.py`'s `remote` backend needs the SSH fleet
-(`klayout_tools.remote_fleet`), which a dispatch worker is not provisioned
-for; the supported route there is the `klt sim` S3 job contract. This module
+fleet; the route there is the `klt sim` S3 job contract (the SSH-fleet
+`remote` executor was retired in issue #425). This module
 adapts the campaign to that route without touching the judge: every probe is
 still classified by `fmax.classify_waveform` from the divider output trace.
 
@@ -66,6 +65,35 @@ BATCH_EXECUTOR = "batch"
 #: `klt sim` exit codes that still carry a usable report (0 pass, 3 a declared
 #: limit failed; this campaign declares no limits, but 3 is harmless).
 _USABLE_EXIT = (0, 3)
+
+#: Seconds `klt sim` itself waits for fleet capacity before reporting a launch
+#: refusal (request field `batch.capacity_wait_s`; the `--wait-for-capacity`
+#: flag overrides it). The fleet is vCPU-budgeted and shared, so a burst of
+#: submissions is refused with `batch_no_capacity` and never runs unless the
+#: submit waits. Waiting inside `klt sim` re-launches the same job with
+#: jittered backoff across the launch pools, while the harness-level retry
+#: below resubmits the whole command, so both layers are kept.
+CAPACITY_WAIT_S = 600.0
+
+#: Job-level diagnostic codes meaning the FLEET lost the job rather than the
+#: circuit failing: the Spot instance was reclaimed mid-run, so no corner of
+#: the job produced a simulator result. The work is gone, not wrong, and
+#: re-launching the identical request is the documented recovery. Observed on
+#: this campaign at job klt-sim-f811a606a6bb (2026-11-14): one reclaim out of
+#: three groups aborted the whole run, which over the declared 225-cell grid
+#: (45 stage-1 jobs) makes a completed campaign a coin flip.
+INTERRUPT_CODES = ("batch_job_interrupted", "batch_job_lost")
+#: How many times a group whose job was reclaimed is re-launched, and the wait
+#: between attempts. A reclaim is never read as an electrical verdict.
+INTERRUPT_RETRIES = 3
+INTERRUPT_WAIT_S = 60.0
+
+
+def is_job_interruption(text: str) -> bool:
+    """True when a job-level failure is the fleet losing the job (Spot reclaim)
+    rather than a simulator or circuit outcome. Re-launching is then safe: no
+    corner of the job produced a result to contradict."""
+    return any(c in text for c in INTERRUPT_CODES)
 
 NET_NAME = "body.spice"
 REQUEST_NAME = "request.json"
@@ -192,11 +220,21 @@ def build_request(spec, group: Group, stop_s: float, *, timeout_s: int,
             "keep_artifacts": True,
             "waveforms": True,
             "max_workers": max_workers,
+            # `build_body` emits `.save v(fbclk_0) ... v(fbclk_k)`: the reducer
+            # reads only those output traces, and the `.meas` cards name only
+            # those nodes. klt's default `save_mode: "all"` emits a generated
+            # `save all` that SUPERSEDES that card, so every internal node of
+            # every DUT copy lands in the ASCII rawfile -- measured at 7.9 GB
+            # for ONE corner of one 4-DUT group (job klt-sim-70bcac3db8d5,
+            # 2026-11-14), i.e. multiple TB over the declared 225-cell grid.
+            # "netlist" hands the saved set back to the body's own `.save`.
+            "save_mode": "netlist",
         },
         # The fleet runner image pins an older klt than a current client; the
         # request uses only options that older runner implements (corners,
         # tran, .meas, waveforms, artifacts), so skew is warned, not enforced.
-        "batch": {"runner_version_check": "warn"},
+        "batch": {"runner_version_check": "warn",
+                  "capacity_wait_s": CAPACITY_WAIT_S},
     }
     if group.excluded:
         req["exclude"] = group.excluded
@@ -313,7 +351,9 @@ class KltBatchBackend:
     def __init__(self, *, spec, manifest, work_dir: Path, cache_dir: Path | None = None,
                  klt: str | None = None, runner=None, log=print, max_jobs: int = 2,
                  chunk_size: int = 4, capacity_retries: int = 30,
-                 capacity_wait_s: float = 120.0, sleep=time.sleep):
+                 capacity_wait_s: float = 120.0, sleep=time.sleep,
+                 interrupt_retries: int = INTERRUPT_RETRIES,
+                 interrupt_wait_s: float = INTERRUPT_WAIT_S):
         self.spec, self.manifest = spec, manifest
         self.work_dir = Path(work_dir)
         self.cache_dir = Path(cache_dir) if cache_dir else self.work_dir / "klt"
@@ -323,6 +363,7 @@ class KltBatchBackend:
         self.max_jobs = max(1, max_jobs)
         self.chunk_size = max(1, chunk_size)
         self.capacity_retries, self.capacity_wait_s, self.sleep = capacity_retries, capacity_wait_s, sleep
+        self.interrupt_retries, self.interrupt_wait_s = interrupt_retries, interrupt_wait_s
         self._lock = threading.Lock()
         self.jobs: list = []  # per-group provenance
 
@@ -399,34 +440,50 @@ class KltBatchBackend:
                 report = None
         if report is not None:
             self.log(f"  {gkey}: reusing collected report {report_path}")
+            failure = job_level_failure(report)
         else:
-            self.log(f"  {gkey}: submitting {n_dut} DUT(s) x {len(group.needed)} corner(s) "
-                     f"to the batch fleet")
-            cmd = [self.klt, "sim", str(gdir / REQUEST_NAME), "-o", str(gdir / "out"),
-                   "--backend", "batch", "--format", "json"]
-            try:
-                proc, _ = submit_with_capacity_retry(
-                    cmd, runner=self.runner, timeout=timeout_s + 3600 + 1800,
-                    usable_exit=_USABLE_EXIT, retries=self.capacity_retries,
-                    wait_s=self.capacity_wait_s, sleep=self.sleep, log=self.log,
-                    label=f"  {gkey}")
-            except (OSError, subprocess.TimeoutExpired) as e:
-                raise KltBatchError(f"{gkey}: klt sim did not complete: {e}") from e
-            (gdir / "stderr.log").write_text(proc.stderr or "")
-            try:
-                report = json.loads(proc.stdout)
-            except ValueError:
-                raise KltBatchError(
-                    f"{gkey}: klt sim exit {proc.returncode} with no JSON report: "
-                    f"{(proc.stderr or proc.stdout or '').strip()[-1500:]}"
-                ) from None
-            report_path.write_text(json.dumps(report, indent=1, sort_keys=True) + "\n")
-            if proc.returncode not in _USABLE_EXIT and not report.get("corners"):
-                raise KltBatchError(
-                    f"{gkey}: klt sim exit {proc.returncode}: "
-                    f"{json.dumps(report.get('error', report))[:1500]}"
-                )
-        failure = job_level_failure(report)
+            # A Spot reclaim loses the job without producing any corner result,
+            # so re-launching the identical request is safe and is the only way
+            # a 45-job campaign finishes. Every other job-level failure, and
+            # every per-corner outcome, is left exactly as the fleet reported it.
+            attempt = 0
+            while True:
+                self.log(f"  {gkey}: submitting {n_dut} DUT(s) x "
+                         f"{len(group.needed)} corner(s) to the batch fleet")
+                cmd = [self.klt, "sim", str(gdir / REQUEST_NAME), "-o", str(gdir / "out"),
+                       "--backend", "batch", "--format", "json"]
+                try:
+                    proc, _ = submit_with_capacity_retry(
+                        cmd, runner=self.runner, timeout=timeout_s + 3600 + 1800,
+                        usable_exit=_USABLE_EXIT, retries=self.capacity_retries,
+                        wait_s=self.capacity_wait_s, sleep=self.sleep, log=self.log,
+                        label=f"  {gkey}")
+                except (OSError, subprocess.TimeoutExpired) as e:
+                    raise KltBatchError(f"{gkey}: klt sim did not complete: {e}") from e
+                (gdir / "stderr.log").write_text(proc.stderr or "")
+                try:
+                    report = json.loads(proc.stdout)
+                except ValueError:
+                    raise KltBatchError(
+                        f"{gkey}: klt sim exit {proc.returncode} with no JSON report: "
+                        f"{(proc.stderr or proc.stdout or '').strip()[-1500:]}"
+                    ) from None
+                report_path.write_text(json.dumps(report, indent=1, sort_keys=True) + "\n")
+                if proc.returncode not in _USABLE_EXIT and not report.get("corners"):
+                    raise KltBatchError(
+                        f"{gkey}: klt sim exit {proc.returncode}: "
+                        f"{json.dumps(report.get('error', report))[:1500]}"
+                    )
+                failure = job_level_failure(report)
+                if (failure and attempt < self.interrupt_retries
+                        and is_job_interruption(failure)):
+                    attempt += 1
+                    self.log(f"  {gkey}: fleet lost the job ({failure[:200]}); "
+                             f"re-launch {attempt}/{self.interrupt_retries} in "
+                             f"{self.interrupt_wait_s:g}s")
+                    self.sleep(self.interrupt_wait_s)
+                    continue
+                break
         if failure:
             raise KltBatchError(f"{gkey}: batch job produced no usable corner results: {failure}")
         remote = (report.get("environment") or {}).get("remote") or {}

@@ -321,6 +321,27 @@ class Evidence(Base):
             self.store.store_group("mid", stem, self.tmp)
 
 
+    def test_lineage_bytes_are_pointed_to_not_restored_and_only_for_resume(self):
+        src = self.tmp / "src"
+        src.mkdir()
+        (src / "request.json").write_text('{"same": 1}\n')
+        (src / "report.json").write_text('{"new": 2}\n')
+        old = self.root / "sim" / "lockdet-timing" / "records" / "old"
+        old.mkdir(parents=True)
+        (old / "request.json").write_text('{"same": 1}\n')
+        m = self.store.store_group("mid", "a.1", src, lineage=[old])
+        entries = {e["name"].rsplit("/", 1)[-1]: e
+                   for e in json.loads((self.root / m).read_text())["entries"]}
+        self.assertEqual(entries["request.json"]["supplied_by"],
+                         "sim/lockdet-timing/records/old/request.json")
+        self.assertNotIn("uri", entries["request.json"])
+        self.assertIn("uri", entries["report.json"])
+        self.assertEqual([n.rsplit("/", 1)[-1] for n in self.puts[-1]], ["report.json"])
+        m2 = self.store.store_group("mid", "a.2", src)  # no lineage: nothing omitted
+        self.assertTrue(all("uri" in e for e in
+                            json.loads((self.root / m2).read_text())["entries"]))
+
+
 class Resume(Base):
     def groups(self):
         return sorted((self.tmp / "rec" / "groups").glob("*/*.json"))
