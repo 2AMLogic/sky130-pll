@@ -34,11 +34,12 @@ Apache-2.0.
   result that misses the spec is recorded as a miss, and the spec is changed
   only by a decision record that argues the change on its own merits, not to
   launder a failing number.
-- **Visibility / firewall**: this repo is **private for now** and binds under
-  the 2AM Logic invention firewall. The flip to public is an **operator**
-  action, never an agent one. Write every commit message, issue, and document
-  as if a stranger will read it. Nothing about business positioning, commercial
-  terms, or the contents of other 2AM Logic repositories belongs here.
+- **Visibility / firewall**: this repo is **public** and binds under the 2AM
+  Logic invention firewall. Changing the repository's visibility is an
+  **operator** action, never an agent one. Write every commit message, issue,
+  and document as if a stranger will read it — now one can. Nothing about
+  business positioning, commercial terms, or the contents of other 2AM Logic
+  repositories belongs here.
 - **Harness bootstrap**: seed the sim harness (PVT corner runner + testbench
   structure) from `2AMLogic/gf180-pll`, and the sky130 open-PDK flow (PDK
   install, `xschemrc`, `spiceinit`, sky130 `klt` DRC/LVS decks) from
