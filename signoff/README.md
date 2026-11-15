@@ -217,7 +217,7 @@ the router refused to draw, not legs it drew and that passed, so it does not
 establish that a fully-routed `pll_top` stays clean of `met1.space.1` once
 those legs are actually routed. An earlier, now-superseded record's own
 routed spot-check
-(`layout/pll/reports/20260906-195205-4a08c71/route-spot-check/drc.json`,
+(`layout/pll/reports/20260906-195205-4a08c71/route-spot-check/drc.json`, <!-- signoff-historical-record -->
 cited by this block-manifest before issue #157's pin bump) shows the failure
 mode directly: `status: "violations"`, `rule_counts: {"met1.space.1": 2}` —
 on a rule that is not in the `rules_skipped` list above, so it was fully
