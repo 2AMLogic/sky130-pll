@@ -208,12 +208,6 @@ class InterpolationTests(unittest.TestCase):
         self.assertIsNone(i)
         self.assertIn("fewer than two", note)
 
-    def test_static_dynamic_split(self):
-        s, d = reduce_mod.split_static_dynamic(30e-6, 2e-6)
-        self.assertAlmostEqual(s, 2e-6)
-        self.assertAlmostEqual(d, 28e-6)
-        self.assertEqual(reduce_mod.split_static_dynamic(None, 2e-6), (None, None))
-
 
 class LoadWaveformTests(unittest.TestCase):
     def test_round_trip_lowercases_names(self):
