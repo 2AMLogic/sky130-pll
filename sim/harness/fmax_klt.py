@@ -57,7 +57,7 @@ from pathlib import Path
 from . import fmax as fmax_mod
 from . import report as report_mod
 from . import runner as runner_mod
-from .klt_submit import is_capacity_refusal, submit_with_capacity_retry  # noqa: F401
+from .klt_submit import submit_with_capacity_retry
 
 #: Executor name accepted by `run_fmax.py --executor`.
 BATCH_EXECUTOR = "batch"

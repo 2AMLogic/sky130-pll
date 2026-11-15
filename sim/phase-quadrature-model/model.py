@@ -295,7 +295,3 @@ def ideal_quadrature_phase_deg(duty, t2, d_tcq=F(0)):
     disagreeing with `analytic_phase_deg` whenever duty != 0.5 or d_tcq != 0.
     """
     return F(90)
-
-
-def to_float(x, nd=6):
-    return f"{float(x):.{nd}f}"

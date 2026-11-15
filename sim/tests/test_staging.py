@@ -60,11 +60,11 @@ from test_execution import (  # noqa: E402
     RECORD_ID,
     _Harness,
     _point_result,
-    _StubPdk,
 )
+from pdk_fixture import make_resolved_pdk  # noqa: E402
 from scripts.test_support import record_table_rows  # noqa: E402
 
-ALL_POINT_IDS = [p.corner_id for p in corners_mod.build_matrix(MANIFEST, _StubPdk.process_corners)]
+ALL_POINT_IDS = [p.corner_id for p in corners_mod.build_matrix(MANIFEST, make_resolved_pdk().process_corners)]
 
 _UTC_STAMP_RE = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z")
 
@@ -321,7 +321,7 @@ class FingerprintPortabilityTests(unittest.TestCase):
             mode="pvt",
             manifest=MANIFEST,
             netlist_text=netlist,
-            pdk=_StubPdk(),
+            pdk=make_resolved_pdk(),
             units=[self.POINT],
             repo_root=repo_root,
         )
@@ -379,7 +379,7 @@ class LegacyCheckpointTests(unittest.TestCase):
             mode="pvt",
             manifest=MANIFEST,
             netlist_text=self.NETLIST_WITH_PATH,
-            pdk=_StubPdk(),
+            pdk=make_resolved_pdk(),
             units=[self.POINT],
             repo_root=repo_root,
         )
@@ -429,7 +429,7 @@ class LegacyCheckpointTests(unittest.TestCase):
                         mode="pvt",
                         manifest=MANIFEST,
                         netlist_text=other,
-                        pdk=_StubPdk(),
+                        pdk=make_resolved_pdk(),
                         units=[self.POINT],
                         repo_root=self.ROOT,
                     ),
@@ -450,7 +450,7 @@ class LegacyCheckpointTests(unittest.TestCase):
                         mode="pvt",
                         manifest=dict(MANIFEST, temps_c=[27]),
                         netlist_text=self.NETLIST_WITH_PATH,
-                        pdk=_StubPdk(),
+                        pdk=make_resolved_pdk(),
                         units=[self.POINT],
                         repo_root=self.ROOT,
                     ),
