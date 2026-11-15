@@ -8,7 +8,7 @@ rendering of all of that into the record's `## Provenance` section.
 
 Named `render_common.py` (underscore, not hyphen) so it can be imported
 normally -- unlike the two `render-*.py` scripts themselves, which are loaded
-by path (see `layout/tests/test_record_dirty_flag.py`) because a hyphenated
+by path (see `layout/tests/test_git_provenance.py`) because a hyphenated
 filename isn't a valid Python module name.
 """
 
