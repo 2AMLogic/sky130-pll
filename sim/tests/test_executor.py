@@ -308,7 +308,7 @@ class BackendInterfaceTests(unittest.TestCase):
                 )
 
         backend = BatchBackend()
-        self.assertIs(backend.stage([]), backend)
+        self.assertIsNone(backend.stage([]))
         self.assertIsNone(backend.provenance())
 
     def test_build_rejects_an_unknown_backend_name(self):

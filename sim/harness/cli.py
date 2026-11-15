@@ -556,7 +556,7 @@ def _run_experiment(
         execute_kwargs: dict = {}
         if executor_name != executor_mod.DEFAULT_EXECUTOR:
             try:
-                backend = backend.stage(
+                backend.stage(
                     [
                         prepare_unit(manifest, netlist_text, unit, corners_dir)
                         for unit in pending

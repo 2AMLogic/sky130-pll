@@ -64,7 +64,8 @@ class MeasureBatchTests(unittest.TestCase):
                 root = Path(d)
                 klt = MeasureFakeKlt(spec)
                 ids = ("tt_27C_1.80V", "ss_125C_1.62V")
-                be = backend(root, man, klt).stage(units(root, ids))
+                be = backend(root, man, klt)
+                be.stage(units(root, ids))
                 (req, decks), = klt.requests
                 self.assertEqual([x["id"] for x in req["decks"]], list(ids))
                 for entry in req["decks"]:

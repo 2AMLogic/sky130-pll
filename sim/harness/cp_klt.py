@@ -189,14 +189,14 @@ class CpBatchBackend(executor_mod.ExecutionBackend):
 
     # -- lifecycle ------------------------------------------------------- #
 
-    def stage(self, units) -> executor_mod.ExecutionBackend:
+    def stage(self, units) -> None:
         """Submit the whole unit set as one deck-list job, or raise.
 
         Never falls back to a local run: provisioning and capacity problems are
         reported, not routed around."""
         units = list(units)
         if not units:
-            return self
+            return
         from . import runner as runner_mod  # lazy: runner imports executor
 
         self.preflight()
@@ -240,7 +240,6 @@ class CpBatchBackend(executor_mod.ExecutionBackend):
             "unit_count": len(units),
             "dir": BATCH_DIR,
         }
-        return self
 
     def _submit(self, bdir: Path, wall_s: int) -> dict:
         cmd = [self.klt, "sim", str(bdir / REQUEST_NAME), "-o", str(bdir / "out"),
