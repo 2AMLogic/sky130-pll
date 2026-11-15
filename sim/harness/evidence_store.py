@@ -347,14 +347,6 @@ def split_resumed(files: list[tuple[Path, str]], index: dict) -> tuple[list, lis
     return kept, supplied
 
 
-def to_supplied(entry: dict, committed_path: str) -> dict:
-    """The ``supplied_by`` form of a manifest entry: no ``uri``, a pointer to the
-    committed file that carries the same bytes."""
-    out = {k: v for k, v in entry.items() if k != "uri"}
-    out["supplied_by"] = committed_path
-    return out
-
-
 def add_supplied(manifest: dict, supplied: list) -> dict:
     """Add ``supplied_by`` entries for ``supplied`` (from :func:`split_resumed`)
     to a manifest returned by :func:`put_files`; entries stay sorted by name."""

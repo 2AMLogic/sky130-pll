@@ -124,10 +124,6 @@ class Base(unittest.TestCase):
         self.assertEqual(first["supplied_by"], "sim/b/old/a")
         self.assertNotIn("uri", first)
 
-    def test_to_supplied_swaps_uri_for_pointer(self):
-        e = es.to_supplied({"sha256": "a" * 64, "size": 1, "uri": "artifact:x"}, "sim/p")
-        self.assertEqual(e, {"sha256": "a" * 64, "size": 1, "supplied_by": "sim/p"})
-
     def test_real_pin_drops_committed_lvs_request(self):
         repo = Path(__file__).resolve().parents[2]
         src = repo / "layout/pll/reports/20260923-084911-13ecfe9/route-spot-check/lvs.request.json"
