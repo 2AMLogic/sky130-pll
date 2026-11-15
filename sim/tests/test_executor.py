@@ -39,22 +39,10 @@ from harness import cli  # noqa: E402
 from harness import corners  # noqa: E402
 from harness import executor as executor_mod  # noqa: E402
 from harness import runner  # noqa: E402
+from pdk_fixture import make_resolved_pdk  # noqa: E402
 
 RECORD_ID = "20260101-000000-abc1234"
 LOCAL_PDK_ROOT = "/fake/pdk-root"
-
-
-class _StubPdk:
-    variant = "sky130A"
-    process_corners = ("tt", "ss")
-    resolved_commit = "0" * 40
-    pinned_commit = "0" * 40
-    commit_mismatch = False
-    pdk_root = Path(LOCAL_PDK_ROOT)
-    ngspice_lib = Path(f"{LOCAL_PDK_ROOT}/sky130A/libs.tech/combined/sky130.lib.spice")
-
-    def as_env(self):
-        return {}
 
 
 # A plumbing-only manifest (no `measure` / `ac` block), so a unit's verdict
@@ -160,7 +148,7 @@ class _Harness:
 
         out = io.StringIO()
         patches = [
-            mock.patch.object(cli.pdk_mod, "resolve", return_value=_StubPdk()),
+            mock.patch.object(cli.pdk_mod, "resolve", return_value=make_resolved_pdk()),
             mock.patch.object(
                 cli.pdk_mod,
                 "tool_versions",
@@ -258,7 +246,7 @@ class LocalExecutorUnchangedTests(unittest.TestCase):
             self.assertEqual(rc, 0)
             expected = [
                 p.corner_id
-                for p in corners.build_matrix(MANIFEST, _StubPdk.process_corners)
+                for p in corners.build_matrix(MANIFEST, make_resolved_pdk().process_corners)
             ]
             self.assertEqual(sorted(h.local_calls), sorted(expected))
 
@@ -325,7 +313,7 @@ class BackendInterfaceTests(unittest.TestCase):
 
     def test_build_rejects_an_unknown_backend_name(self):
         with self.assertRaises(ValueError):
-            executor_mod.build("fleet", pdk=_StubPdk(), spiceinit=Path("/x"), jobs=1, manifest={})
+            executor_mod.build("fleet", pdk=make_resolved_pdk(), spiceinit=Path("/x"), jobs=1, manifest={})
 
 
 if __name__ == "__main__":  # pragma: no cover
