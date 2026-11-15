@@ -20,7 +20,7 @@
     },
     "8.analog": {
       "file": "signoff/evidence/characterization-report.json",
-      "content_hash": "sha256:e11fc48063aac119aa3ee7f0a82ce1354fa9e9040356908aab3eebadb1facfdf"
+      "content_hash": "sha256:7ba637968e43d64f08b7021cb753dd1fbe4d7e85563ec1b8ed9db5bcc36cb26e"
     },
     "9.analog": {
       "file": "signoff/evidence/attest-item9-analog.json",
