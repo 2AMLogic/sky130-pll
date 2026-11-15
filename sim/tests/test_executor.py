@@ -309,7 +309,6 @@ class BackendInterfaceTests(unittest.TestCase):
     def test_a_third_backend_needs_only_execute(self):
         class BatchBackend(executor_mod.ExecutionBackend):
             name = "batch"
-            requested = "batch"
 
             def execute(self, unit):
                 return executor_mod.NgspiceOutcome(
