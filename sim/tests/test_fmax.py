@@ -397,6 +397,12 @@ class LocalGuards(unittest.TestCase):
         rc = C.main(["divider-fmax", "--dry-run", "--moduli", "25", "--corners", "tt"])
         self.assertEqual(rc, 0)
 
+    def test_executor_choices_list_each_name_once(self):
+        action = next(a for a in C.build_parser()._actions
+                      if "--executor" in a.option_strings)
+        self.assertEqual(tuple(action.choices), executor_mod.EXECUTORS)
+        self.assertEqual(len(set(action.choices)), len(action.choices))
+
 
 class RecordRendering(unittest.TestCase):
     def test_record_table_round_trips_through_the_aggregator(self):
