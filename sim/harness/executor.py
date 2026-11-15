@@ -103,8 +103,6 @@ class ExecutionBackend(abc.ABC):
 
     #: What actually ran the units (`"local"`/`"batch"`).
     name: str = "local"
-    #: What the caller asked for. Differs from `name` only after a fallback.
-    requested: str = "local"
 
     def stage(self, units: list[NgspiceUnit]) -> ExecutionBackend:
         """Prepare the whole unit set before any of it is judged.
@@ -141,7 +139,6 @@ class LocalBackend(ExecutionBackend):
     unchanged."""
 
     name = "local"
-    requested = "local"
 
     def __init__(self, *, pdk, spiceinit: Path):
         self._pdk = pdk
