@@ -47,7 +47,7 @@ import time
 from pathlib import Path
 
 from . import executor as executor_mod
-from .klt_submit import is_capacity_refusal, submit_with_capacity_retry  # noqa: F401
+from .klt_submit import is_capacity_refusal, submit_with_capacity_retry
 
 #: Executor name accepted by `run_corners.py --executor`.
 BATCH_EXECUTOR = "batch"
