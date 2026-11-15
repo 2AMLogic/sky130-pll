@@ -3,14 +3,14 @@
   "kind": "generic",
   "status": "pass",
   "t1_item": 10,
-  "summary": "T1 item 10 (Repo hygiene): 24/24 attestation checks passed (klt signoff --attest)",
+  "summary": "T1 item 10 (Repo hygiene): 25/25 attestation checks passed (klt signoff --attest)",
   "source": "signoff/inventory/item10.json",
   "attestation": {
     "producer": "klt signoff --attest",
     "inventory_schema_version": 1,
     "hash_algorithm": "sha256-raw-bytes",
-    "check_count": 24,
-    "passed_count": 24,
+    "check_count": 25,
+    "passed_count": 25,
     "checks": [
       {
         "check": "present",
@@ -155,9 +155,16 @@
       {
         "check": "present",
         "role": "hygiene",
+        "path": "spec/decision-records/DR-017-phase-window-miss-response.md",
+        "passed": true,
+        "content_hash": "sha256:4908a9d1fe9768b4045b7dc3d813e2bfac46dfc026ef11e5ecec016542fee550"
+      },
+      {
+        "check": "present",
+        "role": "hygiene",
         "path": "spec/decision-records/README.md",
         "passed": true,
-        "content_hash": "sha256:0893834f6a278a0dc2d1c784a39a8c03f024630540a5ab306d1b6e8c2cdb6585"
+        "content_hash": "sha256:d3d431f67a15ea12258a9588101d9dd29a3bf17dc4d60dca1b48f25ba0793147"
       },
       {
         "check": "present",
@@ -199,7 +206,7 @@
         "path": "signoff/inventory/item10.json",
         "scope": "repo"
       },
-      "content_hash": "sha256:8bf7e4db4755a01ccefdb442621f95ff3995c1706d159e0991ac44de1cb31b61"
+      "content_hash": "sha256:98d10128257f327edea0b671e2b987f3632c381e8395e0df973fe2fa2437ff55"
     }
   }
 }
