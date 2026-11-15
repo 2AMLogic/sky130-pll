@@ -8,6 +8,11 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 ### 2026-11-14
 
+- **PR #467**: docs: surface the newest buffered-top layout record beside LATEST, with a freshness test
+- **PR #444**: fix: derive the record's li1.space.1 count from the plan, not a literal
+- **PR #416**: layout: count extracted resistors from klt JSON; mint passing buffered-top record
+- **Issue #443** (closed): render-pll-record: the same li1.space.1 count is stated twice per record, once derived and once typed in
+- **Issue #304** (closed): layout: draw clk_buf and re-mint the top-level layout record against the buffered top (split from #303)
 - **PR #445**: refactor: collapse the six duplicated sim/ sha256 helpers onto one canonical pair
 - **PR #442**: sim: keep divider Fmax batch jobs small, waiting and reclaim-tolerant
 - **Issue #450** (closed): layout: layout/pll/reports/LATEST names a record its successor declares superseded
