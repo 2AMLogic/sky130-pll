@@ -8,6 +8,14 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 ### 2026-11-16
 
+- **PR #505**: fix(signoff): report check 1's manifest-shape fault under its own header, name the marker in the mismatch remediation
+- **PR #501**: test(sim): make targeted test-module runs independent of import order
+- **PR #500**: fix: fail loudly when test:compile and lint discover nothing
+- **PR #492**: docs(ROADMAP): re-point the stored-evidence hold at #459, reword the LOCK sentence, re-anchor the header
+- **Issue #486** (closed): docs(ROADMAP): refresh the stale #304 hold and the LOCK-circuit wording, and re-anchor the header
+- **Issue #482** (closed): test:compile passes vacuously on an empty git ls-files result (the loud-failure guard lint-shell-syntax.sh already has)
+- **Issue #481** (closed): signoff check 1: failure output never names the historical-record marker, and reuses the README-mismatch header for a manifest-shape fault
+- **Issue #463** (closed): sim/tests/test_executor.py RecursionErrors when run standalone: import-order-dependent store_files snapshot
 - **PR #489**: fix: drop unused mim_cap_ff from two variant-generator imports
 - **PR #449**: docs: state the repository is public and list every tracked top-level directory
 - **PR #499**: sim: commit divider Fmax modulus-4 rerun superseding 20261114-191601-519a411

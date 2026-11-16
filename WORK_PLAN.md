@@ -11,50 +11,45 @@ _None._
 
 `loom:very-important` (one counts per workspace); every stage takes these first.
 
-- **#304**: layout: draw clk_buf and re-mint the top-level layout record against the buffered top (split from #303)
+_None._
 
 ## Important
 
 `loom:important`; taken before unlabelled work.
 
 - **#244**: sim: record divider Fmax boundaries across PVT for digital T1 characterization
-- **#443**: render-pll-record: the same li1.space.1 count is stated twice per record, once derived and once typed in
 
 ## Ready
 
 Human-approved issues ready for implementation (`loom:issue`).
 
-- **#244**: sim: record divider Fmax boundaries across PVT for digital T1 characterization
-- **#304**: layout: draw clk_buf and re-mint the top-level layout record against the buffered top (split from #303)
-- **#440**: Remove ExecutionBackend.requested: a fallback marker left behind by #425
-- **#447**: Remove two dead-on-arrival harness helpers kept alive only by their own tests (to_supplied, split_static_dynamic)
-- **#448**: Dedupe the two parallel DirtyFlagTests: scripts/git_status.py is tested twice through re-export shims, and layout's real git_provenance is untested
-- **#453**: Remove three dead Python symbols and the inert noqa suppressions hiding them
-- **#454**: Dedupe the seven PDK stub classes in sim/tests: four shapes for one 8-field frozen dataclass, three contradicting its as_env
-- **#456**: package.json: check:all silently skips three checks check:ci runs, and test:compile misses scripts/ (the two lists #446 scoped out)
+- **#462**: sim/executor-equivalence/README.md still documents the retired --executor remote path as live
+- **#476**: signoff: README item 8 quotes a stale pin literal, one re-pin behind the manifest
+- **#480**: render-record.py's repo-root sys.path block outlived its reason: the comment names a module the file no longer imports
+- **#487**: ci: every Loom label write re-runs the full headless check suite, and races post-verdict.sh's exact-head CI gate
+- **#495**: sim/tests: two duck-typed PDK stand-ins remain outside #472's scope
+- **#503**: sim/harness: PVT/Fmax record writer accepts a re-run with no --supersedes; the lock-timing lane already guards it
+- **#504**: Derived-list lint suites do not independently pin the non-git guard (empty-set guard masks its removal)
 
 ## In Progress
 
 Issues currently being built (`loom:building`).
 
-- **#439**: docs: README and CLAUDE.md still say this repository is private
-- **#443**: render-pll-record: the same li1.space.1 count is stated twice per record, once derived and once typed in
-- **#446**: Replace package.json lint's hand-listed `bash -n` chain with a discovery loop (the list has already drifted)
+- **#244**: sim: record divider Fmax boundaries across PVT for digital T1 characterization
+- **#491**: docs(signoff): adding a decision-record index row requires the item 10 re-attestation chain — undocumented
+- **#507**: Consolidate three copy-pasted lint drivers (json/python/shell) into one shared core; vendored-prefix lists have already drifted
 
 ## PRs Awaiting Review
 
 PRs waiting on Judge (`loom:review-requested`).
 
-- **#437**: docs: roadmap as of 2026-11-13
-- **#449**: docs: state the repository is public and list every tracked top-level directory
-- **#452**: build: discover shell scripts for bash -n lint instead of enumerating them
+_None._
 
 ## Approved (Awaiting Merge)
 
 PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
-- **#416**: layout: count extracted resistors from klt JSON; mint passing buffered-top record
-- **#444**: fix: derive the record's li1.space.1 count from the plan, not a literal
+_None._
 
 ## Proposed
 
@@ -75,8 +70,14 @@ Issues carrying `loom:curated`.
 - **#290**: sim: klt decks[] batch route for the PFD/charge-pump (cp) campaign, with one-point smoke *(curated)*
 - **#297**: Re-qualify cited sim reference records under open_pdks f6eeac7 (part of #295) *(curated)*
 - **#298**: Re-qualify cited layout reference records under open_pdks f6eeac7 (part of #295) *(curated)*
-- **#304**: layout: draw clk_buf and re-mint the top-level layout record against the buffered top (split from #303) *(curated)*
-- **#439**: docs: README and CLAUDE.md still say this repository is private *(curated)*
+- **#462**: sim/executor-equivalence/README.md still documents the retired --executor remote path as live *(curated)*
+- **#476**: signoff: README item 8 quotes a stale pin literal, one re-pin behind the manifest *(curated)*
+- **#480**: render-record.py's repo-root sys.path block outlived its reason: the comment names a module the file no longer imports *(curated)*
+- **#487**: ci: every Loom label write re-runs the full headless check suite, and races post-verdict.sh's exact-head CI gate *(curated)*
+- **#491**: docs(signoff): adding a decision-record index row requires the item 10 re-attestation chain — undocumented *(curated)*
+- **#495**: sim/tests: two duck-typed PDK stand-ins remain outside #472's scope *(curated)*
+- **#503**: sim/harness: PVT/Fmax record writer accepts a re-run with no --supersedes; the lock-timing lane already guards it *(curated)*
+- **#504**: Derived-list lint suites do not independently pin the non-git guard (empty-set guard masks its removal) *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -93,13 +94,13 @@ _None._
 | Bucket | Count |
 |------|-------|
 | Operator merge-risk holds | 0 |
-| Very important | 1 |
-| Important | 2 |
-| Ready (`loom:issue`) | 8 |
+| Very important | 0 |
+| Important | 1 |
+| Ready (`loom:issue`) | 7 |
 | In Progress (`loom:building`) | 3 |
-| PRs awaiting review | 3 |
-| Approved PRs awaiting merge | 2 |
-| Curated | 17 |
+| PRs awaiting review | 0 |
+| Approved PRs awaiting merge | 0 |
+| Curated | 23 |
 | Architect / Hermit proposals | 3 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
