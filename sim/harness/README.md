@@ -529,6 +529,16 @@ Run one modulus per session, always with `--klt-cache <dir>` and a
 next; the aggregate rollup composes multiple current Fmax records, so
 per-modulus records need no parser change.
 
+**Re-running a modulus that already has a committed record: pass
+`--supersedes <record-id>`.** A resume of the 2026-11-14 modulus-4 cache on the
+same host (loom-worker-4, 2026-11-16) re-collected all 34 groups, submitted
+nothing, resolved 45/45 cells in about two minutes and reproduced the committed
+record's per-cell table exactly — but without `--supersedes` the minted record
+asserts "first record for this claim", false on a tree that already holds one,
+and the rollup lists the modulus twice with identical numbers. Naming the prior
+record keeps the rollup to one current row per modulus and leaves the
+superseded record in git untouched.
+
 ## Loop-dynamics campaigns (`ac` manifest block)
 
 A manifest that declares a top-level `ac` block instead of a `measure`
