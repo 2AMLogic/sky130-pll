@@ -37,9 +37,17 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from harness import cli  # noqa: E402
 from harness import corners  # noqa: E402
+from harness import evidence_store as evidence_store_mod  # noqa: E402
 from harness import executor as executor_mod  # noqa: E402
 from harness import runner  # noqa: E402
 from pdk_fixture import make_resolved_pdk  # noqa: E402
+from test_execution import fake_put  # noqa: E402  # module-level sibling import
+
+# The real `store_files`, snapshotted at THIS module's import time, before any
+# patch exists. The fake below must resolve through this constant: resolving
+# it lazily (pre-#463) re-snapshotted the attribute inside the patch window on
+# a standalone run -- i.e. the fake itself -- and recursed forever.
+_REAL_STORE_FILES = evidence_store_mod.store_files
 
 RECORD_ID = "20260101-000000-abc1234"
 LOCAL_PDK_ROOT = "/fake/pdk-root"
@@ -118,7 +126,6 @@ class _Harness:
         return self.root / "build" / self.slug / RECORD_ID
 
     def _fake_store_files(self, files, **kw):
-        from test_execution import _REAL_STORE_FILES, fake_put
         self.stored = [n for _, n in files]
         return _REAL_STORE_FILES(files, **dict(kw, repo_root=self.root, put=fake_put))
 
@@ -196,6 +203,19 @@ def _without_wall_clock(record_text: str) -> str:
         for line in record_text.splitlines()
         if not line.startswith("- **Timestamp / author**:")
     )
+
+
+class StoreFilesSnapshotTests(unittest.TestCase):
+    """The `store_files` fake in `_Harness` must resolve the real
+    implementation through this module's own import-time snapshot, never
+    through a lazy import taken while the patch is live (issue #463)."""
+
+    def test_the_snapshot_is_the_real_function_taken_outside_any_patch(self):
+        # If a future edit moves this capture back inside a patch window --
+        # or inside the fake itself -- it snapshots `_fake_store_files`
+        # instead and every store-backed test recurses. Fail loudly here.
+        self.assertIs(_REAL_STORE_FILES, evidence_store_mod.store_files)
+        self.assertIsNot(_REAL_STORE_FILES, _Harness._fake_store_files)
 
 
 class LocalExecutorUnchangedTests(unittest.TestCase):
