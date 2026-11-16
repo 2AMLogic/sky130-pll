@@ -193,9 +193,10 @@ python3 signoff/item6_preconditions.py --write
   real spend and it has not been made. (The sizing spend *has*: seven 20 µs
   pre-charged draws across the two `lf-c*-jitter-sensitivity` units, which is
   what stopped the six 50 µs draws from being bought on `C2`, a knob that
-  measurement then rejected.) `sim/executor-equivalence/README.md`
-  records that no host is provisioned for the batch/remote fleet yet
-  (2AMLogic/2am#934), so it is a local spend or none.
+  measurement then rejected.) `--executor batch` is the harness's fleet route
+  and has produced records elsewhere (`sim/vco-2x-duty/records/`), but this
+  campaign's spend has not been bought — locally or on the fleet; the retired
+  local/remote comparison fixture is noted in `sim/executor-equivalence/`.
 - **The `klt yield` verdict.** `negative_control.verdict` must come back
   `detected` — or, if it does not, an argued record for `not_detected` at a
   stated limit with `signoff/run-signoff.sh`'s guard 3 relaxed in the same

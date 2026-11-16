@@ -274,9 +274,10 @@ settings. One point is a 100 µs cold-start transient on the four-block loop;
 issue #103 records ~6.8 wall-clock hours per point at 8-way concurrency on the
 reference host, and the sibling campaigns declare a 172800 s per-point hang
 guard for a *50* µs window. That is a fleet-scale campaign, not a session-scale
-one, and this host is a shared 8-vCPU dispatch worker with no provisioned
-remote executor (`sim/executor-equivalence/README.md`,
-2AMLogic/2am#934). The standing record
+one, and this host is a shared 8-vCPU dispatch worker, not a simulation box —
+a grid of that size is fleet work, whose route is `--executor batch` (the
+retired local/remote comparison fixture is noted in
+`sim/executor-equivalence/`). The standing record
 [`20260905-193322-0f1934d`](../pll-lock/records/20260905-193322-0f1934d.md) is
 **not edited and not superseded** — only a fresh record can supersede it — and
 it should be read with this note beside it until one exists.
