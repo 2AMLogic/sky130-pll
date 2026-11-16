@@ -3,7 +3,7 @@
 An integer-N ring-oscillator PLL for the sky130 open PDK, designed forward from
 a row-by-row ratified spec, with every claim backed by a recorded testbench.
 
-Status as of 2026-11-13, `main` @ `37484b3`.
+Status as of 2026-11-16, `main` @ `255d3eb`.
 
 This file says what comes next and why. It is not a verdict: the T1 verdict is
 [`signoff/tier-report.json`](../signoff/tier-report.json), the per-row rollup
@@ -21,7 +21,8 @@ DR-009 and DR-010 (phase outputs) are `proposed`, not ratified.
 **Design.** Schematics and netlist snapshots exist for the PFD/charge pump,
 loop filter, 5-stage ring VCO, programmable divider, CLK buffer (#302) and the
 closed-loop top (`design/`). An I/Q divide-by-2 cell for the DR-010 proposal
-is in `design/divider-iq` (PR #423). There is no LOCK circuit.
+is in `design/divider-iq` (PR #423). The LOCK timing primitives exist
+(`design/lock-detector/timing`); the integrated LOCK detector (#260) does not.
 
 **Evidence, by spec row** (from `measurements/report.md`):
 
@@ -91,7 +92,7 @@ items 3 and 4 are filed as #438 and #439.
 - **Standalone LOCK circuit (#260), then loop integration (#261, #231).**
   Unblocked by Now item 3 being decided.
 - **Close the open_pdks re-pin (#295).** Layout half (#298, PR #358) waits on
-  the #304 hold below; sim half (#297) waits on #365.
+  the #459 hold below (ex-#304); sim half (#297) waits on #365.
 - **Power campaign (#233).** Done when one `sim/power` shard completes on the
   batch route and the 45-point record follows.
 
@@ -110,11 +111,15 @@ items 3 and 4 are filed as #438 and #439.
 
 ## Blocked and waiting
 
-- **Buffered-top layout record (#304, PR #416).** The new record passes, but
-  `signoff/run-signoff.sh --check` fails its superseded-record guard because
-  the record's `drc.json` and GDS live in the artifact store, not in git
-  (DR-012 left this open). Needs a decision on how signoff cites stored
-  evidence. Held for the operator.
+- **Buffered-top layout record hold (#459, ex-#304 / PR #416).** #304
+  delivered the record (closed completed 2026-11-14); the stored-evidence
+  hold it spawned lives on in #459. `signoff/run-signoff.sh --check` fails
+  its superseded-record guard because the record's `drc.json` and GDS live
+  in the artifact store, not in git (DR-012 left this open), so
+  `layout/pll/reports/LATEST` still names the pre-buffer record. The
+  operator ruled on 2026-11-14 (round `20261111-r14`, q86) that `LATEST`
+  stays put; what this waits on is a `klt` that can verify artifact-store
+  evidence (klayout-tools#5591).
 - **DR-010 adoption (#332).** The 90-point I/Q evidence passed (PR #423); the
   adopt / more evidence / reject choice is with the operator.
 - **Buffered-CLK evidence path (#232)** and the layout pin-narrative cleanup
