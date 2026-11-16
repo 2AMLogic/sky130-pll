@@ -17,7 +17,7 @@ What it asserts, and why those are the honest claims for issue #16:
   and each drawn passive's extracted value equals the value its schematic
   dimensions predict.
 * **Standard-cell block** -- the divider's composed cell instantiates exactly
-  the schematic's 29 standard-cell instances, each from the library cell the
+  the schematic's standard-cell instances, each from the library cell the
   schematic names.
 * **Supply flavor** -- every MOS device is a sky130 1.8 V core device
   (DR-001); no 3.3 V-class device is drawn.
@@ -838,9 +838,10 @@ def _render_device_set(a: Any, device_rows: list[dict[str, Any]], out_dir: Path,
     a(
         "The standard-cell block extracts as "
         f"{_stdcell_device_count(out_dir, plan)} transistors rather than its "
-        "29 schematic instances -- those are the library cells' own internal "
-        "devices, which is what a standard-cell block's layout *is*; the "
-        "instance-level check above is the one that compares like with like."
+        f"{_stdcell_instance_count(plan)} schematic instances -- those are the "
+        "library cells' own internal devices, which is what a standard-cell "
+        "block's layout *is*; the instance-level check above is the one that "
+        "compares like with like."
     )
     a("")
 
@@ -938,6 +939,19 @@ def _stdcell_device_count(out_dir: Path, plan: dict[str, Any]) -> int:
         if path.is_file():
             total += _load(path).get("device_count", 0)
     return total
+
+
+def _stdcell_instance_count(plan: dict[str, Any]) -> int:
+    # `sum(group["count"])` is the same expression `_check_coverage`'s `drawn`
+    # tally uses, so this sentence and the record's own coverage row state the
+    # same count by construction (issue #451: the typed-in `29` this replaced
+    # agreed with that row only at mint time).
+    return sum(
+        group["count"]
+        for block in plan["blocks"]
+        for group in block["groups"]
+        if group["kind"] == "stdcell"
+    )
 
 
 if __name__ == "__main__":
