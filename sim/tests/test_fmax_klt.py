@@ -23,6 +23,7 @@ SIM_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(SIM_DIR))
 sys.path.insert(0, str(SIM_DIR / "tests"))
 
+from harness import executor as executor_mod  # noqa: E402
 from harness import fmax as F  # noqa: E402
 from harness import fmax_cli as C  # noqa: E402
 from harness import fmax_klt as K  # noqa: E402
@@ -477,6 +478,9 @@ class CliBatchRoute(unittest.TestCase):
                                 "--supply-tol", "0", "--no-write"])
         self.assertEqual(rc, 1)
         self.assertIn("use --executor batch", err)
+
+    def test_the_fmax_batch_route_name_is_a_known_executor(self):
+        self.assertIn(K.BATCH_EXECUTOR, executor_mod.EXECUTORS)
 
 
 if __name__ == "__main__":
