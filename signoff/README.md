@@ -244,7 +244,7 @@ Item 8 is cited under the key `"8.analog"` at
 `signoff/evidence/characterization-report.json`, a `"kind": "generic"`
 envelope — the only kind item 8 accepts at the pinned `klt` — whose
 `provenance.input.content_hash` and the manifest's pin are both
-`sha256:7ba637968e43d64f08b7021cb753dd1fbe4d7e85563ec1b8ed9db5bcc36cb26e`, the
+`sha256:95571057fd30327dc57ea9e3502ebd1bb148f270d63cd219eb1539123186aac6`, the
 SHA-256 of the committed `measurements/report.md`. Guard 1 re-hashes that file
 from its live bytes on every run.
 
@@ -266,8 +266,10 @@ figures; the numbers are in the records it points to.
 **Why the digital partition is not cited.** Item 8 adds, for a mixed-signal
 digital partition, "Fmax, area, and power across the corner set, not just
 functional pass/fail". The report's Fmax section now holds a committed Fmax
-record for modulus 4 (`sim/divider-fmax/records/20261114-191601-519a411.md`),
-but the report still records `No evidence` for row 12 (power) and row 18
+record for modulus 4 (`sim/divider-fmax/records/20261116-065229-beef805.md`,
+which supersedes the 2026-11-14 record via a resumed re-run that reproduced
+its per-cell table exactly), but the report still records `No evidence` for
+row 12 (power) and row 18
 (area). That alone decides it: the checklist requires Fmax, area and power
 across the corner set, and two of the three still have no evidence at all.
 So `8.digital` stays `unmet` / `no_evidence`. Citing the same envelope for

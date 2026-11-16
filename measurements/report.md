@@ -1,6 +1,6 @@
 # PLL characterization report
 
-Generated: 2026-11-14T21:26:34Z by `measurements/aggregate.py` -- this file is a **derived rollup**, not append-only evidence itself; re-run the aggregator to refresh it (see `measurements/README.md`).
+Generated: 2026-11-16T06:55:53Z by `measurements/aggregate.py` -- this file is a **derived rollup**, not append-only evidence itself; re-run the aggregator to refresh it (see `measurements/README.md`).
 
 Rolls up every `sim/*/records/*.md` and `layout/*/reports/*/record.md` evidence record into one table, keyed by `spec/target-spec.md` row number. **A populated row is not a passing row.** Rows 0, 1, 9, 19 and 20 of `spec/target-spec.md` are ratified (`DR-001`/`DR-002`/`DR-003`/`DR-006`); every other numeric row an evidence record appears against is still DRAFT. For a DRAFT row, a record listed against it is *evidence bearing on that row* -- the measured input a future decision record would argue the row from -- never a verdict on it, and never a substitute for the ratification act itself. For a **ratified** row the record's verdict does grade against a binding bound, and a FAIL there is a recorded miss against the spec (never a reason to relax it -- see `CLAUDE.md`). Read each record before quoting it either way: its own `Verdict` column here is the record's overall pass/fail, which for several campaigns means "the harness ran and recorded what happened", including recorded non-lock.
 
@@ -19,7 +19,7 @@ Rolls up every `sim/*/records/*.md` and `layout/*/reports/*/record.md` evidence 
 | 3 | Reference input | 1 – 25 MHz, CMOS square wave, rising-edge triggered, duty 30–70 % | sim/pll-lock-1mhz (20261104-193837-d1e79d4) | FAIL | `sim/pll-lock-1mhz/records/20261104-193837-d1e79d4.md` |
 |  |  |  | sim/pll-lock-25mhz (20261104-194108-d1e79d4) | FAIL | `sim/pll-lock-25mhz/records/20261104-194108-d1e79d4.md` |
 | 4 | Multiplication ratio | N = 4 – 64, every integer, static configuration | sim/divider (20260910-234943-ec91425) | PASS | `sim/divider/records/20260910-234943-ec91425.md` |
-|  |  |  | sim/divider-fmax (20261114-191601-519a411) | PASS | `sim/divider-fmax/records/20261114-191601-519a411.md` |
+|  |  |  | sim/divider-fmax (20261116-065229-beef805) | PASS | `sim/divider-fmax/records/20261116-065229-beef805.md` |
 |  |  |  | sim/divider-n4 (20260911-091838-7d2f839) | PASS | `sim/divider-n4/records/20260911-091838-7d2f839.md` |
 |  |  |  | sim/divider-n5 (20260911-095824-7d2f839) | PASS | `sim/divider-n5/records/20260911-095824-7d2f839.md` |
 |  |  |  | sim/divider-n5 (20260911-100824-7d2f839) | PASS | `sim/divider-n5/records/20260911-100824-7d2f839.md` |
@@ -122,13 +122,13 @@ Rolled up from `sim/*/records/*.md` Fmax records (`### Fmax boundary per cell` t
 
 | Modulus N | Cells | Status counts | Lowest verified pass across bracketed cells (MHz) | At corner (process / deg C / V) | Adjacent failing probe in that cell (MHz) | Citation |
 |---|---|---|---|---|---|---|
-| 4 | 45 | BRACKETED: 41, CENSORED_HIGH: 4 | 1175 | ss / -40 / 1.62 | 1200 | `sim/divider-fmax/records/20261114-191601-519a411.md` |
+| 4 | 45 | BRACKETED: 41, CENSORED_HIGH: 4 | 1175 | ss / -40 / 1.62 | 1200 | `sim/divider-fmax/records/20261116-065229-beef805.md` |
 
 ## Scan summary
 
-- Evidence records scanned: 98
+- Evidence records scanned: 99
 - Current (non-superseded): 76
-- Superseded (excluded from the tables above; still retained, append-only, under `sim/`/`layout/`): 22
+- Superseded (excluded from the tables above; still retained, append-only, under `sim/`/`layout/`): 23
 - Spec-row citation stated by the record itself: 67
 - Spec-row citation resolved from the experiment's own declaration (`sim/<slug>/testbench/tb.json` / `layout/<block>/spec-rows.json`) because the record predates the convention and is append-only: 9
 - **Current records with no spec-row declaration at all: 0**
