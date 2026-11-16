@@ -27,10 +27,11 @@ from harness import cp_klt as K  # noqa: E402
 from harness import cpmeasure as cp_mod  # noqa: E402
 from harness import executor as executor_mod  # noqa: E402
 from harness import runner  # noqa: E402
+from pdk_fixture import make_resolved_pdk  # noqa: E402
 from test_cpmeasure import MANIFEST, make_spec, synth_dump  # noqa: E402
 
 LOCAL_ROOT = "/fake/pdk-root"
-PDK = SimpleNamespace(pdk_root=Path(LOCAL_ROOT), variant="sky130A")
+PDK = make_resolved_pdk(pdk_root=Path(LOCAL_ROOT))
 ENV = {"KLT_SIM_BACKEND": "batch"}
 
 
