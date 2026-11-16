@@ -23,12 +23,9 @@ _None._
 
 Human-approved issues ready for implementation (`loom:issue`).
 
-- **#462**: sim/executor-equivalence/README.md still documents the retired --executor remote path as live
 - **#476**: signoff: README item 8 quotes a stale pin literal, one re-pin behind the manifest
-- **#480**: render-record.py's repo-root sys.path block outlived its reason: the comment names a module the file no longer imports
 - **#487**: ci: every Loom label write re-runs the full headless check suite, and races post-verdict.sh's exact-head CI gate
 - **#491**: docs(signoff): adding a decision-record index row requires the item 10 re-attestation chain — undocumented
-- **#495**: sim/tests: two duck-typed PDK stand-ins remain outside #472's scope
 - **#503**: sim/harness: PVT/Fmax record writer accepts a re-run with no --supersedes; the lock-timing lane already guards it
 - **#504**: Derived-list lint suites do not independently pin the non-git guard (empty-set guard masks its removal)
 
@@ -37,6 +34,8 @@ Human-approved issues ready for implementation (`loom:issue`).
 Issues currently being built (`loom:building`).
 
 - **#244**: sim: record divider Fmax boundaries across PVT for digital T1 characterization
+- **#462**: sim/executor-equivalence/README.md still documents the retired --executor remote path as live
+- **#495**: sim/tests: two duck-typed PDK stand-ins remain outside #472's scope
 
 ## PRs Awaiting Review
 
@@ -48,7 +47,8 @@ _None._
 
 PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
-_None._
+- **#513**: docs: link the executor-equivalence retirement note from its README and correct three stale inbound citations
+- **#514**: test: convert the last two duck-typed PDK stand-ins to make_resolved_pdk
 
 ## Proposed
 
@@ -71,7 +71,6 @@ Issues carrying `loom:curated`.
 - **#298**: Re-qualify cited layout reference records under open_pdks f6eeac7 (part of #295) *(curated)*
 - **#462**: sim/executor-equivalence/README.md still documents the retired --executor remote path as live *(curated)*
 - **#476**: signoff: README item 8 quotes a stale pin literal, one re-pin behind the manifest *(curated)*
-- **#480**: render-record.py's repo-root sys.path block outlived its reason: the comment names a module the file no longer imports *(curated)*
 - **#487**: ci: every Loom label write re-runs the full headless check suite, and races post-verdict.sh's exact-head CI gate *(curated)*
 - **#491**: docs(signoff): adding a decision-record index row requires the item 10 re-attestation chain — undocumented *(curated)*
 - **#495**: sim/tests: two duck-typed PDK stand-ins remain outside #472's scope *(curated)*
@@ -95,11 +94,11 @@ _None._
 | Operator merge-risk holds | 0 |
 | Very important | 0 |
 | Important | 1 |
-| Ready (`loom:issue`) | 8 |
-| In Progress (`loom:building`) | 1 |
+| Ready (`loom:issue`) | 5 |
+| In Progress (`loom:building`) | 3 |
 | PRs awaiting review | 0 |
-| Approved PRs awaiting merge | 0 |
-| Curated | 23 |
+| Approved PRs awaiting merge | 2 |
+| Curated | 22 |
 | Architect / Hermit proposals | 3 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
