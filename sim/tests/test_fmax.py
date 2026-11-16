@@ -261,7 +261,7 @@ class FakeBackend:
         self.fmax_for, self.errors, self.executed = fmax_for, errors or {}, []
 
     def stage(self, units):
-        return self
+        pass
 
     def provenance(self):
         return None

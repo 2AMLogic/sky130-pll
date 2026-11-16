@@ -161,7 +161,7 @@ def run_batch(requests, *, manifest, spec, netlists, work_dir, backend, jobs, st
             manifest, spec, cell, freq, netlists[cell.modulus.n], work_dir
         )
         built.append((cell, idx, freq, unit, plan, mspec))
-    backend = backend.stage([b[3] for b in built])
+    backend.stage([b[3] for b in built])
 
     def work(item):
         cell, idx, freq, unit, plan, mspec = item
