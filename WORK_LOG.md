@@ -8,6 +8,20 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 ### 2026-11-16
 
+- **PR #489**: fix: drop unused mim_cap_ff from two variant-generator imports
+- **PR #449**: docs: state the repository is public and list every tracked top-level directory
+- **PR #499**: sim: commit divider Fmax modulus-4 rerun superseding 20261114-191601-519a411
+- **PR #498**: test: pin fmax_klt.BATCH_EXECUTOR as a known executor
+- **PR #494**: fix: derive the PLL record's stdcell instance count from the plan
+- **PR #493**: test: swap the last two SimpleNamespace PDK stand-ins for the shared ResolvedPdk fixture
+- **PR #497**: fix(sim/tests): capture the real store_files before the fixture patch
+- **Issue #473** (closed): Narrow two unused mim_cap_ff imports and their inert F401 suppressions
+- **Issue #439** (closed): docs: README and CLAUDE.md still say this repository is private
+- **Issue #472** (closed): sim/tests: two SimpleNamespace PDK stand-ins remain after the _StubPdk dedupe
+- **Issue #502** (closed): test: measure whether cp_klt.BATCH_EXECUTOR needs the same EXECUTORS pin as fmax (premise unverified)
+- **Issue #451** (closed): Derive the record's schematic-instance count from the plan, not a typed-in 29
+- **Issue #488** (closed): Pin the fmax_klt.BATCH_EXECUTOR <-> executor.EXECUTORS coupling with a one-line test
+- **Issue #485** (closed): test_executor.LocalExecutorUnchangedTests: RecursionError in _fake_store_files fixture (4 errors, pre-existing)
 - **PR #490**: DR-017: phase-window band miss response (proposed)
 - **PR #483**: sim: drop ExecutionBackend.stage()'s return value
 - **PR #465**: sim: divider Fmax evidence record for modulus 4 (DR-003 PVT slice)
