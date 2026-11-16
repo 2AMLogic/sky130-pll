@@ -263,6 +263,93 @@ which this block-manifest cited prior to the pin bump) shows the failure mode.
         self.assertNotEqual(exit_code, 0)
         self.assertIn("README", stderr)
 
+    def test_record_mismatch_remediation_names_historical_marker(self):
+        """Check 1's remediation must name the historical-record marker and
+        the citing-line fix: a reflowed marker is the one remaining
+        false-positive path, and advising "update the README citation" there
+        would corrupt a deliberate historical reference."""
+        current_record = "20260924-041509-c53e7c4"
+        stale_record = "20260923-084911-13ecfe9"
+
+        manifest = {
+            "block": "sky130-pll",
+            "kind": "mixed-signal",
+            "evidence": {
+                "3": {
+                    "file": f"layout/pll/reports/{current_record}/drc.json",
+                    "content_hash": "sha256:deadbeef",
+                }
+            },
+        }
+        (self.signoff_dir / "block-manifest.json").write_text(json.dumps(manifest))
+
+        readme = f"Cites `layout/pll/reports/{stale_record}/drc.json`.\n"
+        (self.signoff_dir / "README.md").write_text(readme)
+
+        exit_code, stdout, stderr = self._run_check()
+        self.assertEqual(exit_code, 1)
+        self.assertIn("<!-- signoff-historical-record -->", stderr)
+        self.assertIn("citing line", stderr)
+        # The original advice survives alongside the marker sentence.
+        self.assertIn("Update README.md", stderr)
+
+    def test_unparseable_item3_path_reported_as_manifest_shape_fault(self):
+        """An item-3 evidence path with no record ID in it is a manifest-shape
+        fault: reported under its own header with a manifest-directed
+        remediation, never under the README-mismatch one."""
+        manifest = {
+            "block": "sky130-pll",
+            "kind": "mixed-signal",
+            "evidence": {
+                "3": {
+                    "file": "layout/pll/BOGUS.json",
+                    "content_hash": "sha256:deadbeef",
+                }
+            },
+        }
+        (self.signoff_dir / "block-manifest.json").write_text(json.dumps(manifest))
+
+        (self.signoff_dir / "README.md").write_text(
+            "Cites `layout/pll/reports/20260924-041509-c53e7c4/drc.json`.\n"
+        )
+
+        exit_code, stdout, stderr = self._run_check()
+        self.assertEqual(exit_code, 1)
+        # Substantive line still names the offending path.
+        self.assertIn("cannot extract record ID", stderr)
+        self.assertIn("layout/pll/BOGUS.json", stderr)
+        # Its own header, and the README-directed remediation is absent.
+        self.assertNotIn("README record IDs do not match the manifest", stderr)
+        self.assertIn("Update the manifest", stderr)
+        self.assertNotIn("Update README.md", stderr)
+
+    def test_shape_fault_excludes_readme_remediation_even_with_mismatch(self):
+        """A shape fault and a record mismatch can never share one header: the
+        shape fault aborts check 1 with its own report before any README
+        comparison happens, even when the README also cites a stale record."""
+        manifest = {
+            "block": "sky130-pll",
+            "kind": "mixed-signal",
+            "evidence": {
+                "3": {
+                    "file": "layout/pll/BOGUS.json",
+                    "content_hash": "sha256:deadbeef",
+                }
+            },
+        }
+        (self.signoff_dir / "block-manifest.json").write_text(json.dumps(manifest))
+
+        (self.signoff_dir / "README.md").write_text(
+            "Cites `layout/pll/reports/20260906-195205-4a08c71/drc.json`.\n"
+        )
+
+        exit_code, stdout, stderr = self._run_check()
+        self.assertEqual(exit_code, 1)
+        self.assertIn("layout/pll/BOGUS.json", stderr)
+        self.assertNotIn("README record IDs do not match the manifest", stderr)
+        self.assertNotIn("Update README.md", stderr)
+        self.assertIn("Update the manifest", stderr)
+
 
 RECORD_ID = "20260924-041509-c53e7c4"
 

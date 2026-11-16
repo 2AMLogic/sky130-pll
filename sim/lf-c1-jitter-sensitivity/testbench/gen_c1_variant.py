@@ -59,7 +59,7 @@ if str(REPO / "sim") not in sys.path:
     sys.path.insert(0, str(REPO / "sim"))
 
 import variant_generator  # noqa: E402
-from variant_generator import GenError, mim_cap_ff  # noqa: E402,F401
+from variant_generator import GenError  # noqa: E402
 
 _body = variant_generator.body
 

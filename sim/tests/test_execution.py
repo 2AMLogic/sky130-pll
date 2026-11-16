@@ -55,7 +55,6 @@ from pdk_fixture import make_resolved_pdk  # noqa: E402
 import test_cpmeasure as cpt  # noqa: E402
 
 RECORD_ID = "20260101-000000-abc1234"
-_REAL_STORE_FILES = evidence_store_mod.store_files
 
 MANIFEST = {
     "claim": "harness execution-model test fixture -- not a design claim",
@@ -197,7 +196,7 @@ class _Harness:
         """The real writer with `klt artifact put` replaced by a hash-only fake,
         installing the manifest under this harness's temp root."""
         self.stored = [n for _, n in files]
-        return _REAL_STORE_FILES(files, **dict(kw, repo_root=self.root, put=fake_put))
+        return self._real_store_files(files, **dict(kw, repo_root=self.root, put=fake_put))
 
     @property
     def record_path(self) -> Path:
@@ -208,6 +207,11 @@ class _Harness:
         import contextlib
         import io
 
+        # The genuine writer, captured before the patch list below installs
+        # this harness's fake: a snapshot taken at any other time binds
+        # whatever `store_files` attribute is live then, and under an active
+        # patch that is the fake itself (#485).
+        self._real_store_files = cli.evidence_store_mod.store_files
         out = io.StringIO()
         with mock.patch.object(cli.pdk_mod, "resolve", return_value=make_resolved_pdk()), \
              mock.patch.object(cli.pdk_mod, "tool_versions", return_value={"ngspice": "stub", "xschem": "stub"}), \
