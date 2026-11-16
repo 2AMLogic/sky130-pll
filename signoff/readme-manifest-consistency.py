@@ -55,14 +55,31 @@ def main():
         print(f"error: cannot read {readme_path}: {exc}", file=sys.stderr)
         return 1
 
-    errors = check_item3_records(manifest, readme_text)
+    try:
+        errors = check_item3_records(manifest, readme_text)
+    except ManifestShapeError as exc:
+        print(
+            "error: cannot extract a record ID from the manifest's item-3 "
+            "evidence:",
+            file=sys.stderr,
+        )
+        print(f"  {exc}", file=sys.stderr)
+        print(
+            "\nUpdate the manifest's item 3 evidence file to a "
+            "layout/<block>/reports/<record-id>/... path.",
+            file=sys.stderr,
+        )
+        return 1
+
     if errors:
         print("error: README record IDs do not match the manifest:", file=sys.stderr)
         for line in errors:
             print(f"  {line}", file=sys.stderr)
         print(
             "\nUpdate README.md to cite the record the manifest's item 3 "
-            "evidence names, or update the manifest.",
+            "evidence names, or update the manifest. If the mismatching "
+            "citation is a deliberate historical reference, put "
+            f"{HISTORICAL_RECORD_MARKER} back on its citing line.",
             file=sys.stderr,
         )
         return 1
@@ -110,6 +127,14 @@ def main():
 HISTORICAL_RECORD_MARKER = "<!-- signoff-historical-record -->"
 
 
+class ManifestShapeError(Exception):
+    """The manifest's item-3 evidence path is not shaped as
+    ``layout/<block>/reports/<record-id>/...``, so check 1 cannot extract the
+    record ID to compare README citations against. This is a manifest-shape
+    fault, not a README disagreement: the caller reports it under its own
+    header with a manifest-directed remediation."""
+
+
 def check_item3_records(manifest, readme_text):
     """Check 1: every layout record ID the README cites must be the record
     the manifest actually cites for item 3, except citations whose line
@@ -117,6 +142,9 @@ def check_item3_records(manifest, readme_text):
 
     Only records of the block item 3 cites are compared, so a sibling
     block's citations can never be matched against item 3's record.
+
+    Raises ``ManifestShapeError`` when the item-3 evidence path carries no
+    record ID, before any README comparison happens.
     """
     item3_evidence = manifest.get("evidence", {}).get("3", {})
     if isinstance(item3_evidence, dict):
@@ -129,9 +157,9 @@ def check_item3_records(manifest, readme_text):
     # layout/<block>/reports/<record-id>/...
     match = re.match(r"^layout/([^/]+)/reports/([^/]+)/", item3_file)
     if not match:
-        return [
+        raise ManifestShapeError(
             f"cannot extract record ID from manifest item 3 evidence: {item3_file}"
-        ]
+        )
     block = match.group(1)
     manifest_record_id = match.group(2)
 
