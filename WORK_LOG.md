@@ -8,6 +8,8 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 ### 2026-11-16
 
+- **PR #510**: refactor(scripts): consolidate the three lint drivers onto one shared core
+- **Issue #507** (closed): Consolidate three copy-pasted lint drivers (json/python/shell) into one shared core; vendored-prefix lists have already drifted
 - **PR #505**: fix(signoff): report check 1's manifest-shape fault under its own header, name the marker in the mismatch remediation
 - **PR #501**: test(sim): make targeted test-module runs independent of import order
 - **PR #500**: fix: fail loudly when test:compile and lint discover nothing
