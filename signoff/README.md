@@ -244,7 +244,7 @@ Item 8 is cited under the key `"8.analog"` at
 `signoff/evidence/characterization-report.json`, a `"kind": "generic"`
 envelope — the only kind item 8 accepts at the pinned `klt` — whose
 `provenance.input.content_hash` and the manifest's pin are both
-`sha256:3e56c1a6a8bcb8732e7bfd94229df2234fc353e5b7850783b55523846c022f8d`, the
+`sha256:7ba637968e43d64f08b7021cb753dd1fbe4d7e85563ec1b8ed9db5bcc36cb26e`, the
 SHA-256 of the committed `measurements/report.md`. Guard 1 re-hashes that file
 from its live bytes on every run.
 
@@ -265,16 +265,13 @@ figures; the numbers are in the records it points to.
 
 **Why the digital partition is not cited.** Item 8 adds, for a mixed-signal
 digital partition, "Fmax, area, and power across the corner set, not just
-functional pass/fail". The report's Fmax section holds no committed Fmax
-record yet, and it records
-`No evidence` for row 12 (power) and row 18 (area). Its only digital-partition
-evidence is row 4's divider records, which are functional pass/fail. The
-divider's maximum correct-division frequency exists only as an informal,
-uncommitted per-corner table in `design/divider/DESIGN.md` (see
-`sim/divider/testbench/tb.json`'s `analysis` note), which is not an evidence
-record and is not in the report. So `8.digital` stays `unmet` /
-`no_evidence`. Citing the same envelope for it would produce a green row
-that the checklist text contradicts.
+functional pass/fail". The report's Fmax section now holds a committed Fmax
+record for modulus 4 (`sim/divider-fmax/records/20261114-191601-519a411.md`),
+but the report still records `No evidence` for row 12 (power) and row 18
+(area). That alone decides it: the checklist requires Fmax, area and power
+across the corner set, and two of the three still have no evidence at all.
+So `8.digital` stays `unmet` / `no_evidence`. Citing the same envelope for
+it would produce a green row that the checklist text contradicts.
 
 **What `status: "pass"` asserts, and what it does not.** It asserts only that
 the report is the artifact item 8 names. It does **not** assert that any spec
