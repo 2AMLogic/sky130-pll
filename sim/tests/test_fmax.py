@@ -16,16 +16,17 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
-from types import SimpleNamespace
 
 SIM_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(SIM_DIR))
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # sibling test modules
 
 from harness import executor as executor_mod  # noqa: E402
 from harness import fmax as F  # noqa: E402
 from harness import fmax_cli as C  # noqa: E402
 from harness import fmax_report  # noqa: E402
 from harness import measure as measure_mod  # noqa: E402
+from pdk_fixture import make_resolved_pdk  # noqa: E402
 
 MANIFEST_PATH = SIM_DIR / "divider-fmax" / "testbench" / "fmax.json"
 MANIFEST = json.loads(MANIFEST_PATH.read_text())
@@ -417,8 +418,7 @@ class RecordRendering(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             snap = Path(tmp) / "s.spice"
             snap.write_text("* x\n")
-            pdk = SimpleNamespace(variant="sky130A", resolved_commit="abc", commit_mismatch=False,
-                                  pinned_commit="abc", ngspice_lib="/x/sky130.lib.spice")
+            pdk = make_resolved_pdk()
             text = fmax_report.render(
                 record_id="20260101-000000-abcdef0", slug="divider-fmax", manifest=MANIFEST,
                 spec=SPEC, pdk=pdk, tool_versions={}, repo_root=SIM_DIR.parent,
