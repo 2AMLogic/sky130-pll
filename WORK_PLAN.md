@@ -27,6 +27,7 @@ Human-approved issues ready for implementation (`loom:issue`).
 - **#476**: signoff: README item 8 quotes a stale pin literal, one re-pin behind the manifest
 - **#480**: render-record.py's repo-root sys.path block outlived its reason: the comment names a module the file no longer imports
 - **#487**: ci: every Loom label write re-runs the full headless check suite, and races post-verdict.sh's exact-head CI gate
+- **#491**: docs(signoff): adding a decision-record index row requires the item 10 re-attestation chain — undocumented
 - **#495**: sim/tests: two duck-typed PDK stand-ins remain outside #472's scope
 - **#503**: sim/harness: PVT/Fmax record writer accepts a re-run with no --supersedes; the lock-timing lane already guards it
 - **#504**: Derived-list lint suites do not independently pin the non-git guard (empty-set guard masks its removal)
@@ -36,8 +37,6 @@ Human-approved issues ready for implementation (`loom:issue`).
 Issues currently being built (`loom:building`).
 
 - **#244**: sim: record divider Fmax boundaries across PVT for digital T1 characterization
-- **#491**: docs(signoff): adding a decision-record index row requires the item 10 re-attestation chain — undocumented
-- **#507**: Consolidate three copy-pasted lint drivers (json/python/shell) into one shared core; vendored-prefix lists have already drifted
 
 ## PRs Awaiting Review
 
@@ -96,8 +95,8 @@ _None._
 | Operator merge-risk holds | 0 |
 | Very important | 0 |
 | Important | 1 |
-| Ready (`loom:issue`) | 7 |
-| In Progress (`loom:building`) | 3 |
+| Ready (`loom:issue`) | 8 |
+| In Progress (`loom:building`) | 1 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
 | Curated | 23 |
