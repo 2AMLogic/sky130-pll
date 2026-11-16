@@ -58,10 +58,6 @@ _BIN_DIR = Path(__file__).resolve().parent
 if str(_BIN_DIR) not in sys.path:
     sys.path.insert(0, str(_BIN_DIR))
 
-_REPO_ROOT = Path(__file__).resolve().parents[2]
-if str(_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_REPO_ROOT))
-
 from pll_layout import (  # noqa: E402
     LI1_MIN_SPACE_UM,
     MIM_AREA_CAP_F_UM2,
