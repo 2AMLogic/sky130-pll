@@ -1,8 +1,13 @@
 import subprocess
+import sys
 import unittest
+from pathlib import Path
 from types import SimpleNamespace
 
-from sim.harness import klt_submit as S
+REPO_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO_ROOT))
+
+from sim.harness import klt_submit as S  # noqa: E402
 
 CAP = SimpleNamespace(returncode=1, stdout='{"error": "batch_no_capacity"}', stderr="")
 OK = SimpleNamespace(returncode=0, stdout="{}", stderr="")
