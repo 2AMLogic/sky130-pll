@@ -21,6 +21,7 @@ from . import executor as executor_mod
 from . import measure as measure_mod
 from . import montecarlo as mc_mod
 from . import pdk as pdk_mod
+from . import records_guard
 from . import report as report_mod
 from . import runner as runner_mod
 from . import staging as staging_mod
@@ -481,6 +482,41 @@ def _run_experiment(
             print(f"run_corners.py: {e}", file=sys.stderr)
             return 1
 
+        # Issue #503: a re-run of an already-recorded claim must not mint a
+        # "first record for this claim" without --supersedes. The lock-timing
+        # lane has refused that mechanically since its first release; this
+        # guard brings the PVT / --mc lane to parity, before any unit runs --
+        # the cost of a missed flag is a whole campaign's wall time.
+        if args.write:
+            subset_reason = args.subset_reason if is_subset else None
+            if mode == "mc":
+                mc_cfg = manifest.get("monte_carlo", {})
+                claim = mc_cfg.get(
+                    "claim", manifest.get("claim", "(no claim stated in manifest)")
+                )
+                matrix_key = records_guard.mc_matrix_key(
+                    trials=units, subset_reason=subset_reason
+                )
+            else:
+                claim = manifest.get("claim", "(no claim stated in manifest)")
+                matrix_key = records_guard.pvt_matrix_key(
+                    points=units,
+                    manifest_has_supply=manifest.get("supply_pattern") is not None,
+                    corner_note=manifest.get("corner_note"),
+                    subset_reason=subset_reason,
+                )
+            try:
+                records_guard.check(
+                    records_dir=records_dir,
+                    claim=claim,
+                    matrix_key=matrix_key,
+                    netlist_sha=report_mod.sha256_bytes(netlist_text.encode()),
+                    supersedes=args.supersedes,
+                )
+            except records_guard.RecordsGuardError as e:
+                print(f"run_corners.py: {e}", file=sys.stderr)
+                return 1
+
         # Checkpointing is tied to evidence: a --no-write run produces no
         # record, so there is nothing for a resume to finish.
         ckpt = None
@@ -638,7 +674,6 @@ def _run_experiment(
                 )
                 return 1
 
-            subset_reason = args.subset_reason if is_subset else None
             try:
                 record_md = render_record(
                     manifest=manifest,
