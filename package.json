@@ -8,7 +8,7 @@
     "check:ci": "npm run check:base && bash sim/selftest.sh",
     "check:all": "npm run check:base && bash sim/selftest.sh --require-pdk",
     "test": "npm run test:compile && npm run test:unit && npm run test:shell",
-    "test:shell": "bash scripts/tests/test_audit_headless.sh && bash scripts/tests/test_lint_shell_syntax.sh && bash scripts/tests/test_lint_python_syntax.sh && bash scripts/tests/test_lint_json.sh",
+    "test:shell": "bash scripts/tests/test_audit_headless.sh && bash scripts/tests/test_lint_drivers.sh",
     "test:compile": "bash scripts/lint-python-syntax.sh",
     "test:unit": "python3 -m unittest discover --start-directory sim/tests --pattern 'test_*.py' && python3 -m unittest discover --start-directory layout/tests --pattern 'test_*.py' && python3 -m unittest discover --start-directory measurements/tests --pattern 'test_*.py' && python3 -m unittest discover --start-directory signoff/tests --pattern 'test_*.py' && python3 -m unittest discover --start-directory design/lock-detector/tests --pattern 'test_*.py' && python3 -m unittest discover --start-directory sim/phase-quadrature-model --pattern 'test_*.py' && python3 -m unittest discover --start-directory scripts/tests --pattern 'test_*.py'",
     "lint": "bash scripts/lint-json.sh && bash scripts/lint-shell-syntax.sh"
