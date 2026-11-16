@@ -44,7 +44,6 @@ record, or none.
 from __future__ import annotations
 
 import contextlib
-import hashlib
 import json
 import os
 import re
@@ -56,6 +55,7 @@ from pathlib import Path
 from . import acmeasure as ac_mod
 from . import cpmeasure as cp_mod
 from . import measure as measure_mod
+from . import report as report_mod
 from .corners import PvtPoint
 from .montecarlo import McTrial
 from .runner import McTrialResult, PointResult
@@ -113,10 +113,6 @@ _BY_NAME = {cls.__name__: cls for cls in _SERIALIZABLE}
 
 class CheckpointError(RuntimeError):
     """A checkpoint is missing, unreadable, or not this campaign's."""
-
-
-def _sha256_text(text: str) -> str:
-    return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
 def _now() -> str:
@@ -233,7 +229,7 @@ def canonical_netlist_text(netlist_text: str, repo_root=None) -> str:
 
 def raw_netlist_sha256(netlist_text: str) -> str:
     """The netlist hash a schema-1 checkpoint carried -- see `resume`."""
-    return _sha256_text(netlist_text)
+    return report_mod.sha256_bytes(netlist_text.encode())
 
 
 def fingerprint(*, mode: str, manifest: dict, netlist_text: str, pdk, units, repo_root=None) -> dict:
@@ -251,10 +247,12 @@ def fingerprint(*, mode: str, manifest: dict, netlist_text: str, pdk, units, rep
     """
     return {
         "mode": mode,
-        "manifest_sha256": _sha256_text(
-            json.dumps(manifest, sort_keys=True, separators=(",", ":"))
+        "manifest_sha256": report_mod.sha256_bytes(
+            json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode()
         ),
-        "netlist_sha256": _sha256_text(canonical_netlist_text(netlist_text, repo_root)),
+        "netlist_sha256": report_mod.sha256_bytes(
+            canonical_netlist_text(netlist_text, repo_root).encode()
+        ),
         "pdk_variant": getattr(pdk, "variant", None),
         "pdk_commit": getattr(pdk, "resolved_commit", None),
         "units": [u.corner_id for u in units],

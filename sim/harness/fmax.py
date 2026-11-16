@@ -36,7 +36,6 @@ Design choices that the evidence record repeats verbatim:
 
 from __future__ import annotations
 
-import hashlib
 import re
 from dataclasses import dataclass, field
 
@@ -586,7 +585,3 @@ def fmax_bracket(observations: dict, grid_hz: list) -> Boundary:
         f"{hz(first_fail) / 1e6:g} MHz",
         probes=n_probes, inconclusive_hz=inconc,
     )
-
-
-def sha256_text(text: str) -> str:
-    return hashlib.sha256(text.encode()).hexdigest()

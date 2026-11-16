@@ -34,7 +34,6 @@ measurements/aggregate.py reads it unchanged.
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import shutil
 import subprocess
@@ -45,8 +44,11 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 REPO_ROOT = HERE.parents[1]
 sys.path.insert(0, str(HERE))
+if str(HERE.parent) not in sys.path:  # `harness` is a sibling package, not installed
+    sys.path.insert(0, str(HERE.parent))
 
 import reduce as R  # noqa: E402
+from harness import report as report_mod  # noqa: E402  (shared sha256 helpers)
 
 BLOCKS = ["vco", "divider-n4", "divider-n64", "pfd-cp"]
 F_REF_OUT_HZ = 100e6  # the gf180-pll reference point for row 12
@@ -345,10 +347,6 @@ def git(*args) -> str:
     return subprocess.run(["git", *args], cwd=REPO_ROOT, capture_output=True, text=True).stdout.strip()
 
 
-def sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
-
-
 def render(record_id: str, reports: dict, all_data: dict, stages_docs: dict,
            supersedes: str | None, subset_reason: str | None) -> str:
     keys_by_block = {b: sorted(all_data[b]) for b in BLOCKS}
@@ -393,7 +391,7 @@ def render(record_id: str, reports: dict, all_data: dict, stages_docs: dict,
              f"`sim/power/netlist-snapshots/{record_id}/`:")
     for b in BLOCKS:
         body = REPO_ROOT / "sim" / "power" / "netlist-snapshots" / record_id / f"{b}.body.spice"
-        digest = sha256(HERE / "testbench" / f"{b}.body.spice")
+        digest = report_mod.sha256_file(HERE / "testbench" / f"{b}.body.spice")
         L.append(f"  - `{b}.body.spice` SHA-256 `{digest}`")
         del body
     L.append("- **Environment provenance**:")

@@ -66,6 +66,7 @@ from pll_layout import (  # noqa: E402
     LI1_MIN_SPACE_UM,
     MIM_AREA_CAP_F_UM2,
     MIM_PERIM_CAP_F_UM,
+    MOS_MODELS,
     SHEET_RHO_OHM_SQ,
     read_cards,
 )
@@ -77,11 +78,10 @@ from render_common import (  # noqa: E402
     spec_rows_line,
 )
 
-MOS_CARD_RE = re.compile(r"^M\S+\s+(?:\S+\s+){4}(\S+)\s+L=([\d.eE+-]+)U\s+W=([\d.eE+-]+)U")
-RES_CARD_RE = re.compile(r"^R\S+\s+(?:\S+\s+){3}([\d.eE+-]+)\s+(\S+)")
-# No `C` card regex: the extracted capacitor multiset comes from `klt
-# extract`'s JSON `devices[]`, not from the written deck -- see
-# `extracted_cap_set` for why.
+# No device card regex at all: every extracted device multiset (MOS, resistor,
+# capacitor) comes from `klt extract`'s JSON `devices[]`, not from the written
+# deck -- see `extracted_mos_set`, `extracted_cap_set` and `extracted_res_set`
+# for why.
 
 _load = load_json  # local alias, kept short for the calls below
 
@@ -115,21 +115,65 @@ def extracted_cap_set(extract_json: dict[str, Any]) -> Counter:
     return cap
 
 
-def extracted_sets(spice: str, extract_json: dict[str, Any]) -> dict[str, Counter]:
-    """Multisets of what `klt extract` read back out of a drawn cell."""
-    mos: Counter = Counter()
+def extracted_res_set(extract_json: dict[str, Any]) -> Counter:
+    """The extracted resistor multiset, read from `klt extract`'s JSON.
+
+    Same reason as `extracted_cap_set`: the written deck is not a stable
+    carrier. At `klayout-tools==0.6.0` a resistor was an `R` card; at `0.8.0`
+    it is an `X` subcircuit card (`X$4 \\$1 \\$2 vsubs res_xhigh_po r=5060
+    L=2.53U W=1U`), which an `R`-card regex silently counts as zero resistors
+    (issue #304: a FAIL record with 0 extracted against 3 drawn). `devices[]`
+    carries `class` and `params.r_ohm` at both pins, so the same resistors at
+    the same ohms are still compared against the plan.
+    """
     res: Counter = Counter()
-    for line in spice.splitlines():
-        match = MOS_CARD_RE.match(line)
-        if match:
-            klass, length, width = match.group(1), float(match.group(2)), float(match.group(3))
-            mos[(klass, round(width, 6), round(length, 6))] += 1
+    for device in extract_json.get("devices") or []:
+        ohms = (device.get("params") or {}).get("r_ohm")
+        if ohms is None:
             continue
-        match = RES_CARD_RE.match(line)
-        if match:
-            res[(match.group(2), round(float(match.group(1)), 6))] += 1
+        res[(device.get("class"), round(float(ohms), 6))] += 1
+    return res
+
+
+def extracted_mos_set(extract_json: dict[str, Any]) -> Counter:
+    """The extracted MOS multiset, read from `klt extract`'s JSON.
+
+    Same reason as `extracted_cap_set` and `extracted_res_set`: the written
+    deck is not a stable carrier of the device class -- its card form has
+    already drifted twice (a capacitor card lost its model name between
+    `klayout-tools` 0.4.0 and 0.6.0; a resistor card became an `X` card
+    between 0.6.0 and 0.8.0), while `devices[]` did not drift in either case.
+    `devices[]` carries `class` and `params.l_um`/`params.w_um` on every MOS
+    device at every pin with committed evidence, and the key shape --
+    `(class, W, L)` with 6-decimal rounding -- is the same one `planned_sets()`
+    builds, so the Counters compare without a mapping layer.
+
+    Devices are picked by **class** (`set(MOS_MODELS.values())`, the one table
+    `planned_sets()` also keys on) and not by `params.l_um` presence: at
+    `klayout-tools==0.8.0` a `res_xhigh_po` entry carries `l_um`/`w_um` as
+    well as `r_ohm`, so an l_um-based filter would count a block's bias
+    resistors as MOS devices and fail its exact-Counter check.
+    """
+    mos: Counter = Counter()
+    mos_classes = set(MOS_MODELS.values())
+    for device in extract_json.get("devices") or []:
+        if device.get("class") not in mos_classes:
             continue
-    return {"mos": mos, "res": res, "cap": extracted_cap_set(extract_json)}
+        params = device.get("params") or {}
+        width, length = params.get("w_um"), params.get("l_um")
+        if width is None or length is None:
+            continue
+        mos[(device.get("class"), round(float(width), 6), round(float(length), 6))] += 1
+    return mos
+
+
+def extracted_sets(extract_json: dict[str, Any]) -> dict[str, Counter]:
+    """Multisets of what `klt extract` read back out of a drawn cell."""
+    return {
+        "mos": extracted_mos_set(extract_json),
+        "res": extracted_res_set(extract_json),
+        "cap": extracted_cap_set(extract_json),
+    }
 
 
 def planned_sets(block: dict[str, Any]) -> dict[str, Counter]:
@@ -302,10 +346,7 @@ def _check_device_sets(
         planned = planned_sets(block)
         if not any(planned.values()):
             continue
-        spice_path = out_dir / f"{block['cell_name']}.extract.spice"
-        extracted = extracted_sets(
-            spice_path.read_text(), _load(out_dir / f"extract.{block['cell_name']}.json")
-        )
+        extracted = extracted_sets(_load(out_dir / f"extract.{block['cell_name']}.json"))
         mos_ok = planned["mos"] == extracted["mos"]
         res_ok = planned["res"] == extracted["res"]
         cap_ok = _cap_sets_match(planned["cap"], extracted["cap"])
@@ -376,6 +417,25 @@ def _check_top_hierarchy(cells_top: dict[str, Any], plan: dict[str, Any]) -> tup
     )
 
 
+def _min_length_device_count(plan: dict[str, Any]) -> int:
+    """How many devices in `plan` fired `li1.space.1` under issue #46's pin.
+
+    One per MOS device whose gate length is below the deck's minimum li1
+    spacing (see `LI1_MIN_SPACE_UM`). The violation is gone since issue #17's
+    pin bump, so this is purely the historical count the record cites -- and
+    it is derived from the plan, never typed in, so every statement of it in
+    a given record agrees (issue #443; the same lesson as issue #304's block
+    count). Both the DRC check and the "What this layout is not" DRC-clean
+    bullet state it, so both read it from here.
+    """
+    return sum(
+        group["count"]
+        for block in plan["blocks"]
+        for group in block["groups"]
+        if group["kind"] == "mos_array" and group["params"]["l_um"] < LI1_MIN_SPACE_UM
+    )
+
+
 def _check_drc(plan: dict[str, Any], drc: dict[str, Any]) -> tuple[str, bool, str]:
     # Through issue #46's pin this could only ever report the single
     # documented klayout-tools#1187 workaround signature (one `li1.space.1`
@@ -383,12 +443,7 @@ def _check_drc(plan: dict[str, Any], drc: dict[str, Any]) -> tuple[str, bool, st
     # (klayout-tools#1201 / commit `bd5c7f4`) and confirmed the deck now
     # comes back genuinely clean, so this asserts that bar directly rather
     # than special-casing a violation count that no longer occurs.
-    min_length_devices = sum(
-        group["count"]
-        for block in plan["blocks"]
-        for group in block["groups"]
-        if group["kind"] == "mos_array" and group["params"]["l_um"] < LI1_MIN_SPACE_UM
-    )
+    min_length_devices = _min_length_device_count(plan)
     rule_counts = drc.get("rule_counts", {})
     drc_ok = drc.get("status") == "clean" and not rule_counts
     return (
@@ -536,7 +591,9 @@ def _render_layout_is(a: Any, plan: dict[str, Any], build: dict[str, Any], out_d
     a("")
 
 
-def _render_layout_is_not(a: Any, build: dict[str, Any], drc: dict[str, Any]) -> None:
+def _render_layout_is_not(
+    a: Any, plan: dict[str, Any], build: dict[str, Any], drc: dict[str, Any]
+) -> None:
     a("## What this layout is not")
     a("")
     a(
@@ -552,11 +609,12 @@ def _render_layout_is_not(a: Any, build: dict[str, Any], drc: dict[str, Any]) ->
     if drc.get("status") == "clean" and not violation_count:
         a(
             "- **DRC-clean.** 0 violations (see the DRC check above) -- "
-            "issue #17. Through issue #46's `klt` pin this reported 52 "
-            "`li1.space.1` violations, one per minimum-gate-length device, "
-            "traced to a documented `klt gen` limitation "
-            "(klayout-tools#1187); issue #17 bumped the pin past the "
-            "upstream fix (klayout-tools#1201) and the violation is gone."
+            "issue #17. Through issue #46's `klt` pin this reported "
+            f"{_min_length_device_count(plan)} `li1.space.1` violations, one "
+            "per minimum-gate-length device, traced to a documented "
+            "`klt gen` limitation (klayout-tools#1187); issue #17 bumped the "
+            "pin past the upstream fix (klayout-tools#1201) and the "
+            "violation is gone."
         )
     else:
         a(
@@ -846,7 +904,7 @@ def main() -> int:
     _render_header(a, args, netlist_display)
     _render_verdict(a, checks, all_pass)
     _render_layout_is(a, plan, build, out_dir)
-    _render_layout_is_not(a, build, drc)
+    _render_layout_is_not(a, plan, build, drc)
     if spot:
         _render_routing_spotcheck(a, spot, build, drc, extract_top)
     _render_device_set(a, device_rows, out_dir, plan)

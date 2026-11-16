@@ -256,7 +256,6 @@ class FakeBackend:
     """
 
     name = "local"
-    requested = "local"
 
     def __init__(self, fmax_for, errors=None):
         self.fmax_for, self.errors, self.executed = fmax_for, errors or {}, []
@@ -397,6 +396,12 @@ class LocalGuards(unittest.TestCase):
     def test_dry_run_plans_without_a_pdk(self):
         rc = C.main(["divider-fmax", "--dry-run", "--moduli", "25", "--corners", "tt"])
         self.assertEqual(rc, 0)
+
+    def test_executor_choices_list_each_name_once(self):
+        action = next(a for a in C.build_parser()._actions
+                      if "--executor" in a.option_strings)
+        self.assertEqual(tuple(action.choices), executor_mod.EXECUTORS)
+        self.assertEqual(len(set(action.choices)), len(action.choices))
 
 
 class RecordRendering(unittest.TestCase):

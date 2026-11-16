@@ -21,7 +21,11 @@ This is a miss, not missing evidence, and not a spec relaxation:
 
 Because the phase products miss their bands, `handoff_ready` is false and #260
 stays blocked pending a separately argued superseding decision record (not
-written here). DR-007 stays proposed, row 16 DRAFT.
+written here). DR-007 stays proposed, row 16 DRAFT. That record is now
+drafted: `spec/decision-records/DR-017-phase-window-miss-response.md`
+(proposed, not ratified — no tap of the measured chains fits both bands; it
+recommends a PVT-tracking window realization and names its confirming
+measurement).
 
 Mechanical grade (reducer `handoff`, `design/lock-detector/timing/grade_combined.py`;
 nearest rising phase candidate `s25-rising`, record `lt-20261012-220148-142698`,

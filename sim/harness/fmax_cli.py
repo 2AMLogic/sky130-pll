@@ -174,7 +174,7 @@ def run_batch(requests, *, manifest, spec, netlists, work_dir, backend, jobs, st
             cell.observed[idx] = verdict.status
             cell.probes.append(_probe_dict(
                 unit.corner_id, stage_no, cell, freq, plan, verdict,
-                fmax_mod.sha256_text(unit.netlist_text), outcome.log_path.name,
+                report_mod.sha256_bytes(unit.netlist_text.encode()), outcome.log_path.name,
                 _sha_file(outcome.log_path),
             ))
             log(f"  {unit.corner_id}: {verdict.status}: {verdict.reason}")
@@ -279,7 +279,10 @@ def cmd(args) -> int:
         except executor_mod.ExecutorRefused as e:
             print(f"run_fmax.py: {e}", file=sys.stderr)
             return 1
-    if name not in executor_mod.EXECUTORS and name != fmax_klt.BATCH_EXECUTOR:
+    # resolve_name returns an explicit name unvalidated ("An unknown name is
+    # rejected by the caller"); this guard is the rejection point for the
+    # manifest's `executor` key, which argparse choices never sees.
+    if name not in executor_mod.EXECUTORS:
         print(f"run_fmax.py: unknown executor {name!r}", file=sys.stderr)
         return 1
     if name == "local" and n_requested > args.max_local_probes:
@@ -427,7 +430,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--supply-tol", type=float)
     p.add_argument("--subset-reason")
     p.add_argument("--supersedes", help="record-id this run's record supersedes")
-    p.add_argument("--executor", choices=executor_mod.EXECUTORS + (fmax_klt.BATCH_EXECUTOR,),
+    p.add_argument("--executor", choices=executor_mod.EXECUTORS,
                    help="default: the manifest's, else local. `batch` submits through "
                         "`klt sim --backend batch` (S3 job contract)")
     p.add_argument("--klt-jobs", type=int, default=2,

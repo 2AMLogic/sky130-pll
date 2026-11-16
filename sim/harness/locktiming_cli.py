@@ -14,7 +14,6 @@ reason; nothing is simulated locally and nothing is invented. Stdlib only.
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import re
 import shutil
@@ -29,6 +28,7 @@ from types import SimpleNamespace
 from . import evidence_store as E
 from . import fmax_klt as K
 from . import locktiming as L
+from . import report as R
 
 RECORD_SCHEMA = "sky130-pll.lockdet-timing.record/1"
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -41,10 +41,6 @@ _STRIP = re.compile(r"^\s*(\.lib\s.*|\.end|\.control|\.endc)\s*$", re.IGNORECASE
 
 class RunnerError(RuntimeError):
     pass
-
-
-def sha(b: bytes) -> str:
-    return hashlib.sha256(b).hexdigest()
 
 
 def required_traces(m: dict) -> list:
@@ -66,7 +62,8 @@ def load_candidate(spec: str) -> dict:
         raise RunnerError(f"{np_}: netlist must contain the @VDD@ supply placeholder")
     return {"manifest": m, "uid": (m["product_id"], m["candidate_id"]), "manifest_path": mp,
             "netlist_path": np_, "netlist": ntext.decode(),
-            "manifest_sha256": sha(mtext), "netlist_sha256": sha(ntext)}
+            "manifest_sha256": R.sha256_bytes(mtext),
+            "netlist_sha256": R.sha256_bytes(ntext)}
 
 
 def body_for(cand: dict, vdd: float) -> str:
@@ -143,8 +140,9 @@ def run_group(item: dict, work: Path, klt: str, runner, *, retries, wait_s, slee
     req = build_group_request(cand, g)
     (gdir / K.REQUEST_NAME).write_text(json.dumps(req, indent=1, sort_keys=True) + "\n")
     job = {"group": item["key"], "dir": item["key"], "supply_v": g.supply_v, "job_id": None,
-           "netlist_sha256": sha(body.encode()), "pdk": req["models"], "failure": None,
-           "request_sha256": sha((gdir / K.REQUEST_NAME).read_bytes())}
+           "netlist_sha256": R.sha256_bytes(body.encode()), "pdk": req["models"],
+           "failure": None,
+           "request_sha256": R.sha256_file(gdir / K.REQUEST_NAME)}
     out = {"job": job, "report": None, "gdir": gdir}
     cmd = [klt, "sim", str(gdir / K.REQUEST_NAME), "-o", str(gdir / "out"),
            "--backend", "batch", "--format", "json"]
@@ -213,8 +211,9 @@ GROUP_SCHEMA = "sky130-pll.lockdet-timing.group/1"
 
 
 def matrix_id(cands, points) -> str:
-    return sha(json.dumps([[c["manifest_sha256"], c["netlist_sha256"]] for c in cands]
-                          + [sorted(points)]).encode())[:16]
+    return R.sha256_bytes(json.dumps(
+        [[c["manifest_sha256"], c["netlist_sha256"]] for c in cands]
+        + [sorted(points)]).encode())[:16]
 
 
 def load_group_records(gdir: Path) -> dict:

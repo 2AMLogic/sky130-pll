@@ -6,8 +6,27 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 - [2026-09](work_log/WORK_LOG_2026-09.md)
 
+### 2026-11-15
+
+- **PR #470**: chore(sim): drop dead to_float helper and inert F401 noqa suppressions
+- **PR #471**: refactor: read the record renderer's MOS multiset from extract JSON, not deck M cards
+- **PR #452**: build: discover shell scripts for bash -n lint instead of enumerating them
+- **Issue #475** (closed): test:compile's find directory list has the same drift as lint's old bash -n chain: scripts/*.py gets no py_compile
+- **Issue #455** (closed): layout: render-pll-record.py still parses MOS devices from the written deck, the last card-prefix regex
+- **Issue #453** (closed): Remove three dead Python symbols and the inert noqa suppressions hiding them
+- **Issue #446** (closed): Replace package.json lint's hand-listed `bash -n` chain with a discovery loop (the list has already drifted)
+
 ### 2026-11-14
 
+- **PR #467**: docs: surface the newest buffered-top layout record beside LATEST, with a freshness test
+- **PR #444**: fix: derive the record's li1.space.1 count from the plan, not a literal
+- **PR #416**: layout: count extracted resistors from klt JSON; mint passing buffered-top record
+- **Issue #443** (closed): render-pll-record: the same li1.space.1 count is stated twice per record, once derived and once typed in
+- **Issue #304** (closed): layout: draw clk_buf and re-mint the top-level layout record against the buffered top (split from #303)
+- **PR #445**: refactor: collapse the six duplicated sim/ sha256 helpers onto one canonical pair
+- **PR #442**: sim: keep divider Fmax batch jobs small, waiting and reclaim-tolerant
+- **Issue #450** (closed): layout: layout/pll/reports/LATEST names a record its successor declares superseded
+- **Issue #441** (closed): sim/harness: consolidate the four duplicated sha256 helpers (two share a name with different return types)
 - **Issue #80** (closed): Champion: Merge-Risk Hold Digest
 
 ### 2026-11-13
