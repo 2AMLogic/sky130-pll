@@ -164,7 +164,7 @@
         "role": "hygiene",
         "path": "spec/decision-records/README.md",
         "passed": true,
-        "content_hash": "sha256:d3d431f67a15ea12258a9588101d9dd29a3bf17dc4d60dca1b48f25ba0793147"
+        "content_hash": "sha256:545edbe506367f374db34f9d5e4416119d92a6e60385beb8270f78a65035a413"
       },
       {
         "check": "present",
