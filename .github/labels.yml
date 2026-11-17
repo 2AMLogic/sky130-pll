@@ -284,3 +284,9 @@
   description: "Non-collaborator submission; needs maintainer approval before curation. Applied by: humans only."
   color: "E5E7EB"  # gray-200 - external/hold marker
 # END LOOM LABELS
+
+# Repo-owned label, outside the Loom-managed block. Dependent:
+# .github/workflows/ci.yml — the `pdk-smoke` job's `if:` gates on this PR label.
+- name: run-pdk-smoke
+  description: "Opt-in: run the PDK-gated pdk-smoke CI job on this PR"
+  color: "D4C5F9"  # lavender - distinct from the loom: label families
