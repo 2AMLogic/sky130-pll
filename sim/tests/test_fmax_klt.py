@@ -23,9 +23,11 @@ SIM_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(SIM_DIR))
 sys.path.insert(0, str(SIM_DIR / "tests"))
 
+from harness import executor as executor_mod  # noqa: E402
 from harness import fmax as F  # noqa: E402
 from harness import fmax_cli as C  # noqa: E402
 from harness import fmax_klt as K  # noqa: E402
+from pdk_fixture import make_resolved_pdk  # noqa: E402
 from test_fmax import MANIFEST, SPEC, make_cells, output_edges, trace  # noqa: E402
 
 NETLIST = """* fake testbench
@@ -451,7 +453,7 @@ class CliBatchRoute(unittest.TestCase):
             def preflight(self):
                 raise K.KltBatchError("stub: batch submit layer reached")
 
-        pdk = SimpleNamespace(process_corners=("tt",), commit_mismatch=False)
+        pdk = make_resolved_pdk(process_corners=("tt",))
         err = io.StringIO()
         with mock.patch.object(C.pdk_mod, "resolve", return_value=pdk), \
                 mock.patch.object(C.runner_mod, "netlist_schematic", return_value=NETLIST), \
@@ -477,6 +479,9 @@ class CliBatchRoute(unittest.TestCase):
                                 "--supply-tol", "0", "--no-write"])
         self.assertEqual(rc, 1)
         self.assertIn("use --executor batch", err)
+
+    def test_the_fmax_batch_route_name_is_a_known_executor(self):
+        self.assertIn(K.BATCH_EXECUTOR, executor_mod.EXECUTORS)
 
 
 if __name__ == "__main__":

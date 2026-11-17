@@ -47,7 +47,7 @@ import time
 from pathlib import Path
 
 from . import executor as executor_mod
-from .klt_submit import is_capacity_refusal, submit_with_capacity_retry  # noqa: F401
+from .klt_submit import is_capacity_refusal, submit_with_capacity_retry
 
 #: Executor name accepted by `run_corners.py --executor`.
 BATCH_EXECUTOR = "batch"
@@ -147,7 +147,6 @@ class CpBatchBackend(executor_mod.ExecutionBackend):
     deck-list request."""
 
     name = BATCH_EXECUTOR
-    requested = BATCH_EXECUTOR
 
     def __init__(self, *, pdk, spiceinit: Path, cp_spec=None, measure_spec=None, klt: str | None = None,
                  runner=None, log=print, capacity_retries: int = 30,
@@ -190,14 +189,14 @@ class CpBatchBackend(executor_mod.ExecutionBackend):
 
     # -- lifecycle ------------------------------------------------------- #
 
-    def stage(self, units) -> executor_mod.ExecutionBackend:
+    def stage(self, units) -> None:
         """Submit the whole unit set as one deck-list job, or raise.
 
         Never falls back to a local run: provisioning and capacity problems are
         reported, not routed around."""
         units = list(units)
         if not units:
-            return self
+            return
         from . import runner as runner_mod  # lazy: runner imports executor
 
         self.preflight()
@@ -241,7 +240,6 @@ class CpBatchBackend(executor_mod.ExecutionBackend):
             "unit_count": len(units),
             "dir": BATCH_DIR,
         }
-        return self
 
     def _submit(self, bdir: Path, wall_s: int) -> dict:
         cmd = [self.klt, "sim", str(bdir / REQUEST_NAME), "-o", str(bdir / "out"),
@@ -346,7 +344,7 @@ class CpBatchBackend(executor_mod.ExecutionBackend):
         return outcome
 
     def provenance(self) -> dict:
-        return {"executor": BATCH_EXECUTOR, "requested": BATCH_EXECUTOR, "job": dict(self.job)}
+        return {"executor": BATCH_EXECUTOR, "job": dict(self.job)}
 
 
 def _read_stream(udir: Path, rel) -> str:

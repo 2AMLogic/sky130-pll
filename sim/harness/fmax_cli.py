@@ -29,6 +29,7 @@ from . import fmax_klt
 from . import fmax_report
 from . import measure as measure_mod
 from . import pdk as pdk_mod
+from . import records_guard
 from . import report as report_mod
 from . import runner as runner_mod
 
@@ -161,7 +162,7 @@ def run_batch(requests, *, manifest, spec, netlists, work_dir, backend, jobs, st
             manifest, spec, cell, freq, netlists[cell.modulus.n], work_dir
         )
         built.append((cell, idx, freq, unit, plan, mspec))
-    backend = backend.stage([b[3] for b in built])
+    backend.stage([b[3] for b in built])
 
     def work(item):
         cell, idx, freq, unit, plan, mspec = item
@@ -279,7 +280,10 @@ def cmd(args) -> int:
         except executor_mod.ExecutorRefused as e:
             print(f"run_fmax.py: {e}", file=sys.stderr)
             return 1
-    if name not in executor_mod.EXECUTORS and name != fmax_klt.BATCH_EXECUTOR:
+    # resolve_name returns an explicit name unvalidated ("An unknown name is
+    # rejected by the caller"); this guard is the rejection point for the
+    # manifest's `executor` key, which argparse choices never sees.
+    if name not in executor_mod.EXECUTORS:
         print(f"run_fmax.py: unknown executor {name!r}", file=sys.stderr)
         return 1
     if name == "local" and n_requested > args.max_local_probes:
@@ -317,6 +321,28 @@ def cmd(args) -> int:
                     pdk, REPO_ROOT / "sim" / "xschemrc", sch, work_dir / f"net{m.n}", REPO_ROOT
                 )
             except runner_mod.NetlistError as e:
+                print(f"run_fmax.py: {e}", file=sys.stderr)
+                return 1
+
+        # Issue #503: same guard the PVT lane runs -- before any probe
+        # starts, since a missed --supersedes costs a whole campaign.
+        snapshot_text = "".join(
+            f"* ---- unpatched netlist for N={n} ----\n{netlists[n]}\n" for n in sorted(netlists)
+        )
+        analysis_identity = records_guard.fmax_search_identity(spec)
+        if args.write:
+            try:
+                records_guard.check(
+                    records_dir=exp_dir / "records",
+                    claim=manifest["claim"],
+                    matrix_key=records_guard.fmax_matrix_key(
+                        cells=cells, subset_reason=args.subset_reason
+                    ),
+                    netlist_sha=report_mod.sha256_bytes(snapshot_text.encode()),
+                    supersedes=args.supersedes,
+                    analysis=analysis_identity,
+                )
+            except records_guard.RecordsGuardError as e:
                 print(f"run_fmax.py: {e}", file=sys.stderr)
                 return 1
 
@@ -370,9 +396,7 @@ def cmd(args) -> int:
         scratch = exp_dir.parent / "build" / slug / record_id
         scratch.mkdir(parents=True, exist_ok=True)
         snapshot = scratch.parent / f"{record_id}.spice"
-        snapshot.write_text("".join(
-            f"* ---- unpatched netlist for N={n} ----\n{netlists[n]}\n" for n in sorted(netlists)
-        ))
+        snapshot.write_text(snapshot_text)
         corners_dir = scratch
         for p in probes:
             src = work_dir / p["log_file"]
@@ -390,7 +414,7 @@ def cmd(args) -> int:
             tool_versions=pdk_mod.tool_versions(), repo_root=REPO_ROOT,
             netlist_snapshot=snapshot, cells=results, probe_count=len(probes),
             subset_reason=args.subset_reason, supersedes=args.supersedes,
-            execution_note=note,
+            execution_note=note, analysis_identity=analysis_identity,
         )
         try:
             evidence_store_mod.store_files(
@@ -427,7 +451,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--supply-tol", type=float)
     p.add_argument("--subset-reason")
     p.add_argument("--supersedes", help="record-id this run's record supersedes")
-    p.add_argument("--executor", choices=executor_mod.EXECUTORS + (fmax_klt.BATCH_EXECUTOR,),
+    p.add_argument("--executor", choices=executor_mod.EXECUTORS,
                    help="default: the manifest's, else local. `batch` submits through "
                         "`klt sim --backend batch` (S3 job contract)")
     p.add_argument("--klt-jobs", type=int, default=2,

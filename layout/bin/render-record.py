@@ -30,20 +30,6 @@ import sys
 from pathlib import Path
 from typing import Any
 
-# scripts/git_status.py lives at the repo root (shared with
-# sim/harness/report.py -- sim/ and layout/ are otherwise independent trees
-# per CLAUDE.md's harness-bootstrap convention). This file is loaded both as
-# a script (run directly) and by path via importlib (layout/tests), so the
-# repo root has to be put on sys.path explicitly rather than relying on
-# script-directory sys.path[0] insertion.
-_REPO_ROOT = Path(__file__).resolve().parents[2]
-if str(_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_REPO_ROOT))
-
-# Re-exported (not just used below): layout/tests/test_record_dirty_flag.py
-# loads this module by path and calls `render_record.is_dirty(...)` directly.
-from scripts.git_status import is_dirty  # noqa: E402,F401
-
 _BIN_DIR = Path(__file__).resolve().parent
 if str(_BIN_DIR) not in sys.path:
     sys.path.insert(0, str(_BIN_DIR))

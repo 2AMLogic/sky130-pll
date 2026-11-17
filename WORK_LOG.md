@@ -6,8 +6,85 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 - [2026-09](work_log/WORK_LOG_2026-09.md)
 
+### 2026-11-17
+
+- **PR #517**: test: pin the lint drivers' non-git diagnostic, not just its exit code
+- **Issue #504** (closed): Derived-list lint suites do not independently pin the non-git guard (empty-set guard masks its removal)
+
+### 2026-11-16
+
+- **PR #514**: test: convert the last two duck-typed PDK stand-ins to make_resolved_pdk
+- **Issue #495** (closed): sim/tests: two duck-typed PDK stand-ins remain outside #472's scope
+- **PR #513**: docs: link the executor-equivalence retirement note from its README and correct three stale inbound citations
+- **Issue #462** (closed): sim/executor-equivalence/README.md still documents the retired --executor remote path as live
+- **PR #512**: layout: drop stale repo-root comment and dead sys.path inserts from renderers
+- **Issue #480** (closed): render-record.py's repo-root sys.path block outlived its reason: the comment names a module the file no longer imports
+- **PR #510**: refactor(scripts): consolidate the three lint drivers onto one shared core
+- **Issue #507** (closed): Consolidate three copy-pasted lint drivers (json/python/shell) into one shared core; vendored-prefix lists have already drifted
+- **PR #505**: fix(signoff): report check 1's manifest-shape fault under its own header, name the marker in the mismatch remediation
+- **PR #501**: test(sim): make targeted test-module runs independent of import order
+- **PR #500**: fix: fail loudly when test:compile and lint discover nothing
+- **PR #492**: docs(ROADMAP): re-point the stored-evidence hold at #459, reword the LOCK sentence, re-anchor the header
+- **Issue #486** (closed): docs(ROADMAP): refresh the stale #304 hold and the LOCK-circuit wording, and re-anchor the header
+- **Issue #482** (closed): test:compile passes vacuously on an empty git ls-files result (the loud-failure guard lint-shell-syntax.sh already has)
+- **Issue #481** (closed): signoff check 1: failure output never names the historical-record marker, and reuses the README-mismatch header for a manifest-shape fault
+- **Issue #463** (closed): sim/tests/test_executor.py RecursionErrors when run standalone: import-order-dependent store_files snapshot
+- **PR #489**: fix: drop unused mim_cap_ff from two variant-generator imports
+- **PR #449**: docs: state the repository is public and list every tracked top-level directory
+- **PR #499**: sim: commit divider Fmax modulus-4 rerun superseding 20261114-191601-519a411
+- **PR #498**: test: pin fmax_klt.BATCH_EXECUTOR as a known executor
+- **PR #494**: fix: derive the PLL record's stdcell instance count from the plan
+- **PR #493**: test: swap the last two SimpleNamespace PDK stand-ins for the shared ResolvedPdk fixture
+- **PR #497**: fix(sim/tests): capture the real store_files before the fixture patch
+- **Issue #473** (closed): Narrow two unused mim_cap_ff imports and their inert F401 suppressions
+- **Issue #439** (closed): docs: README and CLAUDE.md still say this repository is private
+- **Issue #472** (closed): sim/tests: two SimpleNamespace PDK stand-ins remain after the _StubPdk dedupe
+- **Issue #502** (closed): test: measure whether cp_klt.BATCH_EXECUTOR needs the same EXECUTORS pin as fmax (premise unverified)
+- **Issue #451** (closed): Derive the record's schematic-instance count from the plan, not a typed-in 29
+- **Issue #488** (closed): Pin the fmax_klt.BATCH_EXECUTOR <-> executor.EXECUTORS coupling with a one-line test
+- **Issue #485** (closed): test_executor.LocalExecutorUnchangedTests: RecursionError in _fake_store_files fixture (4 errors, pre-existing)
+- **PR #490**: DR-017: phase-window band miss response (proposed)
+- **PR #483**: sim: drop ExecutionBackend.stage()'s return value
+- **PR #465**: sim: divider Fmax evidence record for modulus 4 (DR-003 PVT slice)
+- **PR #484**: fix: render run_fmax's --executor choices without the duplicated batch entry
+- **Issue #477** (closed): run_fmax.py --executor lists 'batch' twice in its argparse choices
+- **Issue #461** (closed): Remove ExecutionBackend.stage()'s return value: a self-replacement seam only a fallback needed
+- **Issue #438** (closed): design: propose a response to the measured LOCK phase-window miss (new proposed decision record)
+
+### 2026-11-15
+
+- **PR #479**: signoff: scope check 1's record regex and exempt historical citations by explicit marker
+- **PR #437**: docs: roadmap as of 2026-11-13
+- **PR #468**: test: dedupe the parallel DirtyFlagTests into scripts/tests/test_git_status.py
+- **PR #466**: build: share the check:ci/check:all prefix as check:base; derive test:compile from git ls-files
+- **PR #469**: sim: remove unwired helpers to_supplied and split_static_dynamic
+- **PR #464**: test: dedupe seven duck-typed PDK stubs into one real-ResolvedPdk fixture
+- **PR #460**: sim: drop the ExecutionBackend.requested fallback marker
+- **Issue #458** (closed): Simplify signoff check 1: replace the 200-char prose sniff + unscoped record regex with an explicit historical marker
+- **Issue #456** (closed): package.json: check:all silently skips three checks check:ci runs, and test:compile misses scripts/ (the two lists #446 scoped out)
+- **Issue #454** (closed): Dedupe the seven PDK stub classes in sim/tests: four shapes for one 8-field frozen dataclass, three contradicting its as_env
+- **Issue #448** (closed): Dedupe the two parallel DirtyFlagTests: scripts/git_status.py is tested twice through re-export shims, and layout's real git_provenance is untested
+- **Issue #447** (closed): Remove two dead-on-arrival harness helpers kept alive only by their own tests (to_supplied, split_static_dynamic)
+- **Issue #440** (closed): Remove ExecutionBackend.requested: a fallback marker left behind by #425
+- **PR #470**: chore(sim): drop dead to_float helper and inert F401 noqa suppressions
+- **PR #471**: refactor: read the record renderer's MOS multiset from extract JSON, not deck M cards
+- **PR #452**: build: discover shell scripts for bash -n lint instead of enumerating them
+- **Issue #475** (closed): test:compile's find directory list has the same drift as lint's old bash -n chain: scripts/*.py gets no py_compile
+- **Issue #455** (closed): layout: render-pll-record.py still parses MOS devices from the written deck, the last card-prefix regex
+- **Issue #453** (closed): Remove three dead Python symbols and the inert noqa suppressions hiding them
+- **Issue #446** (closed): Replace package.json lint's hand-listed `bash -n` chain with a discovery loop (the list has already drifted)
+
 ### 2026-11-14
 
+- **PR #467**: docs: surface the newest buffered-top layout record beside LATEST, with a freshness test
+- **PR #444**: fix: derive the record's li1.space.1 count from the plan, not a literal
+- **PR #416**: layout: count extracted resistors from klt JSON; mint passing buffered-top record
+- **Issue #443** (closed): render-pll-record: the same li1.space.1 count is stated twice per record, once derived and once typed in
+- **Issue #304** (closed): layout: draw clk_buf and re-mint the top-level layout record against the buffered top (split from #303)
+- **PR #445**: refactor: collapse the six duplicated sim/ sha256 helpers onto one canonical pair
+- **PR #442**: sim: keep divider Fmax batch jobs small, waiting and reclaim-tolerant
+- **Issue #450** (closed): layout: layout/pll/reports/LATEST names a record its successor declares superseded
+- **Issue #441** (closed): sim/harness: consolidate the four duplicated sha256 helpers (two share a name with different return types)
 - **Issue #80** (closed): Champion: Merge-Risk Hold Digest
 
 ### 2026-11-13

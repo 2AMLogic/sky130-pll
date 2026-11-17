@@ -512,6 +512,33 @@ recorded needs `--subset-reason`. The per-cell bounds roll up into
 make signoff item 8 met (power and area have no evidence) and does not ratify
 spec row 4.
 
+**Land the grid one modulus at a time.** The `--klt-cache` reuse above is
+plain local-filesystem reuse of collected reports: a completed job cannot be
+re-collected from the batch backend by its job id on a different machine, and
+without `--klt-cache` the cache defaults inside the deleted scratch
+`TemporaryDirectory`, so nothing accumulates at all. Accumulating the whole
+225-cell grid across sessions therefore requires every session to land on the
+same dispatch host, which the fleet does not guarantee — three whole-grid
+attempts (2026-10-09, 2026-10-10, 2026-11-14) each burned fleet time and minted
+nothing before this was understood. One modulus (`--moduli N`) is the full
+45-point DR-003 matrix and 9 stage-1 jobs — small enough to finish cold on any
+host — and one record per modulus covers the same declared cells (measured
+2026-11-14, modulus 4: 737 probes, 34 batch jobs, ~2 h wall, `--klt-jobs 2`).
+Run one modulus per session, always with `--klt-cache <dir>` and a
+`--subset-reason` naming the slice, and commit its record before starting the
+next; the aggregate rollup composes multiple current Fmax records, so
+per-modulus records need no parser change.
+
+**Re-running a modulus that already has a committed record: pass
+`--supersedes <record-id>`.** A resume of the 2026-11-14 modulus-4 cache on the
+same host (loom-worker-4, 2026-11-16) re-collected all 34 groups, submitted
+nothing, resolved 45/45 cells in about two minutes and reproduced the committed
+record's per-cell table exactly — but without `--supersedes` the minted record
+asserts "first record for this claim", false on a tree that already holds one,
+and the rollup lists the modulus twice with identical numbers. Naming the prior
+record keeps the rollup to one current row per modulus and leaves the
+superseded record in git untouched.
+
 ## Loop-dynamics campaigns (`ac` manifest block)
 
 A manifest that declares a top-level `ac` block instead of a `measure`

@@ -146,6 +146,32 @@ Negative control (measured, scratch edit reverted): appending one space to
 signoff/inventory/item1-analog.json --check signoff/evidence/attest-item1-analog.json`
 exit 3 with `drift: attestation.checks.9.content_hash`.
 
+### Adding or removing a decision record: the item 10 re-attestation chain, in the same PR
+
+`spec/decision-records/README.md` -- the decision-record index -- is one of
+the files the item 10 inventory hashes, so **adding or removing a decision
+record always drifts the committed item 10 envelope**: the required index-row
+edit changes that pinned hash, and `run-signoff.sh --check` (the second CI
+gate) exits 1 until the same PR re-attests. A new record *file* itself is not
+asserted until it is listed in `signoff/inventory/item10.json` -- it is the
+index row that triggers the chain. The chain, concretely (the regeneration
+text above, specialized to item 10):
+
+1. `klt signoff --attest 10 --inventory signoff/inventory/item10.json -o
+   signoff/evidence/attest-item10.json` (klt 0.8.0, the pin -- e.g. via
+   `uvx --from "klayout-tools==0.8.0"` where the host `klt` is not 0.8.0);
+2. when the record set changed, re-pin the inventory hash for key `10` in
+   `signoff/block-manifest.json` (the manifest pins the inventory's content
+   hash, which the envelope's `provenance.input.content_hash` repeats -- an
+   index-row-only edit leaves the inventory byte-identical and this pin
+   unchanged);
+3. `bash signoff/run-signoff.sh` to re-render `signoff/tier-report.json`.
+
+Worked precedent: `092453b`, `a0201ae` and `33872097` (the DR-015, DR-016 and
+DR-017 index rows), each touching the same four files -- the inventory (the
+new record added), the re-attested envelope, the re-pinned manifest and the
+re-rendered tier report.
+
 ## Item 3 (met, both partitions), and what it does and does not say
 
 Item 3 cites
@@ -217,7 +243,7 @@ the router refused to draw, not legs it drew and that passed, so it does not
 establish that a fully-routed `pll_top` stays clean of `met1.space.1` once
 those legs are actually routed. An earlier, now-superseded record's own
 routed spot-check
-(`layout/pll/reports/20260906-195205-4a08c71/route-spot-check/drc.json`,
+(`layout/pll/reports/20260906-195205-4a08c71/route-spot-check/drc.json`, <!-- signoff-historical-record -->
 cited by this block-manifest before issue #157's pin bump) shows the failure
 mode directly: `status: "violations"`, `rule_counts: {"met1.space.1": 2}` —
 on a rule that is not in the `rules_skipped` list above, so it was fully
@@ -244,7 +270,7 @@ Item 8 is cited under the key `"8.analog"` at
 `signoff/evidence/characterization-report.json`, a `"kind": "generic"`
 envelope — the only kind item 8 accepts at the pinned `klt` — whose
 `provenance.input.content_hash` and the manifest's pin are both
-`sha256:3e56c1a6a8bcb8732e7bfd94229df2234fc353e5b7850783b55523846c022f8d`, the
+`sha256:95571057fd30327dc57ea9e3502ebd1bb148f270d63cd219eb1539123186aac6`, the
 SHA-256 of the committed `measurements/report.md`. Guard 1 re-hashes that file
 from its live bytes on every run.
 
@@ -265,16 +291,15 @@ figures; the numbers are in the records it points to.
 
 **Why the digital partition is not cited.** Item 8 adds, for a mixed-signal
 digital partition, "Fmax, area, and power across the corner set, not just
-functional pass/fail". The report's Fmax section holds no committed Fmax
-record yet, and it records
-`No evidence` for row 12 (power) and row 18 (area). Its only digital-partition
-evidence is row 4's divider records, which are functional pass/fail. The
-divider's maximum correct-division frequency exists only as an informal,
-uncommitted per-corner table in `design/divider/DESIGN.md` (see
-`sim/divider/testbench/tb.json`'s `analysis` note), which is not an evidence
-record and is not in the report. So `8.digital` stays `unmet` /
-`no_evidence`. Citing the same envelope for it would produce a green row
-that the checklist text contradicts.
+functional pass/fail". The report's Fmax section now holds a committed Fmax
+record for modulus 4 (`sim/divider-fmax/records/20261116-065229-beef805.md`,
+which supersedes the 2026-11-14 record via a resumed re-run that reproduced
+its per-cell table exactly), but the report still records `No evidence` for
+row 12 (power) and row 18
+(area). That alone decides it: the checklist requires Fmax, area and power
+across the corner set, and two of the three still have no evidence at all.
+So `8.digital` stays `unmet` / `no_evidence`. Citing the same envelope for
+it would produce a green row that the checklist text contradicts.
 
 **What `status: "pass"` asserts, and what it does not.** It asserts only that
 the report is the artifact item 8 names. It does **not** assert that any spec

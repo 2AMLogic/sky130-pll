@@ -6,7 +6,7 @@ flow) both render provenance through `render_common.render_provenance`. The
 PLL flow passes `netlist_display`, which adds a `Schematic netlist:` line; the
 trivial-cell flow does not. These tests load each script by path (a hyphenated
 filename is not an importable module name -- same pattern as
-`test_record_dirty_flag.py`) and assert the exact rendered section, so a
+`test_git_provenance.py`) and assert the exact rendered section, so a
 change to the shared function that breaks either call site fails here without
 needing `klt` or a PDK install.
 

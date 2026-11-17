@@ -5,8 +5,10 @@ and the rendered report, rather than drifting from them.
 
 Three checks, none of which needs `klt`:
 
-1. **Item-3 record IDs.** The README's item-3 section names layout records;
-   each must be the record the manifest actually cites. This is the
+1. **Item-3 record IDs.** Every layout record ID the README cites from the
+   block the manifest's item 3 cites must be that item's record, except
+   citations whose line carries the explicit
+   ``<!-- signoff-historical-record -->`` marker. This is the
    README<->manifest half of the gap that run-signoff.sh's guard 2 does NOT
    cover (guard 2 checks manifest<->LATEST only).
 2. **Met count and block kind.** Every ``**N of M T1 rows met**`` phrase in
@@ -46,85 +48,38 @@ def main():
         print(f"error: cannot read manifest {manifest_path}: {exc}", file=sys.stderr)
         return 1
 
-    # Extract the record ID from item 3's evidence
-    item3_evidence = manifest.get("evidence", {}).get("3", {})
-    if isinstance(item3_evidence, dict):
-        item3_file = item3_evidence.get("file", "")
-    else:
-        # Might be a string (old format)
-        item3_file = item3_evidence if isinstance(item3_evidence, str) else ""
-
-    # Extract the record ID from the file path: layout/pll/reports/<record-id>/...
-    pattern = re.compile(r"^layout/[^/]+/reports/([^/]+)/")
-    match = pattern.match(item3_file)
-    if not match:
-        print(
-            f"error: cannot extract record ID from manifest item 3 evidence: {item3_file}",
-            file=sys.stderr,
-        )
-        return 1
-
-    manifest_record_id = match.group(1)
-
-    # Read the README and find all layout record IDs mentioned
+    # Read the README
     try:
         readme_text = readme_path.read_text()
     except OSError as exc:
         print(f"error: cannot read {readme_path}: {exc}", file=sys.stderr)
         return 1
 
-    # Find all patterns like `layout/pll/reports/<record-id>/...`
-    # Record IDs are timestamps: YYYYMMDD-HHMMSS-<hex>
-    # Pattern matches: layout/pll/reports/<record-id>/
-    record_pattern = re.compile(r"`layout/[^/]+/reports/(\d{8}-\d{6}-[a-f0-9]+)/")
-
-    # Extract all record IDs mentioned in the README
-    record_ids = []
-    for match in record_pattern.finditer(readme_text):
-        record_id = match.group(1)
-        position = match.start()
-        record_ids.append((record_id, position))
-
-    # Check each record ID
-    # The historical reference (20260906-195205-4a08c71) should be excluded
-    # It appears in a context that explicitly says it's "now-superseded" and
-    # "before issue #157's pin bump", so we can check for these contextual markers
-    errors = []
-
-    for record_id, position in record_ids:
-        # Check if this is the historical reference by examining context
-        # Look for "now-superseded" or "before issue #157" in nearby text
-        line_end = readme_text.find("\n", position)
-        if line_end == -1:
-            line_end = len(readme_text)
-
-        # Look at a window of context (200 chars on each side).
-        #
-        # Known limitation: the historical-reference exclusion below keys on
-        # literal phrases in the README prose. If the paragraph citing the
-        # superseded record is reworded so neither phrase appears within this
-        # window, that citation will be flagged as drift (a false positive,
-        # not a silent pass). Update the markers here if that prose changes.
-        context_start = max(0, position - 200)
-        context_end = min(len(readme_text), position + 200)
-        context = readme_text[context_start:context_end]
-
-        # If this is the historical record mentioned as "now-superseded", skip it
-        if "now-superseded" in context or "before issue #157" in context:
-            continue
-
-        # Otherwise, verify it matches the manifest's item 3 record
-        if record_id != manifest_record_id:
-            errors.append(
-                f"README mentions record {record_id}, but manifest item 3 cites {manifest_record_id}"
-            )
+    try:
+        errors = check_item3_records(manifest, readme_text)
+    except ManifestShapeError as exc:
+        print(
+            "error: cannot extract a record ID from the manifest's item-3 "
+            "evidence:",
+            file=sys.stderr,
+        )
+        print(f"  {exc}", file=sys.stderr)
+        print(
+            "\nUpdate the manifest's item 3 evidence file to a "
+            "layout/<block>/reports/<record-id>/... path.",
+            file=sys.stderr,
+        )
+        return 1
 
     if errors:
         print("error: README record IDs do not match the manifest:", file=sys.stderr)
         for line in errors:
             print(f"  {line}", file=sys.stderr)
         print(
-            f"\nUpdate README.md to cite {manifest_record_id} instead, or update the manifest.",
+            "\nUpdate README.md to cite the record the manifest's item 3 "
+            "evidence names, or update the manifest. If the mismatching "
+            "citation is a deliberate historical reference, put "
+            f"{HISTORICAL_RECORD_MARKER} back on its citing line.",
             file=sys.stderr,
         )
         return 1
@@ -163,6 +118,67 @@ def main():
         return 1
 
     return 0
+
+
+# An HTML comment: invisible in rendered Markdown, so marking a citation
+# does not change what a reader sees, and greppable, so the historical
+# exemption is a deliberate declaration rather than a side effect of the
+# surrounding prose.
+HISTORICAL_RECORD_MARKER = "<!-- signoff-historical-record -->"
+
+
+class ManifestShapeError(Exception):
+    """The manifest's item-3 evidence path is not shaped as
+    ``layout/<block>/reports/<record-id>/...``, so check 1 cannot extract the
+    record ID to compare README citations against. This is a manifest-shape
+    fault, not a README disagreement: the caller reports it under its own
+    header with a manifest-directed remediation."""
+
+
+def check_item3_records(manifest, readme_text):
+    """Check 1: every layout record ID the README cites must be the record
+    the manifest actually cites for item 3, except citations whose line
+    carries ``HISTORICAL_RECORD_MARKER`` (a deliberate historical citation).
+
+    Only records of the block item 3 cites are compared, so a sibling
+    block's citations can never be matched against item 3's record.
+
+    Raises ``ManifestShapeError`` when the item-3 evidence path carries no
+    record ID, before any README comparison happens.
+    """
+    item3_evidence = manifest.get("evidence", {}).get("3", {})
+    if isinstance(item3_evidence, dict):
+        item3_file = item3_evidence.get("file", "")
+    else:
+        # Might be a string (old format)
+        item3_file = item3_evidence if isinstance(item3_evidence, str) else ""
+
+    # Record ID and block directory from the item-3 path:
+    # layout/<block>/reports/<record-id>/...
+    match = re.match(r"^layout/([^/]+)/reports/([^/]+)/", item3_file)
+    if not match:
+        raise ManifestShapeError(
+            f"cannot extract record ID from manifest item 3 evidence: {item3_file}"
+        )
+    block = match.group(1)
+    manifest_record_id = match.group(2)
+
+    # Record IDs are timestamps: YYYYMMDD-HHMMSS-<hex>
+    record_pattern = re.compile(
+        rf"`layout/{re.escape(block)}/reports/(\d{{8}}-\d{{6}}-[a-f0-9]+)/"
+    )
+
+    errors = []
+    for line in readme_text.splitlines():
+        if HISTORICAL_RECORD_MARKER in line:
+            continue
+        for record_id in record_pattern.findall(line):
+            if record_id != manifest_record_id:
+                errors.append(
+                    f"README mentions record {record_id}, but manifest item 3 "
+                    f"cites {manifest_record_id}"
+                )
+    return errors
 
 
 MET_COUNT_RE = re.compile(r"\*\*(\d+) of (\d+) T1 rows met\*\*")

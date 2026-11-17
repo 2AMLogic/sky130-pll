@@ -1,3 +1,11 @@
+> **Note (dated 2026-11-11): `--executor remote` is retired — everything below
+> is historical, not instructions.** Issue #425 retired `--executor remote`,
+> so the empty `remote` slot in the Status table below can never be filled,
+> and the recipe below that quotes `--executor remote` is refused by the
+> harness. `--executor batch` is the fleet route. The dated supersession is
+> [`NOTE-20261111-remote-slot-retired.md`](NOTE-20261111-remote-slot-retired.md);
+> the text below is retained as a record of what this fixture was for.
+
 # Executor equivalence: `--executor local` vs. `--executor remote`
 
 Issue #146 added an execution-backend seam to the harness

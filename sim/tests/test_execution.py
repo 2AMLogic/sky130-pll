@@ -51,23 +51,10 @@ from harness import measure as measure_mod  # noqa: E402
 from harness import montecarlo as mc_mod  # noqa: E402
 from harness import runner  # noqa: E402
 from scripts.test_support import record_table_rows  # noqa: E402
+from pdk_fixture import make_resolved_pdk  # noqa: E402
 import test_cpmeasure as cpt  # noqa: E402
 
 RECORD_ID = "20260101-000000-abc1234"
-_REAL_STORE_FILES = evidence_store_mod.store_files
-
-
-class _StubPdk:
-    variant = "sky130A"
-    process_corners = ("tt", "ss", "ff")
-    resolved_commit = "0" * 40
-    pinned_commit = "0" * 40
-    commit_mismatch = False
-    ngspice_lib = Path("/fake/sky130.lib.spice")
-
-    def as_env(self):
-        return {}
-
 
 MANIFEST = {
     "claim": "harness execution-model test fixture -- not a design claim",
@@ -209,7 +196,7 @@ class _Harness:
         """The real writer with `klt artifact put` replaced by a hash-only fake,
         installing the manifest under this harness's temp root."""
         self.stored = [n for _, n in files]
-        return _REAL_STORE_FILES(files, **dict(kw, repo_root=self.root, put=fake_put))
+        return self._real_store_files(files, **dict(kw, repo_root=self.root, put=fake_put))
 
     @property
     def record_path(self) -> Path:
@@ -220,8 +207,13 @@ class _Harness:
         import contextlib
         import io
 
+        # The genuine writer, captured before the patch list below installs
+        # this harness's fake: a snapshot taken at any other time binds
+        # whatever `store_files` attribute is live then, and under an active
+        # patch that is the fake itself (#485).
+        self._real_store_files = cli.evidence_store_mod.store_files
         out = io.StringIO()
-        with mock.patch.object(cli.pdk_mod, "resolve", return_value=_StubPdk()), \
+        with mock.patch.object(cli.pdk_mod, "resolve", return_value=make_resolved_pdk()), \
              mock.patch.object(cli.pdk_mod, "tool_versions", return_value={"ngspice": "stub", "xschem": "stub"}), \
              mock.patch.object(cli.runner_mod, "netlist_schematic", return_value=netlist), \
              mock.patch.object(cli.runner_mod, "run_point", run_point), \
@@ -268,7 +260,7 @@ class ParallelExecutionTests(unittest.TestCase):
             rc, _out = h.run(["--jobs", "4"], self._scrambling_run_point(seen))
             self.assertEqual(rc, 0)
 
-            expected = [p.corner_id for p in corners.build_matrix(MANIFEST, _StubPdk.process_corners)]
+            expected = [p.corner_id for p in corners.build_matrix(MANIFEST, make_resolved_pdk().process_corners)]
             # Every requested point ran exactly once...
             self.assertEqual(sorted(seen), sorted(expected))
             self.assertEqual(len(seen), len(set(seen)))
@@ -422,7 +414,7 @@ class CheckpointResumeTests(unittest.TestCase):
     def test_resume_runs_exactly_the_missing_points(self):
         import tempfile
 
-        all_ids = [p.corner_id for p in corners.build_matrix(MANIFEST, _StubPdk.process_corners)]
+        all_ids = [p.corner_id for p in corners.build_matrix(MANIFEST, make_resolved_pdk().process_corners)]
         with tempfile.TemporaryDirectory() as tmp:
             h = _Harness(Path(tmp))
 
@@ -625,7 +617,7 @@ class CheckpointResumeTests(unittest.TestCase):
     def test_resume_of_a_parallel_run_still_completes_every_point(self):
         import tempfile
 
-        all_ids = [p.corner_id for p in corners.build_matrix(MANIFEST, _StubPdk.process_corners)]
+        all_ids = [p.corner_id for p in corners.build_matrix(MANIFEST, make_resolved_pdk().process_corners)]
         lock = threading.Lock()
         first_seen = []
 
@@ -845,27 +837,27 @@ class CheckpointFileTests(unittest.TestCase):
 
     def test_fingerprint_separates_pvt_from_monte_carlo(self):
         point_fp = checkpoint_mod.fingerprint(
-            mode="pvt", manifest=MANIFEST, netlist_text=NETLIST, pdk=_StubPdk(), units=[self.POINT]
+            mode="pvt", manifest=MANIFEST, netlist_text=NETLIST, pdk=make_resolved_pdk(), units=[self.POINT]
         )
         mc_fp = checkpoint_mod.fingerprint(
-            mode="mc", manifest=MANIFEST, netlist_text=NETLIST, pdk=_StubPdk(), units=[self.POINT]
+            mode="mc", manifest=MANIFEST, netlist_text=NETLIST, pdk=make_resolved_pdk(), units=[self.POINT]
         )
         self.assertNotEqual(point_fp, mc_fp)
 
     def test_fingerprint_ignores_manifest_key_order_only(self):
         reordered = dict(reversed(list(MANIFEST.items())))
         same = checkpoint_mod.fingerprint(
-            mode="pvt", manifest=reordered, netlist_text=NETLIST, pdk=_StubPdk(), units=[self.POINT]
+            mode="pvt", manifest=reordered, netlist_text=NETLIST, pdk=make_resolved_pdk(), units=[self.POINT]
         )
         base = checkpoint_mod.fingerprint(
-            mode="pvt", manifest=MANIFEST, netlist_text=NETLIST, pdk=_StubPdk(), units=[self.POINT]
+            mode="pvt", manifest=MANIFEST, netlist_text=NETLIST, pdk=make_resolved_pdk(), units=[self.POINT]
         )
         self.assertEqual(base, same)
         edited = checkpoint_mod.fingerprint(
             mode="pvt",
             manifest=dict(MANIFEST, temps_c=[27]),
             netlist_text=NETLIST,
-            pdk=_StubPdk(),
+            pdk=make_resolved_pdk(),
             units=[self.POINT],
         )
         self.assertNotEqual(base["manifest_sha256"], edited["manifest_sha256"])
@@ -911,10 +903,6 @@ class StaleArtifactTests(unittest.TestCase):
         import subprocess
         import tempfile
 
-        class _StubPdkEnv:
-            def as_env(self):
-                return {}
-
         with tempfile.TemporaryDirectory() as tmp:
             work = Path(tmp)
             (work / "spiceinit-src").write_text("* stub spiceinit\n")
@@ -924,7 +912,7 @@ class StaleArtifactTests(unittest.TestCase):
             exc = subprocess.TimeoutExpired(cmd=["ngspice"], timeout=1, output="", stderr="")
             with mock.patch.object(runner.subprocess, "run", side_effect=exc):
                 passed, reason, _log, _spice = runner._run_ngspice_and_judge(
-                    _StubPdkEnv(), work / "spiceinit-src", "* patched\n.end\n", "x", work, timeout_s=1
+                    make_resolved_pdk(), work / "spiceinit-src", "* patched\n.end\n", "x", work, timeout_s=1
                 )
             self.assertFalse(passed)
             self.assertIn("timeout", reason)
@@ -938,7 +926,7 @@ class CpDispatchTests(unittest.TestCase):
 
     def _run(self, work, **kw):
         return runner.run_point(
-            _StubPdk(), Path("/unused"), CP_MANIFEST, NETLIST, self.POINT, work,
+            make_resolved_pdk(), Path("/unused"), CP_MANIFEST, NETLIST, self.POINT, work,
             execute=cp_execute(**kw),
         )
 
@@ -981,7 +969,7 @@ class CpDispatchTests(unittest.TestCase):
                 self.assertIn("exactly one analysis block", str(ctx.exception))
                 with self.assertRaises(cp_mod.CpError):
                     runner.run_point(
-                        _StubPdk(), Path("/unused"), m, NETLIST, self.POINT, Path(tmp),
+                        make_resolved_pdk(), Path("/unused"), m, NETLIST, self.POINT, Path(tmp),
                         execute=cp_execute(),
                     )
 
@@ -997,7 +985,7 @@ class CpDispatchTests(unittest.TestCase):
                 runner.prepare_mc_trial(CP_MANIFEST, NETLIST, trial, Path(tmp))
             with self.assertRaises(cp_mod.CpError):
                 runner.run_mc_trial(
-                    _StubPdk(), Path("/unused"), CP_MANIFEST, NETLIST, trial, Path(tmp)
+                    make_resolved_pdk(), Path("/unused"), CP_MANIFEST, NETLIST, trial, Path(tmp)
                 )
 
     def test_complete_run_reduces_every_dump_through_the_seam(self):
@@ -1068,7 +1056,7 @@ class CpDispatchTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             res = runner.run_point(
-                _StubPdk(), Path("/unused"), CP_MANIFEST, NETLIST, self.POINT,
+                make_resolved_pdk(), Path("/unused"), CP_MANIFEST, NETLIST, self.POINT,
                 Path(tmp), execute=execute,
             )
         self.assertFalse(res.passed)
@@ -1127,10 +1115,10 @@ class CpDispatchTests(unittest.TestCase):
                     (Path(kw["cwd"]) / name).write_text(text)
                 return subprocess.CompletedProcess(cmd, 0, stdout=CP_LOG, stderr="")
 
-            backend = executor_mod.LocalBackend(pdk=_StubPdk(), spiceinit=work / "spiceinit-src")
+            backend = executor_mod.LocalBackend(pdk=make_resolved_pdk(), spiceinit=work / "spiceinit-src")
             with mock.patch.object(runner.subprocess, "run", side_effect=fake_ngspice):
                 res = runner.run_point(
-                    _StubPdk(), work / "spiceinit-src", CP_MANIFEST, NETLIST, self.POINT,
+                    make_resolved_pdk(), work / "spiceinit-src", CP_MANIFEST, NETLIST, self.POINT,
                     work, execute=backend.execute,
                 )
             self.assertFalse(res.passed)

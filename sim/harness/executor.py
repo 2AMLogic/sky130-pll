@@ -103,18 +103,15 @@ class ExecutionBackend(abc.ABC):
 
     #: What actually ran the units (`"local"`/`"batch"`).
     name: str = "local"
-    #: What the caller asked for. Differs from `name` only after a fallback.
-    requested: str = "local"
 
-    def stage(self, units: list[NgspiceUnit]) -> ExecutionBackend:
+    def stage(self, units: list[NgspiceUnit]) -> None:
         """Prepare the whole unit set before any of it is judged.
 
         The local backend has nothing to do here (every unit is independent
         and runs on demand); the batch backend runs the entire set on the
         fleet in one shot, because provisioning is per-campaign, not
-        per-unit. Returns the backend to use -- always `self`.
+        per-unit.
         """
-        return self
 
     @abc.abstractmethod
     def execute(self, unit: NgspiceUnit) -> NgspiceOutcome:
@@ -141,7 +138,6 @@ class LocalBackend(ExecutionBackend):
     unchanged."""
 
     name = "local"
-    requested = "local"
 
     def __init__(self, *, pdk, spiceinit: Path):
         self._pdk = pdk

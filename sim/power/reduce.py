@@ -232,14 +232,3 @@ def interpolate_at_frequency(points: list, f_target: float) -> tuple:
                 f"interpolated between {f0 / 1e6:.1f} and {f1 / 1e6:.1f} MHz"
             )
     return None, "no bracketing pair"  # pragma: no cover
-
-
-def split_static_dynamic(i_active: float | None, i_idle: float | None) -> tuple:
-    """(static, dynamic) current: static = idle stage, dynamic = active - idle.
-
-    `dynamic` can come out marginally negative when the idle stage is not a
-    strict lower bound (bias that is larger at idle); it is reported as is.
-    """
-    if i_active is None or i_idle is None:
-        return None, None
-    return i_idle, i_active - i_idle

@@ -21,6 +21,7 @@ from . import executor as executor_mod
 from . import measure as measure_mod
 from . import montecarlo as mc_mod
 from . import pdk as pdk_mod
+from . import records_guard
 from . import report as report_mod
 from . import runner as runner_mod
 from . import staging as staging_mod
@@ -481,6 +482,48 @@ def _run_experiment(
             print(f"run_corners.py: {e}", file=sys.stderr)
             return 1
 
+        # Issue #503: a re-run of an already-recorded claim must not mint a
+        # "first record for this claim" without --supersedes. The lock-timing
+        # lane has refused that mechanically since its first release; this
+        # guard brings the PVT / --mc lane to parity, before any unit runs --
+        # the cost of a missed flag is a whole campaign's wall time.
+        if args.write:
+            subset_reason = args.subset_reason if is_subset else None
+            # One value for guard and record (the `subset_reason` discipline):
+            # the identity the guard keys on is the identity the renderer
+            # stamps into the matrix block, so the two cannot drift.
+            analysis = records_guard.measure_analysis_identity(
+                measure_mod.MeasureSpec.from_manifest(manifest), units
+            )
+            if mode == "mc":
+                mc_cfg = manifest.get("monte_carlo", {})
+                claim = mc_cfg.get(
+                    "claim", manifest.get("claim", "(no claim stated in manifest)")
+                )
+                matrix_key = records_guard.mc_matrix_key(
+                    trials=units, subset_reason=subset_reason
+                )
+            else:
+                claim = manifest.get("claim", "(no claim stated in manifest)")
+                matrix_key = records_guard.pvt_matrix_key(
+                    points=units,
+                    manifest_has_supply=manifest.get("supply_pattern") is not None,
+                    corner_note=manifest.get("corner_note"),
+                    subset_reason=subset_reason,
+                )
+            try:
+                records_guard.check(
+                    records_dir=records_dir,
+                    claim=claim,
+                    matrix_key=matrix_key,
+                    netlist_sha=report_mod.sha256_bytes(netlist_text.encode()),
+                    supersedes=args.supersedes,
+                    analysis=analysis,
+                )
+            except records_guard.RecordsGuardError as e:
+                print(f"run_corners.py: {e}", file=sys.stderr)
+                return 1
+
         # Checkpointing is tied to evidence: a --no-write run produces no
         # record, so there is nothing for a resume to finish.
         ckpt = None
@@ -556,7 +599,7 @@ def _run_experiment(
         execute_kwargs: dict = {}
         if executor_name != executor_mod.DEFAULT_EXECUTOR:
             try:
-                backend = backend.stage(
+                backend.stage(
                     [
                         prepare_unit(manifest, netlist_text, unit, corners_dir)
                         for unit in pending
@@ -638,7 +681,6 @@ def _run_experiment(
                 )
                 return 1
 
-            subset_reason = args.subset_reason if is_subset else None
             try:
                 record_md = render_record(
                     manifest=manifest,
@@ -649,6 +691,7 @@ def _run_experiment(
                     units=units,
                     results=results,
                     subset_reason=subset_reason,
+                    analysis_identity=analysis,
                     execution_note=_execution_note(
                         segments=ckpt.segments if ckpt is not None else [],
                         jobs=jobs,
@@ -718,7 +761,8 @@ def cmd_run(args: argparse.Namespace) -> int:
         )
 
     def render_record(
-        *, manifest, slug, record_id, pdk, netlist_snapshot, units, results, subset_reason, execution_note
+        *, manifest, slug, record_id, pdk, netlist_snapshot, units, results, subset_reason, execution_note,
+        analysis_identity="",
     ):
         return report_mod.render(
             spec=measure_mod.MeasureSpec.from_manifest(manifest),
@@ -745,6 +789,7 @@ def cmd_run(args: argparse.Namespace) -> int:
                 "methodology_note", "(no methodology_note stated in manifest)"
             ),
             analysis=manifest.get("analysis", "(no analysis stated in manifest)"),
+            analysis_identity=analysis_identity,
         )
 
     return _run_experiment(
@@ -802,7 +847,8 @@ def cmd_run_mc(args: argparse.Namespace) -> int:
         )
 
     def render_record(
-        *, manifest, slug, record_id, pdk, netlist_snapshot, units, results, subset_reason, execution_note
+        *, manifest, slug, record_id, pdk, netlist_snapshot, units, results, subset_reason, execution_note,
+        analysis_identity="",
     ):
         mc_cfg = manifest.get("monte_carlo", {})
         claim = mc_cfg.get("claim", manifest.get("claim", "(no claim stated in manifest)"))
@@ -832,6 +878,7 @@ def cmd_run_mc(args: argparse.Namespace) -> int:
             methodology_note=methodology_note,
             analysis=analysis,
             spec=measure_mod.MeasureSpec.from_manifest(manifest),
+            analysis_identity=analysis_identity,
         )
 
     return _run_experiment(

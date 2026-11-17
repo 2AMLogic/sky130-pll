@@ -16,16 +16,17 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
-from types import SimpleNamespace
 
 SIM_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(SIM_DIR))
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # sibling test modules
 
 from harness import executor as executor_mod  # noqa: E402
 from harness import fmax as F  # noqa: E402
 from harness import fmax_cli as C  # noqa: E402
 from harness import fmax_report  # noqa: E402
 from harness import measure as measure_mod  # noqa: E402
+from pdk_fixture import make_resolved_pdk  # noqa: E402
 
 MANIFEST_PATH = SIM_DIR / "divider-fmax" / "testbench" / "fmax.json"
 MANIFEST = json.loads(MANIFEST_PATH.read_text())
@@ -256,13 +257,12 @@ class FakeBackend:
     """
 
     name = "local"
-    requested = "local"
 
     def __init__(self, fmax_for, errors=None):
         self.fmax_for, self.errors, self.executed = fmax_for, errors or {}, []
 
     def stage(self, units):
-        return self
+        pass
 
     def provenance(self):
         return None
@@ -398,6 +398,12 @@ class LocalGuards(unittest.TestCase):
         rc = C.main(["divider-fmax", "--dry-run", "--moduli", "25", "--corners", "tt"])
         self.assertEqual(rc, 0)
 
+    def test_executor_choices_list_each_name_once(self):
+        action = next(a for a in C.build_parser()._actions
+                      if "--executor" in a.option_strings)
+        self.assertEqual(tuple(action.choices), executor_mod.EXECUTORS)
+        self.assertEqual(len(set(action.choices)), len(action.choices))
+
 
 class RecordRendering(unittest.TestCase):
     def test_record_table_round_trips_through_the_aggregator(self):
@@ -412,8 +418,7 @@ class RecordRendering(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             snap = Path(tmp) / "s.spice"
             snap.write_text("* x\n")
-            pdk = SimpleNamespace(variant="sky130A", resolved_commit="abc", commit_mismatch=False,
-                                  pinned_commit="abc", ngspice_lib="/x/sky130.lib.spice")
+            pdk = make_resolved_pdk()
             text = fmax_report.render(
                 record_id="20260101-000000-abcdef0", slug="divider-fmax", manifest=MANIFEST,
                 spec=SPEC, pdk=pdk, tool_versions={}, repo_root=SIM_DIR.parent,

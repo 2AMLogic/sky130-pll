@@ -39,22 +39,11 @@ from harness import cli  # noqa: E402
 from harness import corners  # noqa: E402
 from harness import executor as executor_mod  # noqa: E402
 from harness import runner  # noqa: E402
+from pdk_fixture import make_resolved_pdk  # noqa: E402
+from test_execution import fake_put  # noqa: E402
 
 RECORD_ID = "20260101-000000-abc1234"
 LOCAL_PDK_ROOT = "/fake/pdk-root"
-
-
-class _StubPdk:
-    variant = "sky130A"
-    process_corners = ("tt", "ss")
-    resolved_commit = "0" * 40
-    pinned_commit = "0" * 40
-    commit_mismatch = False
-    pdk_root = Path(LOCAL_PDK_ROOT)
-    ngspice_lib = Path(f"{LOCAL_PDK_ROOT}/sky130A/libs.tech/combined/sky130.lib.spice")
-
-    def as_env(self):
-        return {}
 
 
 # A plumbing-only manifest (no `measure` / `ac` block), so a unit's verdict
@@ -130,9 +119,10 @@ class _Harness:
         return self.root / "build" / self.slug / RECORD_ID
 
     def _fake_store_files(self, files, **kw):
-        from test_execution import _REAL_STORE_FILES, fake_put
+        """The real writer with `klt artifact put` replaced by a hash-only fake,
+        installing the manifest under this harness's temp root."""
         self.stored = [n for _, n in files]
-        return _REAL_STORE_FILES(files, **dict(kw, repo_root=self.root, put=fake_put))
+        return self._real_store_files(files, **dict(kw, repo_root=self.root, put=fake_put))
 
     def _fake_local(self, log_text=GOOD_LOG, returncode=0):
         def run_ngspice_locally(unit, *, pdk, spiceinit):
@@ -153,6 +143,11 @@ class _Harness:
     def run(self, argv, *, local_log=GOOD_LOG, local_rc=0, env=None):
         """Invoke the real CLI. Returns (rc, combined stdout+stderr)."""
         real_run_point = runner.run_point
+        # The genuine writer, captured before the patch list below installs
+        # this harness's fake: a snapshot taken at any other time binds
+        # whatever `store_files` attribute is live then, and under an active
+        # patch that is the fake itself (#485).
+        self._real_store_files = cli.evidence_store_mod.store_files
 
         def spy_run_point(*args, **kwargs):
             self.run_point_kwargs.append(dict(kwargs))
@@ -160,7 +155,7 @@ class _Harness:
 
         out = io.StringIO()
         patches = [
-            mock.patch.object(cli.pdk_mod, "resolve", return_value=_StubPdk()),
+            mock.patch.object(cli.pdk_mod, "resolve", return_value=make_resolved_pdk()),
             mock.patch.object(
                 cli.pdk_mod,
                 "tool_versions",
@@ -258,7 +253,7 @@ class LocalExecutorUnchangedTests(unittest.TestCase):
             self.assertEqual(rc, 0)
             expected = [
                 p.corner_id
-                for p in corners.build_matrix(MANIFEST, _StubPdk.process_corners)
+                for p in corners.build_matrix(MANIFEST, make_resolved_pdk().process_corners)
             ]
             self.assertEqual(sorted(h.local_calls), sorted(expected))
 
@@ -287,6 +282,36 @@ class LocalExecutorUnchangedTests(unittest.TestCase):
             self.assertIn("unknown executor 'fleet'", out)
 
 
+class StoreFilesDelegationTests(unittest.TestCase):
+    """#485: the store fake must reach the genuine writer, never itself.
+
+    This module used to error 4 of its 10 tests when run on its own: the
+    real writer was snapshotted at import time, the snapshot was taken
+    while this suite's own `store_files` patch was live, and the fake then
+    delegated to itself until the stack died. `run()` now captures the
+    real writer *before* installing the patch; this test fails if that
+    capture, or the delegation through it, ever regresses.
+    """
+
+    def test_the_fake_delegates_to_the_real_writer(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            h = _Harness(Path(tmp))
+            rc, _ = h.run([])
+            self.assertEqual(rc, 0)
+            self.assertTrue(h.stored)
+            # the genuine writer really ran behind the fake: the manifest it
+            # installs and the "Stored evidence" section it appends to the
+            # record exist only if `store_files` itself executed
+            manifest_path = cli.evidence_store_mod.manifest_path(
+                h.root, h.slug, RECORD_ID
+            )
+            self.assertTrue(manifest_path.is_file())
+            self.assertIn("## Stored evidence", h.record_path.read_text())
+            # and what the fixture captured is the genuine writer, not what
+            # a capture made under a live patch would bind: the fake itself
+            self.assertIs(h._real_store_files, cli.evidence_store_mod.store_files)
+
+
 # --------------------------------------------------------------------------- #
 # remote: success
 # --------------------------------------------------------------------------- #
@@ -309,7 +334,6 @@ class BackendInterfaceTests(unittest.TestCase):
     def test_a_third_backend_needs_only_execute(self):
         class BatchBackend(executor_mod.ExecutionBackend):
             name = "batch"
-            requested = "batch"
 
             def execute(self, unit):
                 return executor_mod.NgspiceOutcome(
@@ -321,12 +345,12 @@ class BackendInterfaceTests(unittest.TestCase):
                 )
 
         backend = BatchBackend()
-        self.assertIs(backend.stage([]), backend)
+        self.assertIsNone(backend.stage([]))
         self.assertIsNone(backend.provenance())
 
     def test_build_rejects_an_unknown_backend_name(self):
         with self.assertRaises(ValueError):
-            executor_mod.build("fleet", pdk=_StubPdk(), spiceinit=Path("/x"), jobs=1, manifest={})
+            executor_mod.build("fleet", pdk=make_resolved_pdk(), spiceinit=Path("/x"), jobs=1, manifest={})
 
 
 if __name__ == "__main__":  # pragma: no cover

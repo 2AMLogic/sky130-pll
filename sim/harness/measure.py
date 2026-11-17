@@ -597,6 +597,18 @@ class MeasureSpec:
         return ".options " + " ".join(f"{k}={v}" for k, v in self.sim_options)
 
     @property
+    def tran_card(self) -> str:
+        """The `tran` card `build_control_block` injects: TSTART (always 0
+        in this harness) appears only when TMAX does, matching ngspice's
+        positional `tran TSTEP TSTOP [TSTART [TMAX]] [UIC]`."""
+        card = f"tran {self.tran_step} {self.tran_stop}"
+        if self.tran_max_step is not None:
+            # TMAX is the fourth positional argument, after TSTART.
+            card += f" 0 {self.tran_max_step}"
+        card += " uic" if self.uic else ""
+        return card
+
+    @property
     def tran_stop_s(self) -> float:
         return parse_spice_time(self.tran_stop)
 
@@ -931,11 +943,7 @@ def build_control_block(spec: MeasureSpec, prefix: str = "") -> str:
     lines += [f".ic {card}" for card in spec.ic]
     lines.append(".control")
     lines.append("set filetype=ascii")
-    tran = f"tran {spec.tran_step} {spec.tran_stop}"
-    if spec.tran_max_step is not None:
-        # TMAX is the fourth positional argument, after TSTART.
-        tran += f" 0 {spec.tran_max_step}"
-    tran += " uic" if spec.uic else ""
+    tran = spec.tran_card
     nodes = spec.dump_nodes
     vectors = " ".join(f"v({n})" for n in nodes)
     multi = len(nodes) > 1

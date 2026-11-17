@@ -26,7 +26,7 @@ from harness import cpmeasure as cp_mod  # noqa: E402
 from harness import pdk as pdk_mod  # noqa: E402
 from harness import report  # noqa: E402
 from harness import runner  # noqa: E402
-from scripts.git_status import porcelain_paths  # noqa: E402
+from pdk_fixture import make_resolved_pdk  # noqa: E402
 
 import test_execution as exec_tests  # noqa: E402
 
@@ -48,56 +48,6 @@ class PvtPointTests(unittest.TestCase):
     def test_corner_id_integer_temp_has_no_trailing_dot(self):
         p = corners.PvtPoint(corner="tt", temp_c=27.0, supply_v=1.8)
         self.assertEqual(p.corner_id, "tt_27c_1.80v")
-
-
-class DirtyFlagTests(unittest.TestCase):
-    """The record's `dirty` flag has to mean "the code that produced this
-    evidence differed from the named commit". The run's own outputs are new
-    files by construction, so counting them would make every record dirty and
-    the flag worthless."""
-
-    RECORD_OUTPUTS = (
-        "sim/pdk-smoke/corners/20260101-000000-abc1234/",
-        "sim/pdk-smoke/records/20260101-000000-abc1234.md",
-        "sim/pdk-smoke/netlist-snapshots/20260101-000000-abc1234.spice",
-    )
-
-    def test_clean_tree_is_not_dirty(self):
-        self.assertFalse(report.is_dirty("", self.RECORD_OUTPUTS))
-
-    def test_this_runs_own_outputs_do_not_count_as_dirty(self):
-        status = (
-            "?? sim/pdk-smoke/corners/20260101-000000-abc1234/\n"
-            "?? sim/pdk-smoke/records/20260101-000000-abc1234.md\n"
-            "?? sim/pdk-smoke/netlist-snapshots/20260101-000000-abc1234.spice\n"
-        )
-        self.assertFalse(report.is_dirty(status, self.RECORD_OUTPUTS))
-
-    def test_modified_harness_source_counts_as_dirty(self):
-        status = " M sim/harness/runner.py\n"
-        self.assertTrue(report.is_dirty(status, self.RECORD_OUTPUTS))
-
-    def test_modified_testbench_counts_as_dirty(self):
-        # Same experiment directory as the record, but not a record output:
-        # editing the DUT absolutely changes what the evidence means.
-        status = " M sim/pdk-smoke/testbench/tb_pdk_smoke.sch\n"
-        self.assertTrue(report.is_dirty(status, self.RECORD_OUTPUTS))
-
-    def test_a_collapsed_parent_directory_counts_as_dirty(self):
-        # git's DEFAULT porcelain output collapses a wholly untracked tree to
-        # its parent ("?? sim/pdk-smoke/corners/"), which no per-record prefix
-        # can match. git_info therefore passes --untracked-files=all; this
-        # test pins the conservative behavior if that flag is ever dropped --
-        # falsely dirty, never falsely clean.
-        self.assertTrue(report.is_dirty("?? sim/pdk-smoke/corners/\n", self.RECORD_OUTPUTS))
-
-    def test_an_earlier_records_outputs_count_as_dirty(self):
-        status = "?? sim/pdk-smoke/records/20251231-235959-def5678.md\n"
-        self.assertTrue(report.is_dirty(status, self.RECORD_OUTPUTS))
-
-    def test_porcelain_paths_handles_renames_and_quoting(self):
-        status = 'R  sim/old.py -> sim/new.py\n?? "sim/spaced name.py"\n'
-        self.assertEqual(porcelain_paths(status), ["sim/new.py", "sim/spaced name.py"])
 
 
 class BuildMatrixTests(unittest.TestCase):
@@ -549,7 +499,7 @@ class RenderRippleTableTests(unittest.TestCase):
             with mock.patch.object(report, "sha256_file", return_value="deadbeef"):
                 text = report.render(
                     record_id="20260101-000000-abc1234", slug="loop-ripple", claim="c",
-                    spec_rows_line="13 -- x", pdk=RenderMethodologyTests._StubPdk(),
+                    spec_rows_line="13 -- x", pdk=make_resolved_pdk(),
                     tool_versions={"ngspice": "n", "xschem": "x"}, repo_root=REPO_ROOT,
                     netlist_snapshot=Path("/fake/netlist.spice"), points=[p1, p2, p3],
                     results=results, subset_reason=None, supersedes=None,
@@ -572,13 +522,6 @@ class RenderMethodologyTests(unittest.TestCase):
     netlist and runs `.tran`, not `.op`) started using the same renderer.
     Pins that both lines are now sourced from the caller instead."""
 
-    class _StubPdk:
-        variant = "sky130A"
-        resolved_commit = "0" * 40
-        pinned_commit = "0" * 40
-        commit_mismatch = False
-        ngspice_lib = Path("/fake/sky130.lib.spice")
-
     def _render(self, **overrides):
         from unittest import mock
 
@@ -593,7 +536,7 @@ class RenderMethodologyTests(unittest.TestCase):
             slug="pll",
             claim="a claim",
             spec_rows_line="none -- a fixture",
-            pdk=self._StubPdk(),
+            pdk=make_resolved_pdk(),
             tool_versions={"ngspice": "ngspice-47", "xschem": "XSCHEM V3.4.7"},
             repo_root=REPO_ROOT,
             netlist_snapshot=Path("/fake/netlist.spice"),
@@ -642,20 +585,13 @@ class CpRecordRenderTests(unittest.TestCase):
         corners.PvtPoint(corner="ss", temp_c=125.0, supply_v=1.62),
     ]
 
-    class _StubPdk:
-        variant = "sky130A"
-        resolved_commit = "0" * 40
-        pinned_commit = "0" * 40
-        commit_mismatch = False
-        ngspice_lib = Path("/fake/sky130.lib.spice")
-
     def _results(self, tmp):
         out = []
         for i, p in enumerate(self.POINTS):
             drop = {cp_mod.sweep_dump_name(1, 3, f"{p.corner_id}-")} if i == 1 else set()
             out.append(
                 runner.run_point(
-                    exec_tests._StubPdk(), Path("/unused"), exec_tests.CP_MANIFEST,
+                    make_resolved_pdk(), Path("/unused"), exec_tests.CP_MANIFEST,
                     exec_tests.NETLIST, p, Path(tmp) / p.corner_id,
                     execute=exec_tests.cp_execute(drop=drop),
                 )
@@ -673,7 +609,7 @@ class CpRecordRenderTests(unittest.TestCase):
                     slug="pfd-cp-fixture",
                     claim=m["claim"],
                     spec_rows_line=report.format_spec_rows(*report.spec_rows_from_manifest(m)),
-                    pdk=self._StubPdk(),
+                    pdk=make_resolved_pdk(),
                     tool_versions={"ngspice": "ngspice-47", "xschem": "XSCHEM V3.4.7"},
                     repo_root=REPO_ROOT,
                     netlist_snapshot=Path("/fake/netlist.spice"),
@@ -895,12 +831,6 @@ class SubsetReasonGateOrderingTests(unittest.TestCase):
     the ordering is invisible to any test that supplies only one of the two
     errors at a time."""
 
-    class _StubPdk:
-        process_corners = ("tt",)
-        commit_mismatch = False
-        resolved_commit = "0" * 40
-        pinned_commit = "0" * 40
-
     def _stderr_of(self, argv):
         import contextlib
         import io
@@ -908,7 +838,7 @@ class SubsetReasonGateOrderingTests(unittest.TestCase):
 
         args = cli.build_parser().parse_args(argv)
         buf = io.StringIO()
-        with mock.patch.object(cli.pdk_mod, "resolve", return_value=self._StubPdk()):
+        with mock.patch.object(cli.pdk_mod, "resolve", return_value=make_resolved_pdk(process_corners=("tt",))):
             with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(buf):
                 rc = cli.cmd_run_mc(args) if args.mc else cli.cmd_run(args)
         return rc, buf.getvalue()
@@ -950,14 +880,10 @@ class TimeoutDecodingTests(unittest.TestCase):
         import subprocess
         from unittest import mock
 
-        class _StubPdk:
-            def as_env(self):
-                return {}
-
         exc = subprocess.TimeoutExpired(cmd=["ngspice", "-b", "x.spice"], timeout=1, output=stdout, stderr=stderr)
         with mock.patch.object(runner.subprocess, "run", side_effect=exc):
             passed, reason, log_path, _spice_path = runner._run_ngspice_and_judge(
-                _StubPdk(), work_dir / ".spiceinit", "* patched\n.end\n", "x", work_dir, timeout_s=1
+                make_resolved_pdk(), work_dir / ".spiceinit", "* patched\n.end\n", "x", work_dir, timeout_s=1
             )
         return passed, reason, log_path
 

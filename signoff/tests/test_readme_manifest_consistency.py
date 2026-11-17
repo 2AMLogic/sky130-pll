@@ -143,7 +143,8 @@ The record's spot-check
         }
         (self.signoff_dir / "block-manifest.json").write_text(json.dumps(manifest))
 
-        # Create README that cites both current and historical record IDs
+        # Create README that cites both current and historical record IDs,
+        # the historical citation marked on its own line
         readme = f"""
 ## Item 3 Section
 
@@ -152,7 +153,7 @@ Item 3 cites
 
 Historical context:
 An earlier, now-superseded record's own routed spot-check
-(`layout/pll/reports/{historical_record}/route-spot-check/drc.json`,
+(`layout/pll/reports/{historical_record}/route-spot-check/drc.json`, <!-- signoff-historical-record -->
 cited by this block-manifest before issue #157's pin bump) shows the failure mode.
 """
         (self.signoff_dir / "README.md").write_text(readme)
@@ -160,6 +161,78 @@ cited by this block-manifest before issue #157's pin bump) shows the failure mod
         # Check should pass despite historical reference
         exit_code, stdout, stderr = self._run_check()
         self.assertEqual(exit_code, 0, f"Check should pass (ignoring historical refs) but got: {stderr}")
+
+    def test_sibling_block_citation_passes(self):
+        """A record cited from a sibling layout block is not compared against
+        item 3's record: only the block item 3 cites is scoped in."""
+        current_record = "20260924-041509-c53e7c4"
+        sibling_record = "20260924-041449-c53e7c4"
+
+        manifest = {
+            "block": "sky130-pll",
+            "kind": "mixed-signal",
+            "evidence": {
+                "3": {
+                    "file": f"layout/pll/reports/{current_record}/drc.json",
+                    "content_hash": "sha256:deadbeef",
+                }
+            },
+        }
+        (self.signoff_dir / "block-manifest.json").write_text(json.dumps(manifest))
+
+        readme = f"""
+## Item 3 Section
+
+Item 3 cites
+`layout/pll/reports/{current_record}/drc.json` — current record.
+
+The trivial-cell flow's DRC envelope for its own record is
+`layout/trivial-cell/reports/{sibling_record}/drc.json`.
+"""
+        (self.signoff_dir / "README.md").write_text(readme)
+
+        exit_code, stdout, stderr = self._run_check()
+        self.assertEqual(
+            exit_code, 0, f"Check should pass (sibling block out of scope) but got: {stderr}"
+        )
+
+    def test_reworded_historical_paragraph_with_marker_passes(self):
+        """The prose around a marked historical citation can be reworded
+        freely: the marker on the citing line, not the wording, exempts it."""
+        current_record = "20260924-041509-c53e7c4"
+        historical_record = "20260906-195205-4a08c71"
+
+        manifest = {
+            "block": "sky130-pll",
+            "kind": "mixed-signal",
+            "evidence": {
+                "3": {
+                    "file": f"layout/pll/reports/{current_record}/drc.json",
+                    "content_hash": "sha256:deadbeef",
+                }
+            },
+        }
+        (self.signoff_dir / "block-manifest.json").write_text(json.dumps(manifest))
+
+        # Same meaning as the historical paragraph, neither legacy prose
+        # phrase left anywhere, marker still on the citing line
+        readme = f"""
+## Item 3 Section
+
+Item 3 cites
+`layout/pll/reports/{current_record}/drc.json` — current record.
+
+Historical context:
+An earlier record's own routed spot-check
+(`layout/pll/reports/{historical_record}/route-spot-check/drc.json`, <!-- signoff-historical-record -->
+which this block-manifest cited prior to the pin bump) shows the failure mode.
+"""
+        (self.signoff_dir / "README.md").write_text(readme)
+
+        exit_code, stdout, stderr = self._run_check()
+        self.assertEqual(
+            exit_code, 0, f"Check should pass (marker exempts reworded history) but got: {stderr}"
+        )
 
     def test_check_handles_missing_manifest(self):
         """Test that check fails gracefully with missing manifest."""
@@ -189,6 +262,93 @@ cited by this block-manifest before issue #157's pin bump) shows the failure mod
         exit_code, stdout, stderr = self._run_check()
         self.assertNotEqual(exit_code, 0)
         self.assertIn("README", stderr)
+
+    def test_record_mismatch_remediation_names_historical_marker(self):
+        """Check 1's remediation must name the historical-record marker and
+        the citing-line fix: a reflowed marker is the one remaining
+        false-positive path, and advising "update the README citation" there
+        would corrupt a deliberate historical reference."""
+        current_record = "20260924-041509-c53e7c4"
+        stale_record = "20260923-084911-13ecfe9"
+
+        manifest = {
+            "block": "sky130-pll",
+            "kind": "mixed-signal",
+            "evidence": {
+                "3": {
+                    "file": f"layout/pll/reports/{current_record}/drc.json",
+                    "content_hash": "sha256:deadbeef",
+                }
+            },
+        }
+        (self.signoff_dir / "block-manifest.json").write_text(json.dumps(manifest))
+
+        readme = f"Cites `layout/pll/reports/{stale_record}/drc.json`.\n"
+        (self.signoff_dir / "README.md").write_text(readme)
+
+        exit_code, stdout, stderr = self._run_check()
+        self.assertEqual(exit_code, 1)
+        self.assertIn("<!-- signoff-historical-record -->", stderr)
+        self.assertIn("citing line", stderr)
+        # The original advice survives alongside the marker sentence.
+        self.assertIn("Update README.md", stderr)
+
+    def test_unparseable_item3_path_reported_as_manifest_shape_fault(self):
+        """An item-3 evidence path with no record ID in it is a manifest-shape
+        fault: reported under its own header with a manifest-directed
+        remediation, never under the README-mismatch one."""
+        manifest = {
+            "block": "sky130-pll",
+            "kind": "mixed-signal",
+            "evidence": {
+                "3": {
+                    "file": "layout/pll/BOGUS.json",
+                    "content_hash": "sha256:deadbeef",
+                }
+            },
+        }
+        (self.signoff_dir / "block-manifest.json").write_text(json.dumps(manifest))
+
+        (self.signoff_dir / "README.md").write_text(
+            "Cites `layout/pll/reports/20260924-041509-c53e7c4/drc.json`.\n"
+        )
+
+        exit_code, stdout, stderr = self._run_check()
+        self.assertEqual(exit_code, 1)
+        # Substantive line still names the offending path.
+        self.assertIn("cannot extract record ID", stderr)
+        self.assertIn("layout/pll/BOGUS.json", stderr)
+        # Its own header, and the README-directed remediation is absent.
+        self.assertNotIn("README record IDs do not match the manifest", stderr)
+        self.assertIn("Update the manifest", stderr)
+        self.assertNotIn("Update README.md", stderr)
+
+    def test_shape_fault_excludes_readme_remediation_even_with_mismatch(self):
+        """A shape fault and a record mismatch can never share one header: the
+        shape fault aborts check 1 with its own report before any README
+        comparison happens, even when the README also cites a stale record."""
+        manifest = {
+            "block": "sky130-pll",
+            "kind": "mixed-signal",
+            "evidence": {
+                "3": {
+                    "file": "layout/pll/BOGUS.json",
+                    "content_hash": "sha256:deadbeef",
+                }
+            },
+        }
+        (self.signoff_dir / "block-manifest.json").write_text(json.dumps(manifest))
+
+        (self.signoff_dir / "README.md").write_text(
+            "Cites `layout/pll/reports/20260906-195205-4a08c71/drc.json`.\n"
+        )
+
+        exit_code, stdout, stderr = self._run_check()
+        self.assertEqual(exit_code, 1)
+        self.assertIn("layout/pll/BOGUS.json", stderr)
+        self.assertNotIn("README record IDs do not match the manifest", stderr)
+        self.assertNotIn("Update README.md", stderr)
+        self.assertIn("Update the manifest", stderr)
 
 
 RECORD_ID = "20260924-041509-c53e7c4"
