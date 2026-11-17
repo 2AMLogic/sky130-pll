@@ -8,6 +8,10 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 ### 2026-11-17
 
+- **PR #522**: docs(signoff): number the item-10 inventory edit as step 0 of the re-attestation chain
+- **Issue #520** (closed): docs(signoff): the item 10 chain should number the inventory edit as its own step for a NEW decision record
+- **PR #516**: sim/harness: refuse a PVT/MC/Fmax re-run with no --supersedes, as the lock-timing lane already does
+- **Issue #503** (closed): sim/harness: PVT/Fmax record writer accepts a re-run with no --supersedes; the lock-timing lane already guards it
 - **PR #519**: docs(signoff): document the item 10 re-attestation chain for decision-record edits
 - **Issue #491** (closed): docs(signoff): adding a decision-record index row requires the item 10 re-attestation chain — undocumented
 - **PR #517**: test: pin the lint drivers' non-git diagnostic, not just its exit code
