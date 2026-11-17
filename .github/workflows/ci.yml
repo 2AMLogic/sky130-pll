@@ -27,7 +27,13 @@ name: CI
 #     ngspice + the ~1 GB sky130 PDK via ciel, so per CLAUDE.md's
 #     "headless only" CI guideline it does NOT block every PR. It runs in the
 #     `pdk-smoke` job on a nightly schedule, on manual dispatch, and opt-in on
-#     a PR via the `run-pdk-smoke` label. The smoke runs WITHOUT `--record`
+#     a PR carrying the `run-pdk-smoke` label -- which is evaluated on that
+#     PR's next push or a manual `workflow_dispatch`, not at label-write time:
+#     the `on:` block below deliberately omits the `labeled` type (issue #487),
+#     because Loom drives this repo's PR lifecycle through label writes and
+#     each would re-run every job on an unchanged head, burning hosted minutes
+#     and racing post-verdict.sh's exact-head CI gate. The smoke runs WITHOUT
+#     `--record`
 #     (issue #526): recording mints an evidence record, which needs an
 #     artifact broker (`KLT_ARTIFACT_BROKER`, fail-closed per DR-012 with no
 #     fallback to committing the bytes) and CI has no broker -- evidence
@@ -53,7 +59,7 @@ on:
   push:
     branches: [main]
   pull_request:
-    types: [opened, synchronize, reopened, labeled]
+    types: [opened, synchronize, reopened]
   schedule:
     # 06:00 UTC daily
     - cron: "0 6 * * *"
@@ -102,7 +108,7 @@ jobs:
         run: bash signoff/run-signoff.sh --check
 
   pdk-smoke:
-    name: PDK-gated harness smoke test (nightly / workflow_dispatch / 'run-pdk-smoke' label)
+    name: PDK-gated harness smoke test (nightly / workflow_dispatch / 'run-pdk-smoke' label, effective on the next push)
     runs-on: ubuntu-latest
     if: >-
       github.event_name == 'schedule' ||
