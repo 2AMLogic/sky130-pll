@@ -24,7 +24,7 @@ reason this directory exists before the evidence does rather than after.
 | `evidence/characterization-report.json` | The `"kind": "generic"` envelope item 8 cites over `measurements/report.md`, with that report's SHA-256 pinned. Hand-edited, like the manifest; its `summary` states what the citation does **not** assert (see "Item 8" below). |
 | `tier-report.json` | `klt signoff --manifest … --format json` output. **Generated — do not edit.** Re-render with `bash signoff/run-signoff.sh`. |
 | `run-signoff.sh` | Renders the report (`bash signoff/run-signoff.sh`) or verifies the committed one (`--check`, which is what CI runs), after three guards `klt signoff` does not apply itself (see "Three guards this repo adds"). |
-| `readme-manifest-consistency.py` | Checks this README and `docs/t1-gap.md` against the manifest and the rendered report: item 3's record IDs, every "N of M T1 rows met" phrase, the block kind, and that item 8's envelope summary names every row its report records as FAIL or without evidence. Needs no `klt`; runs in `npm run check:ci`. |
+| `readme-manifest-consistency.py` | Checks this README and `docs/t1-gap.md` against the manifest and the rendered report: item 3's record IDs, every "N of M T1 rows met" phrase, the block kind, that item 8's envelope summary names every row its report records as FAIL or without evidence, and that this README restates no full 64-hex `sha256:` pin literal — the manifest and the cited envelopes are the authoritative holders of pin values, and hand-restated copies have gone stale on re-pin (see "Item 3"/"Item 8"). Needs no `klt`; runs in `npm run check:ci`. |
 | `item6_preconditions.py` | Re-derives, from the repo's own artifacts, which of T1 item 6's preconditions are still outstanding — the facts case **4b** below used to carry only in prose. Needs no `klt`, no PDK and no network; `--check` runs in `npm run check:ci`. |
 | `item6-preconditions.md` | That derivation. **Generated — do not edit.** Re-render with `python3 signoff/item6_preconditions.py --write`. Row 3 also states whether the control's `detected` verdict is *reachable* over the cited campaign at all, and rows 3 and 5 both name what it would cost to satisfy them together — see `sim/pll-lock-mc/analysis/negative-control/reachability.md`, which measures and derives both. |
 
@@ -181,10 +181,13 @@ re-rendered tier report.
 
 Item 3 cites
 `layout/pll/reports/20260924-041509-c53e7c4/drc.json` — the DRC envelope of
-the record `layout/pll/reports/LATEST` currently names — with its input pinned
-to `sha256:939f97e05b9e4a2a0f866a44bb6f758c030cfd611eaa0a567d5dc3002fa68d4c`,
-which is the SHA-256 of `pll_top.gds` committed in that same record directory
-(re-hashed on every run, see "Three guards this repo adds"). It is cited once,
+the record `layout/pll/reports/LATEST` currently names — with its input
+pinned, in the manifest's item-3 `content_hash`, to the SHA-256 of the
+`pll_top.gds` committed in that same record directory. This README does not
+restate that pin value — the manifest is its only authoritative holder, and
+a restated copy goes stale on the next re-pin — because guard 1 re-hashes
+the envelope's input from its live bytes on every run (see "Three guards
+this repo adds"). It is cited once,
 with a kind-independent `"3"` key, so it grades both partitions' rows: the
 stream it ran on is the composed `pll_top` cell, which contains both
 partitions' devices.
@@ -260,9 +263,10 @@ router declined to draw the legs that would have.
 
 Two further disclosures that belong with the claim:
 
-- The deck is `klt`'s own curated `sky130` deck, pinned by content hash
-  (`sha256:5afac7ab8561545859f5e2e74f4621c6ffc052756dc8fe344ea263398e96b240`),
-  and the envelope records `released: false` for it — `klt`'s deck-history
+- The deck is `klt`'s own curated `sky130` deck, pinned by content hash in
+  the cited envelope's `provenance.deck.content_hash` — the value lives only
+  there, not restated in this README, so it cannot go stale here — and the
+  envelope records `released: false` for it — `klt`'s deck-history
   lookup did not confirm that this deck revision ships in any released
   `klayout-tools` version. It is not a foundry signoff runset, and this row
   is not a foundry signoff result.
@@ -274,10 +278,12 @@ Two further disclosures that belong with the claim:
 Item 8 is cited under the key `"8.analog"` at
 `signoff/evidence/characterization-report.json`, a `"kind": "generic"`
 envelope — the only kind item 8 accepts at the pinned `klt` — whose
-`provenance.input.content_hash` and the manifest's pin are both
-`sha256:95571057fd30327dc57ea9e3502ebd1bb148f270d63cd219eb1539123186aac6`, the
-SHA-256 of the committed `measurements/report.md`. Guard 1 re-hashes that file
-from its live bytes on every run.
+`provenance.input.content_hash` and the manifest's `8.analog` pin are the
+same value: the SHA-256 of the committed `measurements/report.md`. This
+README deliberately does not restate that value — the manifest and the
+envelope are its authoritative holders, and a restated copy goes stale on
+the next re-pin — while guard 1 re-hashes that file from its live bytes on
+every run.
 
 **Why the report is the artifact item 8 names, for the analog partition.**
 Item 8's text asks for "one aggregated, current artifact summarizing

@@ -10,6 +10,9 @@ Tests that the check correctly:
    report / manifest
 5. Fails when item 8's generic envelope summary stops naming a row its
    characterization report records as FAIL or without evidence
+6. Fails when README prose restates a full 64-hex sha256: pin literal, and
+   passes on the truncated illustrative literals and the documented
+   edge-case shapes (63/65-hex, uppercase, split across a line wrap)
 """
 
 import json
@@ -546,6 +549,121 @@ class TestCountsKindAndItem8Disclosure(unittest.TestCase):
         self.assertTrue(states[9][0], "row 9's deterministic records should read FAIL")
         manifest = json.loads((repo / "signoff" / "block-manifest.json").read_text())
         self.assertEqual(module.check_item8_disclosure(repo, manifest), [])
+
+
+class TestNoPinLiterals(unittest.TestCase):
+    """Check 4: README prose must not restate a full pin value as a literal.
+
+    The full-vs-truncated split the check keys on: the manifest and the
+    cited envelopes hold every machine pin, the README's tamper-experiment
+    examples are truncated (``sha256:xxxxxxxx…``), and the three prose
+    restatements this check deletes were all full 64-hex lowercase
+    literals. Edge-case shapes are documented per test: the guard catches
+    exactly ``sha256:`` + 64 lowercase hex digits on a single line -- not
+    63- or 65-hex runs, not uppercase hex (every recorded pin is lowercase,
+    as ``sha256sum`` emits), and not a literal split across a line wrap.
+    """
+
+    def setUp(self):
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.repo_root = pathlib.Path(self.temp_dir.name)
+        self.signoff_dir = self.repo_root / "signoff"
+        self.signoff_dir.mkdir()
+        import shutil
+        script_src = pathlib.Path(__file__).parent.parent / "readme-manifest-consistency.py"
+        self.script_path = self.signoff_dir / "readme-manifest-consistency.py"
+        shutil.copy2(script_src, self.script_path)
+        self._write_manifest()
+        self._write_readme()
+
+    def tearDown(self):
+        self.temp_dir.cleanup()
+
+    def _write_manifest(self):
+        evidence = {
+            "3": {
+                "file": f"layout/pll/reports/{RECORD_ID}/drc.json",
+                "content_hash": "sha256:deadbeef",
+            }
+        }
+        (self.signoff_dir / "block-manifest.json").write_text(
+            json.dumps({"block": "b", "kind": "analog", "evidence": evidence})
+        )
+
+    def _write_readme(self):
+        (self.signoff_dir / "README.md").write_text(
+            f"Item 3 cites `layout/pll/reports/{RECORD_ID}/drc.json`.\n\n"
+            "Its input is pinned in the manifest's item-3 `content_hash` to "
+            "the SHA-256 of the committed `pll_top.gds`; the manifest is "
+            "the authoritative holder of that value, and guard 1 re-hashes "
+            "the artifact from its live bytes on every run.\n"
+        )
+
+    def _run(self):
+        result = subprocess.run(
+            [sys.executable, str(self.script_path)],
+            cwd=str(self.repo_root),
+            capture_output=True,
+            text=True,
+        )
+        return result.returncode, result.stderr
+
+    def test_readme_without_pin_literals_passes(self):
+        """Prose that points at the manifest and states the invariant passes."""
+        code, stderr = self._run()
+        self.assertEqual(code, 0, stderr)
+
+    def test_full_pin_literal_fails_and_names_line(self):
+        """Reintroducing a full 64-hex literal fails, naming its line."""
+        pin = "sha256:" + "e11fc480" * 8
+        readme = self.signoff_dir / "README.md"
+        readme.write_text(readme.read_text() + f"Stale restatement: `{pin}`.\n")
+        code, stderr = self._run()
+        self.assertNotEqual(code, 0, "full pin literal should fail the check")
+        self.assertIn(pin, stderr)
+        self.assertIn(f"line {len(readme.read_text().splitlines())}", stderr)
+
+    def test_truncated_tamper_literals_pass(self):
+        """The tamper-experiment examples' truncated shape passes untouched."""
+        readme = self.signoff_dir / "README.md"
+        readme.write_text(
+            readme.read_text()
+            + "Guard 1 fails: the artifact hashes to sha256:d563871e… but "
+            "the manifest pins sha256:939f97e0….\n"
+        )
+        code, stderr = self._run()
+        self.assertEqual(code, 0, stderr)
+
+    def test_non_64_hex_runs_pass(self):
+        """63- and 65-hex runs after ``sha256:`` are not full pins and pass."""
+        readme = self.signoff_dir / "README.md"
+        readme.write_text(
+            readme.read_text()
+            + "Short: `sha256:" + "ab" * 31 + "a` (63 hex).\n"
+            + "Long: `sha256:" + "cd" * 32 + "c` (65 hex).\n"
+        )
+        code, stderr = self._run()
+        self.assertEqual(code, 0, stderr)
+
+    def test_uppercase_hex_literal_passes(self):
+        """Uppercase hex is not the recorded pin shape and is not caught."""
+        readme = self.signoff_dir / "README.md"
+        readme.write_text(
+            readme.read_text() + "Uppercase: `sha256:" + "AB" * 32 + "`.\n"
+        )
+        code, stderr = self._run()
+        self.assertEqual(code, 0, stderr)
+
+    def test_literal_split_across_a_line_wrap_is_not_caught(self):
+        """A literal wrapped across lines is a known blind spot: the check
+        is line-based, a wrapped literal is not greppable, and no recorded
+        pin takes that shape."""
+        readme = self.signoff_dir / "README.md"
+        readme.write_text(
+            readme.read_text() + "Wrapped: `sha256:\n" + "ef" * 32 + "`.\n"
+        )
+        code, stderr = self._run()
+        self.assertEqual(code, 0, stderr)
 
 
 if __name__ == "__main__":

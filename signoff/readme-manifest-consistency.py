@@ -3,7 +3,7 @@
 Verify that the prose about this block's T1 verdict agrees with the manifest
 and the rendered report, rather than drifting from them.
 
-Three checks, none of which needs `klt`:
+Four checks, none of which needs `klt`:
 
 1. **Item-3 record IDs.** Every layout record ID the README cites from the
    block the manifest's item 3 cites must be that item's record, except
@@ -24,6 +24,13 @@ Three checks, none of which needs `klt`:
    over the whole report, so the summary is the only place the rows that
    report does *not* pass are disclosed -- and a regenerated report that
    adds a FAIL row must not leave a summary that silently omits it.
+4. **No full pin literals in prose.** ``signoff/README.md`` must not
+   restate any full 64-hex ``sha256:`` literal. The manifest and the cited
+   evidence envelopes are the authoritative holders of pin values; every
+   hand-restated copy in this README has gone stale on a re-pin (two of
+   the three restatements were already wrong when this check was added).
+   Truncated illustrative literals (``sha256:xxxxxxxx…``, the recorded
+   tamper-experiment output) do not match, so no allowlist is needed.
 
 Exit codes:
   0  All checks pass
@@ -113,6 +120,25 @@ def main():
             "\nName every FAIL row in a sentence that says FAIL and every "
             "no-evidence row in a sentence that says \"no evidence\" -- the "
             "envelope's status: pass does not cover them (signoff/README.md).",
+            file=sys.stderr,
+        )
+        return 1
+
+    errors = check_no_pin_literals(readme_text)
+    if errors:
+        print(
+            "error: signoff/README.md restates a full pin value as a literal:",
+            file=sys.stderr,
+        )
+        for line in errors:
+            print(f"  {line}", file=sys.stderr)
+        print(
+            "\nDo not restate pin values in prose: a restated copy cannot be "
+            "checked against anything and has gone stale on every re-pin. "
+            "Point at the authoritative field instead -- the manifest's "
+            "per-item content_hash or the cited envelope's "
+            "provenance.*.content_hash -- and state the invariant (guard 1 "
+            "re-hashes the artifact from its live bytes on every run).",
             file=sys.stderr,
         )
         return 1
@@ -342,6 +368,42 @@ def check_item8_disclosure(repo_root, manifest):
             errors.append(
                 f"item {key}: {source} records no evidence for rows {none_rows}; "
                 f"{path}'s summary does not name {missing_none} as no-evidence"
+            )
+    return errors
+
+
+# A full-length pin literal: `sha256:` followed by exactly 64 lowercase hex
+# digits with no further hex digit after it. This is the shape of every
+# machine-held pin in this repo (the manifest's per-item `content_hash`, an
+# envelope's `provenance.*.content_hash`), so its presence in README prose
+# is a hand-maintained restatement of a value the machine files hold more
+# reliably. The regex is case-sensitive (every recorded pin is lowercase,
+# as `sha256sum` emits) and the lookahead makes it exactly 64: 63- and
+# 65-hex runs do not match. Truncated illustrative literals -- the
+# recorded tamper-experiment output, `sha256:xxxxxxxx…` -- never reach 64
+# digits and pass untouched, so no allowlist is needed.
+PIN_LITERAL_RE = re.compile(r"sha256:[0-9a-f]{64}(?![0-9a-f])")
+
+
+def check_no_pin_literals(readme_text):
+    """Check 4: README prose must not restate a full pin value as a literal.
+
+    The manifest and the evidence envelopes are the authoritative holders
+    of pin values; a restated copy cannot be checked against anything and
+    has gone stale on every re-pin cycle so far. Prose should point at the
+    authoritative field instead and state the invariant (guard 1 re-hashes
+    the artifact from its live bytes on every run).
+
+    Not caught by design: a literal split across a line wrap (not the shape
+    any recorded pin takes, and not greppable either), uppercase-hex
+    literals, and hex runs of any length other than exactly 64. See
+    ``PIN_LITERAL_RE``.
+    """
+    errors = []
+    for lineno, line in enumerate(readme_text.splitlines(), start=1):
+        for match in PIN_LITERAL_RE.finditer(line):
+            errors.append(
+                f"line {lineno} restates a full pin literal ({match.group(0)})"
             )
     return errors
 
