@@ -23,11 +23,17 @@ name: CI
 #   - `sim/run_corners.py pdk-smoke` (the harness's own liveness test: proves
 #     the pinned sky130 PDK models load in ngspice, xschem netlists
 #     headlessly, and the PVT knobs actually reach the simulator) via
-#     `sim/selftest.sh --quick --record --require-pdk` -> requires xschem +
+#     `sim/selftest.sh --quick --require-pdk` -> requires xschem +
 #     ngspice + the ~1 GB sky130 PDK via ciel, so per CLAUDE.md's
 #     "headless only" CI guideline it does NOT block every PR. It runs in the
 #     `pdk-smoke` job on a nightly schedule, on manual dispatch, and opt-in on
-#     a PR via the `run-pdk-smoke` label.
+#     a PR via the `run-pdk-smoke` label. The smoke runs WITHOUT `--record`
+#     (issue #526): recording mints an evidence record, which needs an
+#     artifact broker (`KLT_ARTIFACT_BROKER`, fail-closed per DR-012 with no
+#     fallback to committing the bytes) and CI has no broker -- evidence
+#     minting stays a human/agent run, not a CI step (see the `sim/` bullet
+#     below); the smoke still proves the toolchain works end to end, it just
+#     does not persist a record.
 #   - `layout/bin/run-trivial-cell-flow.sh` (the `klt` DRC/LVS flow's own
 #     gating proof) needs the sky130 PDK too and is not yet wired into this
 #     workflow -- run it by hand per layout/README.md; its checked-in
@@ -127,4 +133,4 @@ jobs:
       - name: Run sim/selftest.sh (quick PVT subset, PDK required)
         run: |
           export PATH="$HOME/.local/bin:$PATH"
-          bash sim/selftest.sh --quick --record --require-pdk
+          bash sim/selftest.sh --quick --require-pdk
