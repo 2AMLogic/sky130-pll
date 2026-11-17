@@ -17,12 +17,25 @@ before any simulation starts, with two checks:
    collision key.
 
 The collision key is the *re-run identity*: normalized claim text + the
-lane's matrix block + the netlist SHA-256. It is deliberately not "any prior
-record in the directory": a directory legitimately holds same-claim records
-that do not supersede one another (`sim/divider-n64`'s incremental corner
-subsets, `sim/jitter-calibration`'s one-netlist-per-variant sweep) -- those
-differ in the matrix block and/or the netlist digest, so a dir-level guard
-would refuse them.
+lane's matrix block + the netlist SHA-256 + the run's analysis identity.
+It is deliberately not "any prior record in the directory": a directory
+legitimately holds same-claim records that do not supersede one another
+(`sim/divider-n64`'s incremental corner subsets, `sim/jitter-calibration`'s
+one-netlist-per-variant sweep) -- those differ in the matrix block and/or
+the netlist digest, so a dir-level guard would refuse them. The analysis
+axis covers the families that differ in *neither*: the injected cards
+(`.options`, the `tran` card) and the swept values come from the manifest's
+`measure` block at run time, so two runs of the same netlist at the same
+points can still be different analyses (`sim/integrator-floor`'s tolerance
+variants, `sim/vco-2x-duty`'s refined VCTRL grids -- issue #503's review).
+The driver renders the canonical identity into the record as an
+`**Analysis identity**` line of the matrix block, so a committed record
+parses back exactly what the driver keyed on; records minted before the
+line existed are recovered from their own rendered text (the
+`- Simulator accuracy:` bullet's `.options` card, the `- Analysis:`
+bullet's `tran` card, the `**Swept-axis measurements**` table), and a
+record whose analysis nothing can recover keys on the empty identity --
+never a false refusal.
 
 Digest discipline (issue #441): this module hashes nothing. It compares
 digest strings the caller obtained through `report.sha256_bytes` /
@@ -65,10 +78,11 @@ class ExistingRecord:
     claim: str
     matrix_key: tuple
     netlist_sha: str
+    analysis: str = ""
 
     @property
     def collision_key(self) -> tuple:
-        return (_norm_ws(self.claim), self.matrix_key, self.netlist_sha)
+        return (_norm_ws(self.claim), self.matrix_key, self.netlist_sha, self.analysis)
 
 
 def _norm_ws(text: str | None) -> str:
@@ -87,6 +101,179 @@ def _canon_supply(v) -> str:
 
 def _csv(values: str):
     return [v.strip() for v in values.split(",") if v.strip()]
+
+
+def fmt_sweep_value(v) -> str:
+    """One canonical spelling of a swept value: the 3-decimals form (4 when
+    the value needs them) `report._render_sweep_tables` renders into the
+    `**Swept-axis measurements**` table, so a value recovered from a
+    committed record's table and the same value from a manifest's `measure`
+    block canonicalize identically."""
+    v = float(v)
+    return f"{v:.3f}" if round(v, 3) == round(v, 6) else f"{v:.4f}"
+
+
+def analysis_identity(*, options_card: str | None = None,
+                      tran_card: str | None = None,
+                      sweep_groups: tuple = ()) -> str:
+    """The canonical analysis identity: the injected `.options` card, the
+    injected `tran` card, then one `sweep[...]` part per swept PVT point
+    (its corner/temp/supply group and its swept values, in the order the
+    manifest lists them), `'; '`-joined. Drivers build it from the run's
+    own inputs, `report` renders it verbatim into the record's matrix
+    block, and `_recover_analysis` reconstructs the same string from the
+    text a pre-`**Analysis identity**` record already renders."""
+    parts = [card for card in (options_card, tran_card) if card]
+    for group, values in sorted(sweep_groups):
+        parts.append(f"sweep[{group[0]}/{group[1]}/{group[2]}]={','.join(values)}")
+    return "; ".join(parts)
+
+
+def measure_analysis_identity(spec, units) -> str:
+    """The PVT / `--mc` run's analysis identity from its `MeasureSpec` and
+    units. `spec` is None for a plumbing manifest (no `measure` block):
+    nothing is injected, the analysis lives in the netlist itself and the
+    netlist digest already covers it, so the identity is empty. `units` are
+    `corners.PvtPoint`s or `montecarlo.McTrial`s, duck-typed for the fields
+    read here."""
+    if spec is None:
+        return ""
+    groups = []
+    seen = set()
+    for u in units:
+        group = (u.corner, _canon_temp(u.temp_c), _canon_supply(u.supply_v))
+        if group in seen:
+            continue
+        seen.add(group)
+        prefix = getattr(u, "corner_id", None)
+        sweep = (spec.resolved(f"{prefix}-").sweep if prefix is not None
+                 else spec.sweep)
+        if sweep:
+            groups.append((group, tuple(fmt_sweep_value(p.value) for p in sweep)))
+    return analysis_identity(
+        options_card=spec.options_card,
+        tran_card=spec.tran_card,
+        sweep_groups=tuple(groups),
+    )
+
+
+def fmax_search_identity(spec) -> str:
+    """The Fmax lane's analysis identity: the search grid the campaign
+    probed (bounds, resolution, coarse stride, mandatory probes) -- the
+    axis a refinement round turns, in the lane where the netlist digest and
+    the cell set alone cannot tell a refined grid from the grid it
+    refined. The per-probe stimulus/criterion inputs are rendered as prose
+    but not keyed: they are not recoverable from a committed record's text
+    with enough certainty to key on."""
+    s = spec.search
+    parts = [
+        f"search {s.f_min_hz / 1e6:g}-{s.f_max_hz / 1e6:g} MHz @ "
+        f"{s.resolution_hz / 1e6:g} MHz, stride {s.coarse_stride}"
+    ]
+    if spec.mandatory_probes_hz:
+        parts.append(
+            "mandatory "
+            + ",".join(f"{m / 1e6:g} MHz" for m in spec.mandatory_probes_hz)
+        )
+    return "; ".join(parts)
+
+
+_BACKTICKED_TRAN_CARD_RE = re.compile(r"`(tran [^`]+)`")
+_BACKTICKED_OPTIONS_CARD_RE = re.compile(r"`(\.options [^`]+)`")
+_SEARCH_BULLET_RE = re.compile(
+    r"grid ([\d.]+)-([\d.]+) MHz at ([\d.]+) MHz resolution; "
+    r"stage 1 probes every (\d+)th"
+)
+_SWEEP_TABLE_MARKER = "- **Swept-axis measurements** ("
+_ANALYSIS_IDENTITY_PREFIX = "- **Analysis identity**:"
+
+
+def _recover_analysis(lines: list[str], lane: str) -> str:
+    """Best-effort reconstruction of a committed record's analysis identity
+    from the text it already renders, for records minted before the
+    `**Analysis identity**` line existed. The `- Measurement method:` bullet
+    citing `sim/harness/measure.py` is the gate: a record without it was
+    not driven by a `measure` block (plumbing, AC or charge-pump lane), its
+    analysis lives in its netlist, and the identity is empty -- exactly
+    what `measure_analysis_identity` keys a `spec=None` run on."""
+    if lane in ("pvt", "mc"):
+        if not any(
+            line.strip().startswith("- Measurement method:")
+            and "sim/harness/measure.py" in line
+            for line in lines
+        ):
+            return ""
+        options_card = None
+        tran_card = None
+        rows: list[tuple[str, str, str, str]] = []
+        sweep_col = None
+        table_state = 0  # 0 outside, 1 marker seen (header may follow blanks), 2 rows
+        for line in lines:
+            text = line.strip()
+            if text.startswith("- Simulator accuracy:"):
+                found = _BACKTICKED_OPTIONS_CARD_RE.search(text)
+                if found is not None:
+                    options_card = found.group(1)
+            elif text.startswith("- Analysis:"):
+                found = _BACKTICKED_TRAN_CARD_RE.search(text)
+                if found is not None:
+                    tran_card = found.group(1)
+                # A Monte Carlo record renders the injected `.options` card
+                # here rather than in a `- Simulator accuracy:` bullet
+                # (`report.render_mc`'s methodology block); recovering it
+                # keeps a legacy MC record's key equal to what a fresh re-run
+                # of its manifest builds.
+                if options_card is None:
+                    found = _BACKTICKED_OPTIONS_CARD_RE.search(text)
+                    if found is not None:
+                        options_card = found.group(1)
+            elif text.startswith(_SWEEP_TABLE_MARKER):
+                table_state, sweep_col = 1, None
+            elif table_state == 1 and text.startswith("|"):
+                cells = [c.strip() for c in text.strip("|").split("|")]
+                for i, cell in enumerate(cells):
+                    if cell.endswith(" (V)") and cell != "Supply (V)":
+                        sweep_col = i
+                table_state = 2
+            elif table_state == 2 and text.startswith("|"):
+                # A `|---|` separator row is skipped, not treated as the
+                # table's end.
+                if set(text) - {"|", "-", " "}:
+                    cells = [c.strip() for c in text.strip("|").split("|")]
+                    if sweep_col is not None and len(cells) > sweep_col:
+                        rows.append(
+                            (cells[0], cells[1], cells[2], cells[sweep_col])
+                        )
+            elif table_state and text:
+                table_state = 0
+        groups: dict[tuple, list[str]] = {}
+        for corner, temp, supply, value in rows:
+            try:
+                groups.setdefault(
+                    (corner, _canon_temp(temp), _canon_supply(supply)), []
+                ).append(fmt_sweep_value(float(value)))
+            except ValueError:
+                continue
+        return analysis_identity(
+            options_card=options_card,
+            tran_card=tran_card,
+            sweep_groups=tuple(groups.items()),
+        )
+    if lane == "fmax":
+        for line in lines:
+            text = line.strip()
+            if not text.startswith("- Search:"):
+                continue
+            found = _SEARCH_BULLET_RE.search(text)
+            if found is None:
+                return ""
+            f_min, f_max, res, stride = (float(g) for g in found.groups())
+            return (
+                f"search {f_min:g}-{f_max:g} MHz @ {res:g} MHz, "
+                f"stride {int(stride)}"
+            )
+        return ""
+    return ""
 
 
 def _canon_pvt_block(lines: list[str]) -> tuple:
@@ -228,6 +415,7 @@ def parse_record(path: Path) -> ExistingRecord | None:
     lines = path.read_text().splitlines()
     record_id, claim_parts, netlist_sha, supersedes = None, None, None, None
     matrix_key: tuple | None = None
+    analysis: str | None = None
     i = 0
     while i < len(lines):
         line = lines[i]
@@ -265,6 +453,11 @@ def parse_record(path: Path) -> ExistingRecord | None:
                 matrix_key = _canon_mc_block(block)
             else:
                 matrix_key = _canon_fmax_block(block)
+            for block_line in block:
+                if block_line.strip().startswith(_ANALYSIS_IDENTITY_PREFIX):
+                    analysis = _norm_ws(
+                        block_line.strip().split(":", 1)[1]
+                    )
         elif line.startswith("- **Supersedes**:"):
             supersedes = _parse_supersedes(line, path)
         i += 1
@@ -284,12 +477,15 @@ def parse_record(path: Path) -> ExistingRecord | None:
                         "sampling point** or **Search / corner matrix run**)")
     if problems:
         raise RecordsGuardError(f"{path}: committed record lacks {' and '.join(problems)}")
+    if analysis is None:
+        analysis = _recover_analysis(lines, matrix_key[0])
     return ExistingRecord(
         id=record_id,
         supersedes=supersedes,
         claim=_norm_ws(" ".join(claim_parts)) if claim_parts is not None else "",
         matrix_key=matrix_key,
         netlist_sha=netlist_sha,
+        analysis=analysis,
     )
 
 
@@ -360,12 +556,15 @@ def check(
     matrix_key: tuple,
     netlist_sha: str,
     supersedes: str | None,
+    analysis: str = "",
 ) -> None:
     """Refuse a record write that would violate the append-only rule:
     `--supersedes` naming no record in `records_dir`, or -- when no
     `--supersedes` is given -- an existing record carrying this run's
-    collision key. Raises `RecordsGuardError`; a caller catches it and
-    exits non-zero before simulating."""
+    collision key. `analysis` is the run's canonical analysis identity
+    (`measure_analysis_identity` / `fmax_search_identity`). Raises
+    `RecordsGuardError`; a caller catches it and exits non-zero before
+    simulating."""
     records = scan_records(records_dir)
     if supersedes is not None:
         if supersedes not in {r.id for r in records}:
@@ -373,18 +572,30 @@ def check(
                 f"--supersedes {supersedes!r} names no record in {records_dir}"
             )
         return
-    key = (_norm_ws(claim), matrix_key, netlist_sha)
+    key = (_norm_ws(claim), matrix_key, netlist_sha, _norm_ws(analysis))
     matching = [r for r in records if r.collision_key == key]
     if not matching:
         return
+    # `records` is sorted by id, so a fork (two records naming the same
+    # predecessor) keeps the newest successor -- deterministic, and a fork
+    # is malformed history the guard has no way to repair.
     successor_of = {r.supersedes: r.id for r in records if r.supersedes}
     current, matched = matching[-1].id, matching[-1].id
+    visited = {current}
     while current in successor_of:
         current = successor_of[current]
+        if current in visited:
+            raise RecordsGuardError(
+                f"{records_dir}: malformed supersede chain -- {current} "
+                "is part of a cycle; records are append-only, so this is a "
+                "committed-record defect to fix by hand, not by re-running"
+            )
+        visited.add(current)
     message = (
-        f"same claim, matrix and netlist are already recorded in {records_dir} "
-        f"({matched}); records are append-only -- a re-run mints a new record "
-        f"naming the one it supersedes: pass --supersedes {current}"
+        f"same claim, matrix, netlist and analysis are already recorded in "
+        f"{records_dir} ({matched}); records are append-only -- a re-run "
+        f"mints a new record naming the one it supersedes: pass "
+        f"--supersedes {current}"
     )
     if current != matched:
         message += (

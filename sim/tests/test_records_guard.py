@@ -4,23 +4,31 @@ names no record -- the append-only rule the lock-timing lane already enforces
 mechanically, now shared.
 
 The guard's collision key is the re-run identity: normalized claim text +
-the lane's matrix block + the netlist SHA-256. These tests pin, over a temp
-records dir with synthetic records (no PDK, no simulation):
+the lane's matrix block + the netlist SHA-256 + the run's analysis identity
+(the injected `.options` / `tran` cards and swept values -- the axis the
+issue #503 review added, because `sim/integrator-floor`'s tolerance variants
+and `sim/vco-2x-duty`'s refined grids differ in none of the other three).
+These tests pin, over a temp records dir with synthetic records (no PDK, no
+simulation):
 
 - the two refusals and the two acceptances (a correct --supersedes, and a
-  same-claim variant whose matrix block or netlist digest differs);
+  same-claim variant whose matrix block, netlist digest or analysis
+  identity differs);
 - the superseded-chain message (a new run must supersede the chain's tip,
-  not a record already superseded);
+  not a record already superseded; a cyclic chain is reported, not walked
+  forever);
 - the attested **Supersedes** forms (bare id, backticked id with trailing
   prose, and the two "first record" wordings);
 - key parity: the builder each lane calls before simulating produces exactly
   the key the parser extracts from the record the lane would write, over the
   numeric-spelling differences between lanes (%g vs str() temperatures,
-  .2f supplies, the "not applicable" supply line);
-- the real-records replay: every committed record in sim/divider-n64/ and
-  sim/jitter-calibration/ -- the legitimate same-claim families the curator
-  measured -- carries a key distinct from every other record in its
-  directory, so the guard would not have refused any of them.
+  .2f supplies, the "not applicable" supply line), and the analysis
+  identity recovered from a pre-`**Analysis identity**` record's own
+  rendered text matches what the driver builds;
+- the real-records replay: every committed record in sim/*/records/ -- not
+  just the families the issue named -- keys such that each collision-key
+  group holds at most one current record, so the guard would not have
+  refused any legitimate variant when it landed.
 """
 
 from __future__ import annotations
@@ -49,12 +57,17 @@ SUBSET = "one process-corner row per run (issue #130)"
 
 def pvt_record(record_id: str, *, total_points: int, sha: str,
                supersedes: str | None = None, claim: str = CLAIM,
-               temps: str = "-40.0, 27.0, 125.0") -> str:
+               temps: str = "-40.0, 27.0, 125.0",
+               analysis_identity: str | None = None) -> str:
     supersedes_line = (
         f"- **Supersedes**: {supersedes}" if supersedes is not None
         else "- **Supersedes**: (none -- first record for this claim)"
     )
     subset_line = f"  - **Subset of the manifest's default grid**: {SUBSET}\n"
+    identity_line = (
+        f"  - **Analysis identity**: {analysis_identity}\n"
+        if analysis_identity is not None else ""
+    )
     return f"""# Record {record_id}
 
 - **Record ID**: {record_id}
@@ -69,7 +82,7 @@ def pvt_record(record_id: str, *, total_points: int, sha: str,
   - Temperatures (deg C): {temps}
   - Supplies (V): 1.62, 1.80, 1.98
   - Total points: {total_points}
-{subset_line}- **Methodology / criteria / limitations**:
+{subset_line}{identity_line}- **Methodology / criteria / limitations**:
   - Per-point criterion: ngspice exits 0 and the loop locks.
 - **Result**:
 
@@ -186,13 +199,14 @@ class RecordsGuardTestCase(unittest.TestCase):
         self.records_dir = Path(self._tmp.name) / "records"
 
     def check(self, *, matrix_key: tuple, sha: str, supersedes: str | None,
-              claim: str = CLAIM):
+              claim: str = CLAIM, analysis: str = ""):
         return rg.check(
             records_dir=self.records_dir,
             claim=claim,
             matrix_key=matrix_key,
             netlist_sha=sha,
             supersedes=supersedes,
+            analysis=analysis,
         )
 
     # --- the two refusals (ACs 1 and 2) ---
@@ -354,7 +368,8 @@ class RecordsGuardTestCase(unittest.TestCase):
         built = pvt_key(total_points=9)
         self.assertEqual(built, parsed.matrix_key)
         self.assertEqual(norm(CLAIM), parsed.claim)
-        self.assertEqual(parsed.collision_key, (norm(CLAIM), built, NETLIST_SHA_A))
+        self.assertEqual(parsed.collision_key,
+                         (norm(CLAIM), built, NETLIST_SHA_A, ""))
 
     def test_pvt_key_parity_temperature_spellings(self):
         """PVT renders `str(float)` ("-40.0"), Fmax renders `%g` ("-40");
@@ -412,7 +427,8 @@ class RecordsGuardTestCase(unittest.TestCase):
         built = rg.mc_matrix_key(trials=trials, subset_reason=None)
         self.assertEqual(built, parsed.matrix_key)
         self.assertEqual(parsed.collision_key,
-                         (norm("row 9's Monte Carlo population"), built, NETLIST_SHA_A))
+                         (norm("row 9's Monte Carlo population"), built,
+                          NETLIST_SHA_A, ""))
 
     def test_mc_rerun_refused_and_variant_accepted(self):
         write_record(self.records_dir, mc_record(RECORD_ID_A, sha=NETLIST_SHA_A))
@@ -442,7 +458,8 @@ class RecordsGuardTestCase(unittest.TestCase):
         parsed = rg.scan_records(self.records_dir)[0]
         built = rg.fmax_matrix_key(cells=fmax_cells(), subset_reason=None)
         self.assertEqual(built, parsed.matrix_key)
-        self.assertEqual(parsed.collision_key, (norm(FMAX_CLAIM), built, NETLIST_SHA_A))
+        self.assertEqual(parsed.collision_key,
+                         (norm(FMAX_CLAIM), built, NETLIST_SHA_A, ""))
         with self.assertRaises(rg.RecordsGuardError):
             self.check(matrix_key=built, sha=NETLIST_SHA_A, supersedes=None,
                        claim=FMAX_CLAIM)
@@ -465,17 +482,243 @@ class RecordsGuardTestCase(unittest.TestCase):
         self.check(matrix_key=pvt_key(total_points=9, subset_reason="a different prose"),
                    sha=NETLIST_SHA_A, supersedes=None)
 
+    # --- the analysis identity axis (issue #503 review: sim/integrator-floor
+    # and sim/vco-2x-duty differ in neither block nor digest) ---
+
+    def test_analysis_identity_separates_same_claim_matrix_netlist_variants(self):
+        """Two committed records sharing claim, matrix and netlist digest but
+        running different analyses are variants, not re-runs: an exact re-run
+        of either is refused naming its own record, and a new analysis lands
+        without --supersedes (no false `**Supersedes**` pointer)."""
+        write_record(self.records_dir, pvt_record(
+            RECORD_ID_A, total_points=9, sha=NETLIST_SHA_A,
+            analysis_identity="tran 200p 10u"))
+        write_record(self.records_dir, pvt_record(
+            RECORD_ID_B, total_points=9, sha=NETLIST_SHA_A,
+            analysis_identity=".options reltol=1e-4; tran 200p 10u"))
+        with self.assertRaises(rg.RecordsGuardError) as caught:
+            self.check(matrix_key=pvt_key(total_points=9), sha=NETLIST_SHA_A,
+                       supersedes=None, analysis="tran 200p 10u")
+        self.assertIn(RECORD_ID_A, str(caught.exception))
+        with self.assertRaises(rg.RecordsGuardError) as caught:
+            self.check(matrix_key=pvt_key(total_points=9), sha=NETLIST_SHA_A,
+                       supersedes=None,
+                       analysis=".options reltol=1e-4; tran 200p 10u")
+        self.assertIn(RECORD_ID_B, str(caught.exception))
+        self.check(matrix_key=pvt_key(total_points=9), sha=NETLIST_SHA_A,
+                   supersedes=None,
+                   analysis=".options reltol=1e-5; tran 200p 10u")
+
+    def test_analysis_identity_recovered_from_committed_record_text(self):
+        """A record minted before the `**Analysis identity**` line keys on the
+        identity recovered from its own rendered text: the `- Simulator
+        accuracy:` bullet's `.options` card, the `- Analysis:` bullet's
+        `tran` card, and the `**Swept-axis measurements**` table -- in the
+        same canonical form `measure_analysis_identity` builds, so an exact
+        re-run of that record still collides."""
+        record = f"""# Record {RECORD_ID_A}
+
+- **Record ID**: {RECORD_ID_A}
+- **Claim**: {CLAIM}
+- **Spec row(s)**: 4 -- divider range (DRAFT)
+- **Netlist provenance**: schematic (`sim/vco-2x-duty/testbench/`), frozen at `sim/vco-2x-duty/netlist-snapshots/{RECORD_ID_A}.spice`, SHA-256 `{NETLIST_SHA_A}`
+- **Corner matrix run**:
+  - Process corners: tt
+  - Temperatures (deg C): 27
+  - Supplies (V): 1.80
+  - Total points: 1
+- **Methodology / criteria / limitations**:
+  - Measurement method: the harness injects the analysis itself (an ngspice `.control` block built by `sim/harness/measure.py`), `linearize`s `v(clk)` and `wrdata`-dumps it.
+  - Simulator accuracy: the transient runs under `.options reltol=1e-4` (manifest `measure.options`), injected ahead of the analysis.
+  - Analysis: transient per swept VCTRL value (`tran 50p 800n uic`, three values, one ngspice invocation at tt/27C/1.80V).
+- **Result**:
+
+  | Corner | Temp (C) | Supply (V) | Verdict | Detail |
+  |---|---|---|---|---|
+  | tt | 27 | 1.80 | PASS | 3/3 swept points oscillated |
+
+- **Swept-axis measurements** (VCTRL vs. output frequency, per PVT point):
+
+  | Corner | Temp (C) | Supply (V) | VCTRL (V) | f_out | Duty | Note |
+  |---|---|---|---|---|---|---|
+  | tt | 27 | 1.80 | 0.300 | 243.8 MHz | 50.7% | - |
+  | tt | 27 | 1.80 | 0.650 | 1.1 GHz | 50.1% | - |
+  | tt | 27 | 1.80 | 0.940 | 3.4 GHz | 49.8% | - |
+
+- **Supersedes**: (none -- first record for this claim)
+"""
+        write_record(self.records_dir, record)
+        parsed = rg.scan_records(self.records_dir)[0]
+        recovered = rg.analysis_identity(
+            options_card=".options reltol=1e-4",
+            tran_card="tran 50p 800n uic",
+            sweep_groups=(
+                (("tt", "27.0", "1.80"), ("0.300", "0.650", "0.940")),
+            ),
+        )
+        self.assertEqual(parsed.analysis, recovered)
+        matrix_key = rg.pvt_matrix_key(
+            points=[corners.PvtPoint(corner="tt", temp_c=27.0, supply_v=1.80)],
+            manifest_has_supply=True, corner_note=None, subset_reason=None,
+        )
+        with self.assertRaises(rg.RecordsGuardError) as caught:
+            self.check(matrix_key=matrix_key, sha=NETLIST_SHA_A, supersedes=None,
+                       analysis=recovered)
+        self.assertIn(RECORD_ID_A, str(caught.exception))
+        self.check(matrix_key=matrix_key, sha=NETLIST_SHA_A, supersedes=None,
+                   analysis=rg.analysis_identity(
+                       options_card=".options reltol=1e-4",
+                       tran_card="tran 50p 800n uic",
+                       sweep_groups=(
+                           (("tt", "27.0", "1.80"), ("0.715", "0.720")),
+                       ),
+                   ))
+
+    def test_record_without_a_measure_lane_renders_empty_analysis(self):
+        """A plumbing / AC / charge-pump record (no `Measurement method`
+        bullet citing `sim/harness/measure.py`) keys on the empty identity --
+        what `measure_analysis_identity` builds for a `spec=None` run -- so
+        the guard's re-run protection for those lanes is unchanged."""
+        record = pvt_record(RECORD_ID_A, total_points=9, sha=NETLIST_SHA_A).replace(
+            "  - Per-point criterion: ngspice exits 0 and the loop locks.",
+            "  - Measurement method: the harness injects the analysis itself "
+            "(an ngspice `.control` block built by `sim/harness/acmeasure.py`).\n"
+            "  - Analysis: one `ac dec 10 1k 100MEG` + one `tran 1n 2u` sweep.",
+        )
+        write_record(self.records_dir, record)
+        parsed = rg.scan_records(self.records_dir)[0]
+        self.assertEqual(parsed.analysis, "")
+        with self.assertRaises(rg.RecordsGuardError):
+            self.check(matrix_key=pvt_key(total_points=9), sha=NETLIST_SHA_A,
+                       supersedes=None, analysis="")
+
+    def test_mc_analysis_identity_recovered_from_the_analysis_bullet(self):
+        """A Monte Carlo record renders the injected `.options` card inside
+        its `- Analysis:` bullet (no `- Simulator accuracy:` bullet), so the
+        recovered identity must include it -- equal to what a fresh re-run
+        of that manifest config builds, keeping the re-run refusal honest
+        for legacy MC records (the `sim/pll-lock-mc` shape)."""
+        record = mc_record(RECORD_ID_A, sha=NETLIST_SHA_A).replace(
+            "  - Sampling mechanism: sky130's own MC_MM_SWITCH / MC_PR_SWITCH.",
+            "  - Measurement method: the manifest-owned `.control` block "
+            "(`sim/harness/measure.py`'s `build_control_block`) is appended "
+            "after each trial's seed cards.\n"
+            "  - Analysis: cold-start transient, closed loop, one sky130 "
+            "statistical draw per trial (`tran 20p 50u 0 200p` under "
+            "`.options reltol=1e-4`, injected by sim/harness/measure.py).",
+        )
+        write_record(self.records_dir, record)
+        parsed = rg.scan_records(self.records_dir)[0]
+        self.assertEqual(
+            parsed.analysis, ".options reltol=1e-4; tran 20p 50u 0 200p"
+        )
+        trials = [
+            montecarlo.McTrial(trial=i, seed=i, corner="tt", temp_c=125.0,
+                               supply_v=1.80, mismatch=True, process=True)
+            for i in range(1, 6)
+        ]
+        built = rg.mc_matrix_key(trials=trials, subset_reason=None)
+        with self.assertRaises(rg.RecordsGuardError):
+            self.check(matrix_key=built, sha=NETLIST_SHA_A, supersedes=None,
+                       claim="row 9's Monte Carlo population",
+                       analysis=".options reltol=1e-4; tran 20p 50u 0 200p")
+        self.check(matrix_key=built, sha=NETLIST_SHA_A, supersedes=None,
+                   claim="row 9's Monte Carlo population",
+                   analysis=".options reltol=1e-5; tran 20p 50u 0 200p")
+
+    def test_measure_analysis_identity_matches_the_tran_card_injected(self):
+        """`measure_analysis_identity` builds the identity from the same
+        `tran_card` property `build_control_block` injects, so guard and
+        netlisted analysis cannot drift."""
+        from harness import measure as measure_mod
+
+        spec = measure_mod.MeasureSpec.from_manifest({
+            "measure": {
+                "node": "clk", "tran_step": "20p", "tran_stop": "10u",
+                "tran_max_step": "200p", "options": {"reltol": "1e-4"},
+            }
+        })
+        point = corners.PvtPoint(corner="tt", temp_c=125.0, supply_v=1.80)
+        self.assertEqual(
+            rg.measure_analysis_identity(spec, [point]),
+            ".options reltol=1e-4; tran 20p 10u 0 200p",
+        )
+        self.assertIn(spec.tran_card, measure_mod.build_control_block(spec))
+
+    def test_fmax_search_identity_separates_a_refined_grid(self):
+        """The Fmax lane's refinement axis: the same cells on the same
+        netlist under a finer search grid are a variant, and an exact re-run
+        of the recorded grid still collides."""
+        class _Search:
+            f_min_hz, f_max_hz = 800e6, 2600e6
+            resolution_hz, coarse_stride = 25e6, 8
+
+        class _Spec:
+            search = _Search()
+            mandatory_probes_hz = ()
+
+        recorded = rg.fmax_search_identity(_Spec())
+        self.assertEqual(recorded, "search 800-2600 MHz @ 25 MHz, stride 8")
+        refined = _Search()
+        refined.resolution_hz = 12.5e6
+
+        class _RefinedSpec:
+            search = refined
+            mandatory_probes_hz = ()
+
+        self.assertNotEqual(recorded, rg.fmax_search_identity(_RefinedSpec()))
+        # The identity a committed record renders is recovered from its own
+        # `- Search:` bullet, so a re-run of the recorded grid still collides
+        # and a refined one does not.
+        record = fmax_record(RECORD_ID_A, sha=NETLIST_SHA_A, cells=18).replace(
+            "  - Search: grid 800-2600 MHz at 25 MHz resolution.",
+            "  - Search: grid 800-2600 MHz at 25 MHz resolution; stage 1 "
+            "probes every 8th grid point plus the top.",
+        )
+        write_record(self.records_dir, record)
+        parsed = rg.scan_records(self.records_dir)[0]
+        self.assertEqual(parsed.analysis, recorded)
+        built = rg.fmax_matrix_key(cells=fmax_cells(), subset_reason=None)
+        with self.assertRaises(rg.RecordsGuardError):
+            self.check(matrix_key=built, sha=NETLIST_SHA_A, supersedes=None,
+                       claim=FMAX_CLAIM, analysis=recorded)
+        self.check(matrix_key=built, sha=NETLIST_SHA_A, supersedes=None,
+                   claim=FMAX_CLAIM,
+                   analysis=recorded.replace("@ 25 MHz", "@ 12.5 MHz"))
+
+    def test_supersede_cycle_is_reported_not_hung(self):
+        """A cyclic `**Supersedes**` pair in committed records must surface
+        as a refusal naming the malformed chain, not spin the pre-simulation
+        gate forever (issue #503 review, non-blocking robustness)."""
+        write_record(self.records_dir, pvt_record(
+            RECORD_ID_A, total_points=9, sha=NETLIST_SHA_A,
+            supersedes=RECORD_ID_B))
+        write_record(self.records_dir, pvt_record(
+            RECORD_ID_B, total_points=9, sha=NETLIST_SHA_A,
+            supersedes=RECORD_ID_A))
+        with self.assertRaises(rg.RecordsGuardError) as caught:
+            self.check(matrix_key=pvt_key(total_points=9), sha=NETLIST_SHA_A,
+                       supersedes=None)
+        self.assertIn("cycle", str(caught.exception))
+
 
 class RealRecordsReplayTestCase(unittest.TestCase):
-    """AC 6: the committed same-claim families must replay through the key
-    with every record distinct from the others -- the guard, had it existed,
-    would not have refused any of them."""
+    """AC 6, widened per the #503 review: replaying the committed records
+    through the key must show every collision-key group in every
+    `sim/*/records/` dir holding at most one *current* record (a record no
+    other record of the group supersedes) -- the property that keeps the
+    guard honest: a legitimate same-claim variant has a distinct key (it
+    would have been accepted when it landed), and a genuine re-run chain has
+    one tip (the guard's `--supersedes` message names it)."""
 
-    def _family(self, slug: str) -> list[tuple]:
+    def _records(self, slug: str) -> list:
         records_dir = REPO_ROOT / "sim" / slug / "records"
         records = rg.scan_records(records_dir)
         self.assertTrue(records, f"no records parsed under {records_dir}")
-        return [r.collision_key for r in records]
+        return records
+
+    def _family(self, slug: str) -> list[tuple]:
+        return [r.collision_key for r in self._records(slug)]
 
     def test_divider_n64_records_are_pairwise_distinct(self):
         keys = self._family("divider-n64")
@@ -486,6 +729,46 @@ class RealRecordsReplayTestCase(unittest.TestCase):
         keys = self._family("jitter-calibration")
         self.assertEqual(len(keys), 18)
         self.assertEqual(len(set(keys)), len(keys))
+
+    def test_integrator_floor_tolerance_variants_are_pairwise_distinct(self):
+        """The #503 review's first collision: three same-claim records
+        differing in neither matrix block nor netlist digest -- only in the
+        injected `.options` card and `tran` card -- must key apart via the
+        analysis identity recovered from their own rendered text."""
+        keys = self._family("integrator-floor")
+        self.assertEqual(len(keys), 3)
+        self.assertEqual(len(set(keys)), len(keys))
+
+    def test_vco_2x_duty_grid_rounds_are_pairwise_distinct(self):
+        """The #503 review's second collision: an 11-value grid and its
+        10-value refinement round share claim, block and digest; the swept
+        values recovered from the `**Swept-axis measurements**` tables key
+        them apart."""
+        keys = self._family("vco-2x-duty")
+        self.assertEqual(len(keys), 2)
+        self.assertEqual(len(set(keys)), len(keys))
+
+    def test_every_committed_dir_has_at_most_one_current_record_per_key(self):
+        """The whole-tree sweep: for every `sim/*/records/` dir, every
+        collision-key group holds at most one record not superseded by
+        another record of the group. A group with two or more current
+        records is a lane whose legitimate variants the key cannot tell
+        apart -- exactly what the review's replay found here before the
+        analysis identity axis existed."""
+        multi_tip = []
+        for records_dir in sorted((REPO_ROOT / "sim").glob("*/records")):
+            records = rg.scan_records(records_dir)
+            groups: dict[tuple, list] = {}
+            for r in records:
+                groups.setdefault(r.collision_key, []).append(r)
+            for key, rs in groups.items():
+                superseded = {r.supersedes for r in rs if r.supersedes}
+                tips = [r.id for r in rs if r.id not in superseded]
+                if len(tips) > 1:
+                    multi_tip.append(
+                        f"{records_dir.parent.name}: {tips} share one key"
+                    )
+        self.assertEqual(multi_tip, [])
 
     def test_every_committed_supersedes_pointer_resolves(self):
         """Across all lanes: every **Supersedes** id in sim/*/records/ names

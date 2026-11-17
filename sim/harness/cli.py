@@ -489,6 +489,12 @@ def _run_experiment(
         # the cost of a missed flag is a whole campaign's wall time.
         if args.write:
             subset_reason = args.subset_reason if is_subset else None
+            # One value for guard and record (the `subset_reason` discipline):
+            # the identity the guard keys on is the identity the renderer
+            # stamps into the matrix block, so the two cannot drift.
+            analysis = records_guard.measure_analysis_identity(
+                measure_mod.MeasureSpec.from_manifest(manifest), units
+            )
             if mode == "mc":
                 mc_cfg = manifest.get("monte_carlo", {})
                 claim = mc_cfg.get(
@@ -512,6 +518,7 @@ def _run_experiment(
                     matrix_key=matrix_key,
                     netlist_sha=report_mod.sha256_bytes(netlist_text.encode()),
                     supersedes=args.supersedes,
+                    analysis=analysis,
                 )
             except records_guard.RecordsGuardError as e:
                 print(f"run_corners.py: {e}", file=sys.stderr)
@@ -684,6 +691,7 @@ def _run_experiment(
                     units=units,
                     results=results,
                     subset_reason=subset_reason,
+                    analysis_identity=analysis,
                     execution_note=_execution_note(
                         segments=ckpt.segments if ckpt is not None else [],
                         jobs=jobs,
@@ -753,7 +761,8 @@ def cmd_run(args: argparse.Namespace) -> int:
         )
 
     def render_record(
-        *, manifest, slug, record_id, pdk, netlist_snapshot, units, results, subset_reason, execution_note
+        *, manifest, slug, record_id, pdk, netlist_snapshot, units, results, subset_reason, execution_note,
+        analysis_identity="",
     ):
         return report_mod.render(
             spec=measure_mod.MeasureSpec.from_manifest(manifest),
@@ -780,6 +789,7 @@ def cmd_run(args: argparse.Namespace) -> int:
                 "methodology_note", "(no methodology_note stated in manifest)"
             ),
             analysis=manifest.get("analysis", "(no analysis stated in manifest)"),
+            analysis_identity=analysis_identity,
         )
 
     return _run_experiment(
@@ -837,7 +847,8 @@ def cmd_run_mc(args: argparse.Namespace) -> int:
         )
 
     def render_record(
-        *, manifest, slug, record_id, pdk, netlist_snapshot, units, results, subset_reason, execution_note
+        *, manifest, slug, record_id, pdk, netlist_snapshot, units, results, subset_reason, execution_note,
+        analysis_identity="",
     ):
         mc_cfg = manifest.get("monte_carlo", {})
         claim = mc_cfg.get("claim", manifest.get("claim", "(no claim stated in manifest)"))
@@ -867,6 +878,7 @@ def cmd_run_mc(args: argparse.Namespace) -> int:
             methodology_note=methodology_note,
             analysis=analysis,
             spec=measure_mod.MeasureSpec.from_manifest(manifest),
+            analysis_identity=analysis_identity,
         )
 
     return _run_experiment(

@@ -329,6 +329,7 @@ def cmd(args) -> int:
         snapshot_text = "".join(
             f"* ---- unpatched netlist for N={n} ----\n{netlists[n]}\n" for n in sorted(netlists)
         )
+        analysis_identity = records_guard.fmax_search_identity(spec)
         if args.write:
             try:
                 records_guard.check(
@@ -339,6 +340,7 @@ def cmd(args) -> int:
                     ),
                     netlist_sha=report_mod.sha256_bytes(snapshot_text.encode()),
                     supersedes=args.supersedes,
+                    analysis=analysis_identity,
                 )
             except records_guard.RecordsGuardError as e:
                 print(f"run_fmax.py: {e}", file=sys.stderr)
@@ -412,7 +414,7 @@ def cmd(args) -> int:
             tool_versions=pdk_mod.tool_versions(), repo_root=REPO_ROOT,
             netlist_snapshot=snapshot, cells=results, probe_count=len(probes),
             subset_reason=args.subset_reason, supersedes=args.supersedes,
-            execution_note=note,
+            execution_note=note, analysis_identity=analysis_identity,
         )
         try:
             evidence_store_mod.store_files(

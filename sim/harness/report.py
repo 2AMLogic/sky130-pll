@@ -1074,6 +1074,7 @@ def render(
     manifest_has_supply: bool = True,
     corner_note: str | None = None,
     execution_note: str | None = None,
+    analysis_identity: str = "",
 ) -> str:
     # Only this run's own new artifacts are excluded from the dirty check --
     # an uncommitted edit to the testbench itself still marks the record
@@ -1126,6 +1127,8 @@ def render(
         a(f"  - Corner-set note: {corner_note}")
     if subset_reason:
         a(f"  - **Subset of the manifest's default grid**: {subset_reason}")
+    if analysis_identity:
+        a(f"  - **Analysis identity**: {analysis_identity}")
     if execution_note:
         a(f"- **Execution**: {execution_note}")
     a("- **Methodology / criteria / limitations**:")
@@ -1191,6 +1194,7 @@ def render_mc(
     analysis: str,
     execution_note: str | None = None,
     spec=None,
+    analysis_identity: str = "",
 ) -> str:
     """Render a Monte Carlo evidence record. Same append-only schema and
     directory conventions as `render` (PVT) -- see sim/README.md -- adapted
@@ -1250,6 +1254,8 @@ def render_mc(
       f"one ngspice `.options seed=<N>` per trial)")
     if subset_reason:
         a(f"  - **Subset/override of the manifest's default `monte_carlo` config**: {subset_reason}")
+    if analysis_identity:
+        a(f"  - **Analysis identity**: {analysis_identity}")
     if execution_note:
         a(f"- **Execution**: {execution_note}")
     a("- **Methodology / criteria / limitations**:")
