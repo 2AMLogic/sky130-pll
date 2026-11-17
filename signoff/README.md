@@ -154,9 +154,14 @@ record always drifts the committed item 10 envelope**: the required index-row
 edit changes that pinned hash, and `run-signoff.sh --check` (the second CI
 gate) exits 1 until the same PR re-attests. A new record *file* itself is not
 asserted until it is listed in `signoff/inventory/item10.json` -- it is the
-index row that triggers the chain. The chain, concretely (the regeneration
-text above, specialized to item 10):
+index row that triggers the chain. The chain, concretely (step 0 is the
+inventory edit the regeneration text above presupposes; steps 1-3 are that
+text, specialized to item 10):
 
+0. for a **new** record, first add its path to the `hygiene` array in
+   `signoff/inventory/item10.json` -- the array is an explicit enumeration,
+   so an unlisted record is not attested, and following steps 1-3 alone ends
+   green with the new record silently missing; for a removal, drop its path;
 1. `klt signoff --attest 10 --inventory signoff/inventory/item10.json -o
    signoff/evidence/attest-item10.json` (klt 0.8.0, the pin -- e.g. via
    `uvx --from "klayout-tools==0.8.0"` where the host `klt` is not 0.8.0);
