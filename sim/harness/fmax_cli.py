@@ -29,6 +29,7 @@ from . import fmax_klt
 from . import fmax_report
 from . import measure as measure_mod
 from . import pdk as pdk_mod
+from . import records_guard
 from . import report as report_mod
 from . import runner as runner_mod
 
@@ -323,6 +324,28 @@ def cmd(args) -> int:
                 print(f"run_fmax.py: {e}", file=sys.stderr)
                 return 1
 
+        # Issue #503: same guard the PVT lane runs -- before any probe
+        # starts, since a missed --supersedes costs a whole campaign.
+        snapshot_text = "".join(
+            f"* ---- unpatched netlist for N={n} ----\n{netlists[n]}\n" for n in sorted(netlists)
+        )
+        analysis_identity = records_guard.fmax_search_identity(spec)
+        if args.write:
+            try:
+                records_guard.check(
+                    records_dir=exp_dir / "records",
+                    claim=manifest["claim"],
+                    matrix_key=records_guard.fmax_matrix_key(
+                        cells=cells, subset_reason=args.subset_reason
+                    ),
+                    netlist_sha=report_mod.sha256_bytes(snapshot_text.encode()),
+                    supersedes=args.supersedes,
+                    analysis=analysis_identity,
+                )
+            except records_guard.RecordsGuardError as e:
+                print(f"run_fmax.py: {e}", file=sys.stderr)
+                return 1
+
         if name == fmax_klt.BATCH_EXECUTOR:
             backend = fmax_klt.KltBatchBackend(
                 spec=spec, manifest=manifest, work_dir=work_dir,
@@ -373,9 +396,7 @@ def cmd(args) -> int:
         scratch = exp_dir.parent / "build" / slug / record_id
         scratch.mkdir(parents=True, exist_ok=True)
         snapshot = scratch.parent / f"{record_id}.spice"
-        snapshot.write_text("".join(
-            f"* ---- unpatched netlist for N={n} ----\n{netlists[n]}\n" for n in sorted(netlists)
-        ))
+        snapshot.write_text(snapshot_text)
         corners_dir = scratch
         for p in probes:
             src = work_dir / p["log_file"]
@@ -393,7 +414,7 @@ def cmd(args) -> int:
             tool_versions=pdk_mod.tool_versions(), repo_root=REPO_ROOT,
             netlist_snapshot=snapshot, cells=results, probe_count=len(probes),
             subset_reason=args.subset_reason, supersedes=args.supersedes,
-            execution_note=note,
+            execution_note=note, analysis_identity=analysis_identity,
         )
         try:
             evidence_store_mod.store_files(

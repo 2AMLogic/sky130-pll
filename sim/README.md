@@ -474,7 +474,14 @@ report.py`) with these mandatory fields:
   netlist snapshot's SHA-256.
 - **Corner matrix run** — the explicit (process corner, temperature, supply)
   points actually executed, and whether it is a declared subset of the
-  manifest's default grid.
+  manifest's default grid. A measurement record also carries an
+  **Analysis identity** line in this block: the canonical form of the
+  injected analysis (the `.options` card, the `tran` card, each swept
+  point's values; the search grid for an Fmax record). It is what the
+  re-run guard (`sim/harness/records_guard.py`, issue #503) keys on, so a
+  committed record states exactly the analysis its key names -- records
+  minted before the line existed are recovered from their own rendered
+  text.
 - **Methodology / criteria / limitations** — the pass/fail criterion applied
   per point, and any known gap in what the record can support.
 - **Result** — per-point pass/fail table plus an overall verdict.

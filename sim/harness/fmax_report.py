@@ -67,6 +67,7 @@ def render(
     subset_reason: str | None,
     supersedes: str | None,
     execution_note: str | None,
+    analysis_identity: str = "",
 ) -> str:
     git = report_mod.git_info(
         repo_root,
@@ -98,6 +99,8 @@ def render(
     a(f"  - Cells (modulus x PVT point): {len(cells)}; probes run: {probe_count}")
     if subset_reason:
         a(f"  - **Subset of the manifest's default grid**: {subset_reason}")
+    if analysis_identity:
+        a(f"  - **Analysis identity**: {analysis_identity}")
     if execution_note:
         a(f"- **Execution**: {execution_note}")
     a("- **Methodology / criteria / limitations**:")
