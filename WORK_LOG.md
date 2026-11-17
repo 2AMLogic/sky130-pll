@@ -8,6 +8,8 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 ### 2026-11-17
 
+- **PR #519**: docs(signoff): document the item 10 re-attestation chain for decision-record edits
+- **Issue #491** (closed): docs(signoff): adding a decision-record index row requires the item 10 re-attestation chain — undocumented
 - **PR #517**: test: pin the lint drivers' non-git diagnostic, not just its exit code
 - **Issue #504** (closed): Derived-list lint suites do not independently pin the non-git guard (empty-set guard masks its removal)
 
