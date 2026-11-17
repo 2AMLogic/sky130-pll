@@ -146,6 +146,32 @@ Negative control (measured, scratch edit reverted): appending one space to
 signoff/inventory/item1-analog.json --check signoff/evidence/attest-item1-analog.json`
 exit 3 with `drift: attestation.checks.9.content_hash`.
 
+### Adding or removing a decision record: the item 10 re-attestation chain, in the same PR
+
+`spec/decision-records/README.md` -- the decision-record index -- is one of
+the files the item 10 inventory hashes, so **adding or removing a decision
+record always drifts the committed item 10 envelope**: the required index-row
+edit changes that pinned hash, and `run-signoff.sh --check` (the second CI
+gate) exits 1 until the same PR re-attests. A new record *file* itself is not
+asserted until it is listed in `signoff/inventory/item10.json` -- it is the
+index row that triggers the chain. The chain, concretely (the regeneration
+text above, specialized to item 10):
+
+1. `klt signoff --attest 10 --inventory signoff/inventory/item10.json -o
+   signoff/evidence/attest-item10.json` (klt 0.8.0, the pin -- e.g. via
+   `uvx --from "klayout-tools==0.8.0"` where the host `klt` is not 0.8.0);
+2. when the record set changed, re-pin the inventory hash for key `10` in
+   `signoff/block-manifest.json` (the manifest pins the inventory's content
+   hash, which the envelope's `provenance.input.content_hash` repeats -- an
+   index-row-only edit leaves the inventory byte-identical and this pin
+   unchanged);
+3. `bash signoff/run-signoff.sh` to re-render `signoff/tier-report.json`.
+
+Worked precedent: `092453b`, `a0201ae` and `33872097` (the DR-015, DR-016 and
+DR-017 index rows), each touching the same four files -- the inventory (the
+new record added), the re-attested envelope, the re-pinned manifest and the
+re-rendered tier report.
+
 ## Item 3 (met, both partitions), and what it does and does not say
 
 Item 3 cites

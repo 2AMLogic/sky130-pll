@@ -6,8 +6,19 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 - [2026-09](work_log/WORK_LOG_2026-09.md)
 
+### 2026-11-17
+
+- **PR #517**: test: pin the lint drivers' non-git diagnostic, not just its exit code
+- **Issue #504** (closed): Derived-list lint suites do not independently pin the non-git guard (empty-set guard masks its removal)
+
 ### 2026-11-16
 
+- **PR #514**: test: convert the last two duck-typed PDK stand-ins to make_resolved_pdk
+- **Issue #495** (closed): sim/tests: two duck-typed PDK stand-ins remain outside #472's scope
+- **PR #513**: docs: link the executor-equivalence retirement note from its README and correct three stale inbound citations
+- **Issue #462** (closed): sim/executor-equivalence/README.md still documents the retired --executor remote path as live
+- **PR #512**: layout: drop stale repo-root comment and dead sys.path inserts from renderers
+- **Issue #480** (closed): render-record.py's repo-root sys.path block outlived its reason: the comment names a module the file no longer imports
 - **PR #510**: refactor(scripts): consolidate the three lint drivers onto one shared core
 - **Issue #507** (closed): Consolidate three copy-pasted lint drivers (json/python/shell) into one shared core; vendored-prefix lists have already drifted
 - **PR #505**: fix(signoff): report check 1's manifest-shape fault under its own header, name the marker in the mismatch remediation

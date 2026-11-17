@@ -27,6 +27,7 @@ from harness import executor as executor_mod  # noqa: E402
 from harness import fmax as F  # noqa: E402
 from harness import fmax_cli as C  # noqa: E402
 from harness import fmax_klt as K  # noqa: E402
+from pdk_fixture import make_resolved_pdk  # noqa: E402
 from test_fmax import MANIFEST, SPEC, make_cells, output_edges, trace  # noqa: E402
 
 NETLIST = """* fake testbench
@@ -452,7 +453,7 @@ class CliBatchRoute(unittest.TestCase):
             def preflight(self):
                 raise K.KltBatchError("stub: batch submit layer reached")
 
-        pdk = SimpleNamespace(process_corners=("tt",), commit_mismatch=False)
+        pdk = make_resolved_pdk(process_corners=("tt",))
         err = io.StringIO()
         with mock.patch.object(C.pdk_mod, "resolve", return_value=pdk), \
                 mock.patch.object(C.runner_mod, "netlist_schematic", return_value=NETLIST), \

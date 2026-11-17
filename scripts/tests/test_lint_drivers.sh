@@ -125,7 +125,10 @@ step_non_git_fails() {
   cp "$here/../$tool.sh" "$bare/scripts/$tool.sh"
   cp "$core" "$bare/scripts/lint_common.sh"
   ( cd "$T" && bash "$bare/scripts/$tool.sh" ) > "$T/out" 2>&1; rc=$?
-  [ "$rc" -eq 2 ]
+  # Pin the driver's own diagnostic, prefixed with $LINT_TOOL: with guard 1
+  # removed, `git ls-files` still emits "fatal: not a git repository ..." on
+  # stderr, so a bare match on "not a git repository" would pass either way.
+  [ "$rc" -eq 2 ] && grep -qi "$tool: .* is not a git repository" "$T/out"
   expect "$tool: non-git directory fails with exit 2 rather than passing vacuously" $?
 }
 
