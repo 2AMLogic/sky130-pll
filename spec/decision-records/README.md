@@ -26,3 +26,7 @@ One file per decision, DR-NNN-<slug>.md. See CLAUDE.md.
 
 The "Status" column is authoritative only for records added with this index;
 for earlier records, the record's own header is the source of truth.
+
+Adding or removing a record edits this index, which the item 10 signoff
+inventory pins: the same PR must run the re-attestation chain documented in
+`signoff/README.md` ("Adding or removing a decision record").
