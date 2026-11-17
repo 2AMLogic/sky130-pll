@@ -8,6 +8,11 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 ### 2026-11-17
 
+- **PR #532**: signoff: delete README pin-literal restatements; guard rejects full sha256: literals in prose
+- **Issue #476** (closed): signoff: README item 8 quotes a stale pin literal, one re-pin behind the manifest
+- **PR #531**: ci: drop 'labeled' from the pull_request trigger and re-attest item 10
+- **Issue #487** (closed): ci: every Loom label write re-runs the full headless check suite, and races post-verdict.sh's exact-head CI gate
+- **PR #529**: ci: run pdk-smoke selftest without --record (no artifact broker on CI)
 - **PR #528**: records: add run-pdk-smoke to .github/labels.yml outside the Loom block
 - **Issue #527** (closed): run-pdk-smoke label exists only on the forge; record it outside the Loom block in .github/labels.yml
 - **PR #522**: docs(signoff): number the item-10 inventory edit as step 0 of the re-attestation chain
