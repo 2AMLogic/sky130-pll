@@ -512,43 +512,6 @@ recorded needs `--subset-reason`. The per-cell bounds roll up into
 make signoff item 8 met (power and area have no evidence) and does not ratify
 spec row 4.
 
-#### Land the grid one modulus per invocation
-
-**The declared grid is run as one invocation per declared modulus, not as a
-single 225-cell invocation.** The `--klt-cache` resume above is a plain local
-directory (`fmax_klt.py` sets `cache_dir` from `--klt-cache`, else a
-`TemporaryDirectory` that is deleted on exit; reuse is gated on the collected
-`report.json` being present on *this* filesystem). A `job_id` is recorded as
-provenance only -- it is never a re-collection key, so a job completed on one
-dispatch host cannot be re-collected on another. Two consequences:
-
-- Without `--klt-cache`, nothing accumulates: every re-run is cold.
-- With it, partial progress does not travel between hosts. On a rotating
-  dispatch fleet a 45-job stage 1 therefore cannot be relied on to finish, and
-  three whole-grid attempts (2026-10-09, 2026-10-10, 2026-11-14) each burned
-  fleet time and minted no record, because **the record is written only by the
-  invocation in which every cell completes.**
-
-One modulus is the full 45-point DR-003 matrix and 9 stage-1 jobs (3 supplies x
-3 chunks of at most 4 DUT copies) -- roughly 45-90 min of stage 1 plus a
-comparable stage 2 at `--klt-jobs 2`, which fits one session, cold, on any
-host. Run this once per declared modulus (4, 5, 25, 63, 64), each with its own
-cache directory, and commit its record before starting the next:
-
-```bash
-python3 sim/run_fmax.py divider-fmax --executor batch --klt-jobs 2 \
-    --moduli 4 --klt-cache ~/fmax-cache-244-n4 \
-    --subset-reason "one declared modulus per record: ..."
-```
-
-`--subset-reason` is mandatory for a recorded subset run and lands in the
-record, so each record names the slice it covers and why it is a slice.
-Coverage is unchanged by the split -- 5 moduli x 45 cells is the same 225
-declared cells -- only the number of record files changes, and
-`measurements/aggregate.py` already composes every current Fmax record. Keep
-`--klt-jobs` at 2; raising it is an operator throughput decision, not an
-agent's. A single 225-cell invocation remains valid if one ever completes.
-
 ## Loop-dynamics campaigns (`ac` manifest block)
 
 A manifest that declares a top-level `ac` block instead of a `measure`
