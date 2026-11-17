@@ -8,6 +8,8 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 ### 2026-11-17
 
+- **PR #528**: records: add run-pdk-smoke to .github/labels.yml outside the Loom block
+- **Issue #527** (closed): run-pdk-smoke label exists only on the forge; record it outside the Loom block in .github/labels.yml
 - **PR #522**: docs(signoff): number the item-10 inventory edit as step 0 of the re-attestation chain
 - **Issue #520** (closed): docs(signoff): the item 10 chain should number the inventory edit as its own step for a NEW decision record
 - **PR #516**: sim/harness: refuse a PVT/MC/Fmax re-run with no --supersedes, as the lock-timing lane already does
