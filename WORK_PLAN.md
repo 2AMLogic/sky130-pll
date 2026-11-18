@@ -31,6 +31,7 @@ Issues currently being built (`loom:building`).
 
 - **#244**: sim: record divider Fmax boundaries across PVT for digital T1 characterization
 - **#523**: xschem pin migration: migrate sky130-pll to the fleet 3.4.7
+- **#526**: pdk-smoke CI job cannot pass: --record selftest runs with no $KLT_ARTIFACT_BROKER
 
 ## PRs Awaiting Review
 
@@ -84,7 +85,7 @@ _None._
 | Very important | 0 |
 | Important | 1 |
 | Ready (`loom:issue`) | 0 |
-| In Progress (`loom:building`) | 2 |
+| In Progress (`loom:building`) | 3 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
 | Curated | 17 |
