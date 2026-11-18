@@ -6,6 +6,11 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 - [2026-09](work_log/WORK_LOG_2026-09.md)
 
+### 2026-11-18
+
+- **PR #534**: ci: install pinned klt in the pdk-smoke job
+- **Issue #526** (closed): pdk-smoke CI job cannot pass: --record selftest runs with no $KLT_ARTIFACT_BROKER
+
 ### 2026-11-17
 
 - **PR #532**: signoff: delete README pin-literal restatements; guard rejects full sha256: literals in prose
