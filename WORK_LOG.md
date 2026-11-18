@@ -6,8 +6,26 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 - [2026-09](work_log/WORK_LOG_2026-09.md)
 
+### 2026-11-18
+
+- **PR #534**: ci: install pinned klt in the pdk-smoke job
+- **Issue #526** (closed): pdk-smoke CI job cannot pass: --record selftest runs with no $KLT_ARTIFACT_BROKER
+
 ### 2026-11-17
 
+- **PR #532**: signoff: delete README pin-literal restatements; guard rejects full sha256: literals in prose
+- **Issue #476** (closed): signoff: README item 8 quotes a stale pin literal, one re-pin behind the manifest
+- **PR #531**: ci: drop 'labeled' from the pull_request trigger and re-attest item 10
+- **Issue #487** (closed): ci: every Loom label write re-runs the full headless check suite, and races post-verdict.sh's exact-head CI gate
+- **PR #529**: ci: run pdk-smoke selftest without --record (no artifact broker on CI)
+- **PR #528**: records: add run-pdk-smoke to .github/labels.yml outside the Loom block
+- **Issue #527** (closed): run-pdk-smoke label exists only on the forge; record it outside the Loom block in .github/labels.yml
+- **PR #522**: docs(signoff): number the item-10 inventory edit as step 0 of the re-attestation chain
+- **Issue #520** (closed): docs(signoff): the item 10 chain should number the inventory edit as its own step for a NEW decision record
+- **PR #516**: sim/harness: refuse a PVT/MC/Fmax re-run with no --supersedes, as the lock-timing lane already does
+- **Issue #503** (closed): sim/harness: PVT/Fmax record writer accepts a re-run with no --supersedes; the lock-timing lane already guards it
+- **PR #519**: docs(signoff): document the item 10 re-attestation chain for decision-record edits
+- **Issue #491** (closed): docs(signoff): adding a decision-record index row requires the item 10 re-attestation chain — undocumented
 - **PR #517**: test: pin the lint drivers' non-git diagnostic, not just its exit code
 - **Issue #504** (closed): Derived-list lint suites do not independently pin the non-git guard (empty-set guard masks its removal)
 
