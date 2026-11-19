@@ -484,7 +484,8 @@ it was understood (measured 2026-11-14 on klt 0.9.2.dev1022).
   wall per job, a cold full grid is several hours. The 3-chunks packing is the
   default (`--chunk-size 4`); moduli whose slowest groups exceed the fleet's
   whole-job ceiling need `--chunk-size 2` (see the ceiling bullet below), so
-  their stage 1 is 39 jobs per modulus. Re-running the **same**
+  their stage 1 is 15 jobs per modulus (3 supplies x 5 chunks of at most 2),
+  not 9. Re-running the **same**
   command with the **same** `--klt-cache` directory reuses every collected
   report (`reusing collected report ...`) and re-submits only the groups that
   are missing or whose job failed, so the campaign accumulates across runs.
