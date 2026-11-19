@@ -273,6 +273,44 @@ class Chunking(unittest.TestCase):
         lows = [min(g.freqs) for g in groups]
         self.assertEqual(lows, sorted(lows))
 
+    def test_chunk_size_is_a_backend_setting(self):
+        cells = make_cells(ns=(25,), corners=("tt",))
+        grid = F.grid(SPEC.search)
+        reqs = [(cells[0], i, grid[i]) for i in F.coarse_indices(len(grid), SPEC.search.coarse_stride)]
+        with tempfile.TemporaryDirectory() as tmp:
+            backend = K.KltBatchBackend(spec=SPEC, manifest=MANIFEST, work_dir=Path(tmp),
+                                        klt="klt", runner=FakeKlt(), chunk_size=2,
+                                        log=lambda *_: None)
+            groups, index = backend._groups(reqs)
+        self.assertEqual([len(g.freqs) for g in groups], [2, 2, 2, 2, 2])
+        self.assertEqual(sorted(index), sorted((25, 1.8, grid[i]) for _, i, _ in reqs))
+
+    def test_cache_key_encodes_membership_so_packings_cannot_collide(self):
+        # #244 (2026-11-19): cache reuse trusts the group key blindly, so
+        # re-slicing the same frequencies with a different --chunk-size must
+        # not collide with a report collected under another packing -- the
+        # cached waveform's DUT k would be a different frequency and the
+        # verdict silent nonsense. Different packing -> different keys; the
+        # same packing re-derived -> identical keys.
+        cells = make_cells(ns=(25,), corners=("tt",))
+        grid = F.grid(SPEC.search)
+        reqs = [(cells[0], i, grid[i]) for i in F.coarse_indices(len(grid), SPEC.search.coarse_stride)]
+        with tempfile.TemporaryDirectory() as tmp:
+            def groups_for(chunk_size):
+                backend = K.KltBatchBackend(spec=SPEC, manifest=MANIFEST, work_dir=Path(tmp),
+                                            klt="klt", runner=FakeKlt(), chunk_size=chunk_size,
+                                            log=lambda *_: None)
+                return backend._groups(reqs)[0]
+            groups4 = groups_for(4)
+            groups2 = groups_for(2)
+            groups2_again = groups_for(2)
+        keys4 = [g.key for g in groups4]
+        keys2 = [g.key for g in groups2]
+        self.assertEqual(keys2, [g.key for g in groups2_again])
+        self.assertEqual(len(set(keys4)), len(keys4))
+        self.assertEqual(len(set(keys2)), len(keys2))
+        self.assertFalse(set(keys4) & set(keys2))
+
 
 class CampaignViaFakeKlt(unittest.TestCase):
     def test_finds_the_modeled_boundary_as_an_adjacent_bracket(self):
@@ -470,6 +508,22 @@ class CliBatchRoute(unittest.TestCase):
                                       "--no-write"])
         self.assertEqual(len(reached), 1, err)
         self.assertIn("submit layer reached", err)
+        self.assertEqual(reached[0]["chunk_size"], 4)
+
+    def test_chunk_size_flag_reaches_the_batch_backend(self):
+        _rc, err, reached = self._run(["divider-fmax", "--executor", "batch", "--moduli", "25",
+                                       "--corners", "tt", "--temps", "27", "--supply-tol", "0",
+                                       "--no-write", "--chunk-size", "2"])
+        self.assertEqual(len(reached), 1, err)
+        self.assertEqual(reached[0]["chunk_size"], 2)
+
+    def test_non_positive_chunk_size_is_refused_before_any_submit(self):
+        rc, err, reached = self._run(["divider-fmax", "--executor", "batch", "--moduli", "25",
+                                      "--corners", "tt", "--temps", "27", "--supply-tol", "0",
+                                      "--no-write", "--chunk-size", "0"])
+        self.assertEqual(reached, [])
+        self.assertEqual(rc, 1)
+        self.assertIn("--chunk-size must be >= 1", err)
         self.assertNotIn("implemented for", err)
         self.assertEqual(rc, 1)
 

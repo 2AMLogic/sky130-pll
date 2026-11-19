@@ -116,7 +116,18 @@ class Group:
 
     @property
     def key(self) -> str:
-        return f"n{self.n}_{self.supply_v:.2f}v_c{self.chunk}"
+        # The cache dir keys collected reports by group key, and reuse trusts
+        # the key blindly (`report.json` is_file()). The key therefore has to
+        # identify the group's MEMBERSHIP, not just its chunk index: changing
+        # `chunk_size` re-slices the same frequencies into different groups
+        # that would otherwise collide on `c<k>` and silently reuse a report
+        # whose waveform DUT `k` is a different frequency (measured 2026-11-19,
+        # #244: the N=25 campaign moved to --chunk-size 2 for the fleet's
+        # 3600 s whole-job ceiling). The hash is over the member frequencies
+        # only -- supply and N are already in the prefix.
+        members = ",".join(str(f) for f in sorted(self.freqs))
+        tag = report_mod.sha256_bytes(members.encode())[:8]
+        return f"n{self.n}_{self.supply_v:.2f}v_c{self.chunk}_{tag}"
 
     @property
     def excluded(self) -> list:
