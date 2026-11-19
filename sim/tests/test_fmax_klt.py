@@ -508,6 +508,8 @@ class CliBatchRoute(unittest.TestCase):
                                       "--no-write"])
         self.assertEqual(len(reached), 1, err)
         self.assertIn("submit layer reached", err)
+        self.assertNotIn("implemented for", err)
+        self.assertEqual(rc, 1)
         self.assertEqual(reached[0]["chunk_size"], 4)
 
     def test_chunk_size_flag_reaches_the_batch_backend(self):
@@ -524,8 +526,6 @@ class CliBatchRoute(unittest.TestCase):
         self.assertEqual(reached, [])
         self.assertEqual(rc, 1)
         self.assertIn("--chunk-size must be >= 1", err)
-        self.assertNotIn("implemented for", err)
-        self.assertEqual(rc, 1)
 
     def test_local_refusal_message_names_batch_as_the_spot_route(self):
         rc, err, _ = self._run(["divider-fmax", "--executor", "local", "--max-local-probes", "0",
