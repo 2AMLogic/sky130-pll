@@ -6,6 +6,10 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 - [2026-09](work_log/WORK_LOG_2026-09.md)
 
+### 2026-11-19
+
+- **PR #508**: sim: record divider Fmax boundaries for N=5 across the 45-point PVT matrix
+
 ### 2026-11-18
 
 - **PR #534**: ci: install pinned klt in the pdk-smoke job
