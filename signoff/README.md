@@ -302,13 +302,14 @@ figures; the numbers are in the records it points to.
 
 **Why the digital partition is not cited.** Item 8 adds, for a mixed-signal
 digital partition, "Fmax, area, and power across the corner set, not just
-functional pass/fail". The report's Fmax section now holds a committed Fmax
-record for modulus 4 (`sim/divider-fmax/records/20261116-065229-beef805.md`,
+functional pass/fail". The report's Fmax section now holds committed Fmax
+records for modulus 4 (`sim/divider-fmax/records/20261116-065229-beef805.md`,
 which supersedes the 2026-11-14 record via a resumed re-run that reproduced
-its per-cell table exactly), but the report still records `No evidence` for
-row 12 (power) and row 18
-(area). That alone decides it: the checklist requires Fmax, area and power
-across the corner set, and two of the three still have no evidence at all.
+its per-cell table exactly) and modulus 5
+(`sim/divider-fmax/records/20261118-194915-d81bccb.md`), but the report still
+records `No evidence` for row 12 (power) and row 18 (area). That alone decides
+it: the checklist requires Fmax, area and power across the corner set, and two
+of the three still have no evidence at all.
 So `8.digital` stays `unmet` / `no_evidence`. Citing the same envelope for
 it would produce a green row that the checklist text contradicts.
 
