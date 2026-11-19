@@ -485,6 +485,12 @@ it was understood (measured 2026-11-14 on klt 0.9.2.dev1022).
   command with the **same** `--klt-cache` directory reuses every collected
   report (`reusing collected report ...`) and re-submits only the groups that
   are missing or whose job failed, so the campaign accumulates across runs.
+  The group directory name carries a SHA-256 fingerprint of the netlist body
+  and the complete request (issue #541), so reuse only happens when both are
+  identical: a manifest/spec change -- netlist content, corner set, criterion
+  window, timeout, save mode -- keys a new directory and starts cold, leaving
+  the earlier generation's evidence in place. Directories from before the
+  fingerprint lack it and are always cold misses.
   A record is written only by the invocation in which every cell completes.
 - **The saved node set must stay narrow.** `build_body` emits
   `.save v(fbclk_0) ... v(fbclk_k)`, which is exactly what the reducer reads
