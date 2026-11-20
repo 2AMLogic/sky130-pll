@@ -910,9 +910,16 @@ class StaleArtifactTests(unittest.TestCase):
             stale.write_text("0 1\n")
 
             exc = subprocess.TimeoutExpired(cmd=["ngspice"], timeout=1, output="", stderr="")
+            unit = executor_mod.NgspiceUnit(
+                corner_id="x",
+                netlist_text="* patched\n.end\n",
+                work_dir=work,
+                completion_marker=runner.COMPLETION_MARKER,
+                timeout_s=1,
+            )
             with mock.patch.object(runner.subprocess, "run", side_effect=exc):
-                passed, reason, _log, _spice = runner._run_ngspice_and_judge(
-                    make_resolved_pdk(), work / "spiceinit-src", "* patched\n.end\n", "x", work, timeout_s=1
+                passed, reason = runner._run_ngspice_and_judge(
+                    make_resolved_pdk(), work / "spiceinit-src", unit
                 )
             self.assertFalse(passed)
             self.assertIn("timeout", reason)

@@ -395,38 +395,28 @@ def judge(
 def _run_ngspice_and_judge(
     pdk: ResolvedPdk,
     spiceinit: Path,
-    patched: str,
-    corner_id: str,
-    work_dir: Path,
-    completion_marker: str = COMPLETION_MARKER,
-    timeout_s: int = 300,
+    unit: executor_mod.NgspiceUnit,
     execute=None,
-) -> tuple[bool, str, Path, Path]:
-    """Execute one unit through `execute` (the local backend by default) and
-    apply the shared plumbing pass/fail criterion. Returns (passed, reason,
-    log_path, spice_path); shared by `run_point` and `run_mc_trial` since
+) -> tuple[bool, str]:
+    """Execute one already-prepared unit (`prepare_point` /
+    `prepare_mc_trial`) through `execute` (the local backend by default)
+    and apply the shared plumbing pass/fail criterion. Returns the judge's
+    `(passed, reason)` pair; shared by `run_point` and `run_mc_trial` since
     the run-and-judge step is identical for a PVT point and an MC trial --
     only how the netlist got patched (`patch_netlist` vs.
-    `patch_netlist_mc`) differs.
+    `patch_netlist_mc`) differs. The unit is handed to the executor as-is,
+    so what runs is exactly the object the caller prepared.
 
     `execute` is the executor seam (issue #146): a callable taking an
     `executor.NgspiceUnit` and returning an `executor.NgspiceOutcome`.
     `None` means "run it here", which is byte-for-byte what this function
     always did. Whatever ran it, `judge` below is the same code.
     """
-    work_dir.mkdir(parents=True, exist_ok=True)
-    unit = executor_mod.NgspiceUnit(
-        corner_id=corner_id,
-        netlist_text=patched,
-        work_dir=work_dir,
-        completion_marker=completion_marker,
-        timeout_s=timeout_s,
-    )
+    unit.work_dir.mkdir(parents=True, exist_ok=True)
     if execute is None:
         execute = executor_mod.LocalBackend(pdk=pdk, spiceinit=spiceinit).execute
     outcome = execute(unit)
-    passed, reason = judge(outcome, completion_marker, timeout_s)
-    return passed, reason, outcome.log_path, outcome.spice_path
+    return judge(outcome, unit.completion_marker, unit.timeout_s)
 
 
 def _analysis_specs(manifest: dict) -> tuple:
@@ -532,16 +522,7 @@ def run_point(
     spec, ac_spec, cp_spec = _analysis_specs(manifest)
     prefix = f"{point.corner_id}-"
     unit = prepare_point(manifest, netlist_text, point, work_dir)
-    passed, reason, _log_path, _spice_path = _run_ngspice_and_judge(
-        pdk,
-        spiceinit,
-        unit.netlist_text,
-        point.corner_id,
-        work_dir,
-        completion_marker=unit.completion_marker,
-        timeout_s=unit.timeout_s,
-        execute=execute,
-    )
+    passed, reason = _run_ngspice_and_judge(pdk, spiceinit, unit, execute=execute)
     measurements: tuple = ()
     if passed and spec is not None:
         measurements, passed, reason = _reduce_measurements(spec, point.supply_v, work_dir, prefix)
@@ -718,16 +699,7 @@ def run_mc_trial(
     spec = measure_mod.MeasureSpec.from_manifest(manifest)
     prefix = f"{trial.corner_id}-" if spec is not None else ""
     unit = prepare_mc_trial(manifest, netlist_text, trial, work_dir)
-    passed, reason, _log_path, _spice_path = _run_ngspice_and_judge(
-        pdk,
-        spiceinit,
-        unit.netlist_text,
-        trial.corner_id,
-        work_dir,
-        completion_marker=unit.completion_marker,
-        timeout_s=unit.timeout_s,
-        execute=execute,
-    )
+    passed, reason = _run_ngspice_and_judge(pdk, spiceinit, unit, execute=execute)
     measurements: tuple = ()
     if passed and spec is not None:
         measurements, passed, reason = _reduce_measurements(spec, trial.supply_v, work_dir, prefix)
