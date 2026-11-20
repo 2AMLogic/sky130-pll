@@ -2,6 +2,11 @@
 
 Sections moved byte-for-byte from [WORK_LOG.md](../WORK_LOG.md) by `loom-daemon work-docs archive`.
 
+### 2026-09-20
+
+- **PR #149**: sim/harness: add an `--executor {local,remote}` seam so ngspice units can run on klt's Spot fleet (#146)
+- **Issue #146** (closed): sim/harness: `--executor remote` — route ngspice units through klt's Spot backend (fleet adoption pilot)
+
 ### 2026-09-14
 
 - **Issue #140** (closed): Dedupe _render_provenance between render-record.py and render-pll-record.py
