@@ -49,7 +49,9 @@ def fake_put(files, repo_root):
         sha, size = E.sha256_file_with_size(path)
         if size:
             entries.append({"name": name, "sha256": sha, "size": size, "kind": "evidence",
-                            "uri": f"artifact:evidence/{sha}", "producer": {"tool": "fake"}})
+                            "uri": f"artifact:evidence/{sha}",
+                            "producer": {"tool": "klt", "version": "t",
+                                         "loom.repo": "o/r", "commit": None}})
     return {"schema_version": 1, "entries": entries}, []
 
 
