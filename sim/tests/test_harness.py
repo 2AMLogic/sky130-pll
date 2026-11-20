@@ -881,11 +881,18 @@ class TimeoutDecodingTests(unittest.TestCase):
         from unittest import mock
 
         exc = subprocess.TimeoutExpired(cmd=["ngspice", "-b", "x.spice"], timeout=1, output=stdout, stderr=stderr)
+        unit = runner.executor_mod.NgspiceUnit(
+            corner_id="x",
+            netlist_text="* patched\n.end\n",
+            work_dir=work_dir,
+            completion_marker=runner.COMPLETION_MARKER,
+            timeout_s=1,
+        )
         with mock.patch.object(runner.subprocess, "run", side_effect=exc):
-            passed, reason, log_path, _spice_path = runner._run_ngspice_and_judge(
-                make_resolved_pdk(), work_dir / ".spiceinit", "* patched\n.end\n", "x", work_dir, timeout_s=1
+            passed, reason = runner._run_ngspice_and_judge(
+                make_resolved_pdk(), work_dir / ".spiceinit", unit
             )
-        return passed, reason, log_path
+        return passed, reason, unit.log_path
 
     def test_bytes_stdout_and_str_stderr_does_not_crash(self):
         import tempfile
