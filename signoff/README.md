@@ -305,8 +305,9 @@ digital partition, "Fmax, area, and power across the corner set, not just
 functional pass/fail". The report's Fmax section now holds committed Fmax
 records for modulus 4 (`sim/divider-fmax/records/20261116-065229-beef805.md`,
 which supersedes the 2026-11-14 record via a resumed re-run that reproduced
-its per-cell table exactly) and modulus 5
-(`sim/divider-fmax/records/20261118-194915-d81bccb.md`), but the report still
+its per-cell table exactly), modulus 5
+(`sim/divider-fmax/records/20261118-194915-d81bccb.md`) and modulus 25
+(`sim/divider-fmax/records/20261120-113813-afcb8cb.md`), but the report still
 records `No evidence` for row 12 (power) and row 18 (area). That alone decides
 it: the checklist requires Fmax, area and power across the corner set, and two
 of the three still have no evidence at all.
