@@ -6,6 +6,13 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 - [2026-09](work_log/WORK_LOG_2026-09.md)
 
+### 2026-11-20
+
+- **Issue #541** (closed): sim/harness: the batch resume cache key does not fingerprint the request, so a manifest/spec change silently reuses stale reports
+- **PR #542**: fix: fingerprint the klt batch cache key with the body and request
+- **Issue #540** (closed): Reject the meg suffix before the evidence parser treats it as milli
+- **PR #544**: fix: reject meg-prefixed SPICE literals in evidence analysis
+
 ### 2026-11-19
 
 - **PR #539**: sim: add --chunk-size to the Fmax batch route and fingerprint cache keys by group membership
@@ -498,9 +505,4 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 - **Issue #150** (closed): sim/harness: purge_unit_artifacts is local-path-only, so the remote executor can read a stale waveform dump
 - **Issue #148** (closed): Commit a klt signoff block manifest so this block's T1 state is graded, not hand-read
 - **Issue #147** (closed): T1 item 11 (power delivery, structural): no klt erc supply spec or report in this repo
-
-### 2026-09-20
-
-- **PR #149**: sim/harness: add an `--executor {local,remote}` seam so ngspice units can run on klt's Spot fleet (#146)
-- **Issue #146** (closed): sim/harness: `--executor remote` — route ngspice units through klt's Spot backend (fleet adoption pilot)
 
