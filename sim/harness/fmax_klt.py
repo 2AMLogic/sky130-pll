@@ -98,6 +98,26 @@ def is_job_interruption(text: str) -> bool:
 NET_NAME = "body.spice"
 REQUEST_NAME = "request.json"
 
+#: Hex characters of the (body, request) fingerprint kept in a group cache
+#: directory's name (issue #541). 48 bits make an accidental collision
+#: between successive runs of one group negligible; the full digest is not
+#: needed because the directory pairs the fingerprint with the request it
+#: was computed from.
+FINGERPRINT_LEN = 12
+
+
+def group_fingerprint(body: str, request_text: str) -> str:
+    """Deterministic fingerprint of the (body, request) pair a group's cache
+    directory is keyed on (issue #541). Each input enters as its own SHA-256
+    digest, so the pair has exactly one encoding whatever the inputs contain:
+    two fixed-length hex strings concatenated and re-hashed. Any change to
+    the netlist body or to the serialized request -- corner set, criterion
+    window, timeout, save mode, stimulus coupling -- turns the key cold."""
+    return report_mod.sha256_bytes(
+        (report_mod.sha256_bytes(body.encode())
+         + report_mod.sha256_bytes(request_text.encode())).encode()
+    )
+
 
 class KltBatchError(RuntimeError):
     """The batch route could not produce evidence. Aborts the campaign; the
@@ -419,11 +439,7 @@ class KltBatchBackend:
     # -- one group ------------------------------------------------------- #
 
     def _run_group(self, group: Group, netlist_text: str, stage_no: int) -> dict:
-        gkey = f"s{stage_no}_{group.key}"
-        gdir = self.cache_dir / gkey
-        gdir.mkdir(parents=True, exist_ok=True)
         body, plans = build_body(netlist_text, self.manifest, self.spec, group)
-        (gdir / NET_NAME).write_text(body)
         stop = max(p.tran_stop_s for p in plans.values())
         crit = self.spec.criterion
         n_dut = len(group.freqs)
@@ -435,7 +451,20 @@ class KltBatchBackend:
             max_workers=max(1, len(group.needed)),
         )
         req["batch"]["poll_timeout_s"] = timeout_s + 3600
-        (gdir / REQUEST_NAME).write_text(json.dumps(req, indent=1, sort_keys=True) + "\n")
+        request_text = json.dumps(req, indent=1, sort_keys=True) + "\n"
+        # The cache key fingerprints everything the job ran: the body above
+        # and the complete request, poll timeout included (issue #541). A
+        # manifest/spec change that alters either therefore starts cold
+        # instead of reusing a report collected under the old inputs while
+        # stamping it with the freshly rebuilt body's hash. Directories from
+        # before the fingerprint (`s1_n25_1.80v_c0`) lack it, never match,
+        # and keep their collected evidence on disk.
+        gkey = (f"s{stage_no}_{group.key}_"
+                f"{group_fingerprint(body, request_text)[:FINGERPRINT_LEN]}")
+        gdir = self.cache_dir / gkey
+        gdir.mkdir(parents=True, exist_ok=True)
+        (gdir / NET_NAME).write_text(body)
+        (gdir / REQUEST_NAME).write_text(request_text)
         report_path = gdir / "report.json"
         report = None
         if report_path.is_file():
