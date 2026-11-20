@@ -134,10 +134,9 @@ def spice_literal(text: str) -> float:
     value, suffix = float(m.group(1)), m.group(2).lower()
     if not suffix:
         return value
-    scale = _SUFFIXES.get(suffix[0])
-    if scale is None:
+    if suffix.startswith("meg") or suffix[0] not in _SUFFIXES:
         raise AnalysisError(f"unknown SPICE suffix in {text!r}")
-    return value * scale
+    return value * _SUFFIXES[suffix[0]]
 
 
 def point_netlist(experiment: Path, record_id: str) -> Path:

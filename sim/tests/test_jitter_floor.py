@@ -234,6 +234,22 @@ class CommittedEvidenceTests(unittest.TestCase):
 
 
 class SpiceLiteralTests(unittest.TestCase):
+    def test_tran_card_preserves_nanoseconds_and_milli(self):
+        self.assertEqual(
+            analysis_common.tran_card("tran 2ns 2m", Path("example.spice")),
+            (2e-9, 2e-3),
+        )
+
+    def test_tran_card_rejects_the_meg_prefix(self):
+        for literal in ("2meg", "2MEG", "2MegHz"):
+            with (
+                self.subTest(literal=literal),
+                self.assertRaisesRegex(
+                    analysis_common.AnalysisError, "unknown SPICE suffix"
+                ),
+            ):
+                analysis_common.tran_card(f"tran 1n {literal}", Path("example.spice"))
+
     def test_parses_the_literals_the_committed_netlists_use(self):
         self.assertAlmostEqual(analysis_common.spice_literal("200p"), 200e-12)
         self.assertAlmostEqual(analysis_common.spice_literal("3.9170n"), 3.9170e-9)
