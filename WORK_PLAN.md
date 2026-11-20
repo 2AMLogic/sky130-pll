@@ -1,7 +1,7 @@
 # Work Plan
 
 <!-- guide:plan-body:start -->
-_Generated: 2026-11-20T03:51:45Z (snapshot; compare against live labels)_
+_Generated: 2026-11-20T18:15:00Z (snapshot; compare against live labels)_
 ## Operator Attention: Merge-Risk-Hold Pileup
 
 Judge-approved PRs under a hold (`loom:blocked` or `loom:operator`) — only a human merge decision is missing.
@@ -24,12 +24,13 @@ _None._
 
 Human-approved issues (`loom:issue`) ready for implementation — excluding held (`loom:blocked`/`loom:operator`/`loom:frozen`), `loom:building`, and issues closed by an open `loom:pr` PR (listed under Approved).
 
-- **#244**: sim: record divider Fmax boundaries across PVT for digital T1 characterization
+_None._
 
 ## In Progress
 
 Issues currently being built (`loom:building`).
 
+- **#244**: sim: record divider Fmax boundaries across PVT for digital T1 characterization
 - **#523**: xschem pin migration: migrate sky130-pll to the fleet 3.4.7
 
 ## PRs Awaiting Review
@@ -82,8 +83,8 @@ _None._
 | Operator merge-risk holds | 0 |
 | Very important | 0 |
 | Important | 1 |
-| Ready (`loom:issue`, net of holds/building/merge-pending) | 1 |
-| In Progress (`loom:building`) | 1 |
+| Ready (`loom:issue`, net of holds/building/merge-pending) | 0 |
+| In Progress (`loom:building`) | 2 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
 | Curated | 16 |

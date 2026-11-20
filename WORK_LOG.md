@@ -8,6 +8,7 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 ### 2026-11-20
 
+- **PR #546**: sim: record divider Fmax boundaries for N=25 across the 45-point PVT matrix
 - **Issue #541** (closed): sim/harness: the batch resume cache key does not fingerprint the request, so a manifest/spec change silently reuses stale reports
 - **PR #542**: fix: fingerprint the klt batch cache key with the body and request
 - **Issue #540** (closed): Reject the meg suffix before the evidence parser treats it as milli
