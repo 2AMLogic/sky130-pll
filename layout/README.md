@@ -5,7 +5,7 @@ Two flows live here, both headless and repeatable, both driven by
 
 | Directory | What it is | Issue |
 | --- | --- | --- |
-| [`pll/`](pll/) | **The PLL layout.** A device-level layout of the closed-loop PLL schematic, drawn from `design/top/netlist/top.spice` — start at `pll/README.md`, then the current record's `record.md` (`pll/reports/LATEST`). **Newest record** `20261106-075813-16557e3`, the buffered top — deliberately not `LATEST` yet, see `pll/README.md` | #16 |
+| [`pll/`](pll/) | **The PLL layout.** A device-level layout of the closed-loop PLL schematic, drawn from `design/top/netlist/top.spice` — start at `pll/README.md`, then the current record's `record.md` (`pll/reports/LATEST`). **Newest record** `20261121-015858-147252b9`, the routing-lever measurement top (issue #548) — deliberately not `LATEST` yet, see `pll/README.md` | #16 |
 | [`pll/erc-reports/`](pll/erc-reports/) | **`klt erc` supply-spec evidence** against that same layout — the structural power-delivery read T1 item 11 is graded from, driven by [`pll/erc-supply-spec.json`](pll/erc-supply-spec.json) | #147 |
 | `trivial-cell/` | The DRC/LVS flow's own gating proof on a trivial known-good cell, plus its negative controls | #2 |
 

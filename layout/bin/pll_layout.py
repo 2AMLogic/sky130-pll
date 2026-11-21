@@ -137,6 +137,69 @@ BLOCK_TARGET_WIDTH_UM = 220.0
 ROUTING_LAYER_ROLE = "metal2"
 ROUTING_WIDTH_UM = 0.3
 
+#: Routing levers the *routed spot-check build* requests (issue #548). Every
+#: one of these is a shipped `klt gen-compose` / `klt gen` capability this
+#: generator never asked for until issue #548 measured what they buy; the
+#: unrouted *shipped* build is untouched by all of them (see `Builder` for
+#: where each one enters the request).
+#:
+#: The second plane for cross-block/self-net fallback legs: one metal role
+#: above the met1 primary, so a same-block leg that would short across
+#: another of its own block's pads on met1 retries on met2 instead
+#: (`routing.cross_block_layer_role`, klayout-tools#1168). Per-net planes for
+#: the supplies (`connectivity[].layer_role`, klayout-tools#1655) so the
+#: rails stop competing with signals for the one met1 plane; the fanout
+#: signals get their own plane one higher still. `interior_channel_um` on
+#: `mos_array` (klayout-tools#1531, closed) reserves navigable row/column
+#: gap bands the router is allowed to pass through
+#: (`navigable_regions`, subtracted from a block's obstacle bbox per
+#: klayout-tools#1835) -- sized for one routing width plus the same-layer
+#: spacing either side of it.
+CROSS_BLOCK_LAYER_ROLE = "metal3"
+INTERIOR_CHANNEL_UM = 1.0
+SUPPLY_LAYER_ROLE = "metal3"
+FANOUT_LAYER_ROLE = "metal4"
+#: How many of the highest-pin-count non-supply nets get a per-net plane.
+#: #18 warns against exhaustive hand assignment of every declared net; this
+#: stays a handful by construction (the set is derived from the plan at
+#: build time, never typed in).
+FANOUT_NET_LIMIT = 4
+
+#: The selectable lever names (`--route-levers`), in the order issue #548
+#: applied and measured them. ``all`` (the default) and ``none`` are
+#: convenience spellings the CLI expands.
+ROUTE_LEVER_NAMES = (
+    "cross-block-plane",
+    "interior-channel",
+    "supply-plane",
+    "fanout-plane",
+)
+
+
+def parse_route_levers(spec: str) -> frozenset[str]:
+    """Expand a `--route-levers` argument into a set of lever names.
+
+    ``all`` (an empty argument means the same) selects every lever in
+    `ROUTE_LEVER_NAMES`; ``none`` selects nothing. Anything else is a
+    comma-separated subset, so the measurement ladder in issue #548 could
+    run one lever at a time cumulatively; an unknown name is a `PlanError`
+    rather than a silently dropped no-op (the same convention `klt` itself
+    applies to unrecognized request keys).
+    """
+    text = spec.strip()
+    if text in ("all", ""):
+        return frozenset(ROUTE_LEVER_NAMES)
+    if text == "none":
+        return frozenset()
+    levers = {name.strip() for name in text.split(",") if name.strip()}
+    unknown = levers - set(ROUTE_LEVER_NAMES)
+    if unknown:
+        raise PlanError(
+            f"unknown route lever(s) {sorted(unknown)} -- allowed: "
+            f"{list(ROUTE_LEVER_NAMES)}, all, none"
+        )
+    return frozenset(levers)
+
 
 class PlanError(Exception):
     """The schematic netlist contains something this builder cannot draw."""
@@ -370,18 +433,24 @@ def plan_block(block_name: str, cards: list[dict[str, Any]]) -> dict[str, Any]:
 
     for (flavor, w_um, l_um), members in sorted(mos.items()):
         # Issue #18: `factor_rows_cols`'s near-square grid is the base shape
-        # (kept for the reasons below), but a single opaque `mos_array` call
-        # reserves *no* channel between its own rows -- `gen-compose` sees
-        # one solid bbox regardless of `rows`/`cols`, and `klt gen mos_array`
-        # has no parameter to request internal channel space (confirmed by
-        # reading its implementation directly: `w_um`/`l_um`/`rows`/`cols`/
-        # `dummy`/`flavor`/`topology`/`gate_contact`/`finger_topology`/
-        # `gate_pad_clearance_um`/`draw_well_tap`/`add_guard_ring`/
-        # `ring_gap_side`/`ring_gap_um`/`ring_gap_offset_um`/
-        # `ring_padding_um` is `_mos_array_layout`'s complete parameter set --
-        # none of it a row/col pitch or channel-width knob). That gap is
-        # filed upstream as klayout-tools#1531; there is no workaround
-        # *inside* a single `klt gen` call.
+        # (kept for the reasons below). Historically a single opaque
+        # `mos_array` call reserved *no* channel between its own rows --
+        # `gen-compose` saw one solid bbox regardless of `rows`/`cols`, and
+        # reading `_mos_array_layout`'s parameter surface directly confirmed
+        # no channel knob existed, which is what was filed upstream as
+        # klayout-tools#1531. That gap has since been closed upstream: the
+        # pinned `klt` reserves navigable interior gap bands via
+        # `mos_array`'s `interior_channel_um` (reported back as
+        # `navigable_regions`, which `gen-compose` subtracts from the
+        # block's obstacle bbox, klayout-tools#1835), and the routed
+        # spot-check build now requests exactly that -- see
+        # `Builder.gen_group`. The split below is therefore no longer the
+        # only interior-space lever, but it is kept: it is already shipped
+        # and measured, the parity guard costs no device its matched
+        # partner, and it buys `GROUP_SPACING_UM` of *placement* space
+        # between independently placed blocks -- a different resource than
+        # the channel the generator now reserves inside one call, and one
+        # the routed build gets on top of (not instead of) the channel.
         #
         # The lever this flow's own floorplan requests *do* control is how
         # many devices go into one `klt gen` call in the first place --
@@ -554,6 +623,105 @@ def lvs_reference_text(netlist_text: str) -> str:
     return "\n".join(lines) + "\n"
 
 
+def supply_nets(netlist_text: str, top_subckt: str = "top") -> list[str]:
+    """The top level's own `*.iopin` markers, in declaration order.
+
+    xschem writes the top-level schematic's supply pins as `*.iopin <name>`
+    comment markers directly under its (doubly commented) `.subckt` header --
+    `VDD`/`GND` on this design. That is an *authored* declaration, so the
+    supply-plane lever keys on it rather than on a typed-in net list: a
+    renamed or added supply follows the schematic, not this file. Only the
+    top's own markers are read -- the scan stops at the first uncommented
+    child `.subckt`, so a block that also happens to name a net `VDD` does
+    not extend the set (the child scopes' own `*.iopin` markers, if any,
+    belong to their cells, not to the composition's rails).
+    """
+    supplies: list[str] = []
+    for line in netlist_text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith(".subckt"):
+            name = stripped.split()[1:2]
+            if name and name[0] != top_subckt:
+                # The first uncommented child `.subckt` -- everything past
+                # the top's own header block belongs to a block's scope.
+                break
+        if stripped.startswith("*.iopin"):
+            tokens = stripped.split()
+            if len(tokens) >= 2:
+                if tokens[1] not in supplies:
+                    supplies.append(tokens[1])
+    return supplies
+
+
+def with_supply_plane(
+    connectivity: list[dict[str, Any]],
+    supplies: list[str],
+    layer_role: str,
+) -> list[dict[str, Any]]:
+    """Supplies first and on their own plane; every other net unchanged.
+
+    `gen-compose` routes `connectivity[]` in declaration order, so moving
+    the supply entries to the front means the rails claim their plane
+    before any signal net competes for it. Each supply entry additionally
+    carries `connectivity[].layer_role` (klayout-tools#1655), taking it off
+    the primary `routing.layer_role` plane entirely. Non-supply entries
+    keep their original (sorted) order and fields, byte for byte.
+    """
+    supply_entries = [
+        {**entry, "layer_role": layer_role}
+        for entry in connectivity
+        if entry["net"] in supplies
+    ]
+    supply_entries.sort(key=lambda entry: supplies.index(entry["net"]))
+    others = [entry for entry in connectivity if entry["net"] not in supplies]
+    return supply_entries + others
+
+
+def top_fanout_nets(
+    connectivity_by_block: dict[str, list[dict[str, Any]]],
+    supplies: list[str],
+    limit: int,
+) -> list[str]:
+    """The highest-pin-count non-supply nets, design-wide, deterministically.
+
+    Pin counts are summed across blocks (a net declared in two blocks with
+    four pins each has eight), supplies are excluded (they have their own
+    lever), and ties break alphabetically so the set is a pure function of
+    the plan. Capped at `limit` -- issue #18's warning against exhaustive
+    hand assignment of every declared net is why the cap exists; the cut is
+    derived, never curated per net.
+    """
+    pins: dict[str, int] = {}
+    for connectivity in connectivity_by_block.values():
+        for entry in connectivity:
+            if entry["net"] in supplies:
+                continue
+            pins[entry["net"]] = pins.get(entry["net"], 0) + len(entry["pins"])
+    ranked = sorted(pins.items(), key=lambda item: (-item[1], item[0]))
+    return [net for net, _ in ranked[:limit]]
+
+
+def with_fanout_plane(
+    connectivity: list[dict[str, Any]],
+    fanout_nets: list[str],
+    layer_role: str,
+) -> list[dict[str, Any]]:
+    """Give the selected high-fanout nets a per-net plane, order untouched.
+
+    Same mechanism as `with_supply_plane` (`connectivity[].layer_role`,
+    klayout-tools#1655) minus the reordering: these are signal nets, and the
+    supply lever owns the "who routes first" question.
+    """
+    if not fanout_nets:
+        return connectivity
+    return [
+        {**entry, "layer_role": layer_role}
+        if entry["net"] in fanout_nets
+        else entry
+        for entry in connectivity
+    ]
+
+
 # --- 2. Floorplanning (pure, PDK-free) --------------------------------------
 
 
@@ -585,11 +753,25 @@ def shelf_pack(
 
 
 class Builder:
-    def __init__(self, klt: str, pdk: str, out_dir: Path, route: bool) -> None:
+    def __init__(
+        self,
+        klt: str,
+        pdk: str,
+        out_dir: Path,
+        route: bool,
+        route_levers: frozenset[str] = frozenset(),
+    ) -> None:
         self.klt = klt
         self.pdk = pdk
         self.out_dir = out_dir
         self.route = route
+        #: Which issue-#548 routing levers the *routed* build requests. The
+        #: shipped (`--no-route`) build is unaffected by these no matter
+        #: what they name: the interior-channel lever is gated on
+        #: `self.route` inside `gen_group`, and every other lever only
+        #: touches request fields the unrouted build never emits
+        #: (`connectivity[]`/`routing`).
+        self.route_levers = route_levers
         self.cells_cache: dict[str, dict[str, Any]] = {}
 
     def _run(self, args: list[str], *, ok_returncodes: tuple[int, ...] = (0,)) -> str:
@@ -611,8 +793,29 @@ class Builder:
     # -- primitives ---------------------------------------------------------
 
     def gen_group(self, group: dict[str, Any]) -> dict[str, Any]:
-        """Draw one `klt gen` group (mos_array / res_array)."""
+        """Draw one `klt gen` group (mos_array / res_array).
+
+        With the interior-channel lever on, a multi-unit `mos_array` group
+        additionally reserves `interior_channel_um` (klayout-tools#1531,
+        closed) of navigable gap between its own rows/columns, which the
+        generator reports back as `navigable_regions` and `gen-compose`
+        subtracts from the block's obstacle bbox (klayout-tools#1835) --
+        the router may then cross the array through its own interior bands
+        instead of treating the whole footprint as opaque. Gated on
+        `self.route` so the *shipped* build's `klt gen` calls (and therefore
+        its GDS bytes, bboxes and DRC-clean evidence) stay exactly what
+        they were before issue #548; a `rows == cols == 1` group has no
+        interior gap bands at all, so the param is not added there.
+        """
         cell = group["id"]
+        params = group["params"]
+        if (
+            self.route
+            and "interior-channel" in self.route_levers
+            and group["kind"] == "mos_array"
+            and (params["rows"] > 1 or params["cols"] > 1)
+        ):
+            params = {**params, "interior_channel_um": INTERIOR_CHANNEL_UM}
         report = json.loads(
             self._run(
                 [
@@ -621,7 +824,7 @@ class Builder:
                     "--pdk",
                     self.pdk,
                     "--params",
-                    json.dumps(group["params"]),
+                    json.dumps(params),
                     "--cell-name",
                     cell,
                     "-o",
@@ -775,10 +978,17 @@ class Builder:
         # from. Friction filed upstream -- layout/pll/README.md.
         if connectivity and self.route:
             request["connectivity"] = connectivity
-            request["routing"] = {
+            routing: dict[str, Any] = {
                 "layer_role": ROUTING_LAYER_ROLE,
                 "width_um": ROUTING_WIDTH_UM,
             }
+            if "cross-block-plane" in self.route_levers:
+                # A second, higher plane a same-block leg falls back to when
+                # it would short across another of its own block's pads on
+                # the primary plane (klayout-tools#1168) -- one via2 hop
+                # above the met1 primary on sky130.
+                routing["cross_block_layer_role"] = CROSS_BLOCK_LAYER_ROLE
+            request["routing"] = routing
         path = self._write_json(request_name, request)
         # Exit 3 is `gen-compose`'s documented *partial success*: every block
         # placed, some declared net left unrouted. That is the expected
@@ -822,10 +1032,54 @@ def block_connectivity(block: dict[str, Any]) -> list[dict[str, Any]]:
     ]
 
 
-def build(plan: dict[str, Any], builder: Builder) -> dict[str, Any]:
-    """Draw and compose the whole plan; return a build summary."""
+def build(
+    plan: dict[str, Any],
+    builder: Builder,
+    supplies: list[str] | None = None,
+) -> dict[str, Any]:
+    """Draw and compose the whole plan; return a build summary.
+
+    `supplies` is the schematic's own `*.iopin` declaration (see
+    `supply_nets`), passed in by `main` rather than stored on the plan so
+    `plan.json` -- committed evidence -- keeps exactly the shape it had
+    before issue #548's levers.
+    """
     summary: dict[str, Any] = {"blocks": [], "top": None}
     block_reports: list[dict[str, Any]] = []
+
+    # Issue #548's per-net levers, derived once for the whole design (the
+    # fanout ranking sums pins across blocks, so it cannot be per-block).
+    supplies = supplies or []
+    connectivity_by_block = {
+        block["name"]: block_connectivity(block) for block in plan["blocks"]
+    }
+    fanout_nets: list[str] = []
+    if builder.route and "fanout-plane" in builder.route_levers:
+        fanout_nets = top_fanout_nets(
+            connectivity_by_block, supplies, FANOUT_NET_LIMIT
+        )
+    if builder.route and builder.route_levers:
+        summary["routing_levers"] = {
+            "levers": sorted(builder.route_levers),
+            "cross_block_layer_role": (
+                CROSS_BLOCK_LAYER_ROLE
+                if "cross-block-plane" in builder.route_levers
+                else None
+            ),
+            "interior_channel_um": (
+                INTERIOR_CHANNEL_UM
+                if "interior-channel" in builder.route_levers
+                else None
+            ),
+            "supply_layer_role": (
+                SUPPLY_LAYER_ROLE if "supply-plane" in builder.route_levers else None
+            ),
+            "supply_nets": supplies if "supply-plane" in builder.route_levers else [],
+            "fanout_layer_role": (
+                FANOUT_LAYER_ROLE if "fanout-plane" in builder.route_levers else None
+            ),
+            "fanout_nets": fanout_nets,
+        }
 
     for block in plan["blocks"]:
         reports: dict[str, dict[str, Any]] = {}
@@ -871,7 +1125,15 @@ def build(plan: dict[str, Any], builder: Builder) -> dict[str, Any]:
             {"id": group["id"], "generator_report": reports[group["id"]]}
             for group in block["groups"]
         ]
-        connectivity = block_connectivity(block)
+        connectivity = connectivity_by_block[block["name"]]
+        if builder.route and "supply-plane" in builder.route_levers:
+            connectivity = with_supply_plane(
+                connectivity, supplies, SUPPLY_LAYER_ROLE
+            )
+        if fanout_nets:
+            connectivity = with_fanout_plane(
+                connectivity, fanout_nets, FANOUT_LAYER_ROLE
+            )
         report = builder.compose(
             f"compose.{block['name']}.request.json",
             blocks_field,
@@ -970,6 +1232,18 @@ def main(argv: list[str] | None = None) -> int:
         help="record the declared connectivity but do not run gen-compose's router",
     )
     ap.add_argument(
+        "--route-levers",
+        default="all",
+        metavar="LEVERS",
+        help=(
+            "which routing levers the routed build requests from klt, as a "
+            "comma-separated subset of cross-block-plane, interior-channel, "
+            "supply-plane, fanout-plane (issue #548), or 'all' (default) or "
+            "'none'. The unrouted (--no-route) build is unaffected by this "
+            "flag whichever way it is spelled"
+        ),
+    )
+    ap.add_argument(
         "--print-blocks",
         action="store_true",
         help=(
@@ -1004,8 +1278,16 @@ def main(argv: list[str] | None = None) -> int:
     if args.plan_only:
         return 0
 
-    builder = Builder(args.klt, args.pdk, args.out_dir, route=not args.no_route)
-    summary = build(plan, builder)
+    builder = Builder(
+        args.klt,
+        args.pdk,
+        args.out_dir,
+        route=not args.no_route,
+        route_levers=parse_route_levers(args.route_levers),
+    )
+    summary = build(
+        plan, builder, supplies=supply_nets(netlist_text, plan["top_subckt"])
+    )
     summary["totals"] = plan_totals(plan)
     (args.out_dir / "build.json").write_text(json.dumps(summary, indent=2) + "\n")
     print(json.dumps(summary["totals"], indent=2))
