@@ -837,15 +837,15 @@ def _coord(spec: CpSpec, vdd: float, vi: int, pj: int) -> CpCoordinate:
     return CpCoordinate(vi, f, f * vdd, pj, spec.phase_offsets_s[pj])
 
 
-def directional_plateau(times, current, up, dn, spec: CpSpec, vdd: float, direction: str) -> PlateauResult:
+def directional_plateau(times, current, intervals, spec: CpSpec, direction: str) -> PlateauResult:
     """Plateau current of the `UP` or `DN` branch from exclusive pulses.
 
     Uses the middle half of each complete exclusive pulse that starts inside
-    the integration window. UP is expected positive, DN negative.
+    the integration window. UP is expected positive, DN negative. `intervals`
+    is the precomputed gate-state classification of the same dump.
     """
     if direction not in ("UP", "DN"):
         raise CpError(f"direction must be 'UP' or 'DN', got {direction!r}")
-    intervals = active_intervals(times, up, dn, spec, vdd)
     if direction == "UP":
         runs = _runs(intervals, lambda u, d: u and not d)
     else:
@@ -866,8 +866,7 @@ def directional_plateau(times, current, up, dn, spec: CpSpec, vdd: float, direct
     )
 
 
-def _min_width(times, up, dn, spec, vdd, which: str) -> float | None:
-    intervals = active_intervals(times, up, dn, spec, vdd)
+def _min_width(times, intervals, spec, which: str) -> float | None:
     pick = (lambda u, d: u) if which == "UP" else (lambda u, d: d)
     pulses = _pulses_in_window(times, _runs(intervals, pick), spec.window_start_s, spec.window_end_s)
     return min((b - a for a, b in pulses), default=None)
@@ -899,15 +898,16 @@ def reduce_cp_point(spec: CpSpec, vdd: float, vi: int, pj: int, text: str) -> Cp
         drift = cycles[-1].qnet_c - cycles[0].qnet_c
         settled = abs(drift) <= spec.settle_tolerance * denom if denom > _TINY else abs(drift) <= _TINY
         plateau = None
+        intervals = active_intervals(times, up, dn, spec, vdd)
         if pj == spec.offset_index(spec.plateau_offset_s):
-            plateau = directional_plateau(times, cur, up, dn, spec, vdd, "UP")
+            plateau = directional_plateau(times, cur, intervals, spec, "UP")
         elif pj == spec.offset_index(-spec.plateau_offset_s):
-            plateau = directional_plateau(times, cur, up, dn, spec, vdd, "DN")
+            plateau = directional_plateau(times, cur, intervals, spec, "DN")
         return CpPhaseResult(
             coord, True, "", tuple(cycles), qnet, qstd, qplus, qminus, asym, asym_reason,
             drift, settled,
-            _min_width(times, up, dn, spec, vdd, "UP"),
-            _min_width(times, up, dn, spec, vdd, "DN"),
+            _min_width(times, intervals, spec, "UP"),
+            _min_width(times, intervals, spec, "DN"),
             plateau,
         )
     except MeasureError as exc:
