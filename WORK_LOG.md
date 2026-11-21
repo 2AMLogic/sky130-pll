@@ -6,8 +6,17 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 - [2026-09](work_log/WORK_LOG_2026-09.md)
 
+### 2026-11-21
+
+- **Issue #553** (closed): gitignore the daemon's account-ranking runtime files
+- **PR #556**: chore: ignore loom-daemon account-ranking runtime file
+
 ### 2026-11-20
 
+- **Issue #550** (closed): Use the CI manifest validator before installing stored evidence
+- **PR #552**: sim: validate stored-evidence manifests with the CI checker's schema
+- **Issue #549** (closed): Pass the prepared NgspiceUnit directly to the PVT and Monte Carlo executor
+- **PR #555**: refactor: hand the prepared NgspiceUnit to _run_ngspice_and_judge
 - **PR #546**: sim: record divider Fmax boundaries for N=25 across the 45-point PVT matrix
 - **Issue #541** (closed): sim/harness: the batch resume cache key does not fingerprint the request, so a manifest/spec change silently reuses stale reports
 - **PR #542**: fix: fingerprint the klt batch cache key with the body and request
