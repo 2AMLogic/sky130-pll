@@ -360,5 +360,113 @@ class LvsReferenceTextTests(unittest.TestCase):
         self.assertNotIn("**.subckt top", out)
 
 
+class RouteLeverTests(unittest.TestCase):
+    """Issue #548's lever-selection pure half: what the routed build asks
+    for is derived (supplies from the schematic's own iopin markers, the
+    fanout set from the plan's pin counts), never typed in, and the
+    --route-levers spelling is validated rather than silently dropped."""
+
+    def test_supplies_come_from_the_top_levels_own_iopin_markers(self):
+        self.assertEqual(
+            pll_layout.supply_nets(NETLIST.read_text()), ["VDD", "GND"]
+        )
+
+    def test_child_scope_iopin_markers_do_not_extend_the_supply_set(self):
+        text = (
+            "**.subckt top VDD GND IN OUT\n"
+            "*.iopin VDD\n"
+            "*.iopin GND\n"
+            "XA VDD GND IN OUT block\n"
+            "**.ends\n"
+            "\n"
+            ".subckt block VDD GND IN OUT\n"
+            "*.iopin VDD\n"
+            "*.iopin GND\n"
+            "XM1 IN OUT VDD GND sky130_fd_pr__nfet_01v8 W=1 L=0.15\n"
+            ".ends\n"
+        )
+        self.assertEqual(pll_layout.supply_nets(text), ["VDD", "GND"])
+
+    def test_lever_spec_all_none_and_subsets(self):
+        self.assertEqual(
+            pll_layout.parse_route_levers("all"),
+            frozenset(pll_layout.ROUTE_LEVER_NAMES),
+        )
+        self.assertEqual(
+            pll_layout.parse_route_levers(""),  # the flow's default spelling
+            frozenset(pll_layout.ROUTE_LEVER_NAMES),
+        )
+        self.assertEqual(pll_layout.parse_route_levers("none"), frozenset())
+        self.assertEqual(
+            pll_layout.parse_route_levers("cross-block-plane, supply-plane"),
+            frozenset({"cross-block-plane", "supply-plane"}),
+        )
+
+    def test_unknown_lever_name_is_refused(self):
+        with self.assertRaises(pll_layout.PlanError):
+            pll_layout.parse_route_levers("cross-block-plane,warp-drive")
+
+    def test_supply_plane_puts_supplies_first_on_their_own_layer(self):
+        connectivity = [
+            {"net": "UP", "pins": [{"block": "a", "port": "p"}] * 9},
+            {"net": "GND", "pins": [{"block": "a", "port": "p"}] * 2},
+            {"net": "VCTRL", "pins": [{"block": "a", "port": "p"}] * 8},
+            {"net": "VDD", "pins": [{"block": "a", "port": "p"}] * 3},
+        ]
+        out = pll_layout.with_supply_plane(
+            connectivity, ["VDD", "GND"], "metal3"
+        )
+        self.assertEqual([e["net"] for e in out], ["VDD", "GND", "UP", "VCTRL"])
+        self.assertEqual(out[0]["layer_role"], "metal3")
+        self.assertEqual(out[1]["layer_role"], "metal3")
+        self.assertNotIn("layer_role", out[2])
+        self.assertNotIn("layer_role", out[3])
+        # pin lists are carried, not rebuilt
+        self.assertEqual(out[0]["pins"], connectivity[3]["pins"])
+
+    def test_fanout_selection_sums_pins_across_blocks_and_skips_supplies(self):
+        by_block = {
+            "b1": [
+                {"net": "UP", "pins": [1] * 9},
+                {"net": "VDD", "pins": [1] * 20},
+            ],
+            "b2": [
+                {"net": "VCTRL", "pins": [1] * 4},
+                {"net": "DN", "pins": [1] * 8},
+            ],
+        }
+        # VDD has the most pins overall but is a supply: excluded
+        self.assertEqual(
+            pll_layout.top_fanout_nets(by_block, ["VDD", "GND"], 2),
+            ["UP", "DN"],
+        )
+
+    def test_fanout_plane_tags_only_the_selected_nets(self):
+        connectivity = [
+            {"net": "UP", "pins": []},
+            {"net": "DN", "pins": []},
+            {"net": "VBP", "pins": []},
+        ]
+        out = pll_layout.with_fanout_plane(connectivity, ["UP", "VBP"], "metal4")
+        self.assertEqual(out[0]["layer_role"], "metal4")
+        self.assertNotIn("layer_role", out[1])
+        self.assertEqual(out[2]["layer_role"], "metal4")
+        # order is untouched -- the supply lever owns ordering
+        self.assertEqual([e["net"] for e in out], ["UP", "DN", "VBP"])
+
+    def test_real_plan_fanout_top4_matches_the_recorded_ladder(self):
+        plan = pll_layout.build_plan(NETLIST.read_text())
+        by_block = {
+            block["name"]: pll_layout.block_connectivity(block)
+            for block in plan["blocks"]
+        }
+        self.assertEqual(
+            pll_layout.top_fanout_nets(
+                by_block, ["VDD", "GND"], pll_layout.FANOUT_NET_LIMIT
+            ),
+            ["UP", "DN", "VBP", "VCTRL"],
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -1,6 +1,6 @@
 # PLL characterization report
 
-Generated: 2026-11-20T12:20:21Z by `measurements/aggregate.py` -- this file is a **derived rollup**, not append-only evidence itself; re-run the aggregator to refresh it (see `measurements/README.md`).
+Generated: 2026-11-21T02:17:42Z by `measurements/aggregate.py` -- this file is a **derived rollup**, not append-only evidence itself; re-run the aggregator to refresh it (see `measurements/README.md`).
 
 Rolls up every `sim/*/records/*.md` and `layout/*/reports/*/record.md` evidence record into one table, keyed by `spec/target-spec.md` row number. **A populated row is not a passing row.** Rows 0, 1, 9, 19 and 20 of `spec/target-spec.md` are ratified (`DR-001`/`DR-002`/`DR-003`/`DR-006`); every other numeric row an evidence record appears against is still DRAFT. For a DRAFT row, a record listed against it is *evidence bearing on that row* -- the measured input a future decision record would argue the row from -- never a verdict on it, and never a substitute for the ratification act itself. For a **ratified** row the record's verdict does grade against a binding bound, and a FAIL there is a recorded miss against the spec (never a reason to relax it -- see `CLAUDE.md`). Read each record before quoting it either way: its own `Verdict` column here is the record's overall pass/fail, which for several campaigns means "the harness ran and recorded what happened", including recorded non-lock.
 
@@ -130,9 +130,9 @@ Rolled up from `sim/*/records/*.md` Fmax records (`### Fmax boundary per cell` t
 
 ## Scan summary
 
-- Evidence records scanned: 101
+- Evidence records scanned: 102
 - Current (non-superseded): 78
-- Superseded (excluded from the tables above; still retained, append-only, under `sim/`/`layout/`): 23
+- Superseded (excluded from the tables above; still retained, append-only, under `sim/`/`layout/`): 24
 - Spec-row citation stated by the record itself: 69
 - Spec-row citation resolved from the experiment's own declaration (`sim/<slug>/testbench/tb.json` / `layout/<block>/spec-rows.json`) because the record predates the convention and is append-only: 9
 - **Current records with no spec-row declaration at all: 0**
