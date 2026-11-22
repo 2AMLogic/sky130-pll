@@ -36,9 +36,7 @@ from __future__ import annotations
 import argparse
 import json
 import shutil
-import subprocess
 import sys
-from datetime import datetime, timezone
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -48,7 +46,7 @@ if str(HERE.parent) not in sys.path:  # `harness` is a sibling package, not inst
     sys.path.insert(0, str(HERE.parent))
 
 import reduce as R  # noqa: E402
-from harness import report as report_mod  # noqa: E402  (shared sha256 helpers)
+from harness import report as report_mod  # noqa: E402  (shared sha256 + git provenance helpers)
 
 BLOCKS = ["vco", "divider-n4", "divider-n64", "pfd-cp"]
 F_REF_OUT_HZ = 100e6  # the gf180-pll reference point for row 12
@@ -343,10 +341,6 @@ def at_250(all_data: dict, keys: list) -> list:
 # --------------------------------------------------------------------------- #
 
 
-def git(*args) -> str:
-    return subprocess.run(["git", *args], cwd=REPO_ROOT, capture_output=True, text=True).stdout.strip()
-
-
 def render(record_id: str, reports: dict, all_data: dict, stages_docs: dict,
            supersedes: str | None, subset_reason: str | None) -> str:
     keys_by_block = {b: sorted(all_data[b]) for b in BLOCKS}
@@ -369,6 +363,14 @@ def render(record_id: str, reports: dict, all_data: dict, stages_docs: dict,
               for b in BLOCKS}
     prov = {b: (reports[b].get("provenance") or {}) for b in BLOCKS}
     klt_versions = sorted({str(prov[b].get("klt_version")) for b in BLOCKS})
+    git = report_mod.git_info(
+        REPO_ROOT,
+        ignore_prefixes=(
+            f"sim/power/records/{record_id}.md",
+            f"sim/power/reports/{record_id}/",
+            f"sim/power/netlist-snapshots/{record_id}/",
+        ),
+    )
 
     L = []
     L.append(f"# Record {record_id}")
@@ -390,16 +392,14 @@ def render(record_id: str, reports: dict, all_data: dict, stages_docs: dict,
              "`sim/power/build.py`; frozen under "
              f"`sim/power/netlist-snapshots/{record_id}/`:")
     for b in BLOCKS:
-        body = REPO_ROOT / "sim" / "power" / "netlist-snapshots" / record_id / f"{b}.body.spice"
         digest = report_mod.sha256_file(HERE / "testbench" / f"{b}.body.spice")
         L.append(f"  - `{b}.body.spice` SHA-256 `{digest}`")
-        del body
     L.append("- **Environment provenance**:")
     L.append(f"  - klt: {', '.join(klt_versions)} (`klt sim`, ngspice engine, PDK `sky130A`)")
     pdk = next((prov[b].get("pdk") for b in BLOCKS if prov[b].get("pdk")), None)
     if pdk:
         L.append(f"  - PDK: {json.dumps(pdk, sort_keys=True)}")
-    L.append(f"  - Repo commit: `{git('rev-parse', 'HEAD')}`" + (" (dirty)" if git("status", "--porcelain") else ""))
+    L.append(f"  - Repo commit: `{git['sha']}`" + (" (dirty)" if git["dirty"] else ""))
     for b in BLOCKS:
         for r in remote[b]:
             L.append(
@@ -557,9 +557,7 @@ def main(argv=None) -> int:
         stages_docs[b] = json.loads((HERE / "testbench" / f"{b}.stages.json").read_text())
         all_data[b] = reduce_block(b, reports[b], stages_docs[b])
 
-    record_id = args.record_id or (
-        datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S") + "-" + git("rev-parse", "--short", "HEAD")
-    )
+    record_id = args.record_id or report_mod.make_record_id(REPO_ROOT)
     rec_path = HERE / "records" / f"{record_id}.md"
     if rec_path.exists():
         raise SystemExit(f"{rec_path} exists; records are append-only (mint a new id)")

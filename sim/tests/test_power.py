@@ -10,11 +10,13 @@ by construction.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import re
 import sys
 import tempfile
 import unittest
+from io import StringIO
 from pathlib import Path
 from unittest import mock
 
@@ -368,6 +370,88 @@ class MergeShardReportsTests(unittest.TestCase):
             self._write(d, "vco.shard00.report.json", ["ff"])
             with self.assertRaises(SystemExit):
                 mint_mod.load_block_reports(d, "vco")
+
+
+class MintProvenanceTests(unittest.TestCase):
+    """mint.render/main git provenance goes through harness.report (issue #570)."""
+
+    KEY = ("tt", 1.8, 27.0)
+    RECORD_ID = "20990101-000000-abcdef0"
+
+    def _render(self, git_result):
+        specs_by_block = {
+            "vco": [("idle", 2e-6, "idle", None),
+                    ("a", 20e-6, "active", 50e6),
+                    ("b", 60e-6, "active", 150e6)],
+            "divider-n4": [("idle", 1e-6, "idle", None),
+                           ("f100m", 10e-6, "active", None),
+                           ("f250m", 12e-6, "active", None)],
+            "pfd-cp": [("idle", 3e-6, "idle", None),
+                       ("25m_lock", 14e-6, "active", None),
+                       ("1m_lock", 13e-6, "active", None)],
+        }
+        specs_by_block["divider-n64"] = specs_by_block["divider-n4"]
+
+        def stages(specs):
+            return {sid: _stage(sid, i_a, kind, f_hz=f_hz)
+                    for sid, i_a, kind, f_hz in specs}
+
+        def stage_doc(specs):
+            return {"stages": [
+                {"id": sid, "kind": kind, "label": sid, "vctrl": 0.9,
+                 "t0": 0.0, "t1": 1e-6, "settle": 0.5e-6}
+                for sid, _i_a, kind, _f in specs
+            ]}
+
+        all_data = {b: {self.KEY: {"stages": stages(s), "errors": [], "xchk": {}}}
+                    for b, s in specs_by_block.items()}
+        stages_docs = {b: stage_doc(s) for b, s in specs_by_block.items()}
+        reports = {b: {} for b in mint_mod.BLOCKS}
+        with mock.patch.object(mint_mod.report_mod, "git_info",
+                               return_value=git_result) as gi:
+            text = mint_mod.render(self.RECORD_ID, reports, all_data,
+                                   stages_docs, None, None)
+        return text, gi
+
+    def test_render_delegates_git_provenance_with_run_output_prefixes(self):
+        _text, gi = self._render({"sha": "0" * 40, "dirty": False})
+        gi.assert_called_once_with(
+            mint_mod.REPO_ROOT,
+            ignore_prefixes=(
+                f"sim/power/records/{self.RECORD_ID}.md",
+                f"sim/power/reports/{self.RECORD_ID}/",
+                f"sim/power/netlist-snapshots/{self.RECORD_ID}/",
+            ),
+        )
+
+    def test_render_repo_commit_line_reflects_clean_and_dirty(self):
+        for dirty in (False, True):
+            text, _gi = self._render({"sha": "a" * 40, "dirty": dirty})
+            expected = f"  - Repo commit: `{'a' * 40}`" + (" (dirty)" if dirty else "")
+            self.assertIn(expected, text)
+
+    def _run_main(self, argv):
+        with tempfile.TemporaryDirectory() as td:
+            d = Path(td)
+            for b in mint_mod.BLOCKS:
+                (d / f"{b}.report.json").write_text(json.dumps({"corners": []}))
+            with mock.patch.object(mint_mod.report_mod, "git_info",
+                                   return_value={"sha": "0" * 40, "dirty": False}), \
+                 contextlib.redirect_stdout(StringIO()):
+                return mint_mod.main([*argv, "--reports-dir", str(d)])
+
+    def test_main_delegates_record_id_to_report_mod(self):
+        with mock.patch.object(mint_mod.report_mod, "make_record_id",
+                               return_value="unittest-record") as mri:
+            rc = self._run_main(["--dry-run"])
+        self.assertEqual(rc, 0)
+        mri.assert_called_once_with(mint_mod.REPO_ROOT)
+
+    def test_main_explicit_record_id_skips_make_record_id(self):
+        with mock.patch.object(mint_mod.report_mod, "make_record_id") as mri:
+            rc = self._run_main(["--dry-run", "--record-id", "unittest-record"])
+        self.assertEqual(rc, 0)
+        mri.assert_not_called()
 
 
 class ToBodyTests(unittest.TestCase):
