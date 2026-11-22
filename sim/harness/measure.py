@@ -1713,106 +1713,71 @@ def _measure_clock(
         )
 
     if spec.lock is None:
-        f = mean_frequency(usable)
-        d = duty_cycle(rising, falling, t_from=settle)
-        note = f"f_out {_fmt_hz(f)}, duty {d * 100:.1f}%" if d is not None else (
-            f"f_out {_fmt_hz(f)}, duty -"
-        )
         # No `lock` block means no lock instant to start the population at, so
         # `settle_from` is the window start -- the same instant the frequency
-        # and duty above are taken over. A manifest measuring row 9 itself
+        # and duty below are taken over. A manifest measuring row 9 itself
         # declares `lock` (the row is stated "in lock"); this branch is for a
         # free-running campaign that wants the cycle-to-cycle spread of an
         # oscillator recorded alongside its frequency.
-        jitter_frac, jitter_cycles, jitter_clause = _measure_jitter(
-            rising, spec, t_from=settle
-        )
-        if jitter_clause:
-            note += f", {jitter_clause}"
-        rise_t, fall_t, n_rise, n_fall, transition_clause = _measure_transition(
-            times, values, spec, supply_v, t_from=settle
-        )
-        if transition_clause:
-            note += f", {transition_clause}"
-        v_oh, v_ol, levels_clause = _measure_levels(
-            times, values, spec, supply_v, t_from=settle
-        )
-        if levels_clause:
-            note += f", {levels_clause}"
-        return Measurement(
-            label=label,
-            oscillating=True,
-            freq_hz=f,
-            duty_cycle=d,
-            locked=None,
-            lock_time_s=None,
-            final_freq_hz=f,
-            note=note,
-            passed=True,
-            period_jitter_frac=jitter_frac,
-            jitter_cycles=jitter_cycles,
-            rise_time_s=rise_t,
-            fall_time_s=fall_t,
-            n_rise_edges=n_rise,
-            n_fall_edges=n_fall,
-            v_oh=v_oh,
-            v_ol=v_ol,
-        )
-
-    locked, t_lock = lock_time(usable, spec.lock)
-    tail = usable[-(spec.lock.window_cycles + 1):]
-    final_f = mean_frequency(tail)
-    if not locked:
-        note = (
-            f"**no lock** within {_fmt_s(spec.tran_stop_s)}: the sliding-window "
-            f"criterion was never satisfied. Final-window mean is "
-            f"{_fmt_hz(final_f)} -- that is the frequency the loop happened to be "
-            f"running at when the transient ended, NOT a locked output frequency"
-        )
-        if spec.jitter is not None:
-            # Row 9 is stated "in lock". A point that never locked has no
-            # post-lock population, so it gets no jitter number at all --
-            # the final-window cycles are not silently substituted for one.
-            note += (
-                ". No period jitter is attributed to it either: row 9's "
-                "population is a post-lock one, and this point has none"
+        t_from = settle
+    else:
+        locked, t_lock = lock_time(usable, spec.lock)
+        tail = usable[-(spec.lock.window_cycles + 1):]
+        final_f = mean_frequency(tail)
+        if not locked:
+            note = (
+                f"**no lock** within {_fmt_s(spec.tran_stop_s)}: the sliding-window "
+                f"criterion was never satisfied. Final-window mean is "
+                f"{_fmt_hz(final_f)} -- that is the frequency the loop happened to be "
+                f"running at when the transient ended, NOT a locked output frequency"
             )
-        return Measurement(
-            label=label,
-            oscillating=True,
-            freq_hz=None,
-            duty_cycle=None,
-            locked=False,
-            lock_time_s=None,
-            final_freq_hz=final_f,
-            note=note,
-            passed=not spec.require_lock,
-        )
+            if spec.jitter is not None:
+                # Row 9 is stated "in lock". A point that never locked has no
+                # post-lock population, so it gets no jitter number at all --
+                # the final-window cycles are not silently substituted for one.
+                note += (
+                    ". No period jitter is attributed to it either: row 9's "
+                    "population is a post-lock one, and this point has none"
+                )
+            return Measurement(
+                label=label,
+                oscillating=True,
+                freq_hz=None,
+                duty_cycle=None,
+                locked=False,
+                lock_time_s=None,
+                final_freq_hz=final_f,
+                note=note,
+                passed=not spec.require_lock,
+            )
 
-    f = mean_frequency(usable, t_from=t_lock)
-    d = duty_cycle(rising, falling, t_from=t_lock)
+        # Row 9's population: the consecutive output cycles after `t_lock`, the
+        # same instant the post-lock frequency and duty below are taken from.
+        # `lock_time` ran on `usable` while the jitter filter below filters
+        # `rising`, and the two agree: `t_lock` is an element of `usable`,
+        # `usable` is `rising` with everything before `settle` dropped, and so
+        # `t_lock >= settle` -- the extra pre-settle edges in `rising` are all
+        # below `t_from` and drop out.
+        t_from = t_lock
+
+    f = mean_frequency(usable, t_from=t_from)
+    d = duty_cycle(rising, falling, t_from=t_from)
     duty_txt = f"{d * 100:.1f}%" if d is not None else "-"
-    note = (
-        f"locked at {_fmt_s(t_lock)}; post-lock f_out {_fmt_hz(f)}, duty {duty_txt}"
-    )
-    # Row 9's population: the consecutive output cycles after `t_lock`, the
-    # same instant the post-lock frequency and duty above are taken from.
-    # `lock_time` ran on `usable` while this filters `rising`, and the two
-    # agree: `t_lock` is an element of `usable`, `usable` is `rising` with
-    # everything before `settle` dropped, and so `t_lock >= settle` -- the
-    # extra pre-settle edges in `rising` are all below `t_from` and drop out.
+    note = f"f_out {_fmt_hz(f)}, duty {duty_txt}"
+    if spec.lock is not None:
+        note = f"locked at {_fmt_s(t_lock)}; post-lock {note}"
     jitter_frac, jitter_cycles, jitter_clause = _measure_jitter(
-        rising, spec, t_from=t_lock
+        rising, spec, t_from=t_from
     )
     if jitter_clause:
         note += f", {jitter_clause}"
     rise_t, fall_t, n_rise, n_fall, transition_clause = _measure_transition(
-        times, values, spec, supply_v, t_from=t_lock
+        times, values, spec, supply_v, t_from=t_from
     )
     if transition_clause:
         note += f", {transition_clause}"
     v_oh, v_ol, levels_clause = _measure_levels(
-        times, values, spec, supply_v, t_from=t_lock
+        times, values, spec, supply_v, t_from=t_from
     )
     if levels_clause:
         note += f", {levels_clause}"
@@ -1821,9 +1786,9 @@ def _measure_clock(
         oscillating=True,
         freq_hz=f,
         duty_cycle=d,
-        locked=True,
-        lock_time_s=t_lock,
-        final_freq_hz=final_f,
+        locked=None if spec.lock is None else True,
+        lock_time_s=None if spec.lock is None else t_lock,
+        final_freq_hz=f if spec.lock is None else final_f,
         note=note,
         passed=True,
         period_jitter_frac=jitter_frac,
