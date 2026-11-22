@@ -8,6 +8,8 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 ### 2026-11-22
 
+- **Issue #568** (closed): Share batch-fleet klt resolution and preflight in sim/harness/klt_submit.py
+- **PR #569**: refactor: share klt resolution and batch preflight in klt_submit
 - **Issue #565** (closed): Remove netlist_with_xschem in sim/power/build.py: share runner.netlist_schematic
 - **PR #566**: power: netlist build.py through runner.netlist_schematic, drop raw xschem copy
 - **Issue #560** (closed): Compute charge-pump gate intervals once per waveform
