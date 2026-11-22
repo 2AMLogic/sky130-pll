@@ -6,6 +6,15 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 - [2026-09](work_log/WORK_LOG_2026-09.md)
 
+### 2026-11-22
+
+- **Issue #565** (closed): Remove netlist_with_xschem in sim/power/build.py: share runner.netlist_schematic
+- **PR #566**: power: netlist build.py through runner.netlist_schematic, drop raw xschem copy
+- **Issue #560** (closed): Compute charge-pump gate intervals once per waveform
+- **PR #562**: sim: reuse one gate-interval classification per charge-pump point
+- **Issue #557** (closed): Share the successful clock reduction in _measure_clock
+- **PR #558**: refactor: consolidate the two successful clock paths in _measure_clock
+
 ### 2026-11-21
 
 - **Issue #553** (closed): gitignore the daemon's account-ranking runtime files
