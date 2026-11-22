@@ -41,7 +41,8 @@ sim/power/
 ```
 
 `python3 sim/power/build.py --check` fails if a committed generated file is
-stale (needs xschem + the PDK; no simulation).
+stale (needs `klt netlist`, which drives headless xschem, + the PDK; no
+simulation).
 
 ## How a stage works
 
