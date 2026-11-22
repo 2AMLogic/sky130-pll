@@ -118,20 +118,15 @@ if str(_SIM_DIR) not in sys.path:
 
 from analysis_common import (  # noqa: E402
     AnalysisError,
-    JITTER_IN_DETAIL_RE,
-    PVT_HEADER,
     REPO_ROOT,
     VARIANT_RE,
     cells as _cells,
+    parse_calibration_point,
+    parse_floor_records,
     pct as _pct,
     ps as _ps,
     record_id as _record_id,
-    injected_from_pwl,
-    parse_floor_records,
-    point_netlist,
-    pwl_points,
     repo_rel as _repo_rel,
-    tran_card,
 )
 
 MC_RECORD = REPO_ROOT / "sim" / "pll-lock-mc" / "records" / "20260924-222341-a9375a5.md"
@@ -221,53 +216,40 @@ def parse_calibration_record(record_path: Path, experiment: Path) -> dict:
     """One `sim/jitter-calibration` variant: what it injected, at what period.
 
     Read for period coverage only -- see this module's docstring for why its
-    calibrated floor is not applied as a correction here.
+    calibrated floor is not applied as a correction here. The record-table,
+    netlist and population parsing are `analysis_common.parse_calibration_point`'s,
+    shared with `sim/jitter-calibration/analysis/calibration.py`; this reader's
+    own part is the variant label (the record's manifest note) and the implied
+    floor below.
     """
-    text = record_path.read_text()
-    record_id = _record_id(text, record_path)
-
-    variant = VARIANT_RE.search(text)
+    point = parse_calibration_point(record_path, experiment)
+    variant = VARIANT_RE.search(record_path.read_text())
     if variant is None:
         raise AnalysisError(
             f"{record_path}: no `THIS RECORD'S VARIANT: <id> --` line -- is this a "
             "sim/jitter-calibration record?"
         )
 
-    rows = _table_rows(text, PVT_HEADER)
-    if len(rows) != 1:
-        raise AnalysisError(
-            f"{record_path}: expected exactly one PVT point, found {len(rows)}"
-        )
-    detail = rows[0][6]
-    jitter = JITTER_IN_DETAIL_RE.search(detail)
-    if jitter is None:
-        raise AnalysisError(f"{record_path}: point reports no period jitter: {detail!r}")
-
-    netlist_path = point_netlist(experiment, record_id)
-    netlist = netlist_path.read_text()
-    schedule = injected_from_pwl(pwl_points(netlist, netlist_path), netlist_path)
-    step_s, _ = tran_card(netlist, netlist_path)
-
-    reported_frac = float(jitter.group("pct")) / 100.0
-    period_s = schedule["period_s"]
+    reported_frac = point["reported_frac"]
+    period_s = point["period_s"]
     reported_s = reported_frac * period_s
-    injected_s = schedule["injected_frac"] * period_s
+    injected_s = point["injected_frac"] * period_s
     implied_floor_s = (
         math.sqrt(reported_s**2 - injected_s**2) if reported_s > injected_s else None
     )
 
     return {
-        "record_id": record_id,
-        "path": record_path,
+        "record_id": point["record_id"],
+        "path": point["path"],
         "variant": variant.group("variant"),
         "reported_frac": reported_frac,
-        "injected_frac": schedule["injected_frac"],
+        "injected_frac": point["injected_frac"],
         "period_s": period_s,
-        "edge_s": schedule["edge_s"],
-        "cycles": schedule["cycles"],
-        "step_s": step_s,
+        "edge_s": point["edge_s"],
+        "cycles": point["cycles"],
+        "step_s": point["step_s"],
         "implied_floor_s": implied_floor_s,
-        "netlist": _repo_rel(netlist_path),
+        "netlist": point["netlist"],
     }
 
 

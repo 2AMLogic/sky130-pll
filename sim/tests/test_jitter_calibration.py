@@ -254,10 +254,10 @@ class CommittedEvidenceTests(unittest.TestCase):
         for row in committed_rows():
             with self.subTest(variant=row["variant"]):
                 card = gen.variant_schedule(row["variant"])["card"]
-                regenerated = calibration.pwl_points(
+                regenerated = analysis_common.pwl_points(
                     card + "\n", Path(f"<regenerated {row['variant']}>")
                 )
-                committed = calibration.pwl_points(
+                committed = analysis_common.pwl_points(
                     (REPO_ROOT / row["netlist"]).read_text(),
                     REPO_ROOT / row["netlist"],
                 )
@@ -425,7 +425,7 @@ class RefusalTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             experiment = Path(tmp) / "jitter-calibration"
             write_calibration_record(
-                experiment, record_id="20260101-000000-aaaaaaa", cycles=42
+                experiment, record_id="20260101-000000-aaaaaaa", cycles=299
             )
             with self.assertRaises(calibration.AnalysisError) as ctx:
                 calibration._parse_all(experiment, calibration.parse_calibration_record)

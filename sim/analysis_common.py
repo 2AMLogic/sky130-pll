@@ -307,3 +307,50 @@ def injected_from_pwl(points: list, path: Path) -> dict:
         "v_high": v_high,
         "v_low": v_low,
     }
+
+
+def parse_calibration_point(record_path: Path, experiment: Path) -> dict:
+    """One `sim/jitter-calibration` record's shared parse: the reported RMS
+    period jitter, the committed PWL schedule it pairs with, and the check
+    that keeps the two figures over the same population.
+
+    Both jitter readers restate this record -- the calibration curve
+    (`sim/jitter-calibration/analysis/calibration.py`) pairs the reported
+    figure against the injected one, and the Monte Carlo restatement
+    (`sim/pll-lock-mc/analysis/jitter_floor.py`) brackets a draw's residual
+    over the period-matched family -- and their parsers had drifted: only the
+    curve checked the record's reported cycle count against the schedule's
+    own, so the restatement would have derived a floor from a mismatched
+    population. The check lives here so both refuse it. Each caller still
+    reads its own variant label (the curve takes the generator's stamp off the
+    netlist; the restatement takes the record's manifest note) and does its
+    own report-specific arithmetic.
+    """
+    text = record_path.read_text()
+    rid = record_id(text, record_path)
+    detail = single_point_detail(text, record_path, PVT_HEADER)
+    jitter = JITTER_IN_DETAIL_RE.search(detail)
+    if jitter is None:
+        raise AnalysisError(f"{record_path}: point reports no period jitter: {detail!r}")
+    netlist_path = point_netlist(experiment, rid)
+    netlist = netlist_path.read_text()
+    step_s, stop_s = tran_card(netlist, netlist_path)
+    schedule = injected_from_pwl(pwl_points(netlist, netlist_path), netlist_path)
+    reported_cycles = int(jitter.group("cycles"))
+    if reported_cycles != schedule["cycles"]:
+        raise AnalysisError(
+            f"{record_path}: the reducer formed a {reported_cycles}-cycle population "
+            f"but the committed schedule holds {schedule['cycles']} periods -- the "
+            "reported and injected figures are not over the same population"
+        )
+    return {
+        "record_id": rid,
+        "path": record_path,
+        "netlist_path": netlist_path,
+        "netlist": repo_rel(netlist_path),
+        "reported_frac": float(jitter.group("pct")) / 100.0,
+        "cycles": reported_cycles,
+        "step_s": step_s,
+        "stop_s": stop_s,
+        **schedule,
+    }
