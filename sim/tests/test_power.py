@@ -11,10 +11,12 @@ by construction.
 from __future__ import annotations
 
 import json
+import re
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
@@ -28,6 +30,7 @@ reduce_mod = load_module("power_reduce", POWER_DIR / "reduce.py")
 sys.path.insert(0, str(POWER_DIR))
 mint_mod = load_module("power_mint", POWER_DIR / "mint.py")
 shard_mod = load_module("power_shard", POWER_DIR / "shard.py")
+build_mod = load_module("power_build", POWER_DIR / "build.py")
 
 VDD = 1.8
 DT = 0.05e-9
@@ -365,6 +368,121 @@ class MergeShardReportsTests(unittest.TestCase):
             self._write(d, "vco.shard00.report.json", ["ff"])
             with self.assertRaises(SystemExit):
                 mint_mod.load_block_reports(d, "vco")
+
+
+class ToBodyTests(unittest.TestCase):
+    """build.to_body: xschem netlist text -> `klt sim` circuit body."""
+
+    def test_strips_klt_netlist_inputs_line(self):
+        # Newer `klt netlist` prepends this provenance header; the committed
+        # bodies must not carry it (issue #565).
+        text = (
+            '** klt-netlist-inputs: {"pdk_variant": null, "xschem_version": "3.4.7"}\n'
+            "** sch_path: /machine/local/tb_power_vco.sch\n"
+            "** sym_path: /machine/local/vco_ring5.sym\n"
+            "X1 VDD GND VCTRL CLK vco_ring5\n"
+            ".end\n"
+        )
+        body = build_mod.to_body(text)
+        self.assertNotIn("klt-netlist-inputs", body)
+        self.assertNotIn("/machine/local", body)
+        self.assertIn("** sch_path: (machine-local path elided)", body)
+        self.assertIn("** sym_path: (machine-local path elided)", body)
+        self.assertIn("X1 VDD GND VCTRL CLK vco_ring5", body)
+        self.assertNotRegex(body, r"(?m)^\.end$")
+
+    def test_input_without_klt_header_is_byte_stable(self):
+        # klayout-tools==0.8.0 emits no `** klt-netlist-inputs:` line; its
+        # committed bodies must survive the strip unchanged.
+        text = "** sch_path: /machine/local/tb.sch\nR1 a b 1k\n.end\n"
+        self.assertEqual(
+            build_mod.to_body(text),
+            "** sch_path: (machine-local path elided)\nR1 a b 1k\n",
+        )
+
+    def test_rejects_lib_and_control_cards(self):
+        for bad in (".lib /pdk/sky130.lib.spice tt\n.end\n",
+                    ".control\n.endc\n.end\n"):
+            with self.assertRaises(SystemExit):
+                build_mod.to_body(bad)
+
+    def test_rewrites_machine_local_pdk_root(self):
+        text = ".include /home/me/pdks/sky130A/libs.ref/sky130_fd_pr/pfet.spice\n.end\n"
+        body = build_mod.to_body(text)
+        self.assertIn(
+            ".include $PDK_ROOT/sky130A/libs.ref/sky130_fd_pr/pfet.spice\n", body
+        )
+
+
+def _test_block() -> dict:
+    """Minimal block dict exercising every key build_block consumes."""
+    return {
+        "sources": [("v", "V2", "VCTRL", "pwl(0 0)")],
+        "name": "vco",
+        "dut": "design/vco/vco_ring5.sym",
+        "dut_name": "XXVCO",
+        "pins": {"VDD": "VDD", "GND": "GND", "VCTRL": "VCTRL", "CLK": "CLK"},
+        "code": "", "stdcells": False,
+        "align_node": "v(clk)", "save": ["v(clk)", "i(v1)"],
+        "tran_step": "50p", "tran_stop": "1u", "uic": True,
+        "stages": [{"id": "idle", "kind": "idle", "label": "idle",
+                    "t0": 0.0, "t1": 100e-9, "settle": 60e-9}],
+        "title": "unit-test block", "timeout_s": 60, "note": "unit-test note",
+    }
+
+
+class BuildBlockTests(unittest.TestCase):
+    """build.build_block delegates netlisting to runner.netlist_schematic."""
+
+    def test_delegates_to_runner_netlist_schematic(self):
+        seen = {}
+        netlist_text = (
+            '** klt-netlist-inputs: {"xschem_version": "9.9"}\n'
+            "** sch_path: /machine/local/tb_power_vco.sch\n"
+            "X1 VDD GND VCTRL CLK vco_ring5\n"
+            ".end\n"
+        )
+
+        def fake(pdk, xschemrc, schematic, out_dir, repo_root):
+            seen.update(pdk=pdk, xschemrc=xschemrc, schematic=schematic,
+                        out_dir=out_dir, repo_root=repo_root,
+                        sch_text=schematic.read_text())
+            return netlist_text
+
+        with mock.patch.object(build_mod.runner_mod, "netlist_schematic", fake):
+            out = build_mod.build_block(_test_block(), pdk="pdk-sentinel")
+        self.assertIs(seen["pdk"], "pdk-sentinel")
+        self.assertEqual(seen["xschemrc"], build_mod.REPO_ROOT / "sim" / "xschemrc")
+        self.assertEqual(seen["schematic"].name, "tb_power_vco.sch")
+        self.assertEqual(seen["sch_text"], out["tb_power_vco.sch"])
+        self.assertEqual(seen["out_dir"], seen["schematic"].parent)
+        self.assertEqual(seen["repo_root"], build_mod.REPO_ROOT)
+        body = out["vco.body.spice"]
+        self.assertNotIn("klt-netlist-inputs", body)
+        self.assertNotRegex(body, r"(?m)^\.end$")
+        self.assertTrue(body.endswith("\n.save v(clk) i(v1)\n"))
+        stages = json.loads(out["vco.stages.json"])
+        self.assertEqual(stages["block"], "vco")
+        req = json.loads(out["vco.request.json"])
+        self.assertEqual(req["netlist"], "vco.body.spice")
+        self.assertEqual(req["analysis"]["args"], "50p 1u uic")
+
+    def test_netlist_error_becomes_system_exit(self):
+        def boom(*args, **kwargs):
+            raise build_mod.runner_mod.NetlistError("klt netlist failed (exit 1)")
+
+        with mock.patch.object(build_mod.runner_mod, "netlist_schematic", boom):
+            with self.assertRaises(SystemExit):
+                build_mod.build_block(_test_block(), pdk=object())
+
+
+class BuildSourceTests(unittest.TestCase):
+    """Host rule: netlisting goes through `klt netlist`, never raw xschem."""
+
+    def test_no_raw_xschem_invocation(self):
+        src = (POWER_DIR / "build.py").read_text()
+        self.assertIsNone(re.search(r'["\']xschem["\']', src))
+        self.assertNotIn("netlist_with_xschem", src)
 
 
 if __name__ == "__main__":
