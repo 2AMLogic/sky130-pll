@@ -45,7 +45,6 @@ errored or timed out is an INCONCLUSIVE probe, never an electrical FAIL.
 from __future__ import annotations
 
 import json
-import os
 import re
 import shutil
 import subprocess
@@ -57,7 +56,7 @@ from pathlib import Path
 from . import fmax as fmax_mod
 from . import report as report_mod
 from . import runner as runner_mod
-from .klt_submit import submit_with_capacity_retry
+from .klt_submit import preflight_batch, resolve_klt, submit_with_capacity_retry
 
 #: Executor name accepted by `run_fmax.py --executor`.
 BATCH_EXECUTOR = "batch"
@@ -384,7 +383,7 @@ class KltBatchBackend:
         self.spec, self.manifest = spec, manifest
         self.work_dir = Path(work_dir)
         self.cache_dir = Path(cache_dir) if cache_dir else self.work_dir / "klt"
-        self.klt = klt or os.environ.get("SKY130_PLL_KLT") or shutil.which("klt")
+        self.klt = resolve_klt(klt)
         self.runner = runner or subprocess.run  # injectable for tests
         self.log = log
         self.max_jobs = max(1, max_jobs)
@@ -397,13 +396,7 @@ class KltBatchBackend:
     # -- preflight ------------------------------------------------------- #
 
     def preflight(self) -> None:
-        if not self.klt:
-            raise KltBatchError("`klt` is not on PATH (set SKY130_PLL_KLT to its path)")
-        prov = os.environ.get("KLT_BATCH_PROVISION_SCRIPT")
-        if not prov or not Path(prov).expanduser().is_file():
-            raise KltBatchError(
-                "KLT_BATCH_PROVISION_SCRIPT does not name an existing batch-fleet-provision.sh"
-            )
+        preflight_batch(self.klt, error_cls=KltBatchError)
 
     # -- grouping -------------------------------------------------------- #
 
