@@ -153,14 +153,23 @@ def write_calibration_record(
     edge_s: float = 20e-12,
     cycles: int = 5,
     step: str = "200p",
+    detail_cycles: int | None = None,
 ) -> None:
-    """One synthetic `sim/jitter-calibration`-shaped record plus its netlist."""
+    """One synthetic `sim/jitter-calibration`-shaped record plus its netlist.
+
+    `detail_cycles` lets the record's Detail cell report a population the
+    committed schedule does not hold -- the mismatch fixture the shared
+    cycle-count check exists to refuse.
+    """
     (experiment / "records").mkdir(parents=True, exist_ok=True)
     (experiment / "corners" / record_id).mkdir(parents=True, exist_ok=True)
     variant_line = f"THIS RECORD'S VARIANT: {variant} -- synthetic."
     (experiment / "records" / f"{record_id}.md").write_text(
         CALIBRATION_RECORD_TEMPLATE.format(
-            record_id=record_id, variant_line=variant_line, pct=pct, cycles=cycles
+            record_id=record_id,
+            variant_line=variant_line,
+            pct=pct,
+            cycles=cycles if detail_cycles is None else detail_cycles,
         )
     )
     netlist = (
@@ -307,6 +316,29 @@ class RefusalTests(unittest.TestCase):
             with self.assertRaises(jitter_floor.AnalysisError) as ctx:
                 jitter_floor.parse_floor_records(experiment)
             self.assertIn("per-point netlist", str(ctx.exception))
+
+    def test_a_calibration_population_mismatch_is_refused(self):
+        """The calibration record's population check, shared with the curve.
+
+        The Detail cell reports 299 cycles while the committed schedule holds
+        300 -- the same one-cycle mismatch `test_jitter_calibration`'s
+        RefusalTests exercises through the calibration curve's own reader, and
+        which this reader used to accept (it paired the reported RMS with the
+        scheduled count and never compared them). Both readers share the check
+        in `analysis_common.parse_calibration_point` now, so both must refuse
+        the mismatched population before deriving a floor from it.
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            experiment = Path(tmp) / "jitter-calibration"
+            write_calibration_record(
+                experiment,
+                record_id="20260101-000000-abcdef0",
+                cycles=300,
+                detail_cycles=299,
+            )
+            with self.assertRaises(jitter_floor.AnalysisError) as ctx:
+                jitter_floor.parse_calibration_records(experiment)
+            self.assertIn("same population", str(ctx.exception))
 
 
 class QuadratureTests(unittest.TestCase):
