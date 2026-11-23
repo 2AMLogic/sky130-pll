@@ -1,7 +1,7 @@
 # Work Plan
 
 <!-- guide:plan-body:start -->
-_Generated: 2026-11-23T07:11:23Z (snapshot; compare against live labels)_
+_Generated: 2026-11-23T13:10:38Z (snapshot; compare against live labels)_
 ## Operator Attention: Merge-Risk-Hold Pileup
 
 Judge-approved PRs under a hold (`loom:blocked` or `loom:operator`) — only a human merge decision is missing.
@@ -38,14 +38,13 @@ Issues currently being built (`loom:building`).
 
 PRs waiting on Judge (`loom:review-requested`).
 
-- **#559**: feat: measure the klt routing levers the routed spot-check never requested (second plane, interior channels, per-net supply/fanout planes)
 - **#564**: fix: share the calibration cycle-count check across both jitter readers
 
 ## Approved (Awaiting Merge)
 
 PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
-_None._
+- **#559**: feat: measure the klt routing levers the routed spot-check never requested (second plane, interior channels, per-net supply/fanout planes)
 
 ## Proposed
 
@@ -89,8 +88,8 @@ _None._
 | Important | 2 |
 | Ready (`loom:issue`, net of holds/building/merge-pending) | 1 |
 | In Progress (`loom:building`) | 2 |
-| PRs awaiting review | 2 |
-| Approved PRs awaiting merge | 0 |
+| PRs awaiting review | 1 |
+| Approved PRs awaiting merge | 1 |
 | Curated | 17 |
 | Architect / Hermit proposals | 4 |
 | Active epics | 0 |
