@@ -1,7 +1,7 @@
 # Work Plan
 
 <!-- guide:plan-body:start -->
-_Generated: 2026-11-23T13:10:38Z (snapshot; compare against live labels)_
+_Generated: 2026-11-23T16:39:45Z (snapshot; compare against live labels)_
 ## Operator Attention: Merge-Risk-Hold Pileup
 
 Judge-approved PRs under a hold (`loom:blocked` or `loom:operator`) — only a human merge decision is missing.
@@ -19,32 +19,30 @@ _None._
 `loom:important`; taken before unlabelled work.
 
 - **#244**: sim: record divider Fmax boundaries across PVT for digital T1 characterization *(held)*
-- **#548**: layout: re-measure the routed PLL spot-check with the klt routing levers the generator never requests (second plane, per-net layers, interior channels)
 
 ## Ready
 
 Human-approved issues (`loom:issue`) ready for implementation — excluding held (`loom:blocked`/`loom:operator`/`loom:frozen`), `loom:building`, and issues closed by an open `loom:pr` PR (listed under Approved).
 
-- **#563**: Share the calibration cycle-count check across both jitter reports *(PR #564 awaiting review)*
+- **#575**: layout: the supply plane and the cross-block fallback plane are both `metal3` — measure an exclusive supply plane
 
 ## In Progress
 
 Issues currently being built (`loom:building`).
 
 - **#523**: xschem pin migration: migrate sky130-pll to the fleet 3.4.7
-- **#548**: layout: re-measure the routed PLL spot-check with the klt routing levers the generator never requests (second plane, per-net layers, interior channels)
 
 ## PRs Awaiting Review
 
 PRs waiting on Judge (`loom:review-requested`).
 
-- **#564**: fix: share the calibration cycle-count check across both jitter readers
+_None._
 
 ## Approved (Awaiting Merge)
 
 PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
-- **#559**: feat: measure the klt routing levers the routed spot-check never requested (second plane, interior channels, per-net supply/fanout planes)
+_None._
 
 ## Proposed
 
@@ -66,7 +64,7 @@ Issues carrying `loom:curated`.
 - **#297**: Re-qualify cited sim reference records under open_pdks f6eeac7 (part of #295) *(curated)* *(held)*
 - **#298**: Re-qualify cited layout reference records under open_pdks f6eeac7 (part of #295) *(curated)* *(held)*
 - **#523**: xschem pin migration: migrate sky130-pll to the fleet 3.4.7 *(curated)*
-- **#548**: layout: re-measure the routed PLL spot-check with the klt routing levers the generator never requests (second plane, per-net layers, interior channels) *(curated)*
+- **#575**: layout: the supply plane and the cross-block fallback plane are both `metal3` — measure an exclusive supply plane *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -85,11 +83,11 @@ _None._
 |------|-------|
 | Operator merge-risk holds | 0 |
 | Very important | 0 |
-| Important | 2 |
+| Important | 1 |
 | Ready (`loom:issue`, net of holds/building/merge-pending) | 1 |
-| In Progress (`loom:building`) | 2 |
-| PRs awaiting review | 1 |
-| Approved PRs awaiting merge | 1 |
+| In Progress (`loom:building`) | 1 |
+| PRs awaiting review | 0 |
+| Approved PRs awaiting merge | 0 |
 | Curated | 17 |
 | Architect / Hermit proposals | 4 |
 | Active epics | 0 |
