@@ -465,7 +465,7 @@ def _load_routing_levers_rows(out_dir: Path) -> list[dict[str, Any]] | None:
     `run-pll-layout-flow.sh` writes `routing-levers.json` into the out-dir
     when `PLL_ROUTING_LEVERS_SUMMARY` names the earlier runs' rows (issue
     #548): one row per cumulative lever step, the last row being *this*
-    run, merged in by `route-lever-tally.py merge` from this run's own
+    run, merged in by `route_lever_tally.py merge` from this run's own
     envelopes. `None` (file absent) renders a record shaped exactly like
     the pre-#548 ones.
     """

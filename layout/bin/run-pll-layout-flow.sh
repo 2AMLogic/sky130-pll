@@ -57,7 +57,7 @@ flow_require_klt "$SCRIPT_NAME"
 #                           (default: all; "none" reproduces the pre-#548
 #                           single-plane request)
 #   PLL_ROUTING_LEVERS_SUMMARY  JSON array of the earlier steps' tally rows
-#                           (layout/bin/route-lever-tally.py output); when
+#                           (layout/bin/route_lever_tally.py output); when
 #                           set it is merged with this run's own row into
 #                           routing-levers.json, which the record renders.
 #   PLL_ROUTING_LEVERS_LABEL    human label for this run's row (default:
@@ -181,20 +181,24 @@ cat > "$SPOT_DIR/lvs.request.json" <<EOF
 EOF
 "$KLT" lvs "$SPOT_DIR/lvs.request.json" --format json > "$SPOT_DIR/lvs.json" || true
 
-find "$SPOT_DIR" -name '*.gds' -delete
+find "$SPOT_DIR" \( -name '*.gds' -o -name 'draw.*.json' -o -name 'plan.json' \) -delete
 # The spot-check's per-group generator envelopes are byte-identical to the
 # shipped build's (same plan, same `klt gen` calls -- only the composition
 # requests differ) *unless* the interior-channel lever is on: that lever
 # changes the `klt gen` params themselves (routed build only, see
 # pll_layout.py's Builder.gen_group), so its envelopes are evidence the
 # shipped build's cannot stand in for and are kept.
-if [[ "$PLL_ROUTE_LEVERS" != *interior-channel* ]]; then
-  find "$SPOT_DIR" \( -name 'gen.*.json' -o -name 'draw.*.json' \
-    -o -name 'draw.*.params.json' -o -name 'plan.json' \) -delete
-else
-  find "$SPOT_DIR" \( -name 'draw.*.json' \
-    -o -name 'draw.*.params.json' -o -name 'plan.json' \) -delete
-fi
+python3 - "$SPOT_DIR" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+spot_dir = Path(sys.argv[1])
+build = json.loads((spot_dir / "build.json").read_text())
+if "interior-channel" not in build.get("routing_levers", {}).get("levers", []):
+    for envelope in spot_dir.glob("gen.*.json"):
+        envelope.unlink()
+PY
 
 # --- 6. Combined human-readable report --------------------------------------
 # Only the DRC envelope: `klt report` renders violation/mismatch-shaped

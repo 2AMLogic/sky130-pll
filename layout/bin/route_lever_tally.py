@@ -13,7 +13,7 @@ Two entry points:
 * ``tally_row(run_dir, record_id, label, levers)`` -- one row dict (also
   imported by ``render-pll-record.py`` for its cross-check of the final
   row).
-* the CLI: ``route-lever-tally.py row --run-dir … --record-id … --label …
+* the CLI: ``route_lever_tally.py row --run-dir … --record-id … --label …
   --levers a,b,c`` prints one row as JSON; ``… merge --prior rows.json
   --run-dir …`` appends this run's row to a copy of ``rows.json`` on
   stdout (the flow stores the merged file next to the record, so the
@@ -90,6 +90,7 @@ REASON_SHORT_LABELS: dict[str, str] = {
 
 #: Envelopes whose sha256 a row cites: everything its numbers derive from.
 _EVIDENCE_GLOBS = (
+    "route-spot-check/build.json",
     "route-spot-check/compose.*.response.json",
     "route-spot-check/extract.json",
     "route-spot-check/drc.json",
@@ -184,11 +185,10 @@ def tally_row(
     drc = _load(spot_dir / "drc.json")
     lvs_path = spot_dir / "lvs.json"
     lvs = _load(lvs_path) if lvs_path.is_file() else {}
-    build_path = run_dir / "build.json"
-    supplies: list[str] = []
-    if build_path.is_file():
-        levers_block = (_load(build_path).get("routing_levers") or {})
-        supplies = levers_block.get("supply_nets") or ["VDD", "GND"]
+    build_path = spot_dir / "build.json"
+    build = _load(build_path) if build_path.is_file() else {}
+    levers_block = build.get("routing_levers") or {}
+    supplies = levers_block.get("supply_nets") or ["VDD", "GND"]
     return {
         "record_id": record_id,
         "label": label,
