@@ -1,7 +1,7 @@
 # Work Plan
 
 <!-- guide:plan-body:start -->
-_Generated: 2026-11-23T03:24:45Z (snapshot; compare against live labels)_
+_Generated: 2026-11-23T07:11:23Z (snapshot; compare against live labels)_
 ## Operator Attention: Merge-Risk-Hold Pileup
 
 Judge-approved PRs under a hold (`loom:blocked` or `loom:operator`) — only a human merge decision is missing.
@@ -25,7 +25,7 @@ _None._
 
 Human-approved issues (`loom:issue`) ready for implementation — excluding held (`loom:blocked`/`loom:operator`/`loom:frozen`), `loom:building`, and issues closed by an open `loom:pr` PR (listed under Approved).
 
-_None._
+- **#563**: Share the calibration cycle-count check across both jitter reports *(PR #564 awaiting review)*
 
 ## In Progress
 
@@ -33,7 +33,6 @@ Issues currently being built (`loom:building`).
 
 - **#523**: xschem pin migration: migrate sky130-pll to the fleet 3.4.7
 - **#548**: layout: re-measure the routed PLL spot-check with the klt routing levers the generator never requests (second plane, per-net layers, interior channels)
-- **#563**: Share the calibration cycle-count check across both jitter reports
 
 ## PRs Awaiting Review
 
@@ -74,7 +73,7 @@ Issues carrying `loom:curated`.
 
 - **#231**: design: add the digital lock output spec row 16 asks for (top-level has no LOCK port) *(architect)* *(held)*
 - **#247**: sim: add a standalone PFD/charge-pump characterization campaign (UP/DN asymmetry, Icp, compliance) *(architect)* *(held)*
-- **#434**: Collapse the layout klt pin narrative: 156 comment lines for 2 pins, with stale copies in layout/README.md and setup-venv.sh *(hermit)* *(held)*
+- **#434**: Collapse the layout klt pin narrative: 156 comment lines for 2 pins, with stale copies in layout/README.md and setup-venv.sh *(hermit)*
 - **#554**: Remove the unused mim_cap_ff helper with the incorrect C1 example *(hermit)* *(held)*
 
 ## Epics
@@ -88,8 +87,8 @@ _None._
 | Operator merge-risk holds | 0 |
 | Very important | 0 |
 | Important | 2 |
-| Ready (`loom:issue`, net of holds/building/merge-pending) | 0 |
-| In Progress (`loom:building`) | 3 |
+| Ready (`loom:issue`, net of holds/building/merge-pending) | 1 |
+| In Progress (`loom:building`) | 2 |
 | PRs awaiting review | 2 |
 | Approved PRs awaiting merge | 0 |
 | Curated | 17 |
