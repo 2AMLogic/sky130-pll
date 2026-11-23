@@ -1,7 +1,7 @@
 # Work Plan
 
 <!-- guide:plan-body:start -->
-_Generated: 2026-11-20T19:53:25Z (snapshot; compare against live labels)_
+_Generated: 2026-11-23T03:24:45Z (snapshot; compare against live labels)_
 ## Operator Attention: Merge-Risk-Hold Pileup
 
 Judge-approved PRs under a hold (`loom:blocked` or `loom:operator`) — only a human merge decision is missing.
@@ -18,29 +18,29 @@ _None._
 
 `loom:important`; taken before unlabelled work.
 
-- **#244**: sim: record divider Fmax boundaries across PVT for digital T1 characterization
+- **#244**: sim: record divider Fmax boundaries across PVT for digital T1 characterization *(held)*
 - **#548**: layout: re-measure the routed PLL spot-check with the klt routing levers the generator never requests (second plane, per-net layers, interior channels)
 
 ## Ready
 
 Human-approved issues (`loom:issue`) ready for implementation — excluding held (`loom:blocked`/`loom:operator`/`loom:frozen`), `loom:building`, and issues closed by an open `loom:pr` PR (listed under Approved).
 
-- **#244**: sim: record divider Fmax boundaries across PVT for digital T1 characterization
-- **#548**: layout: re-measure the routed PLL spot-check with the klt routing levers the generator never requests (second plane, per-net layers, interior channels)
-- **#549**: Pass the prepared NgspiceUnit directly to the PVT and Monte Carlo executor
-- **#550**: Use the CI manifest validator before installing stored evidence
+_None._
 
 ## In Progress
 
 Issues currently being built (`loom:building`).
 
 - **#523**: xschem pin migration: migrate sky130-pll to the fleet 3.4.7
+- **#548**: layout: re-measure the routed PLL spot-check with the klt routing levers the generator never requests (second plane, per-net layers, interior channels)
+- **#563**: Share the calibration cycle-count check across both jitter reports
 
 ## PRs Awaiting Review
 
 PRs waiting on Judge (`loom:review-requested`).
 
-_None._
+- **#559**: feat: measure the klt routing levers the routed spot-check never requested (second plane, interior channels, per-net supply/fanout planes)
+- **#564**: fix: share the calibration cycle-count check across both jitter readers
 
 ## Approved (Awaiting Merge)
 
@@ -62,7 +62,7 @@ Issues carrying `loom:curated`.
 - **#232**: design: CLK is the raw VCO node — add an output stage so rows 14/15 have a pin to measure *(curated)* *(held)*
 - **#233**: sim: no sky130 power measurement exists, so spec row 12 cannot be re-budgeted *(curated)* *(held)*
 - **#239**: Guard: recognize bounded explicit /tmp mktemp templates while preserving containment *(curated)* *(held)*
-- **#244**: sim: record divider Fmax boundaries across PVT for digital T1 characterization *(curated)*
+- **#244**: sim: record divider Fmax boundaries across PVT for digital T1 characterization *(curated)* *(held)*
 - **#259**: design: characterize LOCK timing primitives and watchdog over PVT *(curated)*
 - **#290**: sim: klt decks[] batch route for the PFD/charge-pump (cp) campaign, with one-point smoke *(curated)* *(held)*
 - **#297**: Re-qualify cited sim reference records under open_pdks f6eeac7 (part of #295) *(curated)* *(held)*
@@ -75,6 +75,7 @@ Issues carrying `loom:curated`.
 - **#231**: design: add the digital lock output spec row 16 asks for (top-level has no LOCK port) *(architect)* *(held)*
 - **#247**: sim: add a standalone PFD/charge-pump characterization campaign (UP/DN asymmetry, Icp, compliance) *(architect)* *(held)*
 - **#434**: Collapse the layout klt pin narrative: 156 comment lines for 2 pins, with stale copies in layout/README.md and setup-venv.sh *(hermit)* *(held)*
+- **#554**: Remove the unused mim_cap_ff helper with the incorrect C1 example *(hermit)* *(held)*
 
 ## Epics
 
@@ -87,11 +88,11 @@ _None._
 | Operator merge-risk holds | 0 |
 | Very important | 0 |
 | Important | 2 |
-| Ready (`loom:issue`, net of holds/building/merge-pending) | 4 |
-| In Progress (`loom:building`) | 1 |
-| PRs awaiting review | 0 |
+| Ready (`loom:issue`, net of holds/building/merge-pending) | 0 |
+| In Progress (`loom:building`) | 3 |
+| PRs awaiting review | 2 |
 | Approved PRs awaiting merge | 0 |
 | Curated | 17 |
-| Architect / Hermit proposals | 3 |
+| Architect / Hermit proposals | 4 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->

@@ -7,7 +7,34 @@ to the caller to judge. There is never a local fallback. Stdlib only.
 
 from __future__ import annotations
 
+import os
+import shutil
+from pathlib import Path
+
 CAPACITY_MARKERS = ("BATCH_MAX_CONCURRENT_INSTANCES", "batch_no_capacity", "no capacity in any")
+
+
+def resolve_klt(klt=None, *, environ=None):
+    """Resolve the `klt` client binary: an explicit argument first, then
+    `SKY130_PLL_KLT`, then PATH. -> the path string, or None when nothing
+    resolves; callers fail closed on that in `preflight_batch`."""
+    env = os.environ if environ is None else environ
+    return klt or env.get("SKY130_PLL_KLT") or shutil.which("klt")
+
+
+def preflight_batch(klt, *, environ=None, error_cls=RuntimeError):
+    """Fail-closed environment check for the batch-fleet route: `klt` must be
+    resolved and `KLT_BATCH_PROVISION_SCRIPT` must name an existing provision
+    script. -> `klt` (a non-empty path string) for the caller to execute."""
+    if not klt:
+        raise error_cls("`klt` is not on PATH (set SKY130_PLL_KLT to its path)")
+    env = os.environ if environ is None else environ
+    prov = env.get("KLT_BATCH_PROVISION_SCRIPT")
+    if not prov or not Path(prov).expanduser().is_file():
+        raise error_cls(
+            "KLT_BATCH_PROVISION_SCRIPT does not name an existing batch-fleet-provision.sh"
+        )
+    return klt
 
 
 def is_capacity_refusal(text: str) -> bool:

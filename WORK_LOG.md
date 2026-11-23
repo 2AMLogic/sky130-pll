@@ -6,8 +6,30 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 - [2026-09](work_log/WORK_LOG_2026-09.md)
 
+### 2026-11-22
+
+- **Issue #570** (closed): Remove private git helper and dead local in sim/power/mint.py: share report.git_info and make_record_id
+- **PR #571**: refactor(sim/power): mint provenance via harness.report git_info/make_record_id
+- **Issue #568** (closed): Share batch-fleet klt resolution and preflight in sim/harness/klt_submit.py
+- **PR #569**: refactor: share klt resolution and batch preflight in klt_submit
+- **Issue #565** (closed): Remove netlist_with_xschem in sim/power/build.py: share runner.netlist_schematic
+- **PR #566**: power: netlist build.py through runner.netlist_schematic, drop raw xschem copy
+- **Issue #560** (closed): Compute charge-pump gate intervals once per waveform
+- **PR #562**: sim: reuse one gate-interval classification per charge-pump point
+- **Issue #557** (closed): Share the successful clock reduction in _measure_clock
+- **PR #558**: refactor: consolidate the two successful clock paths in _measure_clock
+
+### 2026-11-21
+
+- **Issue #553** (closed): gitignore the daemon's account-ranking runtime files
+- **PR #556**: chore: ignore loom-daemon account-ranking runtime file
+
 ### 2026-11-20
 
+- **Issue #550** (closed): Use the CI manifest validator before installing stored evidence
+- **PR #552**: sim: validate stored-evidence manifests with the CI checker's schema
+- **Issue #549** (closed): Pass the prepared NgspiceUnit directly to the PVT and Monte Carlo executor
+- **PR #555**: refactor: hand the prepared NgspiceUnit to _run_ngspice_and_judge
 - **PR #546**: sim: record divider Fmax boundaries for N=25 across the 45-point PVT matrix
 - **Issue #541** (closed): sim/harness: the batch resume cache key does not fingerprint the request, so a manifest/spec change silently reuses stale reports
 - **PR #542**: fix: fingerprint the klt batch cache key with the body and request

@@ -10,11 +10,15 @@ by construction.
 
 from __future__ import annotations
 
+import contextlib
 import json
+import re
 import sys
 import tempfile
 import unittest
+from io import StringIO
 from pathlib import Path
+from unittest import mock
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
@@ -28,6 +32,7 @@ reduce_mod = load_module("power_reduce", POWER_DIR / "reduce.py")
 sys.path.insert(0, str(POWER_DIR))
 mint_mod = load_module("power_mint", POWER_DIR / "mint.py")
 shard_mod = load_module("power_shard", POWER_DIR / "shard.py")
+build_mod = load_module("power_build", POWER_DIR / "build.py")
 
 VDD = 1.8
 DT = 0.05e-9
@@ -365,6 +370,203 @@ class MergeShardReportsTests(unittest.TestCase):
             self._write(d, "vco.shard00.report.json", ["ff"])
             with self.assertRaises(SystemExit):
                 mint_mod.load_block_reports(d, "vco")
+
+
+class MintProvenanceTests(unittest.TestCase):
+    """mint.render/main git provenance goes through harness.report (issue #570)."""
+
+    KEY = ("tt", 1.8, 27.0)
+    RECORD_ID = "20990101-000000-abcdef0"
+
+    def _render(self, git_result):
+        specs_by_block = {
+            "vco": [("idle", 2e-6, "idle", None),
+                    ("a", 20e-6, "active", 50e6),
+                    ("b", 60e-6, "active", 150e6)],
+            "divider-n4": [("idle", 1e-6, "idle", None),
+                           ("f100m", 10e-6, "active", None),
+                           ("f250m", 12e-6, "active", None)],
+            "pfd-cp": [("idle", 3e-6, "idle", None),
+                       ("25m_lock", 14e-6, "active", None),
+                       ("1m_lock", 13e-6, "active", None)],
+        }
+        specs_by_block["divider-n64"] = specs_by_block["divider-n4"]
+
+        def stages(specs):
+            return {sid: _stage(sid, i_a, kind, f_hz=f_hz)
+                    for sid, i_a, kind, f_hz in specs}
+
+        def stage_doc(specs):
+            return {"stages": [
+                {"id": sid, "kind": kind, "label": sid, "vctrl": 0.9,
+                 "t0": 0.0, "t1": 1e-6, "settle": 0.5e-6}
+                for sid, _i_a, kind, _f in specs
+            ]}
+
+        all_data = {b: {self.KEY: {"stages": stages(s), "errors": [], "xchk": {}}}
+                    for b, s in specs_by_block.items()}
+        stages_docs = {b: stage_doc(s) for b, s in specs_by_block.items()}
+        reports = {b: {} for b in mint_mod.BLOCKS}
+        with mock.patch.object(mint_mod.report_mod, "git_info",
+                               return_value=git_result) as gi:
+            text = mint_mod.render(self.RECORD_ID, reports, all_data,
+                                   stages_docs, None, None)
+        return text, gi
+
+    def test_render_delegates_git_provenance_with_run_output_prefixes(self):
+        _text, gi = self._render({"sha": "0" * 40, "dirty": False})
+        gi.assert_called_once_with(
+            mint_mod.REPO_ROOT,
+            ignore_prefixes=(
+                f"sim/power/records/{self.RECORD_ID}.md",
+                f"sim/power/reports/{self.RECORD_ID}/",
+                f"sim/power/netlist-snapshots/{self.RECORD_ID}/",
+            ),
+        )
+
+    def test_render_repo_commit_line_reflects_clean_and_dirty(self):
+        for dirty in (False, True):
+            text, _gi = self._render({"sha": "a" * 40, "dirty": dirty})
+            expected = f"  - Repo commit: `{'a' * 40}`" + (" (dirty)" if dirty else "")
+            self.assertIn(expected, text)
+
+    def _run_main(self, argv):
+        with tempfile.TemporaryDirectory() as td:
+            d = Path(td)
+            for b in mint_mod.BLOCKS:
+                (d / f"{b}.report.json").write_text(json.dumps({"corners": []}))
+            with mock.patch.object(mint_mod.report_mod, "git_info",
+                                   return_value={"sha": "0" * 40, "dirty": False}), \
+                 contextlib.redirect_stdout(StringIO()):
+                return mint_mod.main([*argv, "--reports-dir", str(d)])
+
+    def test_main_delegates_record_id_to_report_mod(self):
+        with mock.patch.object(mint_mod.report_mod, "make_record_id",
+                               return_value="unittest-record") as mri:
+            rc = self._run_main(["--dry-run"])
+        self.assertEqual(rc, 0)
+        mri.assert_called_once_with(mint_mod.REPO_ROOT)
+
+    def test_main_explicit_record_id_skips_make_record_id(self):
+        with mock.patch.object(mint_mod.report_mod, "make_record_id") as mri:
+            rc = self._run_main(["--dry-run", "--record-id", "unittest-record"])
+        self.assertEqual(rc, 0)
+        mri.assert_not_called()
+
+
+class ToBodyTests(unittest.TestCase):
+    """build.to_body: xschem netlist text -> `klt sim` circuit body."""
+
+    def test_strips_klt_netlist_inputs_line(self):
+        # Newer `klt netlist` prepends this provenance header; the committed
+        # bodies must not carry it (issue #565).
+        text = (
+            '** klt-netlist-inputs: {"pdk_variant": null, "xschem_version": "3.4.7"}\n'
+            "** sch_path: /machine/local/tb_power_vco.sch\n"
+            "** sym_path: /machine/local/vco_ring5.sym\n"
+            "X1 VDD GND VCTRL CLK vco_ring5\n"
+            ".end\n"
+        )
+        body = build_mod.to_body(text)
+        self.assertNotIn("klt-netlist-inputs", body)
+        self.assertNotIn("/machine/local", body)
+        self.assertIn("** sch_path: (machine-local path elided)", body)
+        self.assertIn("** sym_path: (machine-local path elided)", body)
+        self.assertIn("X1 VDD GND VCTRL CLK vco_ring5", body)
+        self.assertNotRegex(body, r"(?m)^\.end$")
+
+    def test_input_without_klt_header_is_byte_stable(self):
+        # klayout-tools==0.8.0 emits no `** klt-netlist-inputs:` line; its
+        # committed bodies must survive the strip unchanged.
+        text = "** sch_path: /machine/local/tb.sch\nR1 a b 1k\n.end\n"
+        self.assertEqual(
+            build_mod.to_body(text),
+            "** sch_path: (machine-local path elided)\nR1 a b 1k\n",
+        )
+
+    def test_rejects_lib_and_control_cards(self):
+        for bad in (".lib /pdk/sky130.lib.spice tt\n.end\n",
+                    ".control\n.endc\n.end\n"):
+            with self.assertRaises(SystemExit):
+                build_mod.to_body(bad)
+
+    def test_rewrites_machine_local_pdk_root(self):
+        text = ".include /home/me/pdks/sky130A/libs.ref/sky130_fd_pr/pfet.spice\n.end\n"
+        body = build_mod.to_body(text)
+        self.assertIn(
+            ".include $PDK_ROOT/sky130A/libs.ref/sky130_fd_pr/pfet.spice\n", body
+        )
+
+
+def _test_block() -> dict:
+    """Minimal block dict exercising every key build_block consumes."""
+    return {
+        "sources": [("v", "V2", "VCTRL", "pwl(0 0)")],
+        "name": "vco",
+        "dut": "design/vco/vco_ring5.sym",
+        "dut_name": "XXVCO",
+        "pins": {"VDD": "VDD", "GND": "GND", "VCTRL": "VCTRL", "CLK": "CLK"},
+        "code": "", "stdcells": False,
+        "align_node": "v(clk)", "save": ["v(clk)", "i(v1)"],
+        "tran_step": "50p", "tran_stop": "1u", "uic": True,
+        "stages": [{"id": "idle", "kind": "idle", "label": "idle",
+                    "t0": 0.0, "t1": 100e-9, "settle": 60e-9}],
+        "title": "unit-test block", "timeout_s": 60, "note": "unit-test note",
+    }
+
+
+class BuildBlockTests(unittest.TestCase):
+    """build.build_block delegates netlisting to runner.netlist_schematic."""
+
+    def test_delegates_to_runner_netlist_schematic(self):
+        seen = {}
+        netlist_text = (
+            '** klt-netlist-inputs: {"xschem_version": "9.9"}\n'
+            "** sch_path: /machine/local/tb_power_vco.sch\n"
+            "X1 VDD GND VCTRL CLK vco_ring5\n"
+            ".end\n"
+        )
+
+        def fake(pdk, xschemrc, schematic, out_dir, repo_root):
+            seen.update(pdk=pdk, xschemrc=xschemrc, schematic=schematic,
+                        out_dir=out_dir, repo_root=repo_root,
+                        sch_text=schematic.read_text())
+            return netlist_text
+
+        with mock.patch.object(build_mod.runner_mod, "netlist_schematic", fake):
+            out = build_mod.build_block(_test_block(), pdk="pdk-sentinel")
+        self.assertIs(seen["pdk"], "pdk-sentinel")
+        self.assertEqual(seen["xschemrc"], build_mod.REPO_ROOT / "sim" / "xschemrc")
+        self.assertEqual(seen["schematic"].name, "tb_power_vco.sch")
+        self.assertEqual(seen["sch_text"], out["tb_power_vco.sch"])
+        self.assertEqual(seen["out_dir"], seen["schematic"].parent)
+        self.assertEqual(seen["repo_root"], build_mod.REPO_ROOT)
+        body = out["vco.body.spice"]
+        self.assertNotIn("klt-netlist-inputs", body)
+        self.assertNotRegex(body, r"(?m)^\.end$")
+        self.assertTrue(body.endswith("\n.save v(clk) i(v1)\n"))
+        stages = json.loads(out["vco.stages.json"])
+        self.assertEqual(stages["block"], "vco")
+        req = json.loads(out["vco.request.json"])
+        self.assertEqual(req["netlist"], "vco.body.spice")
+        self.assertEqual(req["analysis"]["args"], "50p 1u uic")
+
+    def test_netlist_error_becomes_system_exit(self):
+        def boom(*args, **kwargs):
+            raise build_mod.runner_mod.NetlistError("klt netlist failed (exit 1)")
+
+        with mock.patch.object(build_mod.runner_mod, "netlist_schematic", boom):
+            with self.assertRaises(SystemExit):
+                build_mod.build_block(_test_block(), pdk=object())
+
+
+class BuildSourceTests(unittest.TestCase):
+    """Host rule: netlisting goes through `klt netlist`, never raw xschem."""
+
+    def test_no_raw_xschem_invocation(self):
+        src = (POWER_DIR / "build.py").read_text()
+        self.assertIsNone(re.search(r'["\']xschem["\']', src))
+        self.assertNotIn("netlist_with_xschem", src)
 
 
 if __name__ == "__main__":
