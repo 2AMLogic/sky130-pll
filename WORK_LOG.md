@@ -6,6 +6,13 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 - [2026-09](work_log/WORK_LOG_2026-09.md)
 
+### 2026-11-23
+
+- **Issue #563** (closed): Share the calibration cycle-count check across both jitter reports
+- **PR #564**: fix: share the calibration cycle-count check across both jitter readers
+- **Issue #548** (closed): layout: re-measure the routed PLL spot-check with the klt routing levers the generator never requests (second plane, per-net layers, interior channels)
+- **PR #559**: feat: measure the klt routing levers the routed spot-check never requested (second plane, interior channels, per-net supply/fanout planes)
+
 ### 2026-11-22
 
 - **Issue #570** (closed): Remove private git helper and dead local in sim/power/mint.py: share report.git_info and make_record_id
