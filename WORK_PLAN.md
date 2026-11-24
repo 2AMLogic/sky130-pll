@@ -1,7 +1,7 @@
 # Work Plan
 
 <!-- guide:plan-body:start -->
-_Generated: 2026-11-24T03:13:23Z (snapshot; compare against live labels)_
+_Generated: 2026-11-24T11:11:24Z (snapshot; compare against live labels)_
 ## Operator Attention: Merge-Risk-Hold Pileup
 
 Judge-approved PRs under a hold (`loom:blocked` or `loom:operator`) — only a human merge decision is missing.
@@ -31,7 +31,6 @@ _None._
 Issues currently being built (`loom:building`).
 
 - **#523**: xschem pin migration: migrate sky130-pll to the fleet 3.4.7
-- **#575**: layout: the supply plane and the cross-block fallback plane are both `metal3` — measure an exclusive supply plane
 
 ## PRs Awaiting Review
 
@@ -65,7 +64,6 @@ Issues carrying `loom:curated`.
 - **#297**: Re-qualify cited sim reference records under open_pdks f6eeac7 (part of #295) *(curated)* *(held)*
 - **#298**: Re-qualify cited layout reference records under open_pdks f6eeac7 (part of #295) *(curated)* *(held)*
 - **#523**: xschem pin migration: migrate sky130-pll to the fleet 3.4.7 *(curated)*
-- **#575**: layout: the supply plane and the cross-block fallback plane are both `metal3` — measure an exclusive supply plane *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -86,10 +84,10 @@ _None._
 | Very important | 0 |
 | Important | 1 |
 | Ready (`loom:issue`, net of holds/building/merge-pending) | 0 |
-| In Progress (`loom:building`) | 2 |
+| In Progress (`loom:building`) | 1 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
-| Curated | 17 |
+| Curated | 16 |
 | Architect / Hermit proposals | 4 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
