@@ -6,6 +6,11 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 - [2026-09](work_log/WORK_LOG_2026-09.md)
 
+### 2026-11-24
+
+- **Issue #575** (closed): layout: the supply plane and the cross-block fallback plane are both `metal3` — measure an exclusive supply plane
+- **PR #580**: docs: record rejected exclusive-supply-plane routing trial
+
 ### 2026-11-23
 
 - **Issue #563** (closed): Share the calibration cycle-count check across both jitter reports
