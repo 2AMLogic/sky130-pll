@@ -355,6 +355,49 @@ exactly on this host before any lever):
   shipped lever enabled, what remains is the combination-level
   plane/track assignment problem itself.
 
+#### Exclusive supply plane trial (issue #575) — rejected, not adopted
+
+One more run of the final configuration with a single variable changed:
+`SUPPLY_LAYER_ROLE = "metal5"` (`met4`) instead of `"metal3"` (`met2`), so
+the rails no longer share a plane with the `cross_block_layer_role` fallback.
+`ROUTING_LAYER_ROLE` (`metal2`), `CROSS_BLOCK_LAYER_ROLE` (`metal3`),
+`FANOUT_LAYER_ROLE` (`metal4`), net order and tool/PDK pins were unchanged;
+each block's compose request carried `layer_role = "metal5"` on `VDD`/`GND`.
+Row derived by `route_lever_tally.py` from the run's own envelopes
+(run record id `20261124-032415-6a7a0251`, not committed), against the
+control `20261121-015858-147252b9`:
+
+| | Control (supplies `metal3`) | Trial (supplies `metal5`) |
+| --- | --- | --- |
+| Legs drawn / total | 111 / 365 | 114 / 377 |
+| Nets full / partial / none | 14 / 12 / 39 | 15 / 13 / 37 |
+| Declined: route-vs-route / same-layer spacing | 226 / 28 | 204 / 59 |
+| Shorted nodes | 0 | 0 |
+| Routed DRC | 4 (`met3.space.1`) | 10 (`met3.space.1` 4, `capm.enclosing.via3.1` 3, `capm.separation.via3.1` 3) |
+| LVS | `mismatch` (1489) | `mismatch` (1483) |
+
+The shipped unrouted stream stayed at 0 DRC violations. The leg-total basis
+differs between rows, so the comparison is nets routed in full and decline
+reasons, as the record's "Reading the ladder" warns.
+
+**Disposition: rejected; supplies stay on `metal3`.** The trial routes one
+more net in full and draws no short, but routed-build DRC rises from 4 to 10
+(the `met4` supply via ladders land on MiM-cap layers and trip the
+`capm.*.via3.1` rules), same-layer-spacing declines more than double (28 to
+59), and the combined decline count rises (254 to 263) on a larger leg
+total. LVS stays `mismatch` with no closure. Read strictly, "more nets in
+full" alone could be taken as an improvement; this trial is recorded as a mixed
+result whose DRC regression outweighs a single net, not as a clean win. No
+record was minted, so the control remains the newest record. Envelope
+sha256s (fetch with `klt artifact get <sha256>`): `drc.json`
+`23c8fba66c2ec5739d41fafeb2ad511b30aee8246720b96382ba544cd3bcf2c3`,
+`lvs.json` `4857fb97730047c620b433e7b757cb4cf17156860430eb9b7fecddff72aa030c`,
+`extract.json` `0fb37dd55a35624161ea76967dd90bc76cea2d2154e3aa728f07fb81b25ce1c0`,
+`build.json` `8f599546fc7b3ab5c689a97694d0519ebfb8c26d4c0013b9ceb8f0d8649660c3`,
+`compose.top.response.json` `e281a7eac5ef0fa60615114cd5822e2256ab4a5172903054786406667dd5b49b`.
+`metal5` is not the top role (`metal6` = `met5` exists), so further
+exclusive-plane variants remain possible but are not pursued here.
+
 The unrouted *shipped* stream is unchanged by all of it — the interior
 channel is applied to the routed spot-check build only, and the shipped
 build's DRC stays clean (asserted by the record).
