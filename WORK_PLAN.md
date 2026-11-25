@@ -1,7 +1,7 @@
 # Work Plan
 
 <!-- guide:plan-body:start -->
-_Generated: 2026-11-24T11:11:24Z (snapshot; compare against live labels)_
+_Generated: 2026-11-25T20:30:18Z (snapshot; compare against live labels)_
 ## Operator Attention: Merge-Risk-Hold Pileup
 
 Judge-approved PRs under a hold (`loom:blocked` or `loom:operator`) — only a human merge decision is missing.
@@ -69,7 +69,7 @@ Issues carrying `loom:curated`.
 
 - **#231**: design: add the digital lock output spec row 16 asks for (top-level has no LOCK port) *(architect)* *(held)*
 - **#247**: sim: add a standalone PFD/charge-pump characterization campaign (UP/DN asymmetry, Icp, compliance) *(architect)* *(held)*
-- **#434**: Collapse the layout klt pin narrative: 156 comment lines for 2 pins, with stale copies in layout/README.md and setup-venv.sh *(hermit)*
+- **#434**: Collapse the layout klt pin narrative: 156 comment lines for 2 pins, with stale copies in layout/README.md and setup-venv.sh *(hermit)* *(held)*
 - **#554**: Remove the unused mim_cap_ff helper with the incorrect C1 example *(hermit)* *(held)*
 
 ## Epics
