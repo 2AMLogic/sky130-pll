@@ -1,7 +1,7 @@
 # Work Plan
 
 <!-- guide:plan-body:start -->
-_Generated: 2026-11-25T20:30:18Z (snapshot; compare against live labels)_
+_Generated: 2026-11-26T08:22:09Z (snapshot; compare against live labels)_
 ## Operator Attention: Merge-Risk-Hold Pileup
 
 Judge-approved PRs under a hold (`loom:blocked` or `loom:operator`) — only a human merge decision is missing.
@@ -19,18 +19,20 @@ _None._
 `loom:important`; taken before unlabelled work.
 
 - **#244**: sim: record divider Fmax boundaries across PVT for digital T1 characterization *(held)*
+- **#583**: Add four VCTRL sweep values to the Stage A VCO bench
 
 ## Ready
 
 Human-approved issues (`loom:issue`) ready for implementation — excluding held (`loom:blocked`/`loom:operator`/`loom:frozen`), `loom:building`, and issues closed by an open `loom:pr` PR (listed under Approved).
 
-- **#583**: Add four VCTRL sweep values to the Stage A VCO bench
+- **#586**: sim/vco-buffered no longer mirrors sim/vco's VCTRL sweep: six values against ten
 
 ## In Progress
 
 Issues currently being built (`loom:building`).
 
 - **#523**: xschem pin migration: migrate sky130-pll to the fleet 3.4.7
+- **#583**: Add four VCTRL sweep values to the Stage A VCO bench
 
 ## PRs Awaiting Review
 
@@ -42,7 +44,7 @@ _None._
 
 PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
-_None._
+- **#587**: feat(sim): extend the VCO tuning sweep from six to ten VCTRL values
 
 ## Proposed
 
@@ -65,6 +67,7 @@ Issues carrying `loom:curated`.
 - **#298**: Re-qualify cited layout reference records under open_pdks f6eeac7 (part of #295) *(curated)* *(held)*
 - **#523**: xschem pin migration: migrate sky130-pll to the fleet 3.4.7 *(curated)*
 - **#583**: Add four VCTRL sweep values to the Stage A VCO bench *(curated)*
+- **#586**: sim/vco-buffered no longer mirrors sim/vco's VCTRL sweep: six values against ten *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -83,12 +86,12 @@ _None._
 |------|-------|
 | Operator merge-risk holds | 0 |
 | Very important | 0 |
-| Important | 1 |
+| Important | 2 |
 | Ready (`loom:issue`, net of holds/building/merge-pending) | 1 |
-| In Progress (`loom:building`) | 1 |
+| In Progress (`loom:building`) | 2 |
 | PRs awaiting review | 0 |
-| Approved PRs awaiting merge | 0 |
-| Curated | 17 |
+| Approved PRs awaiting merge | 1 |
+| Curated | 18 |
 | Architect / Hermit proposals | 4 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
