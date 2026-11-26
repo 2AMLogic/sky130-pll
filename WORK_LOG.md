@@ -6,6 +6,14 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 - [2026-09](work_log/WORK_LOG_2026-09.md)
 
+### 2026-11-26
+
+- **PR #590**: docs: record the Stage A Spot preflight and submission blockers
+- **Issue #586** (closed): sim/vco-buffered no longer mirrors sim/vco's VCTRL sweep: six values against ten
+- **PR #589**: docs(sim): tie the buffered VCO sweep to its six-value baseline
+- **Issue #583** (closed): Add four VCTRL sweep values to the Stage A VCO bench
+- **PR #587**: feat(sim): extend the VCO tuning sweep from six to ten VCTRL values
+
 ### 2026-11-24
 
 - **Issue #575** (closed): layout: the supply plane and the cross-block fallback plane are both `metal3` — measure an exclusive supply plane
