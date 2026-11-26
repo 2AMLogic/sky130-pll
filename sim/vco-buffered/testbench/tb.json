@@ -1,6 +1,6 @@
 {
   "schema": "sky130-pll.harness.tb/1",
-  "claim": "VCO frequency-vs-VCTRL characterization of design/vco/vco_ring5.sch with the issue-#232 CLK buffer (design/clk-buf) attached to its CLK node and loaded by the provisional 1 pF characterization load of spec/decision-records/DR-008-clk-output-load-and-buffer-scope.md, at the same six VCTRL points and the same 45-point PVT grid as the unbuffered sim/vco campaign. It is the buffered half of a pair: the unbuffered half is sim/vco/records/20260904-163130-f3ae976.md, and the difference per (corner, VCTRL) point is the tuning-range shift caused by the buffer's input capacitance on the ring-side node. Measured design input only; it ratifies nothing.",
+  "claim": "VCO frequency-vs-VCTRL characterization of design/vco/vco_ring5.sch with the issue-#232 CLK buffer (design/clk-buf) driving the provisional 1 pF load defined in spec/decision-records/DR-008-clk-output-load-and-buffer-scope.md. The buffered sweep uses sim/vco's original six VCTRL values (0.8, 0.9, 1.0, 1.2, 1.4, 1.6 V) and the 45-point PVT grid from the unbuffered baseline, sim/vco/records/20260904-163130-f3ae976.md. The frequency difference at each matched (PVT, VCTRL) point measures the tuning shift caused by the buffer's input capacitance on the ring-side node. Measured design input only.",
   "spec_rows": [
     2,
     5
@@ -51,6 +51,6 @@
       ]
     }
   },
-  "methodology_note": "identical to sim/vco's (same DUT, open loop, same six VCTRL values, same transient, same `uic` startup kick and 60 ns settle, same simulator options -- none) except that design/clk-buf is attached at the VCO's CLK node and loads it with the 1 pF DR-008 characterization load; the measured node is the ring-side net `vcoclk` (the node the divider taps in design/top), NOT the buffered pin, so the sweep reads exactly the loading the buffer adds to the ring. Read it against the unbuffered baseline named in the claim, point for point; the shift is the figure, not either absolute frequency. The same dump-grid caveat as sim/vco's applies to the upper-half VCTRL rows, which is why a paired comparison on the same 50 ps grid is the right read.",
-  "analysis": "transient per swept VCTRL value (`tran 50p 200n uic`, six values, one ngspice invocation per PVT point)"
+  "methodology_note": "For point-for-point comparison with the unbuffered baseline, this bench uses the same open-loop ring, sim/vco's original six VCTRL values, the `uic` startup kick, a 60 ns settling interval and default simulator options. The ring drives design/clk-buf, whose output drives the 1 pF DR-008 load. Measuring frequency on the ring-side net `vcoclk`, where the divider taps the ring in design/top, isolates the buffer's effect on tuning. Both benches use a 50 ps dump grid, so the upper-half VCTRL rows share the baseline's time-resolution limit.",
+  "analysis": "one transient (`tran 50p 200n uic`) at each of sim/vco's original six VCTRL values to match the unbuffered baseline, with one ngspice invocation per PVT point"
 }
