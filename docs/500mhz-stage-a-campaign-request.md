@@ -1,14 +1,13 @@
 # Stage A campaign request: oscillator and divider screening for a proposed 500 MHz output
 
-- **Status**: proposed, **unexecuted**. This document authorizes nothing by
-  itself: no simulation, batch job, spend, circuit change or spec edit. It is
-  the "concrete bounded campaign request" that
-  [DR-011](../spec/decision-records/DR-011-500mhz-feasibility-plan.md) Step 4
-  requires before any stage may run.
+- **Status**: Stage A authorized on 2026-11-26 for the full VCO matrix and
+  divider M2 on Spot. The preflight stopped before submission. Section 4
+  records the coverage, spend and blockers for this attempt. The remaining
+  sections give the original proposal and decision criteria. [Operator decision and limits](https://github.com/2AMLogic/sky130-pll/issues/333#issuecomment-7184276839)
 - **Issue**: #333 (`Part of`, not `Closes`; the issue stays open for the later
   interface-scope disposition). Bench preparation for section 2.2 is #352
   (offline preparation only; nothing in it was simulated).
-- **Plan it implements**: DR-011 Stage A (oscillator and divider screening).
+- **Plan it implements**: [DR-011](../spec/decision-records/DR-011-500mhz-feasibility-plan.md) Stage A (oscillator and divider screening).
   The measurement contract (ratio, output node and load, PVT coverage, lock
   criterion, period RMS versus consumer-edge TIE) is defined in DR-011 Step 2
   and is **cited, not redefined, here**. Stage A measures neither jitter
@@ -151,10 +150,10 @@ about lock, duty at the output pin, or jitter.
 - The `klt sim` batch route groups one modulus and one supply per request
   with every probe frequency as its own DUT copy and the process ×
   temperature matrix as `klt sim` corners (`sim/harness/fmax_klt.py` module
-  docstring). For M2 that is 1 modulus × 3 supplies = **3 groups** in
-  stage 1 (13 DUT copies each) and up to 3 more in stage 2 (up to 7 copies
-  each); M1 would be 5 × 3 = 15 per stage. Whether the batch route accepts
-  these group sizes is unverified (section 4).
+  docstring). M2 has three (modulus, supply) combinations. The adapter
+  chunks each combination by frequency before submission. Section 4 gives
+  the stage-1 group count at the selected chunk size. Stage-2 grouping
+  depends on which frequencies the individual cells require.
 
 ## 3. Prerequisites (named, none assumed met)
 
@@ -184,7 +183,68 @@ about lock, duty at the output pin, or jitter.
 
 ## 4. Runtime and cost basis
 
-No figure below is a budget.
+### 2026-11-26 Stage A preflight and spend
+
+The authorized ceiling is **300 cumulative Spot job-hours across both
+benches**, with at most **two paid attempts per group** (initial launch plus
+one retry, including automatic replacements and resumes). The operator's
+30–70 job-hour figure was a planning estimate. [Authorization](https://github.com/2AMLogic/sky130-pll/issues/333#issuecomment-7184276839)
+
+Preflight used source `22e547726a28bcdd2f0cfe22ed82a47a1080d2fe`, which
+includes the VCO sweep change at `cb61aae4`. The client reported
+`klt 0.9.2.dev111+g978f7464fae1`. The local harness resolved sky130A at
+the repository pin `f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7`, with
+ngspice-47 and xschem 3.4.7. The reused VCO record used ngspice-46 and
+open_pdks `c6d73a35`. The batch identity dry run returned
+`published_runner.status=unknown` with an empty image list. The actual Spot
+runner's klt, simulator and PDK build remain unverified. [Reused record](../sim/vco/records/20260904-163130-f3ae976.md)
+
+| Bench | Zero-spend plan | Coverage from this attempt |
+|---|---|---|
+| VCO | 5 process corners × 3 temperatures × 3 supplies = 45 decks in one deck-list request. Ten VCTRL values per deck give 450 measurements. The four additions (0.95, 1.05, 1.10 and 1.15 V) account for 180 unique new samples. | All 45 PVT points unrun. The 270 historical measurements remain in the cited record. |
+| Divider M2 | N=20, 45 cells, 89 frequencies on the search grid. Stage 1 schedules 585 probes, including a mandatory 500 MHz probe in every cell. Refinement can add up to 315 probes. | All 45 cells unrun. Each independent 500 MHz verdict remains open. |
+
+```text
+$ python3 sim/run_fmax.py sim/divider-fmax/testbench/fmax-stage-a-500mhz.json --dry-run
+fmax: 45 cell(s), grid 89 points (400-2600 MHz @ 25), stage-1 probes 585, stage-2 up to 315
+fmax: mandatory probes (every cell): 500 MHz
+```
+
+Expanding those stage-1 probes with the batch adapter at its default
+`--chunk-size 4` produced **12 request groups**. Each of the three supplies
+has four chunks of 4, 4, 4 and 1 frequencies, each covering 15
+process/temperature pairs. The first chunk covers 400, 500, 600 and 800 MHz.
+These are planned groups. Billed job counts and runtimes come from fleet
+receipts, including replacements.
+
+| Spend ledger for this attempt | Job IDs | Paid attempts | Measured Spot job-hours |
+|---|---|---:|---:|
+| VCO | None | 0 | 0 |
+| Divider M2 | None | 0 | 0 |
+
+**Stopped before admission.** The configured fleet profile was unavailable
+on this host, so prior attempts and outstanding jobs could not be reconciled.
+This attempt added **0 job-hours**. Campaign-wide use and available hours
+remain unknown. There are zero new passes, electrical failures or invalid
+measurements. No section 5 electrical or measurement-validity condition
+could be evaluated.
+
+The Fmax CLI defaults to three interruption retries. In an offline
+interruption check, `KltBatchBackend(interrupt_retries=0, capacity_retries=0)`
+made one client submission to the stub. A separate offline check on the
+installed klt set `batch.max_launch_attempts=2` and inspected the serialized
+job contract. The field was absent, so the fleet's independent relaunches
+could not be bounded by that invocation. [Batch attempt-limit issue](https://github.com/2AMLogic/klayout-tools/issues/7950)
+
+Before resuming, verify the deployed runner/client version pair and the
+effective fleet attempt limit. Reconcile both benches by group, job ID and
+attempt, including failed and interrupted runtimes. Reserve the maximum
+remaining billed time of every outstanding attempt and the full allowance
+of the proposed group before admitting it under the 300-hour cap. Carry
+that ledger across resumes. An unknown attempt or unbounded runtime keeps
+admission closed.
+
+### Historical basis for the request
 
 - **Cited, measured**: the reused 45-point `sim/vco` record
   (`sim/vco/records/20260904-163130-f3ae976.md`) was produced with a
