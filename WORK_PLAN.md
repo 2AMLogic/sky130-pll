@@ -24,7 +24,7 @@ _None._
 
 Human-approved issues (`loom:issue`) ready for implementation — excluding held (`loom:blocked`/`loom:operator`/`loom:frozen`), `loom:building`, and issues closed by an open `loom:pr` PR (listed under Approved).
 
-_None._
+- **#583**: Add four VCTRL sweep values to the Stage A VCO bench
 
 ## In Progress
 
@@ -64,6 +64,7 @@ Issues carrying `loom:curated`.
 - **#297**: Re-qualify cited sim reference records under open_pdks f6eeac7 (part of #295) *(curated)* *(held)*
 - **#298**: Re-qualify cited layout reference records under open_pdks f6eeac7 (part of #295) *(curated)* *(held)*
 - **#523**: xschem pin migration: migrate sky130-pll to the fleet 3.4.7 *(curated)*
+- **#583**: Add four VCTRL sweep values to the Stage A VCO bench *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -83,11 +84,11 @@ _None._
 | Operator merge-risk holds | 0 |
 | Very important | 0 |
 | Important | 1 |
-| Ready (`loom:issue`, net of holds/building/merge-pending) | 0 |
+| Ready (`loom:issue`, net of holds/building/merge-pending) | 1 |
 | In Progress (`loom:building`) | 1 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
-| Curated | 16 |
+| Curated | 17 |
 | Architect / Hermit proposals | 4 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
