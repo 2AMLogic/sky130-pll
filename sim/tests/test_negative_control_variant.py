@@ -247,6 +247,7 @@ class VariantGeneratorDriftTests(unittest.TestCase):
     GENERATORS = {
         "c1": SIZING_C1 / "testbench" / "gen_c1_variant.py",
         "c2": SIZING / "testbench" / "gen_c2_variant.py",
+        "control": CONTROL / "testbench" / "gen_tb.py",
     }
 
     def _scratch(self, tag: str) -> Path:
@@ -267,11 +268,11 @@ class VariantGeneratorDriftTests(unittest.TestCase):
         )
         return root / "sim" / unit / "testbench"
 
-    def _check(self, tag: str, tb: Path):
+    def _run(self, tag: str, tb: Path, mode: str):
         import subprocess
 
         return subprocess.run(
-            [sys.executable, str(tb / self.GENERATORS[tag].name), "--check"],
+            [sys.executable, str(tb / self.GENERATORS[tag].name), mode],
             capture_output=True,
             text=True,
         )
@@ -283,7 +284,7 @@ class VariantGeneratorDriftTests(unittest.TestCase):
             lf_sym = f"loop_filter_{tag}div{factor}.sym"
             with self.subTest(tag=tag, case="clean"):
                 tb = self._scratch(tag)
-                result = self._check(tag, tb)
+                result = self._run(tag, tb, "--check")
                 self.assertEqual(result.returncode, 0, result.stderr)
             for case, name, action in (
                 ("missing schematic", lf_sch, "delete"),
@@ -298,9 +299,42 @@ class VariantGeneratorDriftTests(unittest.TestCase):
                         target.unlink()
                     else:
                         target.write_text(target.read_text() + "* drift\n")
-                    result = self._check(tag, tb)
+                    result = self._run(tag, tb, "--check")
                     self.assertEqual(result.returncode, 1)
                     self.assertIn(f"DRIFT: sim/{tb.parents[0].name}/testbench/{name}", result.stderr)
+
+    def test_control_schematic_check_and_write(self):
+        tb = self._scratch("control")
+        target = tb / gen_tb.OUT_NAME
+        committed = target.read_bytes()
+        rel = (CONTROL / "testbench" / target.name).relative_to(REPO_ROOT)
+        diff_header = f"DRIFT: {rel}\n--- committed\n+++ re-derived\n@@"
+        ok = (
+            f"OK: {target.name} is {gen_tb.NOMINAL_TB}'s body with only "
+            f"the {gen_tb.ARM} substitution\n"
+        )
+        result = self._run("control", tb, "--check")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, ok)
+
+        for case in ("missing", "modified"):
+            with self.subTest(case=case):
+                if case == "missing":
+                    target.unlink()
+                else:
+                    target.write_bytes(committed + b"* drift\n")
+                result = self._run("control", tb, "--check")
+                self.assertEqual(result.returncode, 1, result.stderr)
+                self.assertEqual(result.stdout, "")
+                self.assertTrue(result.stderr.startswith(diff_header), result.stderr)
+
+                result = self._run("control", tb, "--write")
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.stdout, f"wrote {rel}\n")
+                self.assertEqual(target.read_bytes(), committed)
+                result = self._run("control", tb, "--check")
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.stdout, ok)
 
 
 if __name__ == "__main__":
