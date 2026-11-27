@@ -17,6 +17,7 @@ script-directory `sys.path[0]` insertion cannot be relied on.
 from __future__ import annotations
 
 import re
+import sys
 from pathlib import Path
 from statistics import fmean, pstdev
 
@@ -44,6 +45,31 @@ def repo_rel(path: Path) -> str:
         return path.as_posix()
 
 
+def emit_document(
+    output: Path, text: str, *, write: bool, check: bool, prog: str
+) -> int:
+    """Write, check, or print a document derived from committed records."""
+    if write:
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(text)
+        print(f"wrote {repo_rel(output)}")
+    elif check:
+        if not output.is_file():
+            print(f"{prog}: {output} is missing -- run --write", file=sys.stderr)
+            return 1
+        if output.read_text() != text:
+            print(
+                f"{prog}: {repo_rel(output)} does not match what the committed "
+                "records re-derive -- re-run --write and read the diff",
+                file=sys.stderr,
+            )
+            return 1
+        print(f"OK: {repo_rel(output)} matches the records")
+    else:
+        sys.stdout.write(text)
+    return 0
+
+
 def cells(line: str) -> list[str] | None:
     """Split a markdown table row into its cells, or `None` if it is not one."""
     stripped = line.strip()
@@ -59,26 +85,36 @@ def record_id(text: str, path: Path) -> str:
     return m.group("record_id")
 
 
-def single_point_detail(text: str, path: Path, header: list[str]) -> str:
-    """The `Detail` cell of a record whose result table (matched by `header`)
-    holds exactly one row."""
-    rows, seen = [], False
+def table_rows(
+    text: str, header: list[str], path: Path | None = None
+) -> list[list[str]]:
+    """Read the data rows following the record's expected result table header."""
+    prefix = f"{path}: " if path is not None else ""
+    rows = []
+    seen_header = False
     for line in text.splitlines():
         row = cells(line)
         if row is None:
             continue
         if row == header:
-            seen = True
+            seen_header = True
             continue
-        if not seen:
-            continue
-        if set("".join(row)) <= {"-", ":"}:
+        if not seen_header or set("".join(row)) <= {"-", ":"}:
             continue
         if len(row) != len(header):
-            raise AnalysisError(f"{path}: result row has {len(row)} cells: {line!r}")
+            raise AnalysisError(f"{prefix}result row has {len(row)} cells: {line!r}")
         rows.append(row)
-    if not seen:
-        raise AnalysisError(f"{path}: record has no result table with the expected header")
+    if not seen_header:
+        raise AnalysisError(
+            f"{prefix}record has no result table with the expected header"
+        )
+    return rows
+
+
+def single_point_detail(text: str, path: Path, header: list[str]) -> str:
+    """The `Detail` cell of a record whose result table (matched by `header`)
+    holds exactly one row."""
+    rows = table_rows(text, header, path)
     if len(rows) != 1:
         raise AnalysisError(f"{path}: expected exactly one PVT point, found {len(rows)}")
     return rows[0][_DETAIL_COLUMN]
@@ -99,6 +135,18 @@ _LITERAL_RE = re.compile(r"^([+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)\s*([a-zA
 
 #: The `Record`-level header of the one-row per-point PVT result table.
 PVT_HEADER = ["Corner", "Temp (C)", "Supply (V)", "Verdict", "f_out", "Duty", "Detail"]
+#: Per-trial columns in a Monte Carlo result table.
+MC_HEADER = [
+    "Trial",
+    "Seed",
+    "Verdict",
+    "Locked",
+    "Time-to-lock",
+    "f_out (post-lock)",
+    "Duty",
+    "Period jitter",
+    "Detail",
+]
 #: The `THIS RECORD'S VARIANT: <id> --` line a jitter-floor / jitter-calibration
 #: record carries in its manifest note.
 VARIANT_RE = re.compile(r"THIS RECORD'S VARIANT: (?P<variant>[A-Za-z0-9]+) --")
@@ -107,6 +155,7 @@ VARIANT_RE = re.compile(r"THIS RECORD'S VARIANT: (?P<variant>[A-Za-z0-9]+) --")
 JITTER_IN_DETAIL_RE = re.compile(
     r"period jitter (?P<pct>[\d.]+)% RMS over (?P<cycles>\d+) cycles"
 )
+MC_JITTER_CELL_RE = re.compile(r"^(?P<pct>[\d.]+)% \((?P<cycles>\d+) cycles\)$")
 PULSE_RE = re.compile(
     r"^VCLK\s+\S+\s+\S+\s+pulse\(\s*(?P<v1>\S+)\s+(?P<v2>\S+)\s+(?P<td>\S+)\s+"
     r"(?P<tr>\S+)\s+(?P<tf>\S+)\s+(?P<pw>\S+)\s+(?P<per>[^)\s]+)\s*\)",

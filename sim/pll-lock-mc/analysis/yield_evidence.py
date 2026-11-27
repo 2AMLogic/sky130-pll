@@ -106,7 +106,9 @@ if str(_SIM_DIR) not in sys.path:
 from analysis_common import (  # noqa: E402
     RECORD_ID_RE as _RECORD_ID_RE,
     AnalysisError,
-    cells as _cells,
+    MC_HEADER,
+    MC_JITTER_CELL_RE,
+    table_rows,
 )
 
 #: Name the sample set gives the measured quantity. Deliberately carries its
@@ -162,18 +164,6 @@ _OVERALL_RE = re.compile(
     r"\((?P<passed>\d+)/(?P<total>\d+) trials passed\)\s*$",
     re.M,
 )
-_HEADER_CELLS = [
-    "Trial",
-    "Seed",
-    "Verdict",
-    "Locked",
-    "Time-to-lock",
-    "f_out (post-lock)",
-    "Duty",
-    "Period jitter",
-    "Detail",
-]
-_JITTER_RE = re.compile(r"^(?P<pct>[\d.]+)% \((?P<cycles>\d+) cycles\)$")
 
 
 def parse_record(text: str) -> dict:
@@ -193,34 +183,16 @@ def parse_record(text: str) -> dict:
     if overall is None:
         raise AnalysisError("record has no `Overall:` verdict line")
 
-    rows: list[dict] = []
-    seen_header = False
-    for line in text.splitlines():
-        cells = _cells(line)
-        if cells is None:
-            if seen_header and rows:
-                continue
-            continue
-        if cells == _HEADER_CELLS:
-            seen_header = True
-            continue
-        if not seen_header:
-            continue
-        if set("".join(cells)) <= {"-", ":"}:
-            continue  # the header separator row
-        if len(cells) != len(_HEADER_CELLS):
-            raise AnalysisError(f"result row has {len(cells)} cells: {line!r}")
-        rows.append(
-            {
-                "trial": int(cells[0]),
-                "seed": int(cells[1]),
-                "verdict": cells[2],
-                "locked": cells[3].replace("*", ""),
-                "jitter": cells[7],
-            }
-        )
-    if not seen_header:
-        raise AnalysisError("record has no per-trial result table")
+    rows = [
+        {
+            "trial": int(cells[0]),
+            "seed": int(cells[1]),
+            "verdict": cells[2],
+            "locked": cells[3].replace("*", ""),
+            "jitter": cells[7],
+        }
+        for cells in table_rows(text, MC_HEADER)
+    ]
 
     return {
         "record_id": record_id.group("record_id"),
@@ -419,7 +391,7 @@ def derive(record: dict, manifest: dict) -> dict:
                 )
             censored_seeds.append(row["seed"])
             continue
-        match = _JITTER_RE.match(row["jitter"])
+        match = MC_JITTER_CELL_RE.match(row["jitter"])
         if match is None:
             raise AnalysisError(
                 f"trial {row['trial']}: locked, but its period-jitter cell "

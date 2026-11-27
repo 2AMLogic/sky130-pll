@@ -65,6 +65,7 @@ if str(_SIM_DIR) not in sys.path:
 from analysis_common import (  # noqa: E402
     AnalysisError,
     REPO_ROOT,
+    emit_document,
     pct as _pct,
     record_id as _record_id,
     point_netlist,
@@ -391,26 +392,9 @@ def main(argv: list | None = None) -> int:
         print(f"bracket_floor.py: {exc}", file=sys.stderr)
         return 2
 
-    if args.write:
-        OUTPUT.parent.mkdir(parents=True, exist_ok=True)
-        OUTPUT.write_text(text)
-        print(f"wrote {_repo_rel(OUTPUT)}")
-        return 0
-    if args.check:
-        if not OUTPUT.is_file():
-            print(f"bracket_floor.py: {OUTPUT} is missing -- run --write", file=sys.stderr)
-            return 1
-        if OUTPUT.read_text() != text:
-            print(
-                f"bracket_floor.py: {_repo_rel(OUTPUT)} does not match what the committed "
-                "records re-derive -- re-run --write and read the diff",
-                file=sys.stderr,
-            )
-            return 1
-        print(f"OK: {_repo_rel(OUTPUT)} matches the records")
-        return 0
-    sys.stdout.write(text)
-    return 0
+    return emit_document(
+        OUTPUT, text, write=args.write, check=args.check, prog="bracket_floor.py"
+    )
 
 
 if __name__ == "__main__":

@@ -118,15 +118,18 @@ if str(_SIM_DIR) not in sys.path:
 
 from analysis_common import (  # noqa: E402
     AnalysisError,
+    MC_HEADER,
+    MC_JITTER_CELL_RE,
     REPO_ROOT,
     VARIANT_RE,
-    cells as _cells,
+    emit_document,
     parse_calibration_point,
     parse_floor_records,
     pct as _pct,
     ps as _ps,
     record_id as _record_id,
     repo_rel as _repo_rel,
+    table_rows,
 )
 
 MC_RECORD = REPO_ROOT / "sim" / "pll-lock-mc" / "records" / "20260924-222341-a9375a5.md"
@@ -145,53 +148,19 @@ ROW_9_MAX_FRAC = 0.01
 #: than the spacing between any two variants either family runs.
 PERIOD_MATCH_TOL = 1e-3
 
-_MC_JITTER_CELL_RE = re.compile(r"^(?P<pct>[\d.]+)% \((?P<cycles>\d+) cycles\)$")
 _FREQ_MHZ_RE = re.compile(r"^(?P<mhz>[\d.]+) MHz$")
-_MC_HEADER = [
-    "Trial",
-    "Seed",
-    "Verdict",
-    "Locked",
-    "Time-to-lock",
-    "f_out (post-lock)",
-    "Duty",
-    "Period jitter",
-    "Detail",
-]
-
-
-def _table_rows(text: str, header: list[str]) -> list[list[str]]:
-    rows: list[list[str]] = []
-    seen = False
-    for line in text.splitlines():
-        cells = _cells(line)
-        if cells is None:
-            continue
-        if cells == header:
-            seen = True
-            continue
-        if not seen:
-            continue
-        if set("".join(cells)) <= {"-", ":"}:
-            continue
-        if len(cells) != len(header):
-            raise AnalysisError(f"result row has {len(cells)} cells: {line!r}")
-        rows.append(cells)
-    if not seen:
-        raise AnalysisError("record has no result table with the expected header")
-    return rows
 
 
 def parse_mc_record(path: Path) -> dict:
     """The locked draws of a `--mc` record: frequency, jitter, population."""
     text = path.read_text()
     draws = []
-    for cells in _table_rows(text, _MC_HEADER):
+    for cells in table_rows(text, MC_HEADER):
         locked = cells[3].replace("*", "").strip()
         if locked != "yes":
             continue
         freq = _FREQ_MHZ_RE.match(cells[5])
-        jitter = _MC_JITTER_CELL_RE.match(cells[7])
+        jitter = MC_JITTER_CELL_RE.match(cells[7])
         if freq is None or jitter is None:
             raise AnalysisError(
                 f"{path}: locked trial {cells[0]} has an unreadable f_out/jitter "
@@ -894,28 +863,9 @@ def main(argv: list[str] | None = None) -> int:
         print(f"jitter_floor.py: {exc}", file=sys.stderr)
         return 2
 
-    if args.write:
-        OUTPUT.parent.mkdir(parents=True, exist_ok=True)
-        OUTPUT.write_text(text)
-        print(f"wrote {OUTPUT.relative_to(REPO_ROOT).as_posix()}")
-        return 0
-    if args.check:
-        if not OUTPUT.is_file():
-            print(f"jitter_floor.py: {OUTPUT} is missing -- run --write", file=sys.stderr)
-            return 1
-        committed = OUTPUT.read_text()
-        if committed != text:
-            print(
-                f"jitter_floor.py: {OUTPUT.relative_to(REPO_ROOT).as_posix()} does not "
-                "match what the committed records re-derive -- re-run --write and read "
-                "the diff",
-                file=sys.stderr,
-            )
-            return 1
-        print(f"OK: {OUTPUT.relative_to(REPO_ROOT).as_posix()} matches the records")
-        return 0
-    sys.stdout.write(text)
-    return 0
+    return emit_document(
+        OUTPUT, text, write=args.write, check=args.check, prog="jitter_floor.py"
+    )
 
 
 if __name__ == "__main__":

@@ -110,11 +110,11 @@ if str(_SIM_DIR) not in sys.path:
 from analysis_common import (  # noqa: E402
     AnalysisError,
     REPO_ROOT,
+    emit_document,
     parse_calibration_point,
     parse_floor_record,
     pct as _pct,
     ps as _ps,
-    repo_rel as _repo_rel,
 )
 
 CALIBRATION_EXPERIMENT = REPO_ROOT / "sim" / "jitter-calibration"
@@ -133,7 +133,6 @@ ROW_9_MAX_FRAC = 0.01
 THRESHOLD_FRAC = 0.5
 
 _PWL_VARIANT_RE = re.compile(r"^\*\* GENERATED -- variant (?P<variant>[A-Za-z0-9]+):", re.M)
-_PWL_HEAD_RE = re.compile(r"^VCLK\s+\S+\s+\S+\s+pwl\([ \t]*\r?\n", re.M | re.I)
 #: Two periods (or transition times) closer together than this fraction are the
 #: same operating point for the purpose of pairing a calibration variant with a
 #: null-control variant. The two campaigns declare these numbers independently
@@ -838,26 +837,9 @@ def main(argv: list | None = None) -> int:
         print(f"calibration.py: {exc}", file=sys.stderr)
         return 2
 
-    if args.write:
-        OUTPUT.parent.mkdir(parents=True, exist_ok=True)
-        OUTPUT.write_text(text)
-        print(f"wrote {_repo_rel(OUTPUT)}")
-        return 0
-    if args.check:
-        if not OUTPUT.is_file():
-            print(f"calibration.py: {OUTPUT} is missing -- run --write", file=sys.stderr)
-            return 1
-        if OUTPUT.read_text() != text:
-            print(
-                f"calibration.py: {_repo_rel(OUTPUT)} does not match what the committed "
-                "records re-derive -- re-run --write and read the diff",
-                file=sys.stderr,
-            )
-            return 1
-        print(f"OK: {_repo_rel(OUTPUT)} matches the records")
-        return 0
-    sys.stdout.write(text)
-    return 0
+    return emit_document(
+        OUTPUT, text, write=args.write, check=args.check, prog="calibration.py"
+    )
 
 
 if __name__ == "__main__":
