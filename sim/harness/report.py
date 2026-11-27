@@ -158,12 +158,29 @@ def _render_header(
     spec_rows_line: str,
     pdk: ResolvedPdk,
     tool_versions: dict,
-    git: dict,
-    netlist_sha: str,
+    repo_root: Path,
+    netlist_snapshot: Path,
 ) -> None:
-    """Append the `# Record` through `Host` lines shared by `render` (PVT)
-    and `render_mc` (Monte Carlo) -- same schema, see sim/README.md.
+    """Append the `# Record` through `Host` lines shared by `render` (PVT),
+    `render_mc` (Monte Carlo) and the Fmax renderer -- same schema, see
+    sim/README.md.
+
+    Owns the two derived header inputs so every renderer follows one rule:
+    the Git "dirty" check excludes only this run's own new artifacts (corner
+    directory, record, frozen netlist) -- an uncommitted edit to the testbench
+    itself still marks the record dirty, because that genuinely affects what
+    the evidence means -- and the netlist SHA-256 is read from the supplied
+    `netlist_snapshot` path.
     """
+    git = git_info(
+        repo_root,
+        ignore_prefixes=(
+            f"sim/{slug}/corners/{record_id}/",
+            f"sim/{slug}/records/{record_id}.md",
+            f"sim/{slug}/netlist-snapshots/{record_id}.spice",
+        ),
+    )
+    netlist_sha = sha256_file(netlist_snapshot)
     a = lines_append
     a(f"# Record {record_id}")
     a("")
@@ -1076,19 +1093,6 @@ def render(
     execution_note: str | None = None,
     analysis_identity: str = "",
 ) -> str:
-    # Only this run's own new artifacts are excluded from the dirty check --
-    # an uncommitted edit to the testbench itself still marks the record
-    # dirty, because that genuinely affects what the evidence means.
-    git = git_info(
-        repo_root,
-        ignore_prefixes=(
-            f"sim/{slug}/corners/{record_id}/",
-            f"sim/{slug}/records/{record_id}.md",
-            f"sim/{slug}/netlist-snapshots/{record_id}.spice",
-        ),
-    )
-    netlist_sha = sha256_file(netlist_snapshot)
-
     passed = [r for r in results if r.passed]
     failed = [r for r in results if not r.passed]
 
@@ -1102,8 +1106,8 @@ def render(
         spec_rows_line=spec_rows_line,
         pdk=pdk,
         tool_versions=tool_versions,
-        git=git,
-        netlist_sha=netlist_sha,
+        repo_root=repo_root,
+        netlist_snapshot=netlist_snapshot,
     )
     a("- **Corner matrix run**:")
     corners_used = sorted({p.corner for p in points})
@@ -1212,20 +1216,6 @@ def render_mc(
     a PVT record of that manifest would, instead of only the harness-plumbing
     check every Monte Carlo record used to be limited to.
     """
-    # Per-run artifacts for an MC record live under the same sim/<slug>/
-    # corners/<record-id>/ tree a PVT record uses (sim/README.md's
-    # <corner-id> convention just has two forms depending on run mode) -- so
-    # the same ignore-prefixes shape applies here.
-    git = git_info(
-        repo_root,
-        ignore_prefixes=(
-            f"sim/{slug}/corners/{record_id}/",
-            f"sim/{slug}/records/{record_id}.md",
-            f"sim/{slug}/netlist-snapshots/{record_id}.spice",
-        ),
-    )
-    netlist_sha = sha256_file(netlist_snapshot)
-
     passed = [r for r in results if r.passed]
     failed = [r for r in results if not r.passed]
 
@@ -1241,8 +1231,8 @@ def render_mc(
         spec_rows_line=spec_rows_line,
         pdk=pdk,
         tool_versions=tool_versions,
-        git=git,
-        netlist_sha=netlist_sha,
+        repo_root=repo_root,
+        netlist_snapshot=netlist_snapshot,
     )
     a("- **Statistical sampling point**:")
     a(f"  - Base process corner: {first.corner} (netlisted as `{first.lib_corner}`)")
