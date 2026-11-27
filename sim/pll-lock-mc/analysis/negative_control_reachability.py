@@ -106,6 +106,7 @@ import json
 import math
 import sys
 from pathlib import Path
+from statistics import NormalDist
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[2]
@@ -258,20 +259,8 @@ def required_n(k: int, n: int, alpha: float, halfwidth: float) -> int:
     p = k / n
     if p in (0.0, 1.0):
         return math.ceil(math.log(alpha / 2.0) / math.log(1.0 - 2.0 * halfwidth))
-    z = _normal_quantile(1.0 - alpha / 2.0)
+    z = NormalDist().inv_cdf(1.0 - alpha / 2.0)
     return math.ceil(z * z * p * (1.0 - p) / (halfwidth * halfwidth))
-
-
-def _normal_quantile(p: float) -> float:
-    """Inverse standard-normal CDF, by bisection on `math.erf`."""
-    lo, hi = -10.0, 10.0
-    for _ in range(200):
-        mid = (lo + hi) / 2.0
-        if 0.5 * (1.0 + math.erf(mid / math.sqrt(2.0))) < p:
-            lo = mid
-        else:
-            hi = mid
-    return (lo + hi) / 2.0
 
 
 def is_sized(k: int, n: int, alpha: float, halfwidth: float) -> bool:
