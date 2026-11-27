@@ -255,17 +255,59 @@ class ResolveTests(unittest.TestCase):
             staged = (
                 tmp / "cache" / "sky130-pll" / "sim-stage" / "fake-exp" / RECORD_ID
             )
+            scratch_root = exp_dir.parent / "build"
+            scratch = scratch_root / "fake-exp" / RECORD_ID
+            legacy = exp_dir / "corners" / RECORD_ID
+
+            # Add checkpoints for the same ID in increasing priority order.
+            # None tells the caller to use the legacy in-tree directory.
+            for directory, expected in (
+                (staged, staged),
+                (legacy, None),
+                (scratch, scratch),
+            ):
+                with self.subTest(checkpoint_added=directory):
+                    directory.mkdir(parents=True, exist_ok=True)
+                    (directory / checkpoint_mod.CHECKPOINT_NAME).write_text("{}")
+                    got = staging_mod.resolve(
+                        exp_dir=exp_dir,
+                        slug="fake-exp",
+                        record_id=RECORD_ID,
+                        resuming=True,
+                        scratch_root=scratch_root,
+                        environ=environ,
+                    )
+                    self.assertEqual(got.work_dir if got else None, expected)
+
+    def test_a_resume_in_a_clone_respects_staging_overrides(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            exp_dir = self._exp_dir(tmp, worktree=False)
+            environ = self._environ(tmp)
+            staged = staging_mod.default_root(environ) / "fake-exp" / RECORD_ID
             staged.mkdir(parents=True)
             (staged / checkpoint_mod.CHECKPOINT_NAME).write_text("{}")
-            got = staging_mod.resolve(
-                exp_dir=exp_dir,
-                slug="fake-exp",
-                record_id=RECORD_ID,
-                resuming=True,
-                environ=environ,
-            )
-            self.assertIsNotNone(got)
-            self.assertEqual(got.work_dir, staged)
+            scratch_root = exp_dir.parent / "build"
+            env_root = tmp / "env"
+            environ[staging_mod.ENV_ROOT] = str(env_root)
+            explicit_root = tmp / "chosen"
+
+            for options, expected_root in (
+                ({}, env_root),
+                ({"explicit": str(explicit_root)}, explicit_root),
+                ({"disabled": True}, scratch_root),
+            ):
+                with self.subTest(expected_root=expected_root):
+                    got = staging_mod.resolve(
+                        exp_dir=exp_dir,
+                        slug="fake-exp",
+                        record_id=RECORD_ID,
+                        resuming=True,
+                        scratch_root=scratch_root,
+                        environ=environ,
+                        **options,
+                    )
+                    self.assertEqual(got.work_dir, expected_root / "fake-exp" / RECORD_ID)
 
 
 class PromotableTests(unittest.TestCase):
