@@ -69,14 +69,6 @@ def render(
     execution_note: str | None,
     analysis_identity: str = "",
 ) -> str:
-    git = report_mod.git_info(
-        repo_root,
-        ignore_prefixes=(
-            f"sim/{slug}/corners/{record_id}/",
-            f"sim/{slug}/records/{record_id}.md",
-            f"sim/{slug}/netlist-snapshots/{record_id}.spice",
-        ),
-    )
     lines: list = []
     a = lines.append
     report_mod._render_header(
@@ -87,8 +79,8 @@ def render(
         spec_rows_line=report_mod.format_spec_rows(*report_mod.spec_rows_from_manifest(manifest)),
         pdk=pdk,
         tool_versions=tool_versions,
-        git=git,
-        netlist_sha=report_mod.sha256_file(netlist_snapshot),
+        repo_root=repo_root,
+        netlist_snapshot=netlist_snapshot,
     )
     s, w, c = spec.search, spec.stimulus, spec.criterion
     a("- **Search / corner matrix run**:")

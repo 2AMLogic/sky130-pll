@@ -994,5 +994,48 @@ class SpecRowsDeclarationTests(unittest.TestCase):
                 report.spec_rows_from_manifest(manifest)  # raises if undeclared
 
 
+class RenderHeaderProvenanceTests(unittest.TestCase):
+    """`_render_header` owns the Git-exclusion list and the snapshot digest."""
+
+    def _header(self, root: Path, snap: Path) -> str:
+        lines: list = []
+        report._render_header(
+            lines_append=lines.append, record_id="R1", slug="s", claim="c",
+            spec_rows_line="1", pdk=make_resolved_pdk(),
+            tool_versions={"ngspice": "n", "xschem": "x"},
+            repo_root=root, netlist_snapshot=snap,
+        )
+        return "\n".join(lines)
+
+    def test_own_outputs_clean_edited_testbench_dirty_digest_from_path(self):
+        import hashlib
+        import subprocess
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            def git(*a):
+                subprocess.run(["git", "-C", str(root), "-c", "user.name=t",
+                                "-c", "user.email=t@t", *a], check=True,
+                               capture_output=True)
+            git("init", "-q")
+            tb = root / "sim/s/testbench/tb.sp"
+            tb.parent.mkdir(parents=True)
+            tb.write_text("x\n")
+            git("add", "-A")
+            git("commit", "-q", "-m", "i")
+            snap = root / "sim/s/netlist-snapshots/R1.spice"
+            snap.parent.mkdir(parents=True)
+            snap.write_bytes(b"netlist")
+            (root / "sim/s/corners/R1").mkdir(parents=True)
+            (root / "sim/s/corners/R1/log.txt").write_text("l")
+            (root / "sim/s/records").mkdir()
+            (root / "sim/s/records/R1.md").write_text("r")
+            text = self._header(root, snap)
+            self.assertNotIn("(dirty)", text)
+            self.assertIn(hashlib.sha256(b"netlist").hexdigest(), text)
+            tb.write_text("edited\n")
+            self.assertIn("(dirty)", self._header(root, snap))
+
+
 if __name__ == "__main__":
     unittest.main()
