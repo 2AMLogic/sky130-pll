@@ -24,6 +24,8 @@ import math
 import sys
 import tempfile
 import unittest
+from contextlib import redirect_stderr, redirect_stdout
+from io import StringIO
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -240,6 +242,89 @@ class CommittedEvidenceTests(unittest.TestCase):
             for draw in mc["draws"]
         }
         self.assertEqual(coverage, {2: True, 3: False, 5: True})
+
+
+class TableRowsTests(unittest.TestCase):
+    def test_reads_rows_after_matching_header(self):
+        text = """| Unrelated |
+| Trial | Seed |
+| :--- | ---: |
+|  1  |  17  |
+
+| 2 | 18 |
+"""
+        self.assertEqual(
+            analysis_common.table_rows(text, ["Trial", "Seed"]),
+            [["1", "17"], ["2", "18"]],
+        )
+
+    def test_missing_header_reports_optional_path(self):
+        message = "record has no result table with the expected header"
+        for path, expected in [
+            (None, message),
+            (Path("record.md"), f"record.md: {message}"),
+        ]:
+            with self.subTest(path=path):
+                with self.assertRaises(analysis_common.AnalysisError) as error:
+                    analysis_common.table_rows(
+                        "| Seed | Trial |", ["Trial", "Seed"], path
+                    )
+                self.assertEqual(str(error.exception), expected)
+
+    def test_wrong_column_count_reports_record_and_row(self):
+        with self.assertRaises(analysis_common.AnalysisError) as error:
+            analysis_common.table_rows(
+                "| Trial | Seed |\n| 1 |", ["Trial", "Seed"], Path("bad.md")
+            )
+        self.assertEqual(
+            str(error.exception), "bad.md: result row has 1 cells: '| 1 |'"
+        )
+
+
+class EmitDocumentTests(unittest.TestCase):
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.output = Path(tmp.name) / "nested" / "report.md"
+        self.display_path = analysis_common.repo_rel(self.output)
+        self.text = "derived report"
+
+    def emit(self, *, write=False, check=False):
+        out, err = StringIO(), StringIO()
+        with redirect_stdout(out), redirect_stderr(err):
+            status = analysis_common.emit_document(
+                self.output, self.text, write=write, check=check, prog="analysis.py"
+            )
+        return status, out.getvalue(), err.getvalue()
+
+    def test_write_then_check(self):
+        self.assertEqual(self.emit(write=True), (0, f"wrote {self.display_path}\n", ""))
+        self.assertEqual(self.output.read_text(), self.text)
+        self.assertEqual(
+            self.emit(check=True),
+            (0, f"OK: {self.display_path} matches the records\n", ""),
+        )
+
+    def test_check_missing_document(self):
+        self.assertEqual(
+            self.emit(check=True),
+            (1, "", f"analysis.py: {self.output} is missing -- run --write\n"),
+        )
+        self.assertFalse(self.output.exists())
+
+    def test_check_drifted_document(self):
+        self.output.parent.mkdir()
+        self.output.write_text("old report")
+        message = (
+            f"analysis.py: {self.display_path} does not match what the committed "
+            "records re-derive -- re-run --write and read the diff\n"
+        )
+        self.assertEqual(self.emit(check=True), (1, "", message))
+        self.assertEqual(self.output.read_text(), "old report")
+
+    def test_stdout_preserves_text(self):
+        self.assertEqual(self.emit(), (0, self.text, ""))
+        self.assertFalse(self.output.exists())
 
 
 class SpiceLiteralTests(unittest.TestCase):
