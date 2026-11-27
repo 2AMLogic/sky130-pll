@@ -215,6 +215,54 @@ class InterpolationTests(unittest.TestCase):
 
 
 class LoadWaveformTests(unittest.TestCase):
+    def test_declared_vectors_without_samples_raise_a_power_error(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / "empty.json"
+            path.write_text(json.dumps({"variables": [{"name": "time"}], "points": []}))
+            with self.assertRaises(reduce_mod.PowerError):
+                reduce_mod.load_waveform(path)
+
+    def test_wrong_row_width_records_an_error_only_on_its_corner(self):
+        variables = [{"name": name} for name in ("time", "I(v1)", "v(clk)")]
+        stages = {
+            "align_node": "v(clk)",
+            "stages": [{"id": "idle", "kind": "idle", "t0": 0, "t1": 1, "settle": 0}],
+        }
+        with tempfile.TemporaryDirectory() as td:
+            corners = [
+                {
+                    "process": p,
+                    "temperature_c": 27,
+                    "supply_v": {"v1": VDD},
+                    "status": "pass",
+                    "artifacts": {"waveform": str(Path(td) / p)},
+                }
+                for p in ("ss", "tt")
+            ]
+            good_row = [1, -2e-6, 0]
+            first_row = [0, -2e-6, 0]
+            (Path(td) / "tt").write_text(
+                json.dumps({"variables": variables, "points": [first_row, good_row]})
+            )
+            for bad_row in ([1], [*good_row, 99]):
+                with self.subTest(width=len(bad_row)):
+                    (Path(td) / "ss").write_text(
+                        json.dumps(
+                            {"variables": variables, "points": [first_row, bad_row]}
+                        )
+                    )
+                    result = mint_mod.reduce_block(
+                        "divider-n4", {"corners": corners}, stages
+                    )
+                    bad, good = (result[(p, VDD, 27)] for p in ("ss", "tt"))
+                    self.assertEqual(bad["stages"], {})
+                    self.assertIn(
+                        f"row 2: expected 3 columns, got {len(bad_row)}",
+                        bad["errors"][0],
+                    )
+                    self.assertEqual(good["errors"], [])
+                    self.assertAlmostEqual(good["stages"]["idle"].i_a, 2e-6)
+
     def test_round_trip_lowercases_names(self):
         doc = {
             "plotname": "Transient Analysis",

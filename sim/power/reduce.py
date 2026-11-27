@@ -38,7 +38,6 @@ only flow while switching are inside it).
 
 from __future__ import annotations
 
-import json
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -47,6 +46,7 @@ _SIM = Path(__file__).resolve().parents[1]
 if str(_SIM) not in sys.path:  # `harness` is a sibling package, not installed
     sys.path.insert(0, str(_SIM))
 
+from harness.klt_waveform import read_klt_waveform  # noqa: E402
 from harness.measure import edge_times  # noqa: E402  (proven crossing extractor)
 
 # Hysteresis for edge detection, as a fraction of the supply (same default the
@@ -65,12 +65,13 @@ class PowerError(ValueError):
 
 def load_waveform(path: str | Path) -> dict:
     """Load a `klt sim` waveform JSON into {variable name (lowercase): [values]}."""
-    doc = json.loads(Path(path).read_text())
-    names = [v["name"].lower() for v in doc["variables"]]
-    cols = list(zip(*doc["points"]))
-    if len(cols) != len(names):
-        raise PowerError(f"{path}: {len(names)} variables but {len(cols)} columns")
-    return {n: list(c) for n, c in zip(names, cols)}
+    try:
+        names, points = read_klt_waveform(path)
+    except ValueError as exc:
+        raise PowerError(str(exc)) from exc
+    if names and not points:
+        raise PowerError(f"{path}: waveform contains no samples")
+    return {name.lower(): [point[i] for point in points] for i, name in enumerate(names)}
 
 
 def _col(wave: dict, name: str) -> list:

@@ -151,6 +151,8 @@ class FakeKlt:
                 wave = {"variables": [{"index": 0, "name": "time", "type": "time"}] + [
                     {"index": i + 1, "name": f"v(fbclk_{k})", "type": "voltage"}
                     for i, k in enumerate(sorted(duts))], "points": pts}
+                if self.mode == "short_row" and p == "ss":
+                    wave["points"] = [[0, 0], [1]]
                 (cdir / "waveform.raw.json").write_text(json.dumps(wave))
                 corners.append(c)
         report = {"status": "pass", "corners": corners, "environment": {
@@ -314,6 +316,21 @@ class Chunking(unittest.TestCase):
 
 
 class CampaignViaFakeKlt(unittest.TestCase):
+    def test_short_row_is_inconclusive_and_next_probe_passes(self):
+        cells = make_cells(corners=("ss", "tt"))
+        with tempfile.TemporaryDirectory() as tmp:
+            backend = backend_for(tmp, FakeKlt(mode="short_row"))
+            backend.preflight = lambda: None
+            bad, good = backend.run(
+                [(cell, 0, 1e9) for cell in cells],
+                netlists={25: NETLIST},
+                stage_no=1,
+                probe_id=C.probe_id,
+            )
+        self.assertEqual(bad.verdict.status, F.INCONCLUSIVE)
+        self.assertIn("row 2: expected 2 columns, got 1", bad.verdict.reason)
+        self.assertEqual(good.verdict.status, F.PASS, good.verdict.reason)
+
     def test_finds_the_modeled_boundary_as_an_adjacent_bracket(self):
         cells = make_cells(ns=(4, 25), corners=("tt", "ss"))
         cap = {"tt": 1337e6, "ss": 1110e6}

@@ -30,6 +30,7 @@ from . import fmax_klt as K
 from . import klt_submit
 from . import locktiming as L
 from . import report as R
+from .klt_waveform import read_klt_waveform
 
 RECORD_SCHEMA = "sky130-pll.lockdet-timing.record/1"
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -113,9 +114,8 @@ def scope(points: list, which: str) -> str:
 def read_waves(path, names) -> dict:
     """{name: {t, v}} from a klt waveform JSON; absent names are omitted so the
     reducer reports a missing trace, never an invented one."""
-    wave = json.loads(Path(path).read_text())
-    cols = {v["name"].lower(): i for i, v in enumerate(wave["variables"])}
-    pts = wave["points"]
+    variables, pts = read_klt_waveform(path)
+    cols = {name.lower(): i for i, name in enumerate(variables)}
     return {n: {"t": [p[0] for p in pts], "v": [p[cols[f"v({n})"]] for p in pts]}
             for n in names if f"v({n})" in cols}
 
