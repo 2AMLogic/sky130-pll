@@ -49,7 +49,6 @@ from __future__ import annotations
 import argparse
 import math
 import re
-import subprocess
 import sys
 from collections import Counter
 from pathlib import Path
@@ -72,13 +71,15 @@ from render_common import (  # noqa: E402
     klt_info,
     load_json,
     render_provenance,
+    run_git,
     spec_rows_line,
 )
 from route_lever_tally import (  # noqa: E402
-    REASON_SHORT_LABELS,
     ROUTE_REASON_BUCKETS,
+    merged_nodes,
     reason_bucket,
     route_stats,
+    tally_row,
 )
 
 # No device card regex at all: every extracted device multiset (MOS, resistor,
@@ -438,23 +439,17 @@ def _build_checks(
 
 def _load_spot_check(out_dir: Path) -> dict[str, Any] | None:
     """The routing spot-check's evidence, or `None` if the flow skipped it."""
-    spot_path = out_dir / "route-spot-check" / "build.json"
+    spot_dir = out_dir / "route-spot-check"
+    spot_path = spot_dir / "build.json"
     if not spot_path.is_file():
         return None
-    # A node the extractor labels with more than one declared net name is
-    # a *drawn short*: two nets the schematic keeps apart ended up on one
-    # electrical node. Counted straight out of the routed run's own
-    # extracted netlist, so the claim is the extractor's, not this
-    # script's.
-    routed_spice = (out_dir / "route-spot-check" / "pll_top.spice").read_text()
-    merged = sorted({m for m in re.findall(r"[A-Za-z_0-9]+(?:\|[A-Za-z_0-9]+)+", routed_spice)})
-    lvs_path = out_dir / "route-spot-check" / "lvs.json"
+    lvs_path = spot_dir / "lvs.json"
     return {
         "build": _load(spot_path),
-        "drc": _load(out_dir / "route-spot-check" / "drc.json"),
-        "extract": _load(out_dir / "route-spot-check" / "extract.json"),
-        "merged_nodes": merged,
-        "routing": route_stats(out_dir / "route-spot-check"),
+        "drc": _load(spot_dir / "drc.json"),
+        "extract": _load(spot_dir / "extract.json"),
+        "merged_nodes": merged_nodes(spot_dir, missing_ok=False),
+        "routing": route_stats(spot_dir),
         "lvs": _load(lvs_path) if lvs_path.is_file() else None,
     }
 
@@ -487,8 +482,6 @@ def _check_levers_final_row(out_dir: Path, rows: list[dict[str, Any]], record_id
     fails the record if any headline number disagrees, so the table cannot
     quietly ship a number this run's own evidence contradicts.
     """
-    from route_lever_tally import tally_row
-
     final = rows[-1]
     if final.get("record_id") != record_id:
         return (
@@ -539,10 +532,7 @@ def _render_header(a: Any, args: argparse.Namespace, netlist_display: str) -> No
     # restricted to *git-tracked* directories, so an uncommitted
     # measurement run staged under reports/ by a re-run of the flow can
     # never claim to be the superseded record.
-    tracked = subprocess.run(
-        ["git", "-C", str(args.repo_root), "ls-files", "--", "layout/pll/reports"],
-        capture_output=True, text=True,
-    ).stdout.split()
+    tracked = run_git(args.repo_root, "ls-files", "--", "layout/pll/reports").split()
     tracked_dirs = {
         path.split("/")[3]
         for path in tracked
