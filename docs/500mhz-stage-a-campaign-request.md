@@ -244,6 +244,46 @@ of the proposed group before admitting it under the 300-hour cap. Carry
 that ledger across resumes. An unknown attempt or unbounded runtime keeps
 admission closed.
 
+### 2026-11-27 Stage A resume check
+
+**Stopped before submission on `313b7df7`. This attempt added 0 Spot
+job-hours.** The last fleet ledger read, reported at 03:57 UTC on #584,
+covered 662 jobs since authorization and found zero matching either bench.
+That worker identified runner klt `0.9.0` from a recent job. On this
+resume, a read-only `klt sim --job-status` for that job returned
+`The config profile (batch-runner-submit) could not be found`. The current
+runner, intervening launches, outstanding work and remaining hours are
+unknown. [Earlier fleet ledger and runner identity](https://github.com/2AMLogic/sky130-pll/issues/584#issuecomment-7209408391)
+
+| Bench | Request expansion verified without submission | Job IDs / paid attempts / measured hours this attempt |
+|---|---|---|
+| VCO | One deck-list request with 45 PVT decks and 10 declared waveform outputs per deck. The four added VCTRL values account for 180 of 450 samples. | None / 0 / 0 |
+| Divider M2 | N=20, 45 cells, 585 first-stage probes including 500 MHz in every cell. At the previously selected chunk size of two, each supply has six frequency pairs and one singleton, giving 21 request groups. Refinement can add up to 315 probes. | None / 0 / 0 |
+
+Local netlisting used xschem 3.4.7 and sky130A at the pinned open_pdks
+revision `f6eeac7d`. The installed simulator reported ngspice-47. When
+xschem exhausted its temporary disk, both initial exports omitted the DUT
+subcircuit. Regenerating with writable `XSCHEM_TMP_DIR` restored
+`.subckt vco_ring5` and `.subckt divider_intN`. The table uses the
+regenerated decks. [Netlist diagnostic](https://github.com/2AMLogic/klayout-tools/issues/8029)
+
+All 22 request copies passed `klt sim --backend batch --dry-run` with
+client `0.9.3.dev5778+g4599a1f7b02e`, `runner_version_check=enforce`,
+`capacity_wait_s=600` and `max_launch_attempts=2`. The pinned client rejected a
+zero launch limit for both request types. The installed client
+(`0.9.2.dev111+g978f7464fae1`) accepted zero. The harness-generated
+requests on this revision omit the launch limit. The 400/500 MHz pairs
+also carry a 4,848 s per-corner timeout against the fleet's 3,600 s job
+ceiling. Actual runtime requires a fleet receipt.
+
+All 45 VCO points and 45 independent divider verdicts were unrun in this
+attempt. It produced zero passes, electrical failures or invalid measurements.
+Before admitting another job, reconcile paid attempts and hours across both
+benches, including any jobs since the last ledger read. Preserve group
+membership across resumes or re-chunking. Verify the deployed version pair
+and the fleet-reported ceiling for each group's remaining launch allowance.
+[Fleet reconciliation handoff](https://github.com/2AMLogic/sky130-pll/issues/595)
+
 ### Historical basis for the request
 
 - **Cited, measured**: the reused 45-point `sim/vco` record
