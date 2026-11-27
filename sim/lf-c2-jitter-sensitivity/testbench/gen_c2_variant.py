@@ -116,7 +116,6 @@ def _variant_files(factor: int) -> dict[str, str]:
     top_name = f"top_c2div{factor}"
     tb_name = f"tb_lf_c2_jitter_c2div{factor}"
 
-    lf_src = (REPO / "design/loop-filter/loop_filter.sch").read_text()
     lf_body = _body(REPO / "design/loop-filter/loop_filter.sch")
     old = _C2_LINE + "model=cap_mim_m3_1\nW=72\nL=72\n"
     new = _C2_LINE + f"model=cap_mim_m3_1\nW={side}\nL={side}\n"
@@ -126,7 +125,6 @@ def _variant_files(factor: int) -> dict[str, str]:
             f"generator substitutes into (expected {old!r})"
         )
     lf_body = lf_body.replace(old, new, 1)
-    del lf_src
 
     lf_header = f"""v {{xschem version=3.4.7 file_version=1.2
 * {lf_name}.sch -- a DELIBERATELY DEGRADED copy of the sky130 PLL loop filter.

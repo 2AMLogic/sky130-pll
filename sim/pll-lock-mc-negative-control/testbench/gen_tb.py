@@ -14,7 +14,7 @@ makes that checkable rather than asserted:
 `sim/pll-lock-mc/testbench/tb_pll_lock_mc.sch`'s own body, **verbatim**, with
 exactly one substitution -- its single `XXTOP` instance re-pointed from
 `design/top/top.sym` at the degraded top-level symbol under
-`sim/lf-c2-jitter-sensitivity/testbench/`. Supply, the 10 MHz reference, the
+`sim/lf-c1-jitter-sensitivity/testbench/`. Supply, the 10 MHz reference, the
 power-on reset stimulus and the `NSEL[5:0]`=`011000` (N=25) strapping are
 therefore bit-identical to the campaign's, and like it this schematic carries no
 `.tran` card of its own: the window comes from `tb.json` via
@@ -40,12 +40,16 @@ Usage
 from __future__ import annotations
 
 import argparse
-import difflib
 import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[2]
+if str(REPO / "sim") not in sys.path:
+    sys.path.insert(0, str(REPO / "sim"))
+
+import variant_generator  # noqa: E402
+from variant_generator import GenError  # noqa: E402
 
 #: The sizing unit's arm this control's DUT is. Changing it means re-running the
 #: campaign: the record names the arm it drew, and the committed `tb.json`'s
@@ -56,22 +60,11 @@ ARM_UNIT = "sim/lf-c1-jitter-sensitivity"
 NOMINAL_TB = "sim/pll-lock-mc/testbench/tb_pll_lock_mc.sch"
 OUT_NAME = "tb_pll_lock_mc_negative_control.sch"
 
-_HEADER_MARKER = "}\nG {}\n"
 _XXTOP = "C {design/top/top.sym} 0 0 0 0 {name=XXTOP}"
 
 
-class GenError(RuntimeError):
-    pass
-
-
 def derive() -> str:
-    text = (REPO / NOMINAL_TB).read_text()
-    _head, marker, rest = text.partition(_HEADER_MARKER)
-    if not marker:
-        raise GenError(f"{NOMINAL_TB}: no `v {{...}}` header block found")
-    # The `v { ... }` block's closing brace belongs to the body, so a header
-    # written here cannot leave that block unclosed.
-    body = _HEADER_MARKER + rest
+    body = variant_generator.body(REPO / NOMINAL_TB)
     if _XXTOP not in body:
         raise GenError(
             f"{NOMINAL_TB}'s XXTOP instance line is not the one this generator "
@@ -105,25 +98,12 @@ def derive() -> str:
 
 
 def run(*, write: bool) -> int:
-    content = derive()
-    dst = HERE / OUT_NAME
-    if write:
-        dst.write_text(content)
-        print(f"wrote {dst.relative_to(REPO)}")
-        return 0
-    have = dst.read_text() if dst.exists() else ""
-    if have != content:
-        print(f"DRIFT: {dst.relative_to(REPO)}", file=sys.stderr)
-        sys.stderr.writelines(
-            difflib.unified_diff(
-                have.splitlines(keepends=True),
-                content.splitlines(keepends=True),
-                fromfile="committed",
-                tofile="re-derived",
-            )
-        )
+    if not variant_generator.sync_text(
+        HERE / OUT_NAME, derive(), write=write, repo=REPO
+    ):
         return 1
-    print(f"OK: {OUT_NAME} is {NOMINAL_TB}'s body with only the {ARM} substitution")
+    if not write:
+        print(f"OK: {OUT_NAME} is {NOMINAL_TB}'s body with only the {ARM} substitution")
     return 0
 
 
