@@ -1,7 +1,7 @@
 # Work Plan
 
 <!-- guide:plan-body:start -->
-_Generated: 2026-11-27T06:16:44Z (snapshot; compare against live labels)_
+_Generated: 2026-11-27T12:32:54Z (snapshot; compare against live labels)_
 ## Operator Attention: Merge-Risk-Hold Pileup
 
 Judge-approved PRs under a hold (`loom:blocked` or `loom:operator`) — only a human merge decision is missing.
@@ -33,6 +33,8 @@ _None._
 Issues currently being built (`loom:building`).
 
 - **#523**: xschem pin migration: migrate sky130-pll to the fleet 3.4.7
+- **#593**: Remove duplicate spot-check parser, JSON loader, and unchecked git call across layout/bin/render-pll-record.py and route_lever_tally.py
+- **#607**: Simplify checkpoint lookup so a clone can resume a staged worktree run
 
 ## PRs Awaiting Review
 
@@ -44,7 +46,8 @@ _None._
 
 PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
-- **#596**: docs: record the Stage A fleet ledger checkpoint and validated requests
+- **#601**: fix: propagate PLL record lookup errors and share shorted-node parsing
+- **#609**: fix: recover worktree checkpoints when resuming from a clone
 
 ## Proposed
 
@@ -75,9 +78,7 @@ Issues carrying `loom:curated`.
 - **#247**: sim: add a standalone PFD/charge-pump characterization campaign (UP/DN asymmetry, Icp, compliance) *(architect)* *(held)*
 - **#434**: Collapse the layout klt pin narrative: 156 comment lines for 2 pins, with stale copies in layout/README.md and setup-venv.sh *(hermit)* *(held)*
 - **#554**: Remove the unused mim_cap_ff helper with the incorrect C1 example *(hermit)* *(held)*
-- **#593**: Remove duplicate spot-check parser, JSON loader, and unchecked git call across layout/bin/render-pll-record.py and route_lever_tally.py *(hermit)*
-- **#594**: Deduplicate markdown table parser, document emit loop, and dead PWL regex across sim/*/analysis/ scripts via sim/analysis_common.py *(hermit)*
-- **#597**: Consolidate Git exclusions and snapshot hashing in the simulation record header *(hermit)*
+- **#610**: Stop recomputing historical DRC violations from the current PLL layout *(hermit)*
 
 ## Epics
 
@@ -91,10 +92,10 @@ _None._
 | Very important | 0 |
 | Important | 3 |
 | Ready (`loom:issue`, net of holds/building/merge-pending) | 0 |
-| In Progress (`loom:building`) | 1 |
+| In Progress (`loom:building`) | 3 |
 | PRs awaiting review | 0 |
-| Approved PRs awaiting merge | 1 |
+| Approved PRs awaiting merge | 2 |
 | Curated | 18 |
-| Architect / Hermit proposals | 7 |
+| Architect / Hermit proposals | 5 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
