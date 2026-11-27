@@ -39,6 +39,8 @@ _BIN_DIR = Path(__file__).resolve().parent
 if str(_BIN_DIR) not in sys.path:
     sys.path.insert(0, str(_BIN_DIR))
 
+from render_common import load_json as _load
+
 # --- leg-reason bucketing (shared with render-pll-record.py) ----------------
 #
 # How a `gen-compose` leg's own `reason` string is bucketed. Each entry is
@@ -97,9 +99,7 @@ _EVIDENCE_GLOBS = (
     "route-spot-check/lvs.json",
 )
 
-#: A node the extractor labels with more than one declared net name -- the
-#: same multi-label pattern `render-pll-record.py` counts for the record's
-#: own "no drawn short" claim.
+#: A node the extractor labels with more than one declared net name.
 _MULTI_LABEL_NODE_RE = re.compile(r"[A-Za-z_0-9]+(?:\|[A-Za-z_0-9]+)+")
 
 
@@ -108,10 +108,6 @@ def reason_bucket(reason: str | None) -> str:
         if needle in (reason or ""):
             return label
     return "other"
-
-
-def _load(path: Path) -> dict[str, Any]:
-    return json.loads(path.read_text())
 
 
 def route_stats(spot_dir: Path) -> dict[str, Any]:
@@ -165,12 +161,16 @@ def _supply_status(spot_dir: Path, supplies: list[str]) -> dict[str, dict[str, s
     return out
 
 
-def _shorted_node_count(spot_dir: Path) -> int:
+def merged_nodes(spot_dir: Path, *, missing_ok: bool = True) -> list[str]:
+    """Return sorted, distinct multi-label nodes from the extracted netlist.
+
+    A tally can lack a netlist. The record requires it as evidence for
+    its drawn-short claim, so it passes `missing_ok=False`.
+    """
     spice = spot_dir / "pll_top.spice"
-    if not spice.is_file():
-        return 0
-    merged = set(_MULTI_LABEL_NODE_RE.findall(spice.read_text()))
-    return len(merged)
+    if missing_ok and not spice.is_file():
+        return []
+    return sorted(set(_MULTI_LABEL_NODE_RE.findall(spice.read_text())))
 
 
 def tally_row(
@@ -202,7 +202,7 @@ def tally_row(
             REASON_SHORT_LABELS.get(reason, reason): count
             for reason, count in stats["reasons"].most_common()
         },
-        "shorted_nodes": _shorted_node_count(spot_dir),
+        "shorted_nodes": len(merged_nodes(spot_dir)),
         "routed_drc_violations": drc.get("violation_count", 0),
         "lvs_status": lvs.get("status"),
         "lvs_mismatches": lvs.get("mismatch_count"),
@@ -247,7 +247,7 @@ def main() -> int:
     if args.cmd == "row":
         print(json.dumps(row, indent=2) + "\n")
         return 0
-    prior = json.loads(args.prior.read_text())
+    prior = _load(args.prior)
     if not isinstance(prior, list):
         raise SystemExit(f"--prior must be a JSON array of rows: {args.prior}")
     print(json.dumps(prior + [row], indent=2) + "\n")
