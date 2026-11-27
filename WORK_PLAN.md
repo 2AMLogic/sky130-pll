@@ -1,7 +1,7 @@
 # Work Plan
 
 <!-- guide:plan-body:start -->
-_Generated: 2026-11-26T20:21:54Z (snapshot; compare against live labels)_
+_Generated: 2026-11-27T06:16:44Z (snapshot; compare against live labels)_
 ## Operator Attention: Merge-Risk-Hold Pileup
 
 Judge-approved PRs under a hold (`loom:blocked` or `loom:operator`) — only a human merge decision is missing.
@@ -19,6 +19,8 @@ _None._
 `loom:important`; taken before unlabelled work.
 
 - **#244**: sim: record divider Fmax boundaries across PVT for digital T1 characterization *(held)*
+- **#584**: Run the 500 MHz Stage A screening campaign on Spot and record measured job-hours *(held)*
+- **#595**: Recover the Stage A Spot ledger after the November 27 worker handoff *(held)*
 
 ## Ready
 
@@ -42,7 +44,7 @@ _None._
 
 PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
-_None._
+- **#596**: docs: record the Stage A fleet ledger checkpoint and validated requests
 
 ## Proposed
 
@@ -65,6 +67,7 @@ Issues carrying `loom:curated`.
 - **#298**: Re-qualify cited layout reference records under open_pdks f6eeac7 (part of #295) *(curated)* *(held)*
 - **#523**: xschem pin migration: migrate sky130-pll to the fleet 3.4.7 *(curated)*
 - **#584**: Run the 500 MHz Stage A screening campaign on Spot and record measured job-hours *(curated)* *(held)*
+- **#595**: Recover the Stage A Spot ledger after the November 27 worker handoff *(curated)* *(held)*
 
 ## Proposed (Architect / Hermit)
 
@@ -72,6 +75,9 @@ Issues carrying `loom:curated`.
 - **#247**: sim: add a standalone PFD/charge-pump characterization campaign (UP/DN asymmetry, Icp, compliance) *(architect)* *(held)*
 - **#434**: Collapse the layout klt pin narrative: 156 comment lines for 2 pins, with stale copies in layout/README.md and setup-venv.sh *(hermit)* *(held)*
 - **#554**: Remove the unused mim_cap_ff helper with the incorrect C1 example *(hermit)* *(held)*
+- **#593**: Remove duplicate spot-check parser, JSON loader, and unchecked git call across layout/bin/render-pll-record.py and route_lever_tally.py *(hermit)*
+- **#594**: Deduplicate markdown table parser, document emit loop, and dead PWL regex across sim/*/analysis/ scripts via sim/analysis_common.py *(hermit)*
+- **#597**: Consolidate Git exclusions and snapshot hashing in the simulation record header *(hermit)*
 
 ## Epics
 
@@ -83,12 +89,12 @@ _None._
 |------|-------|
 | Operator merge-risk holds | 0 |
 | Very important | 0 |
-| Important | 1 |
+| Important | 3 |
 | Ready (`loom:issue`, net of holds/building/merge-pending) | 0 |
 | In Progress (`loom:building`) | 1 |
 | PRs awaiting review | 0 |
-| Approved PRs awaiting merge | 0 |
-| Curated | 17 |
-| Architect / Hermit proposals | 4 |
+| Approved PRs awaiting merge | 1 |
+| Curated | 18 |
+| Architect / Hermit proposals | 7 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
