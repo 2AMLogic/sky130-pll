@@ -57,6 +57,7 @@ from . import fmax as fmax_mod
 from . import report as report_mod
 from . import runner as runner_mod
 from .klt_submit import preflight_batch, resolve_klt, submit_with_capacity_retry
+from .klt_waveform import read_klt_waveform
 
 #: Executor name accepted by `run_fmax.py --executor`.
 BATCH_EXECUTOR = "batch"
@@ -335,11 +336,10 @@ def judge_corner_probe(corner, waveform_path, k: int, plan, spec) -> fmax_mod.Pr
     if not waveform_path or not Path(waveform_path).is_file():
         return fmax_mod.ProbeVerdict(fmax_mod.INCONCLUSIVE, "no waveform artifact for the corner")
     try:
-        wave = json.loads(Path(waveform_path).read_text())
-        names = [v["name"] for v in wave["variables"]]
+        names, points = read_klt_waveform(waveform_path)
         col = names.index(f"v(fbclk_{k})")
-        times = [p[0] for p in wave["points"]]
-        values = [p[col] for p in wave["points"]]
+        times = [p[0] for p in points]
+        values = [p[col] for p in points]
     except (OSError, ValueError, KeyError) as e:
         return fmax_mod.ProbeVerdict(fmax_mod.INCONCLUSIVE, f"unreadable waveform: {e}")
     times, values = clip_trace(times, values, plan.tran_stop_s)
