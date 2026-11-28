@@ -481,10 +481,20 @@ it was understood (measured 2026-11-14 on klt 0.9.2.dev1022).
 - **Resume through `--klt-cache`.** Stage 1 is 45 jobs (15 `(N, supply)` keys x
   3 chunks of at most 4 DUT copies), each carrying up to 15 corners; stage 2
   adds a comparable number. At `--klt-jobs 2` and roughly 10-20 min of fleet
-  wall per job, a cold full grid is several hours. Re-running the **same**
+  wall per job, a cold full grid is several hours. The 3-chunks packing is the
+  default (`--chunk-size 4`); moduli whose slowest groups exceed the fleet's
+  whole-job ceiling need `--chunk-size 2` (see the ceiling bullet below), so
+  their stage 1 is 15 jobs per modulus (3 supplies x 5 chunks of at most 2),
+  not 9. Re-running the **same**
   command with the **same** `--klt-cache` directory reuses every collected
   report (`reusing collected report ...`) and re-submits only the groups that
   are missing or whose job failed, so the campaign accumulates across runs.
+  The group directory name carries a SHA-256 fingerprint of the netlist body
+  and the complete request (issue #541), so reuse only happens when both are
+  identical: a manifest/spec change -- netlist content, corner set, criterion
+  window, timeout, save mode -- keys a new directory and starts cold, leaving
+  the earlier generation's evidence in place. Directories from before the
+  fingerprint lack it and are always cold misses.
   A record is written only by the invocation in which every cell completes.
 - **The saved node set must stay narrow.** `build_body` emits
   `.save v(fbclk_0) ... v(fbclk_k)`, which is exactly what the reducer reads
@@ -494,6 +504,27 @@ it was understood (measured 2026-11-14 on klt 0.9.2.dev1022).
   one corner of one 4-DUT group**, i.e. multiple TB over the declared grid.
   The request therefore sets `save_mode: "netlist"`, which hands the saved set
   back to the body's own `.save` -- the same corner then costs **4.7 MB**.
+- **The fleet kills a whole job at 3600 s; heavy chunks must be split with
+  `--chunk-size`.** The fleet's `BATCH_MAX_JOB_SECONDS` is 3600 s
+  (`fleet_config`, measured 2026-11-19), and one job runs its corners
+  concurrently but each corner simulates the whole group body, so a group's
+  wall need scales with its slowest probe window x DUT count. The request
+  budgets that as `min(max(1800, 4 x window_ns x n_dut), 8 h)`; N=4 and N=5
+  sit at the 1800 s floor and always fit. N=25 does not: chunk 0 of
+  `(N=25, 1.62 V)` holds the four slowest frequencies (window 381 ns at
+  800 MHz), budgets 6096 s, and job `klt-sim-322a814fc369` was killed at the
+  3600 s ceiling with every probe lost (`batch_job_timeout`) -- a kill that
+  re-launching cannot fix, because the identical request needs the same wall.
+  `--chunk-size 2` re-slices each (N, supply) into groups of at most 2 DUTs
+  (budget ~3048 s, measured N=25 stage-1 light chunks completing in ~9 min),
+  which fits. Use it for every modulus whose slowest chunk would budget past
+  the ceiling: a chunk's window is `6 ns + 12 x N/f_min`, so N >= 25 needs
+  `--chunk-size 2` and N >= 63 budgets ~3800 s even at one DUT per job -- if
+  the fleet still kills those, the ceiling itself (`BATCH_MAX_JOB_SECONDS`)
+  is the operator lever, not this harness. Cache keys fingerprint the group's
+  member frequencies, so reports collected under one packing are never
+  reused for another (`n25_1.62v_c0_58b41846`); a packing change starts
+  those groups cold by design.
 - **Capacity refusal and Spot reclaim are execution errors, never verdicts.**
   The fleet is vCPU-budgeted, so a submit that does not wait is refused with
   `batch_no_capacity` and never runs; the request sets

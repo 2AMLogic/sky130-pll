@@ -1,8 +1,10 @@
 import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
+from unittest import mock
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
@@ -59,6 +61,65 @@ class SubmitWithCapacityRetry(unittest.TestCase):
     def test_runner_errors_propagate(self):
         with self.assertRaises(subprocess.TimeoutExpired):
             submit([subprocess.TimeoutExpired("klt", 7)])
+
+
+class ResolveKlt(unittest.TestCase):
+    def test_explicit_argument_wins(self):
+        self.assertEqual(S.resolve_klt("bin/klt", environ={"SKY130_PLL_KLT": "other/klt"}),
+                         "bin/klt")
+
+    def test_env_var_before_path_lookup(self):
+        self.assertEqual(S.resolve_klt(None, environ={"SKY130_PLL_KLT": "env/klt"}), "env/klt")
+
+    def test_path_lookup_last(self):
+        with mock.patch.object(S.shutil, "which", return_value="/usr/bin/klt"):
+            self.assertEqual(S.resolve_klt(None, environ={}), "/usr/bin/klt")
+
+    def test_unresolved_returns_none(self):
+        with mock.patch.object(S.shutil, "which", return_value=None):
+            self.assertIsNone(S.resolve_klt(None, environ={}))
+
+
+class PreflightBatch(unittest.TestCase):
+    def setUp(self):
+        td = tempfile.TemporaryDirectory()
+        self.addCleanup(td.cleanup)
+        self.tmp = Path(td.name)
+        self.prov = self.tmp / "prov.sh"
+        self.prov.write_text("")
+
+    def env(self, prov=None):
+        return {"KLT_BATCH_PROVISION_SCRIPT": str(self.prov if prov is None else prov)}
+
+    def test_passing_check_returns_klt(self):
+        self.assertEqual(S.preflight_batch("bin/klt", environ=self.env()), "bin/klt")
+
+    def test_missing_klt(self):
+        with self.assertRaises(RuntimeError) as cm:
+            S.preflight_batch(None, environ=self.env())
+        self.assertEqual(str(cm.exception),
+                         "`klt` is not on PATH (set SKY130_PLL_KLT to its path)")
+
+    def test_missing_provision_variable(self):
+        with self.assertRaises(RuntimeError) as cm:
+            S.preflight_batch("bin/klt", environ={})
+        self.assertEqual(str(cm.exception),
+                         "KLT_BATCH_PROVISION_SCRIPT does not name an existing "
+                         "batch-fleet-provision.sh")
+
+    def test_nonexistent_provision_script(self):
+        with self.assertRaises(RuntimeError) as cm:
+            S.preflight_batch("bin/klt", environ=self.env(prov=self.tmp / "absent.sh"))
+        self.assertEqual(str(cm.exception),
+                         "KLT_BATCH_PROVISION_SCRIPT does not name an existing "
+                         "batch-fleet-provision.sh")
+
+    def test_custom_error_class(self):
+        class Marker(RuntimeError):
+            pass
+
+        with self.assertRaises(Marker):
+            S.preflight_batch(None, environ=self.env(), error_cls=Marker)
 
 
 if __name__ == "__main__":

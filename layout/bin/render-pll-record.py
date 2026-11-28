@@ -71,7 +71,15 @@ from render_common import (  # noqa: E402
     klt_info,
     load_json,
     render_provenance,
+    run_git,
     spec_rows_line,
+)
+from route_lever_tally import (  # noqa: E402
+    ROUTE_REASON_BUCKETS,
+    merged_nodes,
+    reason_bucket,
+    route_stats,
+    tally_row,
 )
 
 # No device card regex at all: every extracted device multiset (MOS, resistor,
@@ -80,6 +88,14 @@ from render_common import (  # noqa: E402
 # for why.
 
 _load = load_json  # local alias, kept short for the calls below
+
+#: A record directory name: `<YYYYMMDD-HHMMSS>-<short-git-sha>`. The sha is
+#: whatever `git rev-parse --short HEAD` prints, and git picks that length
+#: adaptively (7 hex chars for most of this repo's history, 8 once the
+#: object count grew) -- so 7 *or more*, never exactly 7. Same shape
+#: `flow_common.flow_new_record_id` mints and
+#: `layout/tests/test_newest_record_reference.py` asserts.
+_RECORD_ID_RE = re.compile(r"\d{8}-\d{6}-[0-9a-f]{7,}")
 
 
 def _close(a: float, b: float) -> bool:
@@ -200,69 +216,13 @@ def planned_sets(block: dict[str, Any]) -> dict[str, Counter]:
 
 
 #: How a `gen-compose` leg's own `reason` string is bucketed for the record's
-#: routing spot-check table. Each entry is (substring, label); the first
-#: matching substring wins, so order matters. The strings are the router's own
-#: (`legs[].reason` in a compose response), not this script's paraphrase.
-ROUTE_REASON_BUCKETS = (
-    (
-        "comes within",
-        "would come closer to an already-drawn route than the resolved deck's "
-        "own same-layer minimum spacing (the router's spacing-aware collision "
-        "check, new at `klayout-tools==0.6.0` -- it is why the routed "
-        "spot-check's own DRC no longer reports `met1.space.1`)",
-    ),
-    (
-        "crosses already-routed net",
-        "would cross an already-drawn route (the router's own route-vs-route "
-        "collision check, klayout-tools#1057)",
-    ),
-    (
-        "bare-poly gate",
-        "terminates on a bare-poly gate with no contacted landing pad "
-        "(`params.gate_contact`, klayout-tools#492 -- this flow does not opt in)",
-    ),
-    (
-        "through unrelated block",
-        "backbone would plough through an unrelated block's bbox (no routing "
-        "channel between abutted groups)",
-    ),
-    (
-        "through its own pin's block",
-        "backbone would plough through its own pin's block (no routing channel "
-        "inside a matched array)",
-    ),
-)
-
-
-def _reason_bucket(reason: str | None) -> str:
-    for needle, label in ROUTE_REASON_BUCKETS:
-        if needle in (reason or ""):
-            return label
-    return "other"
-
-
-def route_stats(spot_dir: Path) -> dict[str, Any]:
-    """Aggregate what the routed spot-check's own compose responses report.
-
-    Everything here is read back out of `klt gen-compose`'s responses -- net
-    `status` (`"routed"`/`"partial"`/`"unrouted"`), per-leg `routed`, and the
-    router's own `reason` string for a leg it declined to draw. Nothing is
-    inferred from the drawn stream, which the flow deletes; the extraction
-    cross-check below the narrative is what speaks for the geometry.
-    """
-    status: Counter = Counter()
-    reasons: Counter = Counter()
-    legs = drawn = 0
-    for path in sorted(spot_dir.glob("compose.*.response.json")):
-        for net in _load(path).get("nets", []) or []:
-            status[net.get("status") or ("routed" if net.get("routed") else "unrouted")] += 1
-            for leg in net.get("legs") or []:
-                legs += 1
-                if leg.get("routed"):
-                    drawn += 1
-                else:
-                    reasons[_reason_bucket(leg.get("reason"))] += 1
-    return {"status": status, "legs": legs, "drawn_legs": drawn, "reasons": reasons}
+#: routing spot-check table: `route_lever_tally.ROUTE_REASON_BUCKETS`, the
+#: single shared derivation (issue #548 moved it there so the lever table's
+#: rows and this section's table can never disagree). `route_stats` is
+#: imported from the same module; the aliases below keep the old local
+#: spellings working for anything that loaded this module.
+_ROUTE_REASON_BUCKETS = ROUTE_REASON_BUCKETS
+_reason_bucket = reason_bucket
 
 
 def _cap_sets_match(planned: Counter, extracted: Counter) -> bool:
@@ -479,25 +439,67 @@ def _build_checks(
 
 def _load_spot_check(out_dir: Path) -> dict[str, Any] | None:
     """The routing spot-check's evidence, or `None` if the flow skipped it."""
-    spot_path = out_dir / "route-spot-check" / "build.json"
+    spot_dir = out_dir / "route-spot-check"
+    spot_path = spot_dir / "build.json"
     if not spot_path.is_file():
         return None
-    # A node the extractor labels with more than one declared net name is
-    # a *drawn short*: two nets the schematic keeps apart ended up on one
-    # electrical node. Counted straight out of the routed run's own
-    # extracted netlist, so the claim is the extractor's, not this
-    # script's.
-    routed_spice = (out_dir / "route-spot-check" / "pll_top.spice").read_text()
-    merged = sorted({m for m in re.findall(r"[A-Za-z_0-9]+(?:\|[A-Za-z_0-9]+)+", routed_spice)})
-    lvs_path = out_dir / "route-spot-check" / "lvs.json"
+    lvs_path = spot_dir / "lvs.json"
     return {
         "build": _load(spot_path),
-        "drc": _load(out_dir / "route-spot-check" / "drc.json"),
-        "extract": _load(out_dir / "route-spot-check" / "extract.json"),
-        "merged_nodes": merged,
-        "routing": route_stats(out_dir / "route-spot-check"),
+        "drc": _load(spot_dir / "drc.json"),
+        "extract": _load(spot_dir / "extract.json"),
+        "merged_nodes": merged_nodes(spot_dir, missing_ok=False),
+        "routing": route_stats(spot_dir),
         "lvs": _load(lvs_path) if lvs_path.is_file() else None,
     }
+
+
+def _load_routing_levers_rows(out_dir: Path) -> list[dict[str, Any]] | None:
+    """The routing-lever ladder's rows, or `None` when this run kept none.
+
+    `run-pll-layout-flow.sh` writes `routing-levers.json` into the out-dir
+    when `PLL_ROUTING_LEVERS_SUMMARY` names the earlier runs' rows (issue
+    #548): one row per cumulative lever step, the last row being *this*
+    run, merged in by `route_lever_tally.py merge` from this run's own
+    envelopes. `None` (file absent) renders a record shaped exactly like
+    the pre-#548 ones.
+    """
+    path = out_dir / "routing-levers.json"
+    if not path.is_file():
+        return None
+    rows = _load(path)
+    if not isinstance(rows, list) or not rows:
+        raise SystemExit(f"{path}: expected a non-empty JSON array of rows")
+    return rows
+
+
+def _check_levers_final_row(out_dir: Path, rows: list[dict[str, Any]], record_id: str) -> tuple[str, bool, str]:
+    """The lever table's final row must be this run's own tally.
+
+    The rows file is assembled across runs, so its last entry could in
+    principle be stale or name the wrong run -- this check re-derives the
+    row from *this* run's envelopes (`route_lever_tally.tally_row`) and
+    fails the record if any headline number disagrees, so the table cannot
+    quietly ship a number this run's own evidence contradicts.
+    """
+    final = rows[-1]
+    if final.get("record_id") != record_id:
+        return (
+            "Routing-lever table's final row is this run",
+            False,
+            f"last row names record `{final.get('record_id')}`, not `{record_id}`",
+        )
+    live = tally_row(out_dir, record_id, final.get("label", ""), final.get("levers", []))
+    compared = ("legs_total", "legs_drawn", "nets_routed", "nets_partial",
+                "nets_unrouted", "shorted_nodes", "routed_drc_violations",
+                "lvs_status", "lvs_mismatches")
+    drift = [key for key in compared if final.get(key) != live.get(key)]
+    return (
+        "Routing-lever table's final row is this run's own tally "
+        "(re-derived from this run's envelopes and compared field by field)",
+        not drift,
+        "all headline fields agree" if not drift else f"drift in: {drift}",
+    )
 
 
 # --- render: each `_render_*` helper appends one `## `-headed markdown
@@ -520,10 +522,30 @@ def _render_header(a: Any, args: argparse.Namespace, netlist_display: str) -> No
     # spec/target-spec.md mapping (or an explicit "measures none") in its own
     # body -- see render_common.spec_rows_line and measurements/README.md.
     a(f"- **Spec row(s)**: {spec_rows_line(args.out_dir)}")
-    latest = Path(args.repo_root) / "layout" / "pll" / "reports" / "LATEST"
-    prior = latest.read_text().strip() if latest.is_file() else ""
+    reports_dir = Path(args.repo_root) / "layout" / "pll" / "reports"
+    # The record this one supersedes is the *newest committed* record, which
+    # is not necessarily what `LATEST` names: LATEST is deliberately pinned
+    # to the record `signoff/run-signoff.sh` item 3 cites until #459
+    # re-points it, so it trails the newest record by any number of mints.
+    # Reading the newest record directory (not LATEST) keeps the chain of
+    # "supersedes" links unbroken between the records LATEST skips over --
+    # restricted to *git-tracked* directories, so an uncommitted
+    # measurement run staged under reports/ by a re-run of the flow can
+    # never claim to be the superseded record.
+    tracked = run_git(args.repo_root, "ls-files", "--", "layout/pll/reports").split()
+    tracked_dirs = {
+        path.split("/")[3]
+        for path in tracked
+        if len(path.split("/")) > 4 and _RECORD_ID_RE.fullmatch(path.split("/")[3])
+    }
+    prior = max(
+        (name for name in tracked_dirs if name != args.record_id), default=""
+    )
+    if not prior:
+        latest = reports_dir / "LATEST"
+        prior = latest.read_text().strip() if latest.is_file() else ""
     if prior and prior != args.record_id:
-        a(f"- **Supersedes**: `{prior}` (the `LATEST` record when this one was minted; it is kept unedited)")
+        a(f"- **Supersedes**: `{prior}` (the newest record when this one was minted; it is kept unedited)")
     a("")
 
 
@@ -792,14 +814,168 @@ def _render_routing_spotcheck(
             "comparison rather than on this record's own leg-reason "
             "tally -- per this repo's CLAUDE.md, a miss is recorded as a "
             "miss, never rounded up to \"clean.\" Full `klt lvs` closure "
-            "(issue #18) needs the router's structural gaps above "
-            "(chiefly the point-to-point router's inability to route a "
-            "pin buried inside a matched device array) closed first, and "
-            "klayout-tools#1197's residual same-block short fixed "
-            "upstream before routing further is safe to attempt at all "
-            "-- see `layout/pll/README.md`."
+            "(issue #18) needs the router's structural gaps above closed "
+            "first: the order-dependent plane/track assignment problem "
+            "(klayout-tools#1962), the cross-plane drawn-short defect the "
+            "second-plane lever exposes (klayout-tools#7024), and the "
+            "top-level connectivity this flow does not yet declare -- "
+            "see `layout/pll/README.md` and the routing-lever "
+            "measurement below."
         )
         a("")
+
+
+def _render_routing_levers(
+    a: Any,
+    rows: list[dict[str, Any]],
+    spot: dict[str, Any],
+) -> None:
+    """The issue-#548 lever-ladder measurement table.
+
+    Only called when `routing-levers.json` exists in the out-dir (the flow
+    writes it when `PLL_ROUTING_LEVERS_SUMMARY` points at the earlier
+    steps' rows); the final row is this record's own run and was
+    field-checked by `_check_levers_final_row` above.
+    """
+    levers_block = (spot["build"].get("routing_levers") or {})
+    a("## Routing-lever measurement (issue #548)")
+    a("")
+    a(
+        "The spot-check above was re-measured once per shipped routing lever "
+        "the generator had never requested, applied cumulatively in the "
+        "issue's order, one full flow run per step. Every row below is "
+        "derived from that run's own `klt` envelopes by "
+        "`layout/bin/route_lever_tally.py` (the row also carries each "
+        "envelope's sha256 -- fetch any of them from the artifact store with "
+        "`klt artifact get <sha256>`); the first row is the committed "
+        "baseline record, quoted from its own `record.md`. The levers this "
+        "record's own run requests:"
+    )
+    a("")
+    if levers_block:
+        a(f"- `routing.cross_block_layer_role = {levers_block.get('cross_block_layer_role')!r}` -- a second plane for same-block self-net legs (klayout-tools#1168)")
+        a(f"- `mos_array` `interior_channel_um = {levers_block.get('interior_channel_um')!r}` on every multi-unit matched array, routed build only (klayout-tools#1531/#1835)")
+        a(f"- per-net `connectivity[].layer_role = {levers_block.get('supply_layer_role')!r}` for the supplies {levers_block.get('supply_nets')}, ordered ahead of every signal net (klayout-tools#1655)")
+        a(f"- per-net `connectivity[].layer_role = {levers_block.get('fanout_layer_role')!r}` for the {len(levers_block.get('fanout_nets') or [])} highest-pin-count signal nets {levers_block.get('fanout_nets')} (derived from the plan, not typed in)")
+        a("")
+    a("| Step (run) | Levers requested | Legs drawn | Nets full / partial / none | Declined legs by reason | Shorted nodes | Routed DRC | LVS |")
+    a("| --- | --- | --- | --- | --- | --- | --- | --- |")
+    for row in rows:
+        reasons = "; ".join(
+            f"{label} {count}"
+            for label, count in (row.get("declined_reasons") or {}).items()
+        ) or "--"
+        levers = ", ".join(row.get("levers") or []) or "none"
+        a(
+            f"| `{row['record_id']}` ({row.get('label') or '--'}) | {levers} | "
+            f"{row['legs_drawn']} / {row['legs_total']} | "
+            f"{row['nets_routed']} / {row['nets_partial']} / {row['nets_unrouted']} | "
+            f"{reasons} | {row['shorted_nodes']} | "
+            f"{row['routed_drc_violations']} | "
+            f"`{row['lvs_status']}`, {row['lvs_mismatches']} |"
+        )
+    a("")
+    a("### Reading the ladder")
+    a("")
+    by_levers = {tuple(row.get("levers") or []): row for row in rows}
+    totals = ", ".join(str(row["legs_total"]) for row in rows)
+    a(
+        "**The legs-total column is not a fixed basis.** The bundle router "
+        "decomposes a multi-pin net into two-pin legs from the trunk it "
+        "picks, and the trunk changes with the lever set (the supplies "
+        f"going first, onto their own plane, re-picks trunks for everything "
+        f"after them) -- {totals} legs across these runs. Compare *nets "
+        "routed in full* and the decline reasons, not leg percentages "
+        "across rows."
+    )
+    a("")
+    step_a = by_levers.get(("cross-block-plane",))
+    if step_a and (step_a["shorted_nodes"] or step_a["routed_drc_violations"]):
+        a(
+            "**The second-plane lever introduces a drawn short.** The "
+            "cross-block-plane-only step carries "
+            f"{step_a['shorted_nodes']} shorted node(s) and "
+            f"{step_a['routed_drc_violations']} DRC violation(s) in its "
+            "routed build: a same-block leg retried on the "
+            "`cross_block_layer_role` plane composed `routed: true` while "
+            "another net's leg crossed its via-drop landing zone. Filed "
+            "upstream, with a two-net minimal repro, as "
+            "[klayout-tools#7024](https://github.com/2AMLogic/klayout-tools/issues/7024) "
+            "-- the cross-plane analogue of the single-plane short #1197 "
+            "fixed. Later levers remove it here (the rails no longer "
+            "compete for the primary plane at that spot), and the final "
+            f"run's {rows[-1]['shorted_nodes']} shorted nodes is what any "
+            "later citation of this stream relies on."
+        )
+        a("")
+    final = rows[-1]
+    prior = rows[-2] if len(rows) > 1 else final
+    if final["routed_drc_violations"] > prior["routed_drc_violations"]:
+        a(
+            "**The fanout-plane lever buys legs at a DRC cost.** The last "
+            f"step adds {final['legs_drawn'] - prior['legs_drawn']} legs "
+            f"and {final['routed_drc_violations'] - prior['routed_drc_violations']} "
+            "more routed-build DRC violations "
+            f"({prior['routed_drc_violations']} -> {final['routed_drc_violations']}): "
+            "the per-net higher planes' via-drop ladders land on "
+            "intermediate planes where the spacing check does not model "
+            "them -- the same ladder-footprint gap the #1962 discussion "
+            "records as rejections, here surfacing as drawn violations. "
+            "Both are reported upstream (#7024 carries the family)."
+        )
+        a("")
+    residual_crossings = (final.get("declined_reasons") or {}).get("route-vs-route", 0)
+    a(
+        "**What the remainder needs.** With every shipped lever enabled, "
+        "the residual is the assignment problem itself: "
+        f"{residual_crossings} legs are still declined as crossing an "
+        "already-drawn route, one net at a time in `connectivity[]` "
+        "order, with no way to ask up front which *set* of "
+        "planes/tracks is mutually consistent -- exactly the gap "
+        "klayout-tools#1962 tracks, so #18 stays parked on it with this "
+        "narrower, measured residual. The top-level composition also "
+        "declares no connectivity at all (see the supply section below), "
+        "which no per-net lever can change."
+    )
+    a("")
+    supplies = sorted(
+        {net for statuses in (final.get("supply_status") or {}).values() for net in statuses}
+    )
+    a("### Supply rails under the supply-plane lever")
+    a("")
+    for supply in supplies:
+        per_block = {
+            block: statuses[supply]
+            for block, statuses in (final.get("supply_status") or {}).items()
+            if supply in statuses
+        }
+        full = [b for b, s in per_block.items() if s == "routed"]
+        not_full = {b: s for b, s in per_block.items() if s != "routed"}
+        detail = ", ".join(f"`{b}`: {s}" for b, s in sorted(not_full.items()))
+        a(
+            f"- **`{supply}`**: routes in full inside "
+            f"{', '.join(f'`{b}`' for b in sorted(full)) or '-- no block--'}"
+            + (f"; not fully routed in {detail}" if detail else "")
+            + "."
+        )
+    a("")
+    a(
+        "No supply routes as a single island *across* blocks, and none can "
+        "in this build: the top-level composition declares no connectivity "
+        "at all (the composed block cells promote no ports this flow could "
+        "name), so each block's rail is drawn inside that block only. That "
+        "structural top-level gap -- not the per-block router -- is what "
+        "stands between this measurement and a design-wide rail, and it is "
+        "the input issue #156 takes from this record."
+    )
+    a("")
+    a(
+        "Full `klt lvs` closure (issue #18) remains open on the residual "
+        "declined legs tabulated above; see the issue-#548 report on "
+        "klayout-tools#1962 for the generic residual with every shipped "
+        "lever enabled."
+    )
+    a("")
 
 
 def _render_device_set(a: Any, device_rows: list[dict[str, Any]], out_dir: Path, plan: dict[str, Any]) -> None:
@@ -883,6 +1059,9 @@ def main() -> int:
     cards = read_cards(args.netlist.read_text())
 
     checks, device_rows = _build_checks(out_dir, plan, cards, cells_top, drc)
+    levers_rows = _load_routing_levers_rows(out_dir)
+    if levers_rows:
+        checks.append(_check_levers_final_row(out_dir, levers_rows, args.record_id))
     all_pass = all(ok for _, ok, _ in checks)
 
     klt_version, pdk_info = klt_info(args.klt, args.pdk_variant)
@@ -904,6 +1083,8 @@ def main() -> int:
     _render_layout_is_not(a, plan, build, drc)
     if spot:
         _render_routing_spotcheck(a, spot, build, drc, extract_top)
+        if levers_rows:
+            _render_routing_levers(a, levers_rows, spot)
     _render_device_set(a, device_rows, out_dir, plan)
     _render_flow(a)
     render_provenance(

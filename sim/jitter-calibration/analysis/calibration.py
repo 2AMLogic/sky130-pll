@@ -109,19 +109,12 @@ if str(_SIM_DIR) not in sys.path:
 
 from analysis_common import (  # noqa: E402
     AnalysisError,
-    JITTER_IN_DETAIL_RE,
-    PVT_HEADER,
     REPO_ROOT,
+    emit_document,
+    parse_calibration_point,
+    parse_floor_record,
     pct as _pct,
     ps as _ps,
-    record_id as _record_id,
-    point_netlist as _point_netlist,
-    injected_from_pwl,
-    parse_floor_record,
-    pwl_points,
-    repo_rel as _repo_rel,
-    single_point_detail,
-    tran_card as _tran,
 )
 
 CALIBRATION_EXPERIMENT = REPO_ROOT / "sim" / "jitter-calibration"
@@ -140,7 +133,6 @@ ROW_9_MAX_FRAC = 0.01
 THRESHOLD_FRAC = 0.5
 
 _PWL_VARIANT_RE = re.compile(r"^\*\* GENERATED -- variant (?P<variant>[A-Za-z0-9]+):", re.M)
-_PWL_HEAD_RE = re.compile(r"^VCLK\s+\S+\s+\S+\s+pwl\([ \t]*\r?\n", re.M | re.I)
 #: Two periods (or transition times) closer together than this fraction are the
 #: same operating point for the purpose of pairing a calibration variant with a
 #: null-control variant. The two campaigns declare these numbers independently
@@ -149,48 +141,22 @@ _PWL_HEAD_RE = re.compile(r"^VCLK\s+\S+\s+\S+\s+pwl\([ \t]*\r?\n", re.M | re.I)
 _MATCH_TOL = 1e-3
 
 
-def _reported(text: str, path: Path) -> tuple:
-    detail = single_point_detail(text, path, PVT_HEADER)
-    m = JITTER_IN_DETAIL_RE.search(detail)
-    if m is None:
-        raise AnalysisError(f"{path}: point reports no period jitter: {detail!r}")
-    return float(m.group("pct")) / 100.0, int(m.group("cycles"))
-
-
 def parse_calibration_record(record_path: Path, experiment: Path) -> dict:
-    """One `sim/jitter-calibration` variant: what it injected and what came back."""
-    text = record_path.read_text()
-    record_id = _record_id(text, record_path)
-    reported_frac, reported_cycles = _reported(text, record_path)
+    """One `sim/jitter-calibration` variant: what it injected and what came back.
 
-    netlist_path = _point_netlist(experiment, record_id)
-    netlist = netlist_path.read_text()
-    variant = _PWL_VARIANT_RE.search(netlist)
+    The record-table, netlist and population parsing are
+    `analysis_common.parse_calibration_point`'s, shared with
+    `sim/pll-lock-mc/analysis/jitter_floor.py`; this curve's own part is the
+    variant label, read from the generator's stamp on the netlist.
+    """
+    point = parse_calibration_point(record_path, experiment)
+    variant = _PWL_VARIANT_RE.search(point["netlist_path"].read_text())
     if variant is None:
         raise AnalysisError(
-            f"{netlist_path}: no `** GENERATED -- variant <id>:` line -- is this a "
+            f"{point['netlist_path']}: no `** GENERATED -- variant <id>:` line -- is this a "
             "sim/jitter-calibration per-point netlist?"
         )
-    step_s, stop_s = _tran(netlist, netlist_path)
-    schedule = injected_from_pwl(pwl_points(netlist, netlist_path), netlist_path)
-
-    if reported_cycles != schedule["cycles"]:
-        raise AnalysisError(
-            f"{record_path}: the reducer formed a {reported_cycles}-cycle population "
-            f"but the committed schedule holds {schedule['cycles']} periods -- the "
-            "reported and injected figures are not over the same population"
-        )
-    return {
-        "record_id": record_id,
-        "path": record_path,
-        "netlist": _repo_rel(netlist_path),
-        "variant": variant.group("variant"),
-        "reported_frac": reported_frac,
-        "cycles": reported_cycles,
-        "step_s": step_s,
-        "stop_s": stop_s,
-        **schedule,
-    }
+    return {"variant": variant.group("variant"), **point}
 
 
 def _parse_all(experiment: Path, parse) -> list:
@@ -871,26 +837,9 @@ def main(argv: list | None = None) -> int:
         print(f"calibration.py: {exc}", file=sys.stderr)
         return 2
 
-    if args.write:
-        OUTPUT.parent.mkdir(parents=True, exist_ok=True)
-        OUTPUT.write_text(text)
-        print(f"wrote {_repo_rel(OUTPUT)}")
-        return 0
-    if args.check:
-        if not OUTPUT.is_file():
-            print(f"calibration.py: {OUTPUT} is missing -- run --write", file=sys.stderr)
-            return 1
-        if OUTPUT.read_text() != text:
-            print(
-                f"calibration.py: {_repo_rel(OUTPUT)} does not match what the committed "
-                "records re-derive -- re-run --write and read the diff",
-                file=sys.stderr,
-            )
-            return 1
-        print(f"OK: {_repo_rel(OUTPUT)} matches the records")
-        return 0
-    sys.stdout.write(text)
-    return 0
+    return emit_document(
+        OUTPUT, text, write=args.write, check=args.check, prog="calibration.py"
+    )
 
 
 if __name__ == "__main__":

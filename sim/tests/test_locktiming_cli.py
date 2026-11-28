@@ -49,7 +49,9 @@ def fake_put(files, repo_root):
         sha, size = E.sha256_file_with_size(path)
         if size:
             entries.append({"name": name, "sha256": sha, "size": size, "kind": "evidence",
-                            "uri": f"artifact:evidence/{sha}", "producer": {"tool": "fake"}})
+                            "uri": f"artifact:evidence/{sha}",
+                            "producer": {"tool": "klt", "version": "t",
+                                         "loom.repo": "o/r", "commit": None}})
     return {"schema_version": 1, "entries": entries}, []
 
 
@@ -77,7 +79,13 @@ class FakeKlt:
                          self.mode == "refusal")}
                 if self.mode == "corner_error" and p == "ss":
                     c.update(status="error", diagnostics=[{"code": "timeout", "message": "t/o"}])
-                (d / "w.json").write_text(json.dumps(wave_json(waves(), **kw)))
+                wave = wave_json(waves(), **kw)
+                if self.mode == "short_row" and p == "ss":
+                    wave = {
+                        "variables": [{"name": "time"}, {"name": "v(tick)"}],
+                        "points": [[0, 0], [1]],
+                    }
+                (d / "w.json").write_text(json.dumps(wave))
                 corners.append(c)
         rep = {"corners": corners[:-3] if self.mode == "partial" else corners,
                "environment": {"engine_version": "46", "remote": {
@@ -165,6 +173,20 @@ class DryRun(Base):
 
 
 class Run(Base):
+    def test_short_row_fails_only_the_affected_point(self):
+        points = [("ss", 27.0, 1.8), ("tt", 27.0, 1.8)]
+        run = C.execute(
+            [C.load_candidate(self.cands[0])],
+            points,
+            work=self.tmp,
+            klt="klt",
+            runner=FakeKlt("short_row"),
+        )
+        bad, good = run["candidates"][0]["rows"]
+        self.assertEqual(bad["status"], L.SIM_FAILED)
+        self.assertIn("row 2: expected 2 columns, got 1", bad["reason"])
+        self.assertEqual(good["status"], L.OK)
+
     def test_round_trip_and_provenance(self):
         k = FakeKlt()
         rc, _, err = self.fix("--points", "all", "--required-products", "p1,p2,p3", runner=k)

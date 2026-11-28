@@ -17,6 +17,7 @@ script-directory `sys.path[0]` insertion cannot be relied on.
 from __future__ import annotations
 
 import re
+import sys
 from pathlib import Path
 from statistics import fmean, pstdev
 
@@ -44,6 +45,31 @@ def repo_rel(path: Path) -> str:
         return path.as_posix()
 
 
+def emit_document(
+    output: Path, text: str, *, write: bool, check: bool, prog: str
+) -> int:
+    """Write, check, or print a document derived from committed records."""
+    if write:
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(text)
+        print(f"wrote {repo_rel(output)}")
+    elif check:
+        if not output.is_file():
+            print(f"{prog}: {output} is missing -- run --write", file=sys.stderr)
+            return 1
+        if output.read_text() != text:
+            print(
+                f"{prog}: {repo_rel(output)} does not match what the committed "
+                "records re-derive -- re-run --write and read the diff",
+                file=sys.stderr,
+            )
+            return 1
+        print(f"OK: {repo_rel(output)} matches the records")
+    else:
+        sys.stdout.write(text)
+    return 0
+
+
 def cells(line: str) -> list[str] | None:
     """Split a markdown table row into its cells, or `None` if it is not one."""
     stripped = line.strip()
@@ -59,26 +85,36 @@ def record_id(text: str, path: Path) -> str:
     return m.group("record_id")
 
 
-def single_point_detail(text: str, path: Path, header: list[str]) -> str:
-    """The `Detail` cell of a record whose result table (matched by `header`)
-    holds exactly one row."""
-    rows, seen = [], False
+def table_rows(
+    text: str, header: list[str], path: Path | None = None
+) -> list[list[str]]:
+    """Read the data rows following the record's expected result table header."""
+    prefix = f"{path}: " if path is not None else ""
+    rows = []
+    seen_header = False
     for line in text.splitlines():
         row = cells(line)
         if row is None:
             continue
         if row == header:
-            seen = True
+            seen_header = True
             continue
-        if not seen:
-            continue
-        if set("".join(row)) <= {"-", ":"}:
+        if not seen_header or set("".join(row)) <= {"-", ":"}:
             continue
         if len(row) != len(header):
-            raise AnalysisError(f"{path}: result row has {len(row)} cells: {line!r}")
+            raise AnalysisError(f"{prefix}result row has {len(row)} cells: {line!r}")
         rows.append(row)
-    if not seen:
-        raise AnalysisError(f"{path}: record has no result table with the expected header")
+    if not seen_header:
+        raise AnalysisError(
+            f"{prefix}record has no result table with the expected header"
+        )
+    return rows
+
+
+def single_point_detail(text: str, path: Path, header: list[str]) -> str:
+    """The `Detail` cell of a record whose result table (matched by `header`)
+    holds exactly one row."""
+    rows = table_rows(text, header, path)
     if len(rows) != 1:
         raise AnalysisError(f"{path}: expected exactly one PVT point, found {len(rows)}")
     return rows[0][_DETAIL_COLUMN]
@@ -99,6 +135,18 @@ _LITERAL_RE = re.compile(r"^([+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)\s*([a-zA
 
 #: The `Record`-level header of the one-row per-point PVT result table.
 PVT_HEADER = ["Corner", "Temp (C)", "Supply (V)", "Verdict", "f_out", "Duty", "Detail"]
+#: Per-trial columns in a Monte Carlo result table.
+MC_HEADER = [
+    "Trial",
+    "Seed",
+    "Verdict",
+    "Locked",
+    "Time-to-lock",
+    "f_out (post-lock)",
+    "Duty",
+    "Period jitter",
+    "Detail",
+]
 #: The `THIS RECORD'S VARIANT: <id> --` line a jitter-floor / jitter-calibration
 #: record carries in its manifest note.
 VARIANT_RE = re.compile(r"THIS RECORD'S VARIANT: (?P<variant>[A-Za-z0-9]+) --")
@@ -107,6 +155,7 @@ VARIANT_RE = re.compile(r"THIS RECORD'S VARIANT: (?P<variant>[A-Za-z0-9]+) --")
 JITTER_IN_DETAIL_RE = re.compile(
     r"period jitter (?P<pct>[\d.]+)% RMS over (?P<cycles>\d+) cycles"
 )
+MC_JITTER_CELL_RE = re.compile(r"^(?P<pct>[\d.]+)% \((?P<cycles>\d+) cycles\)$")
 PULSE_RE = re.compile(
     r"^VCLK\s+\S+\s+\S+\s+pulse\(\s*(?P<v1>\S+)\s+(?P<v2>\S+)\s+(?P<td>\S+)\s+"
     r"(?P<tr>\S+)\s+(?P<tf>\S+)\s+(?P<pw>\S+)\s+(?P<per>[^)\s]+)\s*\)",
@@ -134,10 +183,9 @@ def spice_literal(text: str) -> float:
     value, suffix = float(m.group(1)), m.group(2).lower()
     if not suffix:
         return value
-    scale = _SUFFIXES.get(suffix[0])
-    if scale is None:
+    if suffix.startswith("meg") or suffix[0] not in _SUFFIXES:
         raise AnalysisError(f"unknown SPICE suffix in {text!r}")
-    return value * scale
+    return value * _SUFFIXES[suffix[0]]
 
 
 def point_netlist(experiment: Path, record_id: str) -> Path:
@@ -307,4 +355,51 @@ def injected_from_pwl(points: list, path: Path) -> dict:
         "cycles": len(periods),
         "v_high": v_high,
         "v_low": v_low,
+    }
+
+
+def parse_calibration_point(record_path: Path, experiment: Path) -> dict:
+    """One `sim/jitter-calibration` record's shared parse: the reported RMS
+    period jitter, the committed PWL schedule it pairs with, and the check
+    that keeps the two figures over the same population.
+
+    Both jitter readers restate this record -- the calibration curve
+    (`sim/jitter-calibration/analysis/calibration.py`) pairs the reported
+    figure against the injected one, and the Monte Carlo restatement
+    (`sim/pll-lock-mc/analysis/jitter_floor.py`) brackets a draw's residual
+    over the period-matched family -- and their parsers had drifted: only the
+    curve checked the record's reported cycle count against the schedule's
+    own, so the restatement would have derived a floor from a mismatched
+    population. The check lives here so both refuse it. Each caller still
+    reads its own variant label (the curve takes the generator's stamp off the
+    netlist; the restatement takes the record's manifest note) and does its
+    own report-specific arithmetic.
+    """
+    text = record_path.read_text()
+    rid = record_id(text, record_path)
+    detail = single_point_detail(text, record_path, PVT_HEADER)
+    jitter = JITTER_IN_DETAIL_RE.search(detail)
+    if jitter is None:
+        raise AnalysisError(f"{record_path}: point reports no period jitter: {detail!r}")
+    netlist_path = point_netlist(experiment, rid)
+    netlist = netlist_path.read_text()
+    step_s, stop_s = tran_card(netlist, netlist_path)
+    schedule = injected_from_pwl(pwl_points(netlist, netlist_path), netlist_path)
+    reported_cycles = int(jitter.group("cycles"))
+    if reported_cycles != schedule["cycles"]:
+        raise AnalysisError(
+            f"{record_path}: the reducer formed a {reported_cycles}-cycle population "
+            f"but the committed schedule holds {schedule['cycles']} periods -- the "
+            "reported and injected figures are not over the same population"
+        )
+    return {
+        "record_id": rid,
+        "path": record_path,
+        "netlist_path": netlist_path,
+        "netlist": repo_rel(netlist_path),
+        "reported_frac": float(jitter.group("pct")) / 100.0,
+        "cycles": reported_cycles,
+        "step_s": step_s,
+        "stop_s": stop_s,
+        **schedule,
     }

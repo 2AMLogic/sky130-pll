@@ -27,6 +27,7 @@ from harness import executor as executor_mod  # noqa: E402
 from harness import fmax as F  # noqa: E402
 from harness import fmax_cli as C  # noqa: E402
 from harness import fmax_klt as K  # noqa: E402
+from harness import report as R  # noqa: E402
 from pdk_fixture import make_resolved_pdk  # noqa: E402
 from test_fmax import MANIFEST, SPEC, make_cells, output_edges, trace  # noqa: E402
 
@@ -150,6 +151,8 @@ class FakeKlt:
                 wave = {"variables": [{"index": 0, "name": "time", "type": "time"}] + [
                     {"index": i + 1, "name": f"v(fbclk_{k})", "type": "voltage"}
                     for i, k in enumerate(sorted(duts))], "points": pts}
+                if self.mode == "short_row" and p == "ss":
+                    wave["points"] = [[0, 0], [1]]
                 (cdir / "waveform.raw.json").write_text(json.dumps(wave))
                 corners.append(c)
         report = {"status": "pass", "corners": corners, "environment": {
@@ -273,8 +276,61 @@ class Chunking(unittest.TestCase):
         lows = [min(g.freqs) for g in groups]
         self.assertEqual(lows, sorted(lows))
 
+    def test_chunk_size_is_a_backend_setting(self):
+        cells = make_cells(ns=(25,), corners=("tt",))
+        grid = F.grid(SPEC.search)
+        reqs = [(cells[0], i, grid[i]) for i in F.coarse_indices(len(grid), SPEC.search.coarse_stride)]
+        with tempfile.TemporaryDirectory() as tmp:
+            backend = K.KltBatchBackend(spec=SPEC, manifest=MANIFEST, work_dir=Path(tmp),
+                                        klt="klt", runner=FakeKlt(), chunk_size=2,
+                                        log=lambda *_: None)
+            groups, index = backend._groups(reqs)
+        self.assertEqual([len(g.freqs) for g in groups], [2, 2, 2, 2, 2])
+        self.assertEqual(sorted(index), sorted((25, 1.8, grid[i]) for _, i, _ in reqs))
+
+    def test_cache_key_encodes_membership_so_packings_cannot_collide(self):
+        # #244 (2026-11-19): cache reuse trusts the group key blindly, so
+        # re-slicing the same frequencies with a different --chunk-size must
+        # not collide with a report collected under another packing -- the
+        # cached waveform's DUT k would be a different frequency and the
+        # verdict silent nonsense. Different packing -> different keys; the
+        # same packing re-derived -> identical keys.
+        cells = make_cells(ns=(25,), corners=("tt",))
+        grid = F.grid(SPEC.search)
+        reqs = [(cells[0], i, grid[i]) for i in F.coarse_indices(len(grid), SPEC.search.coarse_stride)]
+        with tempfile.TemporaryDirectory() as tmp:
+            def groups_for(chunk_size):
+                backend = K.KltBatchBackend(spec=SPEC, manifest=MANIFEST, work_dir=Path(tmp),
+                                            klt="klt", runner=FakeKlt(), chunk_size=chunk_size,
+                                            log=lambda *_: None)
+                return backend._groups(reqs)[0]
+            groups4 = groups_for(4)
+            groups2 = groups_for(2)
+            groups2_again = groups_for(2)
+        keys4 = [g.key for g in groups4]
+        keys2 = [g.key for g in groups2]
+        self.assertEqual(keys2, [g.key for g in groups2_again])
+        self.assertEqual(len(set(keys4)), len(keys4))
+        self.assertEqual(len(set(keys2)), len(keys2))
+        self.assertFalse(set(keys4) & set(keys2))
+
 
 class CampaignViaFakeKlt(unittest.TestCase):
+    def test_short_row_is_inconclusive_and_next_probe_passes(self):
+        cells = make_cells(corners=("ss", "tt"))
+        with tempfile.TemporaryDirectory() as tmp:
+            backend = backend_for(tmp, FakeKlt(mode="short_row"))
+            backend.preflight = lambda: None
+            bad, good = backend.run(
+                [(cell, 0, 1e9) for cell in cells],
+                netlists={25: NETLIST},
+                stage_no=1,
+                probe_id=C.probe_id,
+            )
+        self.assertEqual(bad.verdict.status, F.INCONCLUSIVE)
+        self.assertIn("row 2: expected 2 columns, got 1", bad.verdict.reason)
+        self.assertEqual(good.verdict.status, F.PASS, good.verdict.reason)
+
     def test_finds_the_modeled_boundary_as_an_adjacent_bracket(self):
         cells = make_cells(ns=(4, 25), corners=("tt", "ss"))
         cap = {"tt": 1337e6, "ss": 1110e6}
@@ -434,6 +490,107 @@ class CampaignViaFakeKlt(unittest.TestCase):
         self.assertGreater(first, 0)
         self.assertEqual(fake2.calls, [])
         self.assertEqual(cells[0].observed, cells2[0].observed)
+        # the reuse keeps the original submission's job ids and body hashes
+        self.assertEqual([p["batch_job_id"] for p in cells[0].probes],
+                         [p["batch_job_id"] for p in cells2[0].probes])
+        self.assertEqual([p["netlist_sha256"] for p in cells[0].probes],
+                         [p["netlist_sha256"] for p in cells2[0].probes])
+
+    def _cached_campaign(self, tmp, cache, runner, cells, netlist):
+        b = K.KltBatchBackend(spec=SPEC, manifest=MANIFEST, work_dir=Path(tmp), cache_dir=cache,
+                              klt="klt", runner=runner, log=lambda *_: None)
+        b.preflight = lambda: None
+        C.run_campaign(cells, F.grid(SPEC.search), manifest=MANIFEST, spec=SPEC,
+                       netlists={c.modulus.n: netlist for c in cells}, work_dir=Path(tmp),
+                       backend=b, jobs=1, log=lambda *_: None)
+
+    def test_a_body_change_resubmits_under_a_new_cache_key(self):
+        """The group cache key fingerprints the body and the request
+        (issue #541): a rerun with a changed netlist under the same cache
+        submits again instead of reusing the old report while stamping it
+        with the new body's hash. Each probe then names the body of its own
+        submission, and the first generation stays in the cache root."""
+        revised = NETLIST.replace("/fake/cells.spice", "/fake/revised.spice")
+        with tempfile.TemporaryDirectory() as tmp:
+            cache = Path(tmp) / "cache"
+            self._cached_campaign(tmp, cache, FakeKlt(),
+                                  make_cells(ns=(25,), corners=("tt",)), NETLIST)
+            first = {d.name for d in cache.iterdir()}
+            for name in first:
+                self.assertIn("/fake/cells.spice", (cache / name / K.NET_NAME).read_text())
+
+            cells2 = make_cells(ns=(25,), corners=("tt",))
+            fake2 = FakeKlt()
+            self._cached_campaign(tmp, cache, fake2, cells2, revised)
+            self.assertTrue(fake2.calls)  # a stale reuse would submit nothing
+            for c in cells2:
+                for p in c.probes:
+                    gdir = cache / p["batch_group"]
+                    self.assertNotIn(p["batch_group"], first)
+                    self.assertIn("/fake/revised.spice", (gdir / K.NET_NAME).read_text())
+                    self.assertEqual(p["netlist_sha256"], R.sha256_file(gdir / K.NET_NAME))
+            # the first generation's report and body survive the second run
+            for name in first:
+                self.assertTrue((cache / name / "report.json").is_file())
+                self.assertIn("/fake/cells.spice", (cache / name / K.NET_NAME).read_text())
+
+    def test_corner_expansion_collects_the_added_corner(self):
+        """A corner subset collected first must not be handed to a later
+        full-matrix run of the same group (issue #541): the corner set is
+        part of the request, hence of the cache key, so the expansion
+        submits and the added corner gets an electrical verdict rather
+        than INCONCLUSIVE 'corner missing from the report'."""
+        cap = {"tt": 1337e6, "ss": 1110e6}
+        with tempfile.TemporaryDirectory() as tmp:
+            cache = Path(tmp) / "cache"
+            self._cached_campaign(tmp, cache, FakeKlt(lambda n, c: cap[c]),
+                                  make_cells(ns=(25,), corners=("tt",)), NETLIST)
+            first = {d.name for d in cache.iterdir()}
+
+            both = make_cells(ns=(25,), corners=("tt", "ss"))
+            fake2 = FakeKlt(lambda n, c: cap[c])
+            self._cached_campaign(tmp, cache, fake2, both, NETLIST)
+            self.assertTrue(fake2.calls)
+            grid = F.grid(SPEC.search)
+            ss = next(c for c in both if c.point.corner == "ss")
+            self.assertEqual(F.fmax_bracket(ss.observed, grid).status, F.BRACKETED)
+            for c in both:
+                for p in c.probes:
+                    gdir = cache / p["batch_group"]
+                    self.assertEqual(p["netlist_sha256"], R.sha256_file(gdir / K.NET_NAME))
+                    self.assertNotIn("corner missing", p["reason"])
+            for name in first:
+                self.assertTrue((cache / name / "report.json").is_file())
+
+    def test_a_legacy_cache_directory_cannot_supply_a_hit(self):
+        """A group directory named before the (body, request) fingerprint
+        (`s1_n25_1.80v_c0`, the scheme this cache used until issue #541)
+        is a cold miss even with a readable successful report in it: the
+        first run submits, and the entry it writes is what an identical
+        rerun then reuses."""
+        with tempfile.TemporaryDirectory() as tmp:
+            cache = Path(tmp) / "cache"
+            self._cached_campaign(tmp, cache, FakeKlt(),
+                                  make_cells(ns=(25,), corners=("tt",)), NETLIST)
+            legacy = set()
+            for d in sorted(p for p in cache.iterdir() if p.is_dir()):
+                old = cache / d.name.rsplit("_", 1)[0]
+                if old != d and not old.exists():
+                    d.rename(old)
+                    legacy.add(old.name)
+            self.assertTrue(legacy)
+
+            fake2 = FakeKlt()
+            self._cached_campaign(tmp, cache, fake2,
+                                  make_cells(ns=(25,), corners=("tt",)), NETLIST)
+            self.assertTrue(fake2.calls)  # the legacy report is not a hit
+            for name in legacy:
+                self.assertTrue((cache / name / "report.json").is_file())
+
+            fake3 = FakeKlt()
+            self._cached_campaign(tmp, cache, fake3,
+                                  make_cells(ns=(25,), corners=("tt",)), NETLIST)
+            self.assertEqual(fake3.calls, [])  # the new entry hits
 
 
 class CliBatchRoute(unittest.TestCase):
@@ -472,6 +629,22 @@ class CliBatchRoute(unittest.TestCase):
         self.assertIn("submit layer reached", err)
         self.assertNotIn("implemented for", err)
         self.assertEqual(rc, 1)
+        self.assertEqual(reached[0]["chunk_size"], 4)
+
+    def test_chunk_size_flag_reaches_the_batch_backend(self):
+        _rc, err, reached = self._run(["divider-fmax", "--executor", "batch", "--moduli", "25",
+                                       "--corners", "tt", "--temps", "27", "--supply-tol", "0",
+                                       "--no-write", "--chunk-size", "2"])
+        self.assertEqual(len(reached), 1, err)
+        self.assertEqual(reached[0]["chunk_size"], 2)
+
+    def test_non_positive_chunk_size_is_refused_before_any_submit(self):
+        rc, err, reached = self._run(["divider-fmax", "--executor", "batch", "--moduli", "25",
+                                      "--corners", "tt", "--temps", "27", "--supply-tol", "0",
+                                      "--no-write", "--chunk-size", "0"])
+        self.assertEqual(reached, [])
+        self.assertEqual(rc, 1)
+        self.assertIn("--chunk-size must be >= 1", err)
 
     def test_local_refusal_message_names_batch_as_the_spot_route(self):
         rc, err, _ = self._run(["divider-fmax", "--executor", "local", "--max-local-probes", "0",

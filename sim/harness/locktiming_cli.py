@@ -27,8 +27,10 @@ from types import SimpleNamespace
 
 from . import evidence_store as E
 from . import fmax_klt as K
+from . import klt_submit
 from . import locktiming as L
 from . import report as R
+from .klt_waveform import read_klt_waveform
 
 RECORD_SCHEMA = "sky130-pll.lockdet-timing.record/1"
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -112,9 +114,8 @@ def scope(points: list, which: str) -> str:
 def read_waves(path, names) -> dict:
     """{name: {t, v}} from a klt waveform JSON; absent names are omitted so the
     reducer reports a missing trace, never an invented one."""
-    wave = json.loads(Path(path).read_text())
-    cols = {v["name"].lower(): i for i, v in enumerate(wave["variables"])}
-    pts = wave["points"]
+    variables, pts = read_klt_waveform(path)
+    cols = {name.lower(): i for i, name in enumerate(variables)}
     return {n: {"t": [p[0] for p in pts], "v": [p[cols[f"v({n})"]] for p in pts]}
             for n in names if f"v({n})" in cols}
 
@@ -147,7 +148,7 @@ def run_group(item: dict, work: Path, klt: str, runner, *, retries, wait_s, slee
     cmd = [klt, "sim", str(gdir / K.REQUEST_NAME), "-o", str(gdir / "out"),
            "--backend", "batch", "--format", "json"]
     try:
-        proc, _ = K.submit_with_capacity_retry(
+        proc, _ = klt_submit.submit_with_capacity_retry(
             cmd, runner=runner, timeout=int(cand["manifest"]["windows"]["timeout_s"]) + 5400,
             usable_exit=K._USABLE_EXIT, retries=retries, wait_s=wait_s, sleep=sleep, log=log,
             label=f"  {item['key']}")
@@ -433,14 +434,13 @@ def main(argv=None, *, runner=subprocess.run, sleep=time.sleep, now=None,
             raise RunnerError(f"cannot store evidence: {e}; no fallback to committing "
                               "the bytes (DR-012)") from e
         with tempfile.TemporaryDirectory(prefix="sky130-pll-locktiming-") as tmp:
-            probe = K.KltBatchBackend(spec=None, manifest=None, work_dir=Path(tmp),
-                                      cache_dir=Path(tmp), klt=args.klt)
+            klt = klt_submit.resolve_klt(args.klt)
             try:
-                probe.preflight()
+                klt_submit.preflight_batch(klt, error_cls=K.KltBatchError)
             except K.KltBatchError as e:
                 raise RunnerError(f"{e}; no local fallback") from e
             mid = matrix_id(cands, points)
-            run = execute(cands, points, klt=probe.klt, runner=runner, work=Path(tmp),
+            run = execute(cands, points, klt=klt, runner=runner, work=Path(tmp),
                           sleep=sleep, split_temps=args.split_temps,
                           groups_dir=records_dir / "groups" / mid, resume=args.resume,
                           max_groups=args.max_groups, only=args.only, store=store,

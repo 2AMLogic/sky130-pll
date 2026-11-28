@@ -45,7 +45,6 @@ errored or timed out is an INCONCLUSIVE probe, never an electrical FAIL.
 from __future__ import annotations
 
 import json
-import os
 import re
 import shutil
 import subprocess
@@ -57,7 +56,8 @@ from pathlib import Path
 from . import fmax as fmax_mod
 from . import report as report_mod
 from . import runner as runner_mod
-from .klt_submit import submit_with_capacity_retry
+from .klt_submit import preflight_batch, resolve_klt, submit_with_capacity_retry
+from .klt_waveform import read_klt_waveform
 
 #: Executor name accepted by `run_fmax.py --executor`.
 BATCH_EXECUTOR = "batch"
@@ -98,6 +98,26 @@ def is_job_interruption(text: str) -> bool:
 NET_NAME = "body.spice"
 REQUEST_NAME = "request.json"
 
+#: Hex characters of the (body, request) fingerprint kept in a group cache
+#: directory's name (issue #541). 48 bits make an accidental collision
+#: between successive runs of one group negligible; the full digest is not
+#: needed because the directory pairs the fingerprint with the request it
+#: was computed from.
+FINGERPRINT_LEN = 12
+
+
+def group_fingerprint(body: str, request_text: str) -> str:
+    """Deterministic fingerprint of the (body, request) pair a group's cache
+    directory is keyed on (issue #541). Each input enters as its own SHA-256
+    digest, so the pair has exactly one encoding whatever the inputs contain:
+    two fixed-length hex strings concatenated and re-hashed. Any change to
+    the netlist body or to the serialized request -- corner set, criterion
+    window, timeout, save mode, stimulus coupling -- turns the key cold."""
+    return report_mod.sha256_bytes(
+        (report_mod.sha256_bytes(body.encode())
+         + report_mod.sha256_bytes(request_text.encode())).encode()
+    )
+
 
 class KltBatchError(RuntimeError):
     """The batch route could not produce evidence. Aborts the campaign; the
@@ -116,7 +136,18 @@ class Group:
 
     @property
     def key(self) -> str:
-        return f"n{self.n}_{self.supply_v:.2f}v_c{self.chunk}"
+        # The cache dir keys collected reports by group key, and reuse trusts
+        # the key blindly (`report.json` is_file()). The key therefore has to
+        # identify the group's MEMBERSHIP, not just its chunk index: changing
+        # `chunk_size` re-slices the same frequencies into different groups
+        # that would otherwise collide on `c<k>` and silently reuse a report
+        # whose waveform DUT `k` is a different frequency (measured 2026-11-19,
+        # #244: the N=25 campaign moved to --chunk-size 2 for the fleet's
+        # 3600 s whole-job ceiling). The hash is over the member frequencies
+        # only -- supply and N are already in the prefix.
+        members = ",".join(str(f) for f in sorted(self.freqs))
+        tag = report_mod.sha256_bytes(members.encode())[:8]
+        return f"n{self.n}_{self.supply_v:.2f}v_c{self.chunk}_{tag}"
 
     @property
     def excluded(self) -> list:
@@ -305,11 +336,10 @@ def judge_corner_probe(corner, waveform_path, k: int, plan, spec) -> fmax_mod.Pr
     if not waveform_path or not Path(waveform_path).is_file():
         return fmax_mod.ProbeVerdict(fmax_mod.INCONCLUSIVE, "no waveform artifact for the corner")
     try:
-        wave = json.loads(Path(waveform_path).read_text())
-        names = [v["name"] for v in wave["variables"]]
+        names, points = read_klt_waveform(waveform_path)
         col = names.index(f"v(fbclk_{k})")
-        times = [p[0] for p in wave["points"]]
-        values = [p[col] for p in wave["points"]]
+        times = [p[0] for p in points]
+        values = [p[col] for p in points]
     except (OSError, ValueError, KeyError) as e:
         return fmax_mod.ProbeVerdict(fmax_mod.INCONCLUSIVE, f"unreadable waveform: {e}")
     times, values = clip_trace(times, values, plan.tran_stop_s)
@@ -353,7 +383,7 @@ class KltBatchBackend:
         self.spec, self.manifest = spec, manifest
         self.work_dir = Path(work_dir)
         self.cache_dir = Path(cache_dir) if cache_dir else self.work_dir / "klt"
-        self.klt = klt or os.environ.get("SKY130_PLL_KLT") or shutil.which("klt")
+        self.klt = resolve_klt(klt)
         self.runner = runner or subprocess.run  # injectable for tests
         self.log = log
         self.max_jobs = max(1, max_jobs)
@@ -366,13 +396,7 @@ class KltBatchBackend:
     # -- preflight ------------------------------------------------------- #
 
     def preflight(self) -> None:
-        if not self.klt:
-            raise KltBatchError("`klt` is not on PATH (set SKY130_PLL_KLT to its path)")
-        prov = os.environ.get("KLT_BATCH_PROVISION_SCRIPT")
-        if not prov or not Path(prov).expanduser().is_file():
-            raise KltBatchError(
-                "KLT_BATCH_PROVISION_SCRIPT does not name an existing batch-fleet-provision.sh"
-            )
+        preflight_batch(self.klt, error_cls=KltBatchError)
 
     # -- grouping -------------------------------------------------------- #
 
@@ -408,11 +432,7 @@ class KltBatchBackend:
     # -- one group ------------------------------------------------------- #
 
     def _run_group(self, group: Group, netlist_text: str, stage_no: int) -> dict:
-        gkey = f"s{stage_no}_{group.key}"
-        gdir = self.cache_dir / gkey
-        gdir.mkdir(parents=True, exist_ok=True)
         body, plans = build_body(netlist_text, self.manifest, self.spec, group)
-        (gdir / NET_NAME).write_text(body)
         stop = max(p.tran_stop_s for p in plans.values())
         crit = self.spec.criterion
         n_dut = len(group.freqs)
@@ -424,7 +444,20 @@ class KltBatchBackend:
             max_workers=max(1, len(group.needed)),
         )
         req["batch"]["poll_timeout_s"] = timeout_s + 3600
-        (gdir / REQUEST_NAME).write_text(json.dumps(req, indent=1, sort_keys=True) + "\n")
+        request_text = json.dumps(req, indent=1, sort_keys=True) + "\n"
+        # The cache key fingerprints everything the job ran: the body above
+        # and the complete request, poll timeout included (issue #541). A
+        # manifest/spec change that alters either therefore starts cold
+        # instead of reusing a report collected under the old inputs while
+        # stamping it with the freshly rebuilt body's hash. Directories from
+        # before the fingerprint (`s1_n25_1.80v_c0`) lack it, never match,
+        # and keep their collected evidence on disk.
+        gkey = (f"s{stage_no}_{group.key}_"
+                f"{group_fingerprint(body, request_text)[:FINGERPRINT_LEN]}")
+        gdir = self.cache_dir / gkey
+        gdir.mkdir(parents=True, exist_ok=True)
+        (gdir / NET_NAME).write_text(body)
+        (gdir / REQUEST_NAME).write_text(request_text)
         report_path = gdir / "report.json"
         report = None
         if report_path.is_file():

@@ -881,11 +881,18 @@ class TimeoutDecodingTests(unittest.TestCase):
         from unittest import mock
 
         exc = subprocess.TimeoutExpired(cmd=["ngspice", "-b", "x.spice"], timeout=1, output=stdout, stderr=stderr)
+        unit = runner.executor_mod.NgspiceUnit(
+            corner_id="x",
+            netlist_text="* patched\n.end\n",
+            work_dir=work_dir,
+            completion_marker=runner.COMPLETION_MARKER,
+            timeout_s=1,
+        )
         with mock.patch.object(runner.subprocess, "run", side_effect=exc):
-            passed, reason, log_path, _spice_path = runner._run_ngspice_and_judge(
-                make_resolved_pdk(), work_dir / ".spiceinit", "* patched\n.end\n", "x", work_dir, timeout_s=1
+            passed, reason = runner._run_ngspice_and_judge(
+                make_resolved_pdk(), work_dir / ".spiceinit", unit
             )
-        return passed, reason, log_path
+        return passed, reason, unit.log_path
 
     def test_bytes_stdout_and_str_stderr_does_not_crash(self):
         import tempfile
@@ -985,6 +992,49 @@ class SpecRowsDeclarationTests(unittest.TestCase):
             with self.subTest(manifest=tb_json.name):
                 manifest = json.loads(tb_json.read_text())
                 report.spec_rows_from_manifest(manifest)  # raises if undeclared
+
+
+class RenderHeaderProvenanceTests(unittest.TestCase):
+    """`_render_header` owns the Git-exclusion list and the snapshot digest."""
+
+    def _header(self, root: Path, snap: Path) -> str:
+        lines: list = []
+        report._render_header(
+            lines_append=lines.append, record_id="R1", slug="s", claim="c",
+            spec_rows_line="1", pdk=make_resolved_pdk(),
+            tool_versions={"ngspice": "n", "xschem": "x"},
+            repo_root=root, netlist_snapshot=snap,
+        )
+        return "\n".join(lines)
+
+    def test_own_outputs_clean_edited_testbench_dirty_digest_from_path(self):
+        import hashlib
+        import subprocess
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            def git(*a):
+                subprocess.run(["git", "-C", str(root), "-c", "user.name=t",
+                                "-c", "user.email=t@t", *a], check=True,
+                               capture_output=True)
+            git("init", "-q")
+            tb = root / "sim/s/testbench/tb.sp"
+            tb.parent.mkdir(parents=True)
+            tb.write_text("x\n")
+            git("add", "-A")
+            git("commit", "-q", "-m", "i")
+            snap = root / "sim/s/netlist-snapshots/R1.spice"
+            snap.parent.mkdir(parents=True)
+            snap.write_bytes(b"netlist")
+            (root / "sim/s/corners/R1").mkdir(parents=True)
+            (root / "sim/s/corners/R1/log.txt").write_text("l")
+            (root / "sim/s/records").mkdir()
+            (root / "sim/s/records/R1.md").write_text("r")
+            text = self._header(root, snap)
+            self.assertNotIn("(dirty)", text)
+            self.assertIn(hashlib.sha256(b"netlist").hexdigest(), text)
+            tb.write_text("edited\n")
+            self.assertIn("(dirty)", self._header(root, snap))
 
 
 if __name__ == "__main__":

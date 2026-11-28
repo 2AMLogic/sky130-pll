@@ -18,10 +18,14 @@ measurement windows are all emitted from them, so they cannot drift apart.
     python3 sim/power/build.py            # regenerate everything
     python3 sim/power/build.py --check    # exit 1 if a committed file is stale
 
-Needs xschem + the sky130 PDK (netlisting only; no simulation happens here).
+Netlisting runs through `klt netlist` (sim/harness/runner.py::
+netlist_schematic -- the same entry point sim/harness/cli.py and
+sim/harness/fmax_cli.py call), which drives headless xschem and kills a hung
+run, so `klt` + xschem + the sky130 PDK are needed (netlisting only; no
+simulation happens here).
 
-Provenance: the testbench/netlisting pattern (one `V1` supply source, label-pin
-wiring, xschem -x -n -s -q --rcfile sim/xschemrc) is adapted from
+Provenance: the testbench pattern (one `V1` supply source, label-pin wiring)
+is adapted from
 sim/vco-supply-pushing/testbench/tb_vco_pushing.sch and
 sim/harness/runner.py::netlist_schematic (this repo). The staged-stimulus idea
 (one transient per PVT point, several held operating points) mirrors
@@ -33,15 +37,18 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import re
-import subprocess
 import sys
 import tempfile
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 TB_DIR = Path(__file__).resolve().parent / "testbench"
+
+if str(REPO_ROOT / "sim") not in sys.path:  # `harness` is a sibling package, not installed
+    sys.path.insert(0, str(REPO_ROOT / "sim"))
+
+from harness import pdk as pdk_mod, runner as runner_mod  # noqa: E402
 
 PROCESS_CORNERS = ["tt", "ff", "ss", "sf", "fs"]
 TEMPS_C = [-40, 27, 125]
@@ -346,30 +353,16 @@ def schematic_text(b: dict) -> str:
     return "\n".join(out) + "\n"
 
 
-def netlist_with_xschem(sch: Path) -> str:
-    env = dict(os.environ)
-    sys.path.insert(0, str(REPO_ROOT / "sim"))
-    from harness import pdk as pdk_mod  # noqa: PLC0415
-
-    resolved = pdk_mod.resolve(REPO_ROOT)
-    env.update(resolved.as_env())
-    with tempfile.TemporaryDirectory() as td:
-        proc = subprocess.run(
-            ["xschem", "-x", "-n", "-s", "-q", "--rcfile",
-             str(REPO_ROOT / "sim" / "xschemrc"), "-o", td, str(sch)],
-            capture_output=True, text=True, cwd=REPO_ROOT, env=env, timeout=120,
-        )
-        out = Path(td) / f"{sch.stem}.spice"
-        if proc.returncode != 0 or not out.is_file():
-            raise SystemExit(f"xschem netlisting failed:\n{proc.stdout}\n{proc.stderr}")
-        return out.read_text()
-
-
 _PATH_COMMENT = re.compile(r"^\*\* (sch_path|sym_path):.*$", re.MULTILINE)
+# Newer `klt netlist` prepends a `** klt-netlist-inputs: {...}` provenance line
+# (cf. design/divider-iq/netlist/divider_iq.spice:1); drop it so the committed
+# bodies stay byte-identical across klt versions.
+_KLT_INPUTS_COMMENT = re.compile(r"^\*\* klt-netlist-inputs:.*\n", re.MULTILINE)
 
 
 def to_body(text: str) -> str:
     """Reduce an xschem top-level netlist to a `klt sim` circuit body."""
+    text = _KLT_INPUTS_COMMENT.sub("", text)
     text = _PATH_COMMENT.sub(lambda m: f"** {m.group(1)}: (machine-local path elided)", text)
     out = []
     for line in text.splitlines():
@@ -421,15 +414,27 @@ def request_for(b: dict, body_name: str) -> dict:
     }
 
 
-def build_block(b: dict) -> dict:
-    """Return {filename: text} for one block."""
+def build_block(b: dict, pdk=None) -> dict:
+    """Return {filename: text} for one block.
+
+    `pdk` is the resolved PDK to netlist against (`pdk_mod.resolve` if None);
+    `main` resolves once and passes it so a run does not re-resolve per block.
+    """
     slug = b["name"].replace("-", "_")
     sch_name = f"tb_power_{slug}.sch"
     sch_text = schematic_text(b)
+    if pdk is None:
+        pdk = pdk_mod.resolve(REPO_ROOT)
     with tempfile.TemporaryDirectory() as td:
         sch_path = Path(td) / sch_name
         sch_path.write_text(sch_text)
-        body = to_body(netlist_with_xschem(sch_path))
+        try:
+            netlist_text = runner_mod.netlist_schematic(
+                pdk, REPO_ROOT / "sim" / "xschemrc", sch_path, Path(td), REPO_ROOT
+            )
+        except runner_mod.NetlistError as e:
+            raise SystemExit(f"netlisting {sch_name} failed:\n{e}")
+        body = to_body(netlist_text)
     body += "\n" + ".save " + " ".join(b["save"]) + "\n"
     stages = {
         "schema": "sky130-pll.power.stages/1",
@@ -455,9 +460,10 @@ def main(argv=None) -> int:
     args = ap.parse_args(argv)
     names = args.blocks or list(BLOCKS)
     TB_DIR.mkdir(parents=True, exist_ok=True)
+    pdk = pdk_mod.resolve(REPO_ROOT)
     stale = []
     for name in names:
-        for fname, text in build_block(BLOCKS[name]()).items():
+        for fname, text in build_block(BLOCKS[name](), pdk).items():
             path = TB_DIR / fname
             if args.check:
                 if not path.is_file() or path.read_text() != text:

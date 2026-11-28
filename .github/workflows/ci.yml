@@ -23,11 +23,24 @@ name: CI
 #   - `sim/run_corners.py pdk-smoke` (the harness's own liveness test: proves
 #     the pinned sky130 PDK models load in ngspice, xschem netlists
 #     headlessly, and the PVT knobs actually reach the simulator) via
-#     `sim/selftest.sh --quick --record --require-pdk` -> requires xschem +
-#     ngspice + the ~1 GB sky130 PDK via ciel, so per CLAUDE.md's
+#     `sim/selftest.sh --quick --require-pdk` -> requires xschem +
+#     ngspice + `klt` (the harness netlists schematics via `klt netlist`,
+#     never raw xschem) + the ~1 GB sky130 PDK via ciel, so per CLAUDE.md's
 #     "headless only" CI guideline it does NOT block every PR. It runs in the
 #     `pdk-smoke` job on a nightly schedule, on manual dispatch, and opt-in on
-#     a PR via the `run-pdk-smoke` label.
+#     a PR carrying the `run-pdk-smoke` label -- which is evaluated on that
+#     PR's next push or a manual `workflow_dispatch`, not at label-write time:
+#     the `on:` block below deliberately omits the `labeled` type (issue #487),
+#     because Loom drives this repo's PR lifecycle through label writes and
+#     each would re-run every job on an unchanged head, burning hosted minutes
+#     and racing post-verdict.sh's exact-head CI gate. The smoke runs WITHOUT
+#     `--record`
+#     (issue #526): recording mints an evidence record, which needs an
+#     artifact broker (`KLT_ARTIFACT_BROKER`, fail-closed per DR-012 with no
+#     fallback to committing the bytes) and CI has no broker -- evidence
+#     minting stays a human/agent run, not a CI step (see the `sim/` bullet
+#     below); the smoke still proves the toolchain works end to end, it just
+#     does not persist a record.
 #   - `layout/bin/run-trivial-cell-flow.sh` (the `klt` DRC/LVS flow's own
 #     gating proof) needs the sky130 PDK too and is not yet wired into this
 #     workflow -- run it by hand per layout/README.md; its checked-in
@@ -47,7 +60,7 @@ on:
   push:
     branches: [main]
   pull_request:
-    types: [opened, synchronize, reopened, labeled]
+    types: [opened, synchronize, reopened]
   schedule:
     # 06:00 UTC daily
     - cron: "0 6 * * *"
@@ -96,7 +109,7 @@ jobs:
         run: bash signoff/run-signoff.sh --check
 
   pdk-smoke:
-    name: PDK-gated harness smoke test (nightly / workflow_dispatch / 'run-pdk-smoke' label)
+    name: PDK-gated harness smoke test (nightly / workflow_dispatch / 'run-pdk-smoke' label, effective on the next push)
     runs-on: ubuntu-latest
     if: >-
       github.event_name == 'schedule' ||
@@ -128,7 +141,21 @@ jobs:
           commit="$(python3 -c "import json;print(json.load(open('sim/pdk.json'))['open_pdks_commit'])")"
           ciel enable --pdk-family sky130 -l sky130_fd_pr "$commit"
 
+      - name: Install klt (klayout-tools) for the harness smoke run
+        # sim/harness/runner.py netlists every testbench schematic via
+        # `klt netlist` (the sanctioned headless entry; a raw `xschem` can
+        # hang in the Tk event loop), so the smoke needs `klt` on PATH too
+        # (issue #526): without it stage 3 dies with FileNotFoundError before
+        # any simulation runs. Pinned for the same reason as the checks job's
+        # install above, and deliberately its own literal rather than a read
+        # of layout/requirements.txt: the sim harness moves on its own
+        # schedule from the layout flow and the signoff grader (all three
+        # pins happen to sit at 0.8.0 today).
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          pip install --user 'klayout-tools==0.8.0' && klt --version
+
       - name: Run sim/selftest.sh (quick PVT subset, PDK required)
         run: |
           export PATH="$HOME/.local/bin:$PATH"
-          bash sim/selftest.sh --quick --record --require-pdk
+          bash sim/selftest.sh --quick --require-pdk

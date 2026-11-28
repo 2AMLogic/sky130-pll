@@ -6,8 +6,89 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 - [2026-09](work_log/WORK_LOG_2026-09.md)
 
+### 2026-11-27
+
+- **Issue #606** (closed): Use the standard normal quantile in Monte Carlo sample sizing
+- **PR #608**: refactor: use NormalDist for Monte Carlo sample sizing
+- **PR #596**: docs: record the Stage A fleet ledger checkpoint and validated requests
+- **Issue #602** (closed): Share klt waveform decoding so a truncated sample fails only its corner
+- **PR #605**: fix: validate klt waveform row widths before reducing corners
+- **Issue #603** (closed): Reuse sim/variant_generator.py in gen_tb.py and remove dead loop-filter reads in gen_c1_variant.py / gen_c2_variant.py
+- **PR #604**: refactor(sim): share schematic drift checks across variant generators
+- **Issue #594** (closed): Deduplicate markdown table parser, document emit loop, and dead PWL regex across sim/*/analysis/ scripts via sim/analysis_common.py
+- **PR #600**: refactor: share analysis table parsing and report output
+- **Issue #597** (closed): Consolidate Git exclusions and snapshot hashing in the simulation record header
+- **PR #599**: refactor: derive git exclusions and netlist digest in the record header
+
+### 2026-11-26
+
+- **PR #590**: docs: record the Stage A Spot preflight and submission blockers
+- **Issue #586** (closed): sim/vco-buffered no longer mirrors sim/vco's VCTRL sweep: six values against ten
+- **PR #589**: docs(sim): tie the buffered VCO sweep to its six-value baseline
+- **Issue #583** (closed): Add four VCTRL sweep values to the Stage A VCO bench
+- **PR #587**: feat(sim): extend the VCO tuning sweep from six to ten VCTRL values
+
+### 2026-11-24
+
+- **Issue #575** (closed): layout: the supply plane and the cross-block fallback plane are both `metal3` — measure an exclusive supply plane
+- **PR #580**: docs: record rejected exclusive-supply-plane routing trial
+
+### 2026-11-23
+
+- **Issue #563** (closed): Share the calibration cycle-count check across both jitter reports
+- **PR #564**: fix: share the calibration cycle-count check across both jitter readers
+- **Issue #548** (closed): layout: re-measure the routed PLL spot-check with the klt routing levers the generator never requests (second plane, per-net layers, interior channels)
+- **PR #559**: feat: measure the klt routing levers the routed spot-check never requested (second plane, interior channels, per-net supply/fanout planes)
+
+### 2026-11-22
+
+- **Issue #570** (closed): Remove private git helper and dead local in sim/power/mint.py: share report.git_info and make_record_id
+- **PR #571**: refactor(sim/power): mint provenance via harness.report git_info/make_record_id
+- **Issue #568** (closed): Share batch-fleet klt resolution and preflight in sim/harness/klt_submit.py
+- **PR #569**: refactor: share klt resolution and batch preflight in klt_submit
+- **Issue #565** (closed): Remove netlist_with_xschem in sim/power/build.py: share runner.netlist_schematic
+- **PR #566**: power: netlist build.py through runner.netlist_schematic, drop raw xschem copy
+- **Issue #560** (closed): Compute charge-pump gate intervals once per waveform
+- **PR #562**: sim: reuse one gate-interval classification per charge-pump point
+- **Issue #557** (closed): Share the successful clock reduction in _measure_clock
+- **PR #558**: refactor: consolidate the two successful clock paths in _measure_clock
+
+### 2026-11-21
+
+- **Issue #553** (closed): gitignore the daemon's account-ranking runtime files
+- **PR #556**: chore: ignore loom-daemon account-ranking runtime file
+
+### 2026-11-20
+
+- **Issue #550** (closed): Use the CI manifest validator before installing stored evidence
+- **PR #552**: sim: validate stored-evidence manifests with the CI checker's schema
+- **Issue #549** (closed): Pass the prepared NgspiceUnit directly to the PVT and Monte Carlo executor
+- **PR #555**: refactor: hand the prepared NgspiceUnit to _run_ngspice_and_judge
+- **PR #546**: sim: record divider Fmax boundaries for N=25 across the 45-point PVT matrix
+- **Issue #541** (closed): sim/harness: the batch resume cache key does not fingerprint the request, so a manifest/spec change silently reuses stale reports
+- **PR #542**: fix: fingerprint the klt batch cache key with the body and request
+- **Issue #540** (closed): Reject the meg suffix before the evidence parser treats it as milli
+- **PR #544**: fix: reject meg-prefixed SPICE literals in evidence analysis
+
+### 2026-11-19
+
+- **PR #539**: sim: add --chunk-size to the Fmax batch route and fingerprint cache keys by group membership
+- **PR #508**: sim: record divider Fmax boundaries for N=5 across the 45-point PVT matrix
+
+### 2026-11-18
+
+- **PR #534**: ci: install pinned klt in the pdk-smoke job
+- **Issue #526** (closed): pdk-smoke CI job cannot pass: --record selftest runs with no $KLT_ARTIFACT_BROKER
+
 ### 2026-11-17
 
+- **PR #532**: signoff: delete README pin-literal restatements; guard rejects full sha256: literals in prose
+- **Issue #476** (closed): signoff: README item 8 quotes a stale pin literal, one re-pin behind the manifest
+- **PR #531**: ci: drop 'labeled' from the pull_request trigger and re-attest item 10
+- **Issue #487** (closed): ci: every Loom label write re-runs the full headless check suite, and races post-verdict.sh's exact-head CI gate
+- **PR #529**: ci: run pdk-smoke selftest without --record (no artifact broker on CI)
+- **PR #528**: records: add run-pdk-smoke to .github/labels.yml outside the Loom block
+- **Issue #527** (closed): run-pdk-smoke label exists only on the forge; record it outside the Loom block in .github/labels.yml
 - **PR #522**: docs(signoff): number the item-10 inventory edit as step 0 of the re-attestation chain
 - **Issue #520** (closed): docs(signoff): the item 10 chain should number the inventory edit as its own step for a NEW decision record
 - **PR #516**: sim/harness: refuse a PVT/MC/Fmax re-run with no --supersedes, as the lock-timing lane already does
@@ -404,86 +485,4 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 - **Issue #260** (closed): Remove duplicated Report/sha256_file scaffolding across .github/scripts CI checkers
 - **PR #261**: Remove duplicated Report/sha256_file scaffolding across .github/scripts CI checkers
 - **PR #259**: chore: resync installed Loom surfaces (--force past obsolete local edits)
-
-### 2026-09-27
-
-- **PR #217**: measurements: regenerate the stale characterization report and guard against a repeat
-- **PR #219**: sim: audit whether ngspice's default tolerances bias four campaigns' frequency figures
-- **Issue #210** (closed): sim: audit whether default ngspice tolerances bias frequency figures in pll-lock/vco/vco-supply-pushing/loop-ripple
-- **Issue #22** (closed): Produce an aggregated PLL characterization report across ratified spec rows (T1 item 8)
-
-### 2026-09-26
-
-- **PR #209**: sim: row 9's Monte Carlo misses are ngspice integrator error, not the circuit -- measure it, tighten it, re-run (#202)
-- **PR #211**: sim(pll-lock-mc): superseding row-9 Monte Carlo record at accurate integrator settings -- 5/5 draws meet the bound (#202)
-- **PR #213**: design: test #202's named jitter suspect against committed evidence, and state row 9's realized margin
-- **PR #214**: sim/harness: stage a campaign's work outside a reapable checkout
-- **PR #216**: sim: size T1 item 6's negative control by measurement -- C2 is not the knob, C1 area/12 is (#195)
-- **Issue #212** (closed): sim/harness: a campaign reaped with its worktree is lost irrecoverably, including its resume checkpoint
-- **Issue #202** (closed): sim/design: ratified spec row 9 is missed on every Monte Carlo draw, and that gates T1 item 6's negative control
-
-### 2026-09-25
-
-- **PR #181**: sim: run row 9's first Monte Carlo campaign — and let an MC trial measure at all (#20)
-- **PR #184**: signoff: grade row 9's Monte Carlo campaign with `klt yield`, and record why T1 item 6 still is not cited
-- **PR #187**: sim(jitter-floor): measure the period-jitter reducer's own resolution floor, and restate row 9's recorded miss against it
-- **PR #188**: fix: make check:ci provably headless on any PDK-equipped host
-- **PR #189**: sim(pll-lock): declare a gated measure.jitter block for ratified row 9
-- **PR #191**: sim(harness): reject a gated jitter bound that outruns the lock criterion
-- **PR #192**: signoff(guards): refuse a klt yield citation its own statistics do not support
-- **PR #194**: sim(jitter-calibration): calibrate the period-jitter reducer against a known injected figure
-- **PR #196**: signoff: re-derive T1 item 6's preconditions from the repo instead of asserting them
-- **PR #198**: sim(vco-clk-transition): measure design/vco's real CLK transition time
-- **PR #199**: sim(jitter-floor/pll-lock-mc): decline the calibration-informed floor, and name the run that would change it
-- **PR #201**: sim(pll-lock-mc): measure whether T1 item 6's negative control can fire here at all
-- **PR #204**: sim(pll-lock-mc): derive what would make T1 item 6's negative control fire, and what it costs
-- **PR #206**: sim(jitter-calibration): measure the null control's error sign at a near-integer period
-- **PR #207**: signoff: fix stale layout record IDs and add drift-detection check
-- **PR #208**: sim(pll-lock-mc): apply trial 2's period-matched calibration bracket, decline further for trial 3
-- **Issue #205** (closed): sim(pll-lock-mc): decide whether trial 2's now period-matched calibration family should bracket its residual
-- **Issue #203** (closed): signoff/README.md's item-3 section names a superseded layout record the manifest no longer cites
-- **Issue #197** (closed): sim(jitter-calibration): run the calibration family at a period near an integer multiple of the grid step
-- **Issue #193** (closed): sim(jitter-floor/pll-lock-mc): the Monte Carlo restatement still uses the null-control floor, not the calibrated one
-- **Issue #190** (closed): sim(harness): a gated jitter bound can mint artefact FAILs when measure.jitter.min_cycles exceeds lock.min_hold_cycles
-- **Issue #186** (closed): sim: design/vco's CLK transition time is unmeasured, so the applicable period-jitter measurement floor cannot be read off sim/jitter-floor's family
-- **Issue #185** (closed): sim(jitter-floor): the measurement floor is only characterized for a jitter-free source, not for one that actually jitters
-- **Issue #183** (closed): check:ci is documented as headless but runs the full 45-point pdk-smoke grid on any PDK-equipped host
-- **Issue #180** (closed): sim(pll-lock): row 9's deterministic PVT axis is unmeasured — no manifest declares measure.jitter
-- **Issue #179** (closed): signoff: T1 item 6 is still ungraded — the "klt has no yield verb" premise is stale, and a Monte Carlo sample set now exists
-- **Issue #178** (closed): sim(pll-lock-mc): the measured period jitter cannot be separated from the 200 ps dump-grid resolution floor
-- **Issue #20** (closed): Stand up Monte Carlo / klt yield verification methodology for the PLL's statistical spec rows (T1 item 6)
-
-### 2026-09-24
-
-- **PR #176**: layout: pin the klayout engine, not just klayout-tools
-- **PR #177**: fix: fail closed when signoff's artifact re-hash guard finds no artifact
-- **Issue #167** (closed): layout/requirements.txt pins klayout-tools but not the klayout engine, so klt warns on every run that report counts may not reproduce
-- **Issue #163** (closed): signoff: the artifact re-hash guard fails open when the cited artifact is missing
-
-### 2026-09-23
-
-- **PR #155**: fix: purge stale unit artifacts before the remote executor's pull
-- **PR #160**: spec: ratify target-spec row 9 (period jitter) via DR-006; rows 10 and 13 stay DRAFT explicitly
-- **PR #161**: feat(signoff): commit a klt block manifest so this block's T1 state is graded, not hand-read
-- **PR #162**: feat(layout): add klt erc supply spec and first power-delivery record
-- **PR #164**: feat(measurements): emit the spec-row citation by construction
-- **PR #168**: layout: bump the klt pin to 0.6.0 and refresh every record it grades
-- **PR #169**: feat(measure): extract period jitter for the ratified spec row 9
-- **PR #171**: layout/bin: dedupe _render_provenance into render_common (#170)
-- **PR #174**: sim: add ripple_pp reducer and a sim/loop-ripple VDD/VCTRL ripple testbench
-- **PR #175**: sim: measure VCO frequency-vs-VDD supply pushing at fixed VCTRL
-- **Issue #170** (closed): Dedupe _render_provenance between render-record.py and render-pll-record.py (re-file of #140)
-- **Issue #165** (closed): sim: measure VCO frequency-vs-VDD supply pushing at fixed VCTRL (DR-006 row 13 Budget 1, part 1)
-- **Issue #158** (closed): sim/harness: no period-jitter metric exists, so the newly ratified spec row 9 cannot be measured
-- **Issue #157** (closed): layout/requirements.txt's klt pin (0.4.0) cannot reproduce the committed klt erc supply record
-- **Issue #152** (closed): Zero evidence records carry the **Spec row(s)** citation the aggregator matches on — T1 item 8's report is empty by construction
-- **Issue #151** (closed): spec: ratify target-spec rows 9/10/13 — #20 and #22 are blocked on this and nothing targets it
-- **Issue #150** (closed): sim/harness: purge_unit_artifacts is local-path-only, so the remote executor can read a stale waveform dump
-- **Issue #148** (closed): Commit a klt signoff block manifest so this block's T1 state is graded, not hand-read
-- **Issue #147** (closed): T1 item 11 (power delivery, structural): no klt erc supply spec or report in this repo
-
-### 2026-09-20
-
-- **PR #149**: sim/harness: add an `--executor {local,remote}` seam so ngspice units can run on klt's Spot fleet (#146)
-- **Issue #146** (closed): sim/harness: `--executor remote` — route ngspice units through klt's Spot backend (fleet adoption pilot)
 

@@ -1,4 +1,4 @@
-"""Mechanics shared by the `gen_c<N>_variant.py` loop-filter variant generators.
+"""Mechanics shared by the loop-filter variant and negative-control testbench generators.
 
 Only the campaign-independent parts live here: extracting a schematic's body,
 the MIM-cap geometry arithmetic, reading a capacitor's nominal drawn side, and
@@ -81,6 +81,27 @@ def mim_cap_ff(side_um: float) -> float:
     return 2.0 * wc * wc + 2.0 * 0.19 * (wc + wc) * 2.0
 
 
+def sync_text(dst: Path, content: str, *, write: bool, repo: Path) -> bool:
+    """Write the generated text or report a unified diff. Return True on success."""
+    if write:
+        dst.write_text(content)
+        print(f"wrote {dst.relative_to(repo)}")
+        return True
+    have = dst.read_text() if dst.exists() else ""
+    if have == content:
+        return True
+    print(f"DRIFT: {dst.relative_to(repo)}", file=sys.stderr)
+    sys.stderr.writelines(
+        difflib.unified_diff(
+            have.splitlines(keepends=True),
+            content.splitlines(keepends=True),
+            fromfile="committed",
+            tofile="re-derived",
+        )
+    )
+    return False
+
+
 def run(
     factors: tuple[int, ...],
     *,
@@ -94,23 +115,8 @@ def run(
     drift = 0
     for factor in factors:
         for name, content in variant_files(factor).items():
-            dst = here / name
-            if write:
-                dst.write_text(content)
-                print(f"wrote {dst.relative_to(repo)}")
-                continue
-            have = dst.read_text() if dst.exists() else ""
-            if have != content:
+            if not sync_text(here / name, content, write=write, repo=repo):
                 drift += 1
-                print(f"DRIFT: {dst.relative_to(repo)}", file=sys.stderr)
-                sys.stderr.writelines(
-                    difflib.unified_diff(
-                        have.splitlines(keepends=True),
-                        content.splitlines(keepends=True),
-                        fromfile="committed",
-                        tofile="re-derived",
-                    )
-                )
         for name, src in symbol_copies(factor).items():
             dst = here / name
             if write:

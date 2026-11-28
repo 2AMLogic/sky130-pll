@@ -29,7 +29,11 @@ LAYOUT_DIR = Path(__file__).resolve().parents[1]
 PLL_DIR = LAYOUT_DIR / "pll"
 REPORTS_DIR = PLL_DIR / "reports"
 
-RECORD_ID_RE = re.compile(r"\d{8}-\d{6}-[0-9a-f]{7}")
+#: A record id's sha leg is whatever `git rev-parse --short HEAD` printed at
+#: mint time; git picks that length adaptively (7 hex chars for most of this
+#: repo's history, 8 once the object count grew), so 7-or-more, never a
+#: fixed 7.
+RECORD_ID_RE = re.compile(r"\d{8}-\d{6}-[0-9a-f]{7,}")
 NOTE_ANCHOR = "**Newest record**"
 
 
@@ -64,12 +68,12 @@ def note_record_id(readme: Path) -> str:
 
 
 class NewestRecordReferenceTests(unittest.TestCase):
-    def test_newest_record_is_the_buffered_top_pass_record(self):
+    def test_newest_record_is_the_lever_measurement_pass_record(self):
         # Guard the fixture itself: the newest record directory must be the
-        # PASS buffered-top record this note exists to surface. If a newer
-        # record lands, this note (and the pointer checks below) must be
-        # updated in the same change.
-        self.assertEqual(newest_record_id(), "20261106-075813-16557e3")
+        # PASS routing-lever measurement record this note exists to surface
+        # (issue #548). If a newer record lands, this note (and the pointer
+        # checks below) must be updated in the same change.
+        self.assertEqual(newest_record_id(), "20261121-015858-147252b9")
 
     def test_pll_readme_note_names_newest_record(self):
         self.assertEqual(

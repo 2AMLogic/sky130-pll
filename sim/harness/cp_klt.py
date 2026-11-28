@@ -47,7 +47,7 @@ import time
 from pathlib import Path
 
 from . import executor as executor_mod
-from .klt_submit import is_capacity_refusal, submit_with_capacity_retry
+from .klt_submit import is_capacity_refusal, preflight_batch, resolve_klt, submit_with_capacity_retry
 
 #: Executor name accepted by `run_corners.py --executor`.
 BATCH_EXECUTOR = "batch"
@@ -159,7 +159,7 @@ class CpBatchBackend(executor_mod.ExecutionBackend):
         if self._spec is None:
             raise CpBatchError("the batch route needs a `cp` or transient `measure` block")
         self._environ = os.environ if environ is None else environ
-        self.klt = klt or self._environ.get("SKY130_PLL_KLT") or shutil.which("klt")
+        self.klt = resolve_klt(klt, environ=self._environ)
         self.runner = runner or subprocess.run  # injectable for tests
         self._log = log
         self.capacity_retries, self.capacity_wait_s = capacity_retries, capacity_wait_s
@@ -171,13 +171,7 @@ class CpBatchBackend(executor_mod.ExecutionBackend):
     # -- preflight ------------------------------------------------------- #
 
     def preflight(self) -> None:
-        if not self.klt:
-            raise CpBatchError("`klt` is not on PATH (set SKY130_PLL_KLT to its path)")
-        prov = self._environ.get("KLT_BATCH_PROVISION_SCRIPT")
-        if not prov or not Path(prov).expanduser().is_file():
-            raise CpBatchError(
-                "KLT_BATCH_PROVISION_SCRIPT does not name an existing batch-fleet-provision.sh"
-            )
+        preflight_batch(self.klt, environ=self._environ, error_cls=CpBatchError)
 
     def klt_version(self) -> str | None:
         try:

@@ -31,10 +31,10 @@ run writes its work into the committed tree any more: since DR-012 the
 evidence bytes are put in the artifact store and git keeps only a manifest
 and the record, so both of the directories below sit outside it.
 
-- **A checkout nothing reaps** (the main clone) stages nothing outside the
-  checkout. The work directory is the git-ignored scratch tree
+- **A checkout nothing reaps** (the main clone) starts new runs in the
+  git-ignored scratch tree
   `sim/build/<slug>/<record-id>/` that `run_corners.py` hands in as
-  `scratch_root`, and no code path below this line runs.
+  `scratch_root`.
 - **A linked git worktree** (`.git` is a *file* pointing into the main
   clone's `.git/worktrees/<name>`, which is precisely the shape
   `git worktree remove` can delete) stages the work under a root outside
@@ -179,13 +179,10 @@ def resolve(
     `run_corners.py` always gives it) that happens only on the resume path
     below, for a campaign checkpointed in the tree before DR-012.
 
-    `resuming` makes one difference, and it is the difference between a
-    working `--resume` and a confusing one: a resume **follows the
-    checkpoint**. If the default/auto-detected staging root holds no
-    checkpoint for this record id but the in-tree directory does, the run
-    resumes in the tree (a campaign started before this seam existed, or
-    started in the main clone); an explicitly named `--stage-dir` is always
-    honoured as given, so a flag is never silently ignored.
+    A resume checks the selected directory first, then the legacy in-tree
+    directory. A clone using its default scratch also checks the shared
+    cache for a campaign started in a worktree. Explicit staging flags
+    always select their requested directory.
     """
     environ = os.environ if environ is None else environ
     # Only the in-tree checkpoint probe below reads this: nothing a run
@@ -230,20 +227,17 @@ def resolve(
     else:
         staging = scratch
 
-    if resuming:
-        in_tree_checkpoint = (in_tree_dir / checkpoint_mod.CHECKPOINT_NAME).is_file()
-        if staging is not None and not staging.checkpoint_path.is_file() and in_tree_checkpoint:
-            # This record id was checkpointed in the tree. Resume it there
-            # rather than reporting "no checkpoint" about a directory the
-            # campaign never used.
+    if resuming and (staging is None or not staging.checkpoint_path.is_file()):
+        if (in_tree_dir / checkpoint_mod.CHECKPOINT_NAME).is_file():
             return None
-        if staging is None and not in_tree_checkpoint:
+        if staging is scratch:
+            cache_root = default_root(environ)
             fallback = _staging(
-                default_root(environ),
+                cache_root,
                 slug,
                 record_id,
                 "this record id's campaign is staged outside the checkout "
-                f"(issue #212); resuming it from {default_root(environ)}",
+                f"(issue #212); resuming it from {cache_root}",
             )
             if fallback.checkpoint_path.is_file():
                 return fallback

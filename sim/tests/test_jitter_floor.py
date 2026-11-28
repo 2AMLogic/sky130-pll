@@ -24,6 +24,8 @@ import math
 import sys
 import tempfile
 import unittest
+from contextlib import redirect_stderr, redirect_stdout
+from io import StringIO
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -153,14 +155,23 @@ def write_calibration_record(
     edge_s: float = 20e-12,
     cycles: int = 5,
     step: str = "200p",
+    detail_cycles: int | None = None,
 ) -> None:
-    """One synthetic `sim/jitter-calibration`-shaped record plus its netlist."""
+    """One synthetic `sim/jitter-calibration`-shaped record plus its netlist.
+
+    `detail_cycles` lets the record's Detail cell report a population the
+    committed schedule does not hold -- the mismatch fixture the shared
+    cycle-count check exists to refuse.
+    """
     (experiment / "records").mkdir(parents=True, exist_ok=True)
     (experiment / "corners" / record_id).mkdir(parents=True, exist_ok=True)
     variant_line = f"THIS RECORD'S VARIANT: {variant} -- synthetic."
     (experiment / "records" / f"{record_id}.md").write_text(
         CALIBRATION_RECORD_TEMPLATE.format(
-            record_id=record_id, variant_line=variant_line, pct=pct, cycles=cycles
+            record_id=record_id,
+            variant_line=variant_line,
+            pct=pct,
+            cycles=cycles if detail_cycles is None else detail_cycles,
         )
     )
     netlist = (
@@ -233,7 +244,106 @@ class CommittedEvidenceTests(unittest.TestCase):
         self.assertEqual(coverage, {2: True, 3: False, 5: True})
 
 
+class TableRowsTests(unittest.TestCase):
+    def test_reads_rows_after_matching_header(self):
+        text = """| Unrelated |
+| Trial | Seed |
+| :--- | ---: |
+|  1  |  17  |
+
+| 2 | 18 |
+"""
+        self.assertEqual(
+            analysis_common.table_rows(text, ["Trial", "Seed"]),
+            [["1", "17"], ["2", "18"]],
+        )
+
+    def test_missing_header_reports_optional_path(self):
+        message = "record has no result table with the expected header"
+        for path, expected in [
+            (None, message),
+            (Path("record.md"), f"record.md: {message}"),
+        ]:
+            with self.subTest(path=path):
+                with self.assertRaises(analysis_common.AnalysisError) as error:
+                    analysis_common.table_rows(
+                        "| Seed | Trial |", ["Trial", "Seed"], path
+                    )
+                self.assertEqual(str(error.exception), expected)
+
+    def test_wrong_column_count_reports_record_and_row(self):
+        with self.assertRaises(analysis_common.AnalysisError) as error:
+            analysis_common.table_rows(
+                "| Trial | Seed |\n| 1 |", ["Trial", "Seed"], Path("bad.md")
+            )
+        self.assertEqual(
+            str(error.exception), "bad.md: result row has 1 cells: '| 1 |'"
+        )
+
+
+class EmitDocumentTests(unittest.TestCase):
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.output = Path(tmp.name) / "nested" / "report.md"
+        self.display_path = analysis_common.repo_rel(self.output)
+        self.text = "derived report"
+
+    def emit(self, *, write=False, check=False):
+        out, err = StringIO(), StringIO()
+        with redirect_stdout(out), redirect_stderr(err):
+            status = analysis_common.emit_document(
+                self.output, self.text, write=write, check=check, prog="analysis.py"
+            )
+        return status, out.getvalue(), err.getvalue()
+
+    def test_write_then_check(self):
+        self.assertEqual(self.emit(write=True), (0, f"wrote {self.display_path}\n", ""))
+        self.assertEqual(self.output.read_text(), self.text)
+        self.assertEqual(
+            self.emit(check=True),
+            (0, f"OK: {self.display_path} matches the records\n", ""),
+        )
+
+    def test_check_missing_document(self):
+        self.assertEqual(
+            self.emit(check=True),
+            (1, "", f"analysis.py: {self.output} is missing -- run --write\n"),
+        )
+        self.assertFalse(self.output.exists())
+
+    def test_check_drifted_document(self):
+        self.output.parent.mkdir()
+        self.output.write_text("old report")
+        message = (
+            f"analysis.py: {self.display_path} does not match what the committed "
+            "records re-derive -- re-run --write and read the diff\n"
+        )
+        self.assertEqual(self.emit(check=True), (1, "", message))
+        self.assertEqual(self.output.read_text(), "old report")
+
+    def test_stdout_preserves_text(self):
+        self.assertEqual(self.emit(), (0, self.text, ""))
+        self.assertFalse(self.output.exists())
+
+
 class SpiceLiteralTests(unittest.TestCase):
+    def test_tran_card_preserves_nanoseconds_and_milli(self):
+        self.assertEqual(
+            analysis_common.tran_card("tran 2ns 2m", Path("example.spice")),
+            (2e-9, 2e-3),
+        )
+
+    def test_tran_card_rejects_the_meg_prefix(self):
+        for literal in ("2meg", "2MEG", "2MegHz"):
+            with (
+                self.subTest(literal=literal),
+                self.assertRaisesRegex(
+                    analysis_common.AnalysisError, "unknown SPICE suffix"
+                ),
+            ):
+                analysis_common.tran_card(f"tran 1n {literal}", Path("example.spice"))
+
     def test_parses_the_literals_the_committed_netlists_use(self):
         self.assertAlmostEqual(analysis_common.spice_literal("200p"), 200e-12)
         self.assertAlmostEqual(analysis_common.spice_literal("3.9170n"), 3.9170e-9)
@@ -291,6 +401,29 @@ class RefusalTests(unittest.TestCase):
             with self.assertRaises(jitter_floor.AnalysisError) as ctx:
                 jitter_floor.parse_floor_records(experiment)
             self.assertIn("per-point netlist", str(ctx.exception))
+
+    def test_a_calibration_population_mismatch_is_refused(self):
+        """The calibration record's population check, shared with the curve.
+
+        The Detail cell reports 299 cycles while the committed schedule holds
+        300 -- the same one-cycle mismatch `test_jitter_calibration`'s
+        RefusalTests exercises through the calibration curve's own reader, and
+        which this reader used to accept (it paired the reported RMS with the
+        scheduled count and never compared them). Both readers share the check
+        in `analysis_common.parse_calibration_point` now, so both must refuse
+        the mismatched population before deriving a floor from it.
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            experiment = Path(tmp) / "jitter-calibration"
+            write_calibration_record(
+                experiment,
+                record_id="20260101-000000-abcdef0",
+                cycles=300,
+                detail_cycles=299,
+            )
+            with self.assertRaises(jitter_floor.AnalysisError) as ctx:
+                jitter_floor.parse_calibration_records(experiment)
+            self.assertIn("same population", str(ctx.exception))
 
 
 class QuadratureTests(unittest.TestCase):

@@ -47,6 +47,24 @@ SCRIPT_NAME="$(basename "${BASH_SOURCE[0]}")"
 
 flow_require_klt "$SCRIPT_NAME"
 
+# Issue #548 routing-lever knobs for the routed spot-check build. Both are
+# measurement controls, deliberately env vars rather than flags: the
+# committed default is "every shipped lever on" (what the record requests),
+# and the env overrides exist so the lever ladder could be measured one
+# cumulative step at a time (see the record's "Routing-lever measurement"
+# section).
+#   PLL_ROUTE_LEVERS        passed to pll_layout.py --route-levers
+#                           (default: all; "none" reproduces the pre-#548
+#                           single-plane request)
+#   PLL_ROUTING_LEVERS_SUMMARY  JSON array of the earlier steps' tally rows
+#                           (layout/bin/route_lever_tally.py output); when
+#                           set it is merged with this run's own row into
+#                           routing-levers.json, which the record renders.
+#   PLL_ROUTING_LEVERS_LABEL    human label for this run's row (default:
+#                           the lever names)
+PLL_ROUTE_LEVERS="${PLL_ROUTE_LEVERS:-all}"
+PLL_ROUTING_LEVERS_LABEL="${PLL_ROUTING_LEVERS_LABEL:-levers: ${PLL_ROUTE_LEVERS}}"
+
 if [[ ! -f "$NETLIST" ]]; then
   echo "$SCRIPT_NAME: no schematic netlist at $NETLIST" >&2
   exit 1
@@ -121,7 +139,8 @@ SPOT_DIR="$OUT_DIR/route-spot-check"
 mkdir -p "$SPOT_DIR"
 python3 "$LAYOUT_DIR/bin/pll_layout.py" \
   --netlist "$NETLIST" --out-dir "$SPOT_DIR" \
-  --klt "$KLT" --pdk "$PDK_VARIANT" --emit-lvs-reference
+  --klt "$KLT" --pdk "$PDK_VARIANT" --emit-lvs-reference \
+  --route-levers "$PLL_ROUTE_LEVERS"
 "$KLT" drc "$SPOT_DIR/$TOP_CELL.gds" --deck "$DECK" --format json \
   > "$SPOT_DIR/drc.json" || true
 "$KLT" extract "$SPOT_DIR/$TOP_CELL.gds" --deck "$DECK" --top "$TOP_CELL" \
@@ -162,13 +181,24 @@ cat > "$SPOT_DIR/lvs.request.json" <<EOF
 EOF
 "$KLT" lvs "$SPOT_DIR/lvs.request.json" --format json > "$SPOT_DIR/lvs.json" || true
 
-find "$SPOT_DIR" -name '*.gds' -delete
-# The spot-check's per-group generator envelopes and its plan are
-# byte-identical to the shipped build's (same plan, same `klt gen` calls --
-# only the composition requests differ), so only the differing evidence is
-# kept.
-find "$SPOT_DIR" \( -name 'gen.*.json' -o -name 'draw.*.json' \
-  -o -name 'draw.*.params.json' -o -name 'plan.json' \) -delete
+find "$SPOT_DIR" \( -name '*.gds' -o -name 'draw.*.json' -o -name 'plan.json' \) -delete
+# The spot-check's per-group generator envelopes are byte-identical to the
+# shipped build's (same plan, same `klt gen` calls -- only the composition
+# requests differ) *unless* the interior-channel lever is on: that lever
+# changes the `klt gen` params themselves (routed build only, see
+# pll_layout.py's Builder.gen_group), so its envelopes are evidence the
+# shipped build's cannot stand in for and are kept.
+python3 - "$SPOT_DIR" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+spot_dir = Path(sys.argv[1])
+build = json.loads((spot_dir / "build.json").read_text())
+if "interior-channel" not in build.get("routing_levers", {}).get("levers", []):
+    for envelope in spot_dir.glob("gen.*.json"):
+        envelope.unlink()
+PY
 
 # --- 6. Combined human-readable report --------------------------------------
 # Only the DRC envelope: `klt report` renders violation/mismatch-shaped
@@ -176,6 +206,16 @@ find "$SPOT_DIR" \( -name 'gen.*.json' -o -name 'draw.*.json' \
 "$KLT" report "$OUT_DIR/drc.json" --format github-summary > "$OUT_DIR/report.md"
 
 # --- 7. Record summary (verdicts, evidence-record style) --------------------
+# Issue #548: assemble the routing-lever ladder's rows (earlier steps +
+# this run) before rendering, so the record's table and its stored
+# routing-levers.json are the same bytes.
+if [[ -n "${PLL_ROUTING_LEVERS_SUMMARY:-}" ]]; then
+  python3 "$LAYOUT_DIR/bin/route_lever_tally.py" merge \
+    --prior "$PLL_ROUTING_LEVERS_SUMMARY" \
+    --run-dir "$OUT_DIR" --record-id "$RECORD_ID" \
+    --label "$PLL_ROUTING_LEVERS_LABEL" --levers "$PLL_ROUTE_LEVERS" \
+    > "$OUT_DIR/routing-levers.json"
+fi
 # The renderer exits nonzero after writing the record if a verdict it asserts
 # fails; the record is still stored (it is the evidence of the miss), and the
 # flow exits with that status afterwards.

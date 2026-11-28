@@ -256,9 +256,67 @@ class StoreTests(Base):
                 e["uri"] = "s3://bucket/" + e["uri"][len("artifact:"):]
             m.write_text(json.dumps(d))
             return r
-        with self.assertRaisesRegex(es.StoreError, "uri is not artifact"):
+        with self.assertRaisesRegex(es.StoreError, "uri must be artifact"):
             self.store(run)
         self.assertEqual(self.committed(), [])
+
+    def _mutated_manifest_klt(self, mutate):
+        def run(cmd, **kw):
+            r = fake_klt({})(cmd, **kw)
+            m = Path(cmd[cmd.index("--manifest") + 1])
+            d = json.loads(m.read_text())
+            mutate(d)
+            m.write_text(json.dumps(d))
+            return r
+        return run
+
+    def test_duplicate_manifest_entry_commits_nothing(self):
+        # Same entry listed twice: CI's checker rejects the duplicate name, so
+        # the writer must refuse to install manifest or summary (issue #550).
+        def duplicate(d):
+            if d["entries"]:
+                d["entries"].append(dict(d["entries"][-1]))
+        with self.assertRaisesRegex(es.StoreError, "duplicate name"):
+            self.store(self._mutated_manifest_klt(duplicate))
+        self.assertFalse(es.manifest_path(self.root, "b", "r1").exists())
+        self.assertFalse(self.summary.exists())
+
+    def test_empty_producer_object_commits_nothing(self):
+        # A producer of {}: CI's checker requires its four fields, so the
+        # writer must refuse to install manifest or summary (issue #550).
+        def empty_producer(d):
+            for e in d["entries"]:
+                e["producer"] = {}
+        with self.assertRaisesRegex(es.StoreError, "producer must carry exactly"):
+            self.store(self._mutated_manifest_klt(empty_producer))
+        self.assertFalse(es.manifest_path(self.root, "b", "r1").exists())
+        self.assertFalse(self.summary.exists())
+
+    def test_valid_resumed_manifest_installs(self):
+        # A resumed run's final manifest (fresh uploads plus supplied_by
+        # pointers, DR-016) passes the CI schema and installs (issue #550).
+        manifest, _empty = es.put_files(self.files, self.root,
+                                        run=fake_klt({}))
+        es.add_supplied(manifest, [("sim/b/corners/r1/body.spice", "c" * 64, 3,
+                                    "sim/b/records/old/body.spice")])
+        mpath = es.manifest_path(self.root, "b", "r2")
+        es.install_manifest(manifest, mpath)
+        entries = json.loads(mpath.read_text())["entries"]
+        resumed = entries[0]
+        self.assertEqual(resumed["name"], "sim/b/corners/r1/body.spice")
+        self.assertEqual(resumed["supplied_by"], "sim/b/records/old/body.spice")
+        self.assertNotIn("uri", resumed)
+        self.assertTrue(all("uri" in e for e in entries[1:]))
+
+    def test_install_refuses_bad_supplied_by_pointer(self):
+        manifest, _empty = es.put_files(self.files, self.root,
+                                        run=fake_klt({}))
+        es.add_supplied(manifest, [("sim/b/corners/r1/body.spice", "c" * 64, 3,
+                                    "manifests/artifacts/old.manifest.json")])
+        mpath = es.manifest_path(self.root, "b", "r2")
+        with self.assertRaisesRegex(es.StoreError, "supplied_by must be a canonical"):
+            es.install_manifest(manifest, mpath)
+        self.assertFalse(mpath.exists())
 
     def test_symlink_in_stage_is_refused(self):
         (self.stage / "link").symlink_to(self.stage / "tt.log")

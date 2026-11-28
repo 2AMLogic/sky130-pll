@@ -347,10 +347,13 @@ def cmd(args) -> int:
                 return 1
 
         if name == fmax_klt.BATCH_EXECUTOR:
+            if args.chunk_size < 1:
+                print("run_fmax.py: --chunk-size must be >= 1", file=sys.stderr)
+                return 1
             backend = fmax_klt.KltBatchBackend(
                 spec=spec, manifest=manifest, work_dir=work_dir,
                 cache_dir=Path(args.klt_cache) if args.klt_cache else None, log=print,
-                max_jobs=args.klt_jobs,
+                max_jobs=args.klt_jobs, chunk_size=args.chunk_size,
             )
             try:
                 backend.preflight()
@@ -458,6 +461,11 @@ def build_parser() -> argparse.ArgumentParser:
                    help="concurrent `klt sim` submissions for the batch executor (default 2)")
     p.add_argument("--klt-cache", help="directory for per-job requests/reports of the batch "
                    "executor; re-running with the same directory reuses collected reports")
+    p.add_argument("--chunk-size", type=int, default=4,
+                   help="DUT copies per batch job group (default 4). Lower it for moduli whose "
+                        "slowest probes exceed the fleet's whole-job ceiling: a group's job dies "
+                        "at the ceiling and every probe in it is lost (#244 measured N=25 chunk 0 "
+                        "dying at 3600 s; --chunk-size 2 fits)")
     p.add_argument("-j", "--jobs", type=int, default=1, help=f"local workers (capped at {MAX_JOBS})")
     p.add_argument("--max-local-probes", type=int, default=1,
                    help="most probes this host may simulate itself (default 1)")

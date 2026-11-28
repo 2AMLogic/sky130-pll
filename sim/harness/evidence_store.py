@@ -18,18 +18,21 @@ longer land in git. They go to the artifact store through
 
 **Fail closed.** Every failure here raises :class:`StoreError`: no broker
 configured, no ``klt`` with the ``artifact`` verb, a broker that cannot be
-reached or refuses, a put that fails part-way, a manifest that does not match
-the bytes it claims. Nothing is then installed under ``manifests/`` or
-``sim/``; the staged bytes stay in the git-ignored scratch tree (``sim/build/``)
-so the run is not lost, and the caller reports the failure. There is no
-fallback that commits the bytes instead.
+reached or refuses, a put that fails part-way, a manifest that fails the CI
+schema check or does not match the bytes it claims. Nothing is then installed
+under ``manifests/`` or ``sim/``; the staged bytes stay in the git-ignored
+scratch tree (``sim/build/``) so the run is not lost, and the caller reports
+the failure. There is no fallback that commits the bytes instead.
 
 Configuration comes from the environment only (``KLT_ARTIFACT_BROKER``,
 optionally ``KLT_ARTIFACT_REPO``), read by ``klt`` itself. This module never
 puts the broker URL in argv, a record or a message, and holds no credential:
 the broker identifies callers by network identity.
 
-Stdlib only.
+Stdlib only. The schema a manifest must pass before it is installed is the
+CI checker's (:func:`scripts.check_artifact_manifests.manifest_problems`), so
+a manifest this writer installs can never be one CI rejects; the git-tree and
+tracked-byte halves of that check stay in the offline checker.
 """
 
 from __future__ import annotations
@@ -41,9 +44,19 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 from urllib.parse import urlsplit
+
+# scripts/check_artifact_manifests.py lives at the repo root (shared with CI),
+# not under sim/, so it is reached the same way report.py imports
+# scripts.git_status.
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
+
+from scripts.check_artifact_manifests import manifest_problems  # noqa: E402
 
 ENV_BROKER = "KLT_ARTIFACT_BROKER"
 ENV_REPO = "KLT_ARTIFACT_REPO"
@@ -55,8 +68,6 @@ KLT_ARTIFACT_MIN_COMMIT = "7e3561f"
 PROBE_TIMEOUT_S = 30
 PUT_TIMEOUT_S = 900
 
-_SHA_RE = re.compile(r"^[0-9a-f]{64}$")
-_URI_RE = re.compile(r"^artifact:([^/\s]\S*)$")
 _RID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 _REMOTE_RE = re.compile(r"[:/]([A-Za-z0-9._-]+)/([A-Za-z0-9._-]+?)(?:\.git)?/?$")
 _EMPTY_SHA256 = hashlib.sha256(b"").hexdigest()
@@ -182,22 +193,6 @@ def _klt_error(stderr: str) -> str:
         lines = [ln for ln in stderr.strip().splitlines() if ln.strip()]
         return lines[-1][:300] if lines else "no diagnostic"
 
-
-def _entry_problem(entry) -> str | None:
-    if not isinstance(entry, dict):
-        return "entry is not an object"
-    if not (isinstance(entry.get("sha256"), str) and _SHA_RE.match(entry["sha256"])):
-        return "bad sha256"
-    if entry.get("kind") != "evidence":
-        return "kind is not evidence"
-    m = _URI_RE.match(entry.get("uri") or "")
-    if m is None or m.group(1).rsplit("/", 1)[-1] != entry["sha256"]:
-        return "uri is not artifact:<key> naming the sha256"
-    if not isinstance(entry.get("producer"), dict):
-        return "no producer"
-    return None
-
-
 def put_files(files: list[tuple[Path, str]], repo_root: Path, *,
               klt: str = "klt", run=subprocess.run) -> tuple[dict, list[str]]:
     """Store every ``(path, name)`` and return ``(manifest, empty_names)``.
@@ -206,8 +201,10 @@ def put_files(files: list[tuple[Path, str]], repo_root: Path, *,
     private temporary directory (never in the repo). Zero-byte files cannot be
     stored (the store's minimum object is one byte); their names are returned
     so the summary can list them -- their content is fully known. After the
-    puts, every entry is cross-checked against a local re-hash of its file.
-    Any failure raises :class:`StoreError`; the manifest is then discarded.
+    puts, the manifest must pass the CI checker's schema
+    (:func:`scripts.check_artifact_manifests.manifest_problems`) and every
+    fresh upload is cross-checked against a local re-hash of its file. Any
+    failure raises :class:`StoreError`; the manifest is then discarded.
     """
     names = [n for _, n in files]
     if len(set(names)) != len(names):
@@ -239,27 +236,31 @@ def put_files(files: list[tuple[Path, str]], repo_root: Path, *,
                 manifest = json.load(fh)
         except (OSError, ValueError) as exc:
             raise StoreError(f"klt wrote no readable manifest: {exc}") from None
-    entries = manifest.get("entries") if isinstance(manifest, dict) else None
-    if not isinstance(entries, list) or manifest.get("schema_version") != 1:
-        raise StoreError("klt manifest is not {schema_version: 1, entries: [...]}")
-    by_name = {}
-    for e in entries:
-        problem = _entry_problem(e)
-        if problem:
-            raise StoreError(f"klt manifest entry invalid: {problem}")
-        by_name[e.get("name")] = e
+    problems = manifest_problems(manifest)
+    if problems:
+        raise StoreError("klt manifest invalid: " + "; ".join(problems))
+    by_name = {e["name"]: e for e in manifest["entries"]}
     if set(by_name) != set(expected):
         raise StoreError("klt manifest entries do not match the staged files")
     for name, (sha, size) in expected.items():
-        if (by_name[name]["sha256"], by_name[name]["size"]) != (sha, size):
+        entry = by_name[name]
+        if "uri" not in entry:
+            raise StoreError(f"klt manifest entry for {name} has no store uri "
+                             "(only a resumed file may be supplied_by)")
+        if (entry["sha256"], entry["size"]) != (sha, size):
             raise StoreError(f"klt manifest entry for {name} does not match the file's "
                              "local sha256/size")
-    manifest["entries"] = sorted(entries, key=lambda e: e["name"])
+    manifest["entries"] = sorted(manifest["entries"], key=lambda e: e["name"])
     return manifest, sorted(empty)
 
 
 def install_manifest(manifest: dict, path: Path) -> None:
-    """Create ``path`` exclusively: an existing manifest is never replaced."""
+    """Refuse a manifest the CI checker would reject (including one a resumed
+    run extended with ``supplied_by`` entries), then create ``path``
+    exclusively: an existing manifest is never replaced."""
+    problems = manifest_problems(manifest)
+    if problems:
+        raise StoreError("manifest invalid: " + "; ".join(problems))
     path.parent.mkdir(parents=True, exist_ok=True)
     try:
         with open(path, "x", encoding="utf-8") as fh:
@@ -399,9 +400,10 @@ def store_files(files: list[tuple[Path, str]], *, repo_root: Path, bench: str,
     """Store ``files``; commit only their manifest and the run's summary.
 
     Order matters for fail-closed: (1) refuse if the manifest or summary
-    already exists; (2) put every file; (3) install the manifest exclusively;
-    (4) write the summary exclusively, with a "Stored evidence" section that
-    lists every object. A failure in (1)-(2) leaves nothing in the repo.
+    already exists; (2) put every file; (3) install the manifest exclusively,
+    after the CI schema check in :func:`install_manifest`; (4) write the
+    summary exclusively, with a "Stored evidence" section that
+    lists every object. A failure in (1)-(3) leaves nothing in the repo.
     Returns the manifest path.
     """
     mpath = manifest_path(repo_root, bench, rid)
