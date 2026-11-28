@@ -123,14 +123,61 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install ngspice + xschem
-        # xschem comes from the fleet-pinned source build (3.4.7), not the
-        # noble apt package (3.4.4) -- see .github/scripts/install-xschem.
-        # ngspice stays on apt; its pin is separate work.
+      - name: Install ngspice + the xschem runtime libraries
+        # ngspice stays on apt; its pin is separate work. xschem is NOT an apt
+        # package here: the next step installs the fleet-pinned release asset
+        # (the version every committed schematic records; noble's apt package
+        # is older). That binary links a few system libraries, so this step
+        # declares exactly its direct NEEDED entries (`objdump -p
+        # /opt/eda/xschem/bin/xschem`, release 3.4.7-2am.1): libX11, libXpm,
+        # libcairo, libtcl8.6 and libtk8.6 -- apt pulls the rest (libXft,
+        # libXss, libxcb, ...) as their dependencies. The ubuntu-24.04 runner
+        # image ships tcl/tk (package `tk`) but nothing that pulls libxpm4
+        # (its published apt list, as of 2026-11-28); the #525 source build
+        # never noticed because its -dev build dependencies brought them all
+        # in. Ones already present are a no-op. Re-derive this list when
+        # .github/xschem-pin.json changes.
         run: |
           sudo apt-get update
-          sudo apt-get install -y ngspice
-          .github/scripts/install-xschem
+          sudo apt-get install -y ngspice libx11-6 libxpm4 libcairo2 libtcl8.6 libtk8.6
+
+      - name: Install xschem (fleet-pinned release asset, sha256-verified)
+        # .github/scripts/install-xschem.sh is a verbatim copy of
+        # 2AMLogic/klayout-tools scripts/install-xschem.sh @ 646532a (issue
+        # #613): it downloads the public release asset the pin names, checks
+        # its sha256 BEFORE anything is unpacked, and unpacks at
+        # /opt/eda/xschem -- the asset's compile-time prefix, which the tree
+        # cannot be relocated from, so xschem finds its own devices/*.sym
+        # without an --rcfile. XSCHEM_MANIFEST points at the vendored pin so
+        # the digest is the one committed in this repo, not whatever the
+        # fleet manifest on main says today.
+        #
+        # The script only PRINTS the PATH directory, on the install path and
+        # on its already-installed early return alike, so the GITHUB_PATH line
+        # is separate and unconditional (the #525 script's early return
+        # skipped its own GITHUB_PATH write, leaving later steps without
+        # xschem).
+        env:
+          XSCHEM_MANIFEST: ${{ github.workspace }}/.github/xschem-pin.json
+        run: |
+          .github/scripts/install-xschem.sh
+          echo /opt/eda/xschem/bin >> "$GITHUB_PATH"
+
+      - name: Install xschem again (already-installed branch, fresh GITHUB_PATH)
+        # Guards the early-return path. This step starts by emptying
+        # GITHUB_PATH, so the PATH line is shown to populate a fresh, empty
+        # file when the script installs nothing -- and that the script took
+        # the already-installed branch rather than reinstalling.
+        env:
+          XSCHEM_MANIFEST: ${{ github.workspace }}/.github/xschem-pin.json
+        run: |
+          : > "$GITHUB_PATH"
+          out="$(.github/scripts/install-xschem.sh 2>&1)"
+          printf '%s\n' "$out"
+          grep -q 'already installed' <<<"$out"
+          echo /opt/eda/xschem/bin >> "$GITHUB_PATH"
+          grep -qx /opt/eda/xschem/bin "$GITHUB_PATH"
+          echo "GITHUB_PATH: $(cat "$GITHUB_PATH")"
 
       - name: Install ciel
         run: pip install --user ciel==2.6.1
@@ -154,6 +201,44 @@ jobs:
         run: |
           export PATH="$HOME/.local/bin:$PATH"
           pip install --user 'klayout-tools==0.8.0' && klt --version
+
+      - name: Verify xschem (pinned install on PATH, pinned tag, headless netlist)
+        # Three checks, one per way a pinned-binary install goes wrong:
+        #  1. `xschem` resolves to /opt/eda/xschem/bin/xschem -- the
+        #     GITHUB_PATH line took effect and nothing else on the runner
+        #     shadows it;
+        #  2. the installed tree carries the pinned tag and digest. The
+        #     installer writes .installed-version only after the digest check
+        #     and the unpack, so the marker names the bytes that were
+        #     verified. Both values are read from the vendored pin: this step
+        #     carries no second copy of them;
+        #  3. a headless `klt netlist` of a committed testbench succeeds --
+        #     the sanctioned entry (a raw `xschem` can hang in the Tk event
+        #     loop). sim/pdk-smoke's testbench instantiates xschem's stock
+        #     devices/vsource.sym as well as a sky130_fd_pr symbol, so this
+        #     fails unless the binary found its own symbol library at the
+        #     compile-time prefix AND the PDK is enabled.
+        # `xschem --version` exits non-zero even when it works: the verdict is
+        # its banner, the same way a netlist is judged by its output file.
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          want="$(jq -er '.tools.xschem.tag' .github/xschem-pin.json)"
+          sha="$(jq -er '.tools.xschem.sha256' .github/xschem-pin.json)"
+          got="$(command -v xschem)"
+          echo "xschem resolves to: $got"
+          [ "$got" = /opt/eda/xschem/bin/xschem ]
+          marker="$(cat /opt/eda/xschem/.installed-version)"
+          echo "installed-version marker: $marker"
+          [ "$marker" = "${want} ${sha}" ]
+          ver="$(xschem --version 2>&1 || true)"
+          printf '%s\n' "$ver"
+          grep -Fx "XSCHEM V${want}" <<<"$ver"
+          mkdir -p "$RUNNER_TEMP/xschem-verify"
+          netlist="$RUNNER_TEMP/xschem-verify/tb_pdk_smoke.spice"
+          klt netlist --rcfile sim/xschemrc -o "$netlist" \
+            sim/pdk-smoke/testbench/tb_pdk_smoke.sch
+          grep -q '^V1 ' "$netlist"
+          grep -q 'sky130_fd_pr__res_generic_po' "$netlist"
 
       - name: Run sim/selftest.sh (quick PVT subset, PDK required)
         run: |
