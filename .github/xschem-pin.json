@@ -1,0 +1,31 @@
+{
+  "tools": {
+    "xschem": {
+      "tag": "3.4.7",
+      "commit": "92dd8fe5f4d5c1057489710d8a22f18fdc9d7ed0",
+      "repo": "https://github.com/StefanSchippers/xschem",
+      "asset": "xschem-3.4.7-noble-x86_64.tar.gz",
+      "release_repo": "2AMLogic/xschem",
+      "release_tag": "3.4.7-2am.1",
+      "sha256": "c9681e382a8fb31b006be58cca2a8ef15fbfb41d3f29c3351912073838d7ac7c",
+      "_comment": [
+        "The `tools.xschem` block of 2AMLogic/klayout-tools",
+        "docker/eda-sim/pdk-versions.json, vendored (copied 2026-11-28 at commit",
+        "646532a, where it was byte-identical to that branch's main). CI's",
+        "pdk-smoke job runs .github/scripts/install-xschem.sh (a verbatim copy of",
+        "that repo's scripts/install-xschem.sh) with XSCHEM_MANIFEST pointed here,",
+        "so the sha256 checked before the asset is unpacked is the one committed in",
+        "this repository, not whatever the fleet manifest on main says at run time.",
+        "",
+        "The installer reads tag, asset, release_repo, release_tag and sha256.",
+        "`repo` and `commit` are the upstream source the release was built from,",
+        "carried along for provenance.",
+        "",
+        "Bumping the pin: copy the new `tools.xschem` block over this one (a new",
+        "build number means a new sha256), and re-derive the runtime-library list",
+        "in the pdk-smoke job's apt step from the new binary's NEEDED entries. The",
+        "build is Linux x86_64 / Ubuntu 24.04 only, and its tree is not relocatable."
+      ]
+    }
+  }
+}
