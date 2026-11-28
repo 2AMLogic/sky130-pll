@@ -8,6 +8,10 @@ Merged PRs and closed issues from the Guide’s 30-day discovery window.
 
 ### 2026-11-27
 
+- **Issue #593** (closed): Remove duplicate spot-check parser, JSON loader, and unchecked git call across layout/bin/render-pll-record.py and route_lever_tally.py
+- **PR #601**: fix: propagate PLL record lookup errors and share shorted-node parsing
+- **Issue #607** (closed): Simplify checkpoint lookup so a clone can resume a staged worktree run
+- **PR #609**: fix: recover worktree checkpoints when resuming from a clone
 - **Issue #606** (closed): Use the standard normal quantile in Monte Carlo sample sizing
 - **PR #608**: refactor: use NormalDist for Monte Carlo sample sizing
 - **PR #596**: docs: record the Stage A fleet ledger checkpoint and validated requests
