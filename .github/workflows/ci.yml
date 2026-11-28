@@ -124,9 +124,13 @@ jobs:
           python-version: "3.11"
 
       - name: Install ngspice + xschem
+        # xschem comes from the fleet-pinned source build (3.4.7), not the
+        # noble apt package (3.4.4) -- see .github/scripts/install-xschem.
+        # ngspice stays on apt; its pin is separate work.
         run: |
           sudo apt-get update
-          sudo apt-get install -y ngspice xschem
+          sudo apt-get install -y ngspice
+          .github/scripts/install-xschem
 
       - name: Install ciel
         run: pip install --user ciel==2.6.1
